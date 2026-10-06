@@ -65,7 +65,7 @@ var rules = []rule{
 	{"internal/movie/...", []string{"internal/movie/...", "internal/proto", "internal/prompt", "internal/assets", "internal/games/gtw", "internal/games/ending"}},
 	{"internal/golden", nil},
 	{"internal/archtest", nil},
-	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty"}},
+	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty", "github.com/charmbracelet/x/vt"}},
 	{"internal/tools/...", nil},
 	{"internal/llm", []string{"internal/proto", "internal/wopr"}},
 }
@@ -88,7 +88,7 @@ type listed struct {
 func TestImportDAG(t *testing.T) {
 	root := moduleRoot(t)
 	trackSources(t, root)
-	cmd := exec.Command("go", "list", "-json=ImportPath,Standard,Imports,TestImports,XTestImports", "./...")
+	cmd := exec.Command("go", "list", "-tags=e2e", "-json=ImportPath,Standard,Imports,TestImports,XTestImports", "./...")
 	cmd.Dir = root
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr

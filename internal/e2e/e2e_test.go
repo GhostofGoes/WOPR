@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/vt"
 	"github.com/charmbracelet/x/xpty"
 )
 
@@ -120,13 +121,18 @@ func TestRefusesWithoutTerminal(t *testing.T) {
 	}
 }
 
-// session is a running wopr in a pseudo-terminal.
+// session is a running wopr in a pseudo-terminal. Its output feeds a terminal emulator, so
+// tests assert on the screen a user would see rather than on the byte stream: the typewriter
+// and Bubble Tea's diffing renderer split text across writes. The emulator's answers to
+// terminal queries go back to wopr, as a real terminal's would.
 type session struct {
 	t   *testing.T
 	pty xpty.Pty
 	cmd *exec.Cmd
+
 	mu  sync.Mutex
-	out bytes.Buffer
+	emu *vt.Emulator
+	raw bytes.Buffer
 }
 
 func start(t *testing.T, w, h int, args ...string) *session {
@@ -137,17 +143,19 @@ func start(t *testing.T, w, h int, args ...string) *session {
 	}
 	cmd := exec.Command(binary, args...)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+	controllingTerminal(cmd)
 	if err := p.Start(cmd); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	s := &session{t: t, pty: p, cmd: cmd}
+	s := &session{t: t, pty: p, cmd: cmd, emu: vt.NewEmulator(w, h)}
 	go func() {
 		buf := make([]byte, 32*1024)
 		for {
 			n, err := p.Read(buf)
 			if n > 0 {
 				s.mu.Lock()
-				s.out.Write(buf[:n])
+				s.raw.Write(buf[:n])
+				_, _ = s.emu.Write(buf[:n])
 				s.mu.Unlock()
 			}
 			if err != nil {
@@ -155,26 +163,37 @@ func start(t *testing.T, w, h int, args ...string) *session {
 			}
 		}
 	}()
+	// Forward the emulator's query replies. The goroutine outlives the test, parked in Read:
+	// Emulator.Close would end it, but Close races with that Read inside x/vt.
+	go func() { _, _ = io.Copy(p, s.emu) }()
 	t.Cleanup(func() { _ = p.Close() })
 	return s
 }
 
+// output is everything wopr has written so far.
 func (s *session) output() string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.out.String()
+	return s.raw.String()
+}
+
+// screen is the emulator's current screen, one line per row.
+func (s *session) screen() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.emu.String()
 }
 
 func (s *session) waitFor(text string, timeout time.Duration) {
 	s.t.Helper()
 	deadline := time.Now().Add(timeout)
 	for time.Now().Before(deadline) {
-		if strings.Contains(s.output(), text) {
+		if strings.Contains(s.screen(), text) {
 			return
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	s.t.Fatalf("timed out waiting for %q; output so far:\n%q", text, s.output())
+	s.t.Fatalf("timed out waiting for %q; screen:\n%s", text, s.screen())
 }
 
 func (s *session) send(keys string) {
@@ -184,14 +203,26 @@ func (s *session) send(keys string) {
 	}
 }
 
+func (s *session) resize(w, h int) {
+	s.t.Helper()
+	s.mu.Lock()
+	s.emu.Resize(w, h)
+	s.mu.Unlock()
+	if err := s.pty.Resize(w, h); err != nil {
+		s.t.Fatalf("resize: %v", err)
+	}
+}
+
 func (s *session) wait(timeout time.Duration) int {
 	s.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	err := xpty.WaitProcess(ctx, s.cmd)
 	if ctx.Err() != nil {
-		s.t.Fatalf("wopr did not exit; output:\n%q", s.output())
+		s.t.Fatalf("wopr did not exit; screen:\n%s", s.screen())
 	}
+	// Let the reader drain the last writes before the caller looks at the screen.
+	time.Sleep(100 * time.Millisecond)
 	if s.cmd.ProcessState != nil {
 		return s.cmd.ProcessState.ExitCode()
 	}
@@ -205,13 +236,41 @@ func TestTUIStartsAndInterrupts(t *testing.T) {
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
-	time.Sleep(100 * time.Millisecond)
-	if !strings.Contains(s.output(), "--CONNECTION TERMINATED--") {
-		t.Errorf("no exit line in output:\n%q", s.output())
+	if !strings.Contains(s.screen(), "--CONNECTION TERMINATED--") {
+		t.Errorf("no exit line on the screen:\n%s", s.screen())
 	}
 	if runtime.GOOS != "windows" { // conhost re-renders, so raw escape sequences are Unix-only
 		if out := s.output(); !strings.Contains(out, "\x1b[?1049h") || !strings.Contains(out, "\x1b[?1049l") {
 			t.Error("alternate screen not entered and left")
 		}
+	}
+}
+
+// The film's opening: the backdoor password, the greeting, small talk, and a clean logoff.
+func TestLogonConversationLogoff(t *testing.T) {
+	s := start(t, 80, 24, "--instant")
+	s.waitFor("LOGON:", 10*time.Second)
+	s.send("Joshua\r")
+	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
+	s.send("Hello.\r")
+	s.waitFor("HOW ARE YOU FEELING TODAY?", 10*time.Second)
+	s.send("LOGOFF\r")
+	if code := s.wait(10 * time.Second); code != 0 {
+		t.Errorf("exit %d after LOGOFF, want 0", code)
+	}
+	if !strings.Contains(s.screen(), "--CONNECTION TERMINATED--") {
+		t.Errorf("no exit line on the screen:\n%s", s.screen())
+	}
+}
+
+// A terminal below 80x24 gets the TOO SMALL card; growing it resumes the session.
+func TestTooSmallThenResize(t *testing.T) {
+	s := start(t, 60, 20, "--instant")
+	s.waitFor("TERMINAL TOO SMALL", 10*time.Second)
+	s.resize(80, 24)
+	s.waitFor("LOGON:", 10*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
 }
