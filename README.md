@@ -53,7 +53,7 @@ Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its 
 
 ## Games
 
-Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` until its release):
+Every game in `LIST GAMES` is playable:
 
 - **Falken's Maze** (`maze`): find the exit with the arrow keys (or WASD); `q` gives up. WOPR watches which
   way you turn and moves walls you have not seen yet. The exit always stays reachable.
@@ -66,6 +66,9 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
 - **Guerrilla Engagement** (`guerrilla`): your cells hide (`hide`), ambush from hiding at double strength
   (`attack 4`), and `recruit` with support. Patrols find cells near them. Survive twelve turns, reach
   support 10, or take the capital.
+- **Air-to-Ground Actions** (`air-to-ground`): six sorties against six defended targets. Set a package
+  (`target radar strike 4 sead 2 escort 2`) and `go`. SEAD fights the target's SAM sites, escorts tie up
+  interceptors, and WOPR hides a mobile SAM battery where it expects you. Ten points win.
 - **Theaterwide Tactical Warfare** (`tactical`): corps and air wings on a European front. Any unit may
   `escalate`; each rung adds to every attack, WOPR answers in kind, and the top rung ends everything. Hold
   five regions to win.

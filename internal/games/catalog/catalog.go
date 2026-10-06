@@ -4,6 +4,7 @@ package catalog
 
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/airtoground"
 	"github.com/GhostofGoes/WOPR/internal/games/biotoxic"
 	"github.com/GhostofGoes/WOPR/internal/games/blackjack"
 	"github.com/GhostofGoes/WOPR/internal/games/bridge"
@@ -73,8 +74,8 @@ func entries() []games.Entry {
 		}, New: desertwarfare.New},
 		{Info: games.Info{
 			Number: 12, Listed: true, Name: "AIR-TO-GROUND ACTIONS", Slug: "air-to-ground-actions", Aliases: []string{"air-to-ground"},
-			Layout: proto.LayoutConsole, Blurb: "Plan strike packages against defended targets.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Plan strike packages against defended targets.",
+		}, New: airtoground.New},
 		{Info: games.Info{
 			Number: 13, Listed: true, Name: "THEATERWIDE TACTICAL WARFARE", Slug: "theaterwide-tactical-warfare", Aliases: []string{"tactical"},
 			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Corps-level moves on a European front, with an escalation ladder.",
