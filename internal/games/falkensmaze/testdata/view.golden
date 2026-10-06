@@ -1,33 +1,64 @@
 ==== start ====
-           +--+--+
-           |@     .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-           +--+--+
-            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+.------------------------------[ FALKEN'S MAZE ]-------------------------------.
+|          +--+--+                                                             |
+| START -> |@     .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|          +--+--+                                                             |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []  <- EXIT  |
+|                                                                              |
+'-- MOVES 0 ---- YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT ----- WALLS MOVED 0 --'
 
-            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-
-            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
-
-            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []
-
-MOVES 0             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
-
-...........dttdttd
-...........tb.....d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
-...........dttdttd
-............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
-
-............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
-
-............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
-
-............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA
-
-ttttt.t.............dddd.dddddd.d.dddd..d.dddddddd..d.ddddd........ttttt.ttttt.t
+dddddddddddddddddddddddddddddddb.bbbbbbbb.bbbb.bdddddddddddddddddddddddddddddddd
+d..........dttdttd.............................................................d
+d.LLLLL.LL.tb.....d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..........dttdttd.............................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..............................................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..............................................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..............................................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA..LL.LLLL..d
+d..............................................................................d
+ddd.ttttt.t.dddd.dddd.dddddd.d.dddd..d.dddddddd..d.ddddd.ddddd.ttttt.ttttt.t.ddd
 
 ==== a few keys later ====
+.------------------------------[ FALKEN'S MAZE ]-------------------------------.
+|          +--+--+--+                                                          |
+| START -> |        |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|          +--+--+  +--+                                                       |
+|           .  . |@    |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                +--+  +                                                       |
+|           .  .  .    |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                   +--+                                                       |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []  <- EXIT  |
+|                                                                              |
+'-- MOVES 5 ---- YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT ----- WALLS MOVED 0 --'
+
+dddddddddddddddddddddddddddddddb.bbbbbbbb.bbbb.bdddddddddddddddddddddddddddddddd
+d..........dttdttdttd..........................................................d
+d.LLLLL.LL.t........td..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..........dttdttd..dttd.......................................................d
+d...........d..d.tb....td..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d................dttd..d.......................................................d
+d...........d..d..d....td..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d...................dttd.......................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d............d
+d..............................................................................d
+d...........d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA..LL.LLLL..d
+d..............................................................................d
+ddd.ttttt.t.dddd.dddd.dddddd.d.dddd..d.dddddddd..d.ddddd.ddddd.ttttt.ttttt.t.ddd
+
+==== a panel too short for the frame ====
            +--+--+--+
-           |        |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+  START -> |        |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
            +--+--+  +--+
             .  . |@    |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .
                  +--+  +
@@ -35,12 +66,12 @@ ttttt.t.............dddd.dddddd.d.dddd..d.dddddddd..d.ddddd........ttttt.ttttt.t
                     +--+
             .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
 
-            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []  <- EXIT
 
-MOVES 5             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
+MOVES 5          YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT           WALLS MOVED 0
 
 ...........dttdttdttd
-...........t........td..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+..LLLLL.LL.t........td..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
 ...........dttdttd..dttd
 ............d..d.tb....td..d..d..d..d..d..d..d..d..d..d..d..d..d..d
 .................dttd..d
@@ -48,7 +79,7 @@ MOVES 5             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
 ....................dttd
 ............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
 
-............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA..LL.LLLL
 
-ttttt.t.............dddd.dddddd.d.dddd..d.dddddddd..d.ddddd........ttttt.ttttt.t
+ttttt.t..........dddd.dddddd.d.dddd..d.dddddddd..d.ddddd...........ttttt.ttttt.t
 

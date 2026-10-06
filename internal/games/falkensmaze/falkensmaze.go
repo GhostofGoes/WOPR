@@ -46,7 +46,10 @@ var (
 )
 
 // Lines is every script block, for the provenance test.
-var Lines = []script.Ls{lineRules, lineHint, lineMoved, lineBias, lineTurns, lineFound, lineGiveUp, panelMoves, panelWalls, panelHabits}
+var Lines = []script.Ls{
+	lineRules, lineHint, lineMoved, lineBias, lineTurns, lineFound, lineGiveUp, panelMoves, panelWalls, panelHabits,
+	frameTitle, frameMarks, artEscaped,
+}
 
 func fill(text string, args ...string) string {
 	for _, a := range args {
@@ -67,12 +70,16 @@ type Game struct {
 	reroutes int
 	bias     [3]int
 	remarked bool
+	visited  []bool // the cells the player has stood on: their trail, shown once out
+	won      bool
 }
 
 // New returns a game.
 func New() games.Game { return &Game{} }
 
 func say(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
+
+func table(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
 
 // Start implements proto.Program.
 func (g *Game) Start(env proto.Env) []proto.Output {
@@ -82,8 +89,15 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	g.exit = g.m.cells() - 1
 	g.heading = east
 	g.seen = make([]bool, g.m.cells())
+	g.visited = make([]bool, g.m.cells())
+	g.visited[g.player] = true
 	g.reveal()
-	return []proto.Output{say(lineRules[0].Text), proto.Redraw{}, proto.AwaitKeys{Hint: lineHint[0].Text}}
+	return []proto.Output{
+		proto.SetLayout{Layout: proto.LayoutPanel, PanelRows: PanelRows},
+		say(lineRules[0].Text),
+		proto.Redraw{},
+		proto.AwaitKeys{Hint: lineHint[0].Text},
+	}
 }
 
 // reveal shows the player's cell and the cells its passages lead to.
@@ -133,14 +147,16 @@ func (g *Game) step(d int) []proto.Output {
 	g.player, _ = g.m.neighbour(g.player, d)
 	g.heading = d
 	g.moves++
+	g.visited[g.player] = true
 	g.reveal()
 	if g.player == g.exit {
+		g.won = true
 		found := lineFound[0]
 		if g.reroutes == 1 {
 			found = lineFound[1]
 		}
 		text := fill(found.Text, fmt.Sprint(g.moves), fmt.Sprint(g.reroutes))
-		return []proto.Output{proto.Redraw{}, say(text), proto.Done{Result: proto.Result{Outcome: proto.Win}}}
+		return []proto.Output{proto.Redraw{}, table(artEscaped.Texts()...), say(text), proto.Done{Result: proto.Result{Outcome: proto.Win}}}
 	}
 	outs := []proto.Output{proto.Redraw{}}
 	if g.moves%rerouteEvery == 0 && g.reroute() && g.reroutes%3 == 1 { // a remark now and then, not every time
@@ -250,53 +266,4 @@ func (g *Game) openAnother(closedA, closedD int) bool {
 	i := g.rng.IntN(len(bestCells))
 	g.m.set(bestCells[i], bestDirs[i], true)
 	return true
-}
-
-// View implements proto.Program: the maze under fog (unseen cells are a dim dot), the
-// player, the exit, and a status line.
-func (g *Game) View(c *proto.Canvas) {
-	x0 := (c.W - (3*mazeW + 1)) / 2
-	at := func(cx, cy int) int { return cy*mazeW + cx }
-	seen := func(cx, cy int) bool {
-		return cx >= 0 && cx < mazeW && cy >= 0 && cy < mazeH && g.seen[at(cx, cy)]
-	}
-	for gy := 0; gy <= mazeH; gy++ { // the corners
-		for gx := 0; gx <= mazeW; gx++ {
-			if seen(gx-1, gy-1) || seen(gx, gy-1) || seen(gx-1, gy) || seen(gx, gy) {
-				c.Set(x0+3*gx, 2*gy, proto.Cell{R: '+', S: proto.StyleDim})
-			}
-		}
-	}
-	for cy := range mazeH {
-		for cx := range mazeW {
-			cell := at(cx, cy)
-			x, y := x0+3*cx, 2*cy
-			if (seen(cx, cy) || seen(cx, cy-1)) && !g.m.open(cell, north) {
-				c.Put(x+1, y, "--", proto.StyleText, 0)
-			}
-			if (seen(cx, cy) || seen(cx-1, cy)) && !g.m.open(cell, west) {
-				c.Set(x, y+1, proto.Cell{R: '|', S: proto.StyleText})
-			}
-			if cx == mazeW-1 && seen(cx, cy) {
-				c.Set(x+3, y+1, proto.Cell{R: '|', S: proto.StyleText})
-			}
-			if cy == mazeH-1 && seen(cx, cy) {
-				c.Put(x+1, y+2, "--", proto.StyleText, 0)
-			}
-			switch {
-			case cell == g.player:
-				c.Set(x+1, y+1, proto.Cell{R: '@', S: proto.StyleBright, A: proto.AttrBold})
-			case cell == g.exit:
-				c.Put(x+1, y+1, "[]", proto.StyleAlert, proto.AttrBold)
-			case !g.seen[cell]:
-				c.Set(x+1, y+1, proto.Cell{R: '.', S: proto.StyleDim})
-			}
-		}
-	}
-	row := 2*mazeH + 1 // the status line uses the full width: the maze's is too narrow
-	c.Put(0, row, fill(panelMoves[0].Text, fmt.Sprint(g.moves)), proto.StyleText, 0)
-	habits := fill(panelHabits[0].Text, fmt.Sprint(g.bias[turnLeft]), fmt.Sprint(g.bias[turnStraight]), fmt.Sprint(g.bias[turnRight]))
-	c.Put((c.W-len(habits))/2, row, habits, proto.StyleDim, 0)
-	walls := fill(panelWalls[0].Text, fmt.Sprint(g.reroutes))
-	c.Put(c.W-len(walls), row, walls, proto.StyleText, 0)
 }

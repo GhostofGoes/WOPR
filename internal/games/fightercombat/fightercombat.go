@@ -51,7 +51,7 @@ var (
 var Lines = []script.Ls{
 	lineIntro, promptMove, lineHelp, lineNoShot, lineWhyShot, lineNoLeave, lineMoves, lineWOPRMove, lineShot,
 	lineWeapons, lineShotEnds, lineDown, lineBingo, lineLeave, lineStatus, lineRanges, linePos, lineDamage,
-	categories,
+	categories, artTitle, artSplash, splashCalls, artEject, picScale, picPlanes, picNames, picCaption, picAspects,
 }
 
 // Manoeuvres.
@@ -79,6 +79,8 @@ func fill(text string, args ...string) string {
 
 func say(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
 
+func table(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
+
 // Game is the dogfight as a proto.Program.
 type Game struct {
 	rng      *rand.Rand
@@ -102,10 +104,14 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	g.energy = [2]int{3, 3}
 	g.missiles = [2]int{2, 2}
 	g.losses = [2]map[string]int{{}, {}}
-	return []proto.Output{say(lineIntro.Texts()...), say(g.status()...), proto.Prompt{Text: promptMove[0].Text}}
+	return []proto.Output{
+		table(artTitle.Texts()...), say(lineIntro.Texts()...),
+		say(g.status()...), table(g.picture()...),
+		proto.Prompt{Text: promptMove[0].Text},
+	}
 }
 
-// View implements proto.Program; the dogfight is console text.
+// View implements proto.Program; the dogfight is console text and art.
 func (g *Game) View(*proto.Canvas) {}
 
 func (g *Game) status() []string {
@@ -226,19 +232,19 @@ func (g *Game) resolve(mine, theirs int) []proto.Output {
 	switch {
 	case g.hits[0] >= 2 && g.hits[1] >= 2:
 		g.over = true
-		return append(outs, say(lineDown[2].Text), g.done(proto.NoWinner))
+		return append(outs, say(lineDown[2].Text), table(splash(true)...), g.done(proto.NoWinner))
 	case g.hits[1] >= 2:
 		g.over = true
-		return append(outs, say(lineDown[0].Text), g.done(proto.Win))
+		return append(outs, say(lineDown[0].Text), table(splash(false)...), g.done(proto.Win))
 	case g.hits[0] >= 2:
 		g.over = true
-		return append(outs, say(lineDown[1].Text), g.done(proto.Loss))
+		return append(outs, say(lineDown[1].Text), table(artEject.Texts()...), g.done(proto.Loss))
 	case g.turn >= turns:
 		g.over = true
 		return append(outs, say(lineBingo[0].Text), g.done(proto.Draw))
 	}
 	g.turn++
-	return append(outs, say(g.status()...), proto.Prompt{Text: promptMove[0].Text})
+	return append(outs, say(g.status()...), table(g.picture()...), proto.Prompt{Text: promptMove[0].Text})
 }
 
 // shoot resolves side's shot on the combat-results table: a missile at range, guns close in;

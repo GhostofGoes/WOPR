@@ -1,3 +1,14 @@
+                                        |
+                             .-'''''''''+'''''''''-.
+                         .-'                       '-.
+                       .'       \               /       '.
+                     /           \     ___     /           \
+   F I G H T E R ---|    _________\___/   \___/_________    |--- C O M B A T
+                     \   '--+----+===[_] [_]===+----+--'   /
+                       '.   V    V    '---'    V    V   .'
+                         '-.                       .-'
+                             '-.........+.........-'
+                                        |
 FIGHTER COMBAT, ONE ON ONE. EACH TURN YOU AND WOPR PICK A MANOEUVRE AT ONCE.
 PRESS CLOSES IN. EXTEND OPENS THE RANGE. CLIMB BUILDS ENERGY.
 BREAK TURNS HARD, TO SHAKE A PURSUER OR SPOIL A SHOT.
@@ -6,6 +17,10 @@ DISENGAGE AT LONG RANGE TO END IT EVEN. THE FUEL LASTS 15 TURNS.
 TURN 1 OF 15. RANGE LONG.
 YOU:  NEUTRAL. ENERGY 3, MISSILES 2.
 WOPR: ENERGY 3, MISSILES 2.
+  HIGH :
+   MID : YOU \==>                                             <==/ WOPR
+   LOW :
+       '---------------------- RANGE LONG. HEAD-ON. ------------------------
 MANOEUVRE: FIRE
 
 YOU FIRE A MISSILE: A HIT.
@@ -13,6 +28,10 @@ WOPR FIRES A MISSILE: A HIT.
 TURN 2 OF 15. RANGE LONG.
 YOU:  NEUTRAL, DAMAGED. ENERGY 3, MISSILES 1.
 WOPR: DAMAGED. ENERGY 3, MISSILES 1.
+  HIGH :
+   MID : YOU ~~\==>                                           <==/~~ WOPR
+   LOW :
+       '---------------------- RANGE LONG. HEAD-ON. ------------------------
 MANOEUVRE: FIRE
 
 YOU FIRE A MISSILE: A NEAR MISS.
@@ -20,6 +39,10 @@ WOPR FIRES A MISSILE: A MISS.
 TURN 3 OF 15. RANGE LONG.
 YOU:  NEUTRAL, DAMAGED. ENERGY 3, MISSILES 0.
 WOPR: DAMAGED. ENERGY 2, MISSILES 0.
+  HIGH :
+   MID : YOU ~~\==>                                           <==/~~ WOPR
+   LOW :
+       '---------------------- RANGE LONG. HEAD-ON. ------------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -27,6 +50,10 @@ WOPR BREAKS HARD.
 TURN 4 OF 15. RANGE MEDIUM.
 YOU:  NEUTRAL, DAMAGED. ENERGY 2, MISSILES 0.
 WOPR: DAMAGED. ENERGY 0, MISSILES 0.
+  HIGH :
+   MID : YOU ~~\==>
+   LOW :                                      <==/~~ WOPR
+       '--------------------- RANGE MEDIUM. HEAD-ON. -----------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -34,6 +61,10 @@ WOPR CLIMBS.
 TURN 5 OF 15. RANGE CLOSE.
 YOU:  NEUTRAL, DAMAGED. ENERGY 1, MISSILES 0.
 WOPR: DAMAGED. ENERGY 2, MISSILES 0.
+  HIGH :
+   MID :                      <==/~~ WOPR
+   LOW : YOU ~~\==>
+       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
 MANOEUVRE: CLIMB
 
 YOU CLIMB.
@@ -41,6 +72,10 @@ WOPR CLIMBS.
 TURN 6 OF 15. RANGE CLOSE.
 YOU:  NEUTRAL, DAMAGED. ENERGY 3, MISSILES 0.
 WOPR: DAMAGED. ENERGY 4, MISSILES 0.
+  HIGH :
+   MID : YOU ~~\==>           <==/~~ WOPR
+   LOW :
+       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -48,6 +83,10 @@ WOPR CLIMBS.
 TURN 7 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 2, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID : YOU <==/~~
+   LOW :
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -55,6 +94,10 @@ WOPR BREAKS HARD.
 TURN 8 OF 15. RANGE CLOSE.
 YOU:  NEUTRAL, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 4, MISSILES 0.
+  HIGH :
+   MID :                      <==/~~ WOPR
+   LOW : YOU ~~\==>
+       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
 MANOEUVRE: CLIMB
 
 YOU CLIMB.
@@ -62,6 +105,10 @@ WOPR CLIMBS.
 TURN 9 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 2, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID : YOU <==/~~
+   LOW :
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -69,6 +116,10 @@ WOPR FIRES GUNS: A MISS.
 TURN 10 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -76,6 +127,10 @@ WOPR FIRES GUNS: A NEAR MISS.
 TURN 11 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -83,6 +138,10 @@ WOPR FIRES GUNS: A MISS.
 TURN 12 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -90,6 +149,10 @@ WOPR CLIMBS.
 TURN 13 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -97,6 +160,10 @@ WOPR FIRES GUNS: A MISS.
 TURN 14 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.
@@ -104,6 +171,10 @@ WOPR CLIMBS.
 TURN 15 OF 15. RANGE CLOSE.
 YOU:  ON THE DEFENSIVE, DAMAGED. ENERGY 0, MISSILES 0.
 WOPR: DAMAGED. ENERGY 6, MISSILES 0.
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
 MANOEUVRE: BREAK
 
 YOU BREAK HARD.

@@ -59,6 +59,9 @@ func TestTranscript(t *testing.T) {
 	if _, over := s.Result(); !over {
 		t.Fatalf("no end:\n%s", s.Transcript())
 	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Errorf("lines wider than 80 columns: %q", wide)
+	}
 	golden.AssertString(t, "transcript", s.Transcript())
 }
 

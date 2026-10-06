@@ -15,29 +15,35 @@ import (
 
 var info = games.Info{Name: "FALKEN'S MAZE", Slug: "falkens-maze", Layout: proto.LayoutPanel, PanelRows: 12}
 
-// The opening view, and the view after a few moves: fog, the player, the exit.
+// The opening view, and the view after a few moves: fog, the player, the exit, in the
+// frame; then the same in a panel too short for the frame.
 func TestView(t *testing.T) {
 	t.Parallel()
 	g := falkensmaze.New()
-	g.Start(proto.Env{Seed: 7, Width: 80, Height: info.PanelRows, Instant: true})
+	g.Start(proto.Env{Seed: 7, Width: 80, Height: falkensmaze.PanelRows, Instant: true})
 	var shots string
-	snap := func(label string) {
-		c := proto.NewCanvas(80, info.PanelRows)
+	snap := func(label string, rows int) {
+		c := proto.NewCanvas(80, rows)
 		g.View(c)
 		shots += "==== " + label + " ====\n" + c.String() + "\n" + c.StyleMap() + "\n"
 	}
-	snap("start")
+	snap("start", falkensmaze.PanelRows)
 	for _, k := range []proto.Key{proto.KeyRight, proto.KeyRight, proto.KeyDown, proto.KeyDown, proto.KeyRight, proto.KeyUp, proto.KeyLeft} {
 		g.Handle(proto.KeyEvent{Key: k})
 	}
-	snap("a few keys later")
+	snap("a few keys later", falkensmaze.PanelRows)
+	snap("a panel too short for the frame", falkensmaze.PanelRows-1)
 	golden.AssertString(t, "view", shots)
 }
 
-// Under the host, in key mode: Q gives up and is a loss; Esc twice abandons the game.
+// Under the host, in key mode: the game asks for the panel its frame needs; Q gives up and
+// is a loss; Esc twice abandons the game.
 func TestUnderTheHost(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, falkensmaze.New(), info, "", 1)
+	if _, place := g.Runner().Top(); place.Layout != proto.LayoutPanel || place.PanelRows != falkensmaze.PanelRows {
+		t.Fatalf("the maze runs in %+v, want a panel of %d rows", place, falkensmaze.PanelRows)
+	}
 	g.Key(proto.KeyRight, 0).Key(proto.KeyRune, 'q')
 	if res, over := g.Result(); !over || res.Outcome != proto.Loss || !g.Contains("RETREAT ACCEPTED.") {
 		t.Fatalf("give up: %+v\n%s", res, g.Transcript())

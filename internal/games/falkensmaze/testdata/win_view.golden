@@ -1,0 +1,27 @@
+.------------------------[ FALKEN'S MAZE: EXIT FOUND ]-------------------------.
+|          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+          |
+| START -> |:  :  : |   :  :  :  :  : |     |        |:    |     |  |          |
+|          +--+--+  +--+  +--+--+--+  +  +  +--+--+  +  +  +  +  +  +          |
+|          |     |:  : |: |:  : |   : |  |:  :  :  :  : |  |  |     |          |
+|          +  +--+--+  +  +  +  +--+  +  +  +  +--+--+  +--+  +--+--+          |
+|          |  |:  :  : |: |: |:  : |: |  |: |: |     |  |  |        |          |
+|          +  +  +--+--+  +  +--+  +  +  +  +  +--+  +--+  +--+--+  +          |
+|          |  |: |      :  :    |: |: |  |: |:  :  : |  |  |:  : |  |          |
+|          +  +  +--+--+--+--+--+  +  +--+  +--+  +  +  +  +  +  +  +          |
+|          |   :  :  :  :  :  :  : |:  :  : |     |:  :  :  : |:  @   ==> OUT  |
+|          +--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+--+          |
+'-- MOVES 88 -- YOUR TURNS: 7 LEFT  10 STRAIGHT  12 RIGHT --- WALLS MOVED 12 --'
+
+dddddddddddddddddddddddddb.bbbbbbbb.bbbbb.bbbb.bbbbb.bdddddddddddddddddddddddddd
+d..........dttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttd..........d
+d.LLLLL.LL.ta..a..a.t...a..a..a..a..a.t.....t........ta....t.....t..t..........d
+d..........dttdttd..dttd..dttdttdttd..d..d..dttdttd..d..d..d..d..d..d..........d
+d..........t.....ta..a.ta.ta..a.t...a.t..ta..a..a..a..a.t..t..t.....t..........d
+d..........d..dttdttd..d..d..d..dttd..d..d..d..dttdttd..dttd..dttdttd..........d
+d..........t..ta..a..a.ta.ta.ta..a.ta.t..ta.ta.t.....t..t..t........t..........d
+d..........d..d..dttdttd..d..dttd..d..d..d..d..dttd..dttd..dttdttd..d..........d
+d..........t..ta.t......a..a....ta.ta.t..ta.ta..a..a.t..t..ta..a.t..t..........d
+d..........d..d..dttdttdttdttdttd..d..dttd..dttd..d..d..d..d..d..d..d..........d
+d..........t...a..a..a..a..a..a..a.ta..a..a.t.....ta..a..a..a.ta..b...LLL.LLL..d
+d..........dttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttdttd..........d
+ddd.ttttt.tt.dd.dddd.dddddd.d.dddd..dd.dddddddd..dd.ddddd.ddd.ttttt.ttttt.tt.ddd

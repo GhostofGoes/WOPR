@@ -74,7 +74,8 @@ var Lines = []script.Ls{
 	lineIntro, promptPackage, lineHelp, linePackage, lineNone, lineWhich, lineGone, lineTooMany, lineNoStrike,
 	lineStatus, lineTableHead, lineDestroyed, lineWOPRAir, lineMobile, lineSortie, lineScramble, lineEscorts,
 	lineIntercept, lineWaiting, lineSEAD, lineMobileHit, lineSAMs, lineBombs, lineDown, lineEffects, lineAll,
-	lineNoPlanes, lineCallOff, lineScore, targetNames, categories,
+	lineNoPlanes, lineCallOff, lineScore, targetNames, categories, artTitle, artImpact, areaMap, areaIcons,
+	areaWrecks,
 }
 
 // The targets, in table order; the effects of losing three of them.
@@ -138,6 +139,8 @@ func fill(text string, args ...any) string {
 
 func say(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
 
+func table(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
+
 // Game is the campaign as a proto.Program.
 type Game struct {
 	rng        *rand.Rand
@@ -165,10 +168,11 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	g.lastTarget, g.lastEscort = -1, 0
 	g.losses = [2]map[string]int{{}, {}}
 	g.placeMobile()
-	return []proto.Output{say(lineIntro.Texts()...), say(g.status()...), g.ask()}
+	outs := []proto.Output{table(artTitle.Texts()...), say(lineIntro.Texts()...)}
+	return append(append(outs, g.status()...), g.ask())
 }
 
-// View implements proto.Program; the campaign is console text.
+// View implements proto.Program; the campaign is console text and art.
 func (g *Game) View(*proto.Canvas) {}
 
 func (g *Game) ask() proto.Output { return proto.Prompt{Text: promptPackage[0].Text} }
@@ -185,8 +189,10 @@ func (g *Game) points() int {
 	return n
 }
 
-func (g *Game) status() []string {
-	lines := []string{fill(lineStatus[0].Text, g.sortie, g.aircraft, g.points()), lineTableHead[0].Text}
+// status is the campaign as it stands: the score, the targets table with the target-area
+// map beside it, WOPR's defences and the package being planned.
+func (g *Game) status() []proto.Output {
+	lines := []string{lineTableHead[0].Text}
 	for i := range g.targets {
 		t := &g.targets[i]
 		if t.destroyed() {
@@ -203,7 +209,11 @@ func (g *Game) status() []string {
 	if g.mobile < 0 {
 		mobile = lineMobile[1].Text
 	}
-	return append(lines, air+mobile, g.packageLine())
+	return []proto.Output{
+		say(fill(lineStatus[0].Text, g.sortie, g.aircraft, g.points())),
+		table(beside(lines, g.area())...),
+		say(air+mobile, g.packageLine()),
+	}
 }
 
 func (g *Game) packageLine() string {
@@ -265,7 +275,7 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 		case "HELP":
 			return g.again(lineHelp.Texts()...)
 		case "STATUS", "MAP", "TARGETS":
-			return g.again(g.status()...)
+			return append(g.status(), g.ask())
 		case "END", "STOP", "RTB":
 			g.over = true
 			return []proto.Output{say(lineCallOff[0].Text), g.finish()}
@@ -372,7 +382,7 @@ func (g *Game) fly() []proto.Output {
 	t := &g.targets[p.target]
 	name := targetNames[p.target].Text
 	lines := []string{fill(lineSortie[0].Text, g.sortie, name, p.strike, p.sead, p.escort)}
-	lost := 0
+	lost, impact := 0, -1 // impact: where the strike camera's frame goes, if the target went up
 	strike, sead, escort := p.strike, p.sead, p.escort
 
 	// Interceptors: each escort ties one up; the rest go for the strike and SEAD aircraft.
@@ -515,6 +525,7 @@ func (g *Game) fly() []proto.Output {
 		t.damage = min(t.damage+hits, t.toughness)
 		if t.destroyed() {
 			g.losses[sim.WOPR][categories[3].Text]++
+			impact = len(lines)
 			lines = append(lines, fill(lineDown[0].Text, name, t.value))
 			switch p.target {
 			case fuelDepot:
@@ -530,13 +541,16 @@ func (g *Game) fly() []proto.Output {
 	g.aircraft -= lost
 	g.losses[sim.Player][categories[0].Text] += lost
 	g.lastTarget, g.lastEscort = p.target, p.escort
-	return g.next(lines)
+	report := []proto.Output{say(lines...)}
+	if impact >= 0 { // the strike camera's frame, then the verdict
+		report = []proto.Output{say(lines[:impact]...), table(artImpact.Texts()...), say(lines[impact:]...)}
+	}
+	return g.next(report)
 }
 
-// next ends the sortie: the campaign ends, or WOPR repairs, moves its mobile battery and
-// the next sortie is planned.
-func (g *Game) next(lines []string) []proto.Output {
-	outs := []proto.Output{say(lines...)}
+// next ends the sortie after its report: the campaign ends, or WOPR repairs, moves its
+// mobile battery and the next sortie is planned.
+func (g *Game) next(outs []proto.Output) []proto.Output {
 	end := ""
 	switch {
 	case g.points() == g.maxPoints():
@@ -563,7 +577,7 @@ func (g *Game) next(lines []string) []proto.Output {
 		g.pkg.sead--
 	}
 	g.pkg.strike = min(g.pkg.strike, g.aircraft)
-	return append(outs, say(g.status()...), g.ask())
+	return append(append(outs, g.status()...), g.ask())
 }
 
 func (g *Game) maxPoints() int {
