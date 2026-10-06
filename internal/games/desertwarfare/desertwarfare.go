@@ -44,7 +44,7 @@ var (
 var Lines = []script.Ls{
 	lineIntro, lineTookDepot, lineLostDepot, lineHeldMore, lineHeldLess, lineHeldEven, lineSandstorm,
 	lineConvoy, lineMines, lineQuiet, lineHeat, lineAir, lineWOPRAir, lineSupply, unitNames,
-	title, regionNames,
+	title, regionNames, artTitle, artSand,
 }
 
 var (
@@ -64,6 +64,7 @@ func Scenario() *sim.Scenario {
 	return &sim.Scenario{
 		Title:     title[0].Text,
 		Intro:     lineIntro,
+		Art:       artTitle,
 		Regions:   regions(sim.City, sim.Rough, sim.Open, sim.Open, sim.Rough, sim.City, sim.City),
 		TurnLimit: turns,
 		Setup: func(s *sim.State) {
@@ -117,6 +118,7 @@ func Scenario() *sim.Scenario {
 			}
 			return fillN(lineSupply[0].Text, n)
 		},
+		Overlay: overlay,
 		Victory: victory,
 	}
 }

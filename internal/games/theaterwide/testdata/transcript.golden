@@ -3,7 +3,20 @@ ANY UNIT MAY ESCALATE (TYPE THE WORD IN FULL): EACH RUNG ADDS TO EVERY ATTACK,
 AND WOPR ANSWERS IN KIND. THE TOP RUNG ENDS EVERYTHING.
 HOLD FIVE REGIONS TO WIN, OR MORE THAN WOPR AFTER TEN TURNS.
 TYPE HELP FOR ORDERS.
+.--[ CENTRAL FRONT ]-------------------------------[ 0 |----|----| 200 KM ]--.
+|  )  .--XXX--.   .--XXX--.           \            .--XXX--.   .--XXX--.   ( |
+| (   |.-----.|   | \   / |   =====>  /            | \   / |   |.-----.|  )  |
+|  )  |'-----'|   | /   \ |           \  <=====    | /   \ |   |'-----'|   ( |
+| (   '-------'   '-------'           /            '-------'   '-------'  )  |
+|  )                        \         \          /                         ( |
+| (                       -=#>        /         <#=-                      )  |
+|  )                        /         \          \                         ( |
+'--[ YOU ]---------------------------------------------------------[ WOPR ]--'
 THEATERWIDE TACTICAL WARFARE   TURN 1 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ===>(1)=======>(2)======>>(3)========(4)========(5)<<======(6)<<======(7)<===
+ <------------- YOU ------------->           <------------ WOPR ------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU  AIR1               
  2 RHINE                ROUGH  YOU  COR1               
@@ -32,6 +45,10 @@ COR3 IN RUHR: MOVE 4
 
 YOUR RESERVES ARRIVE: A FRESH CORPS AT THE CHANNEL PORTS.
 THEATERWIDE TACTICAL WARFARE   TURN 2 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ===>(1)========(2)=======>(3)=====>>>(4)========(5)<<<<====(6)========(7)<===
+ <------------------ YOU -------------------><------------ WOPR ------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU  COR4               
  2 RHINE                ROUGH  YOU                     
@@ -55,6 +72,10 @@ COR2 ATTACKS WOPR'S COR1 AT INNER GERMAN BORDER: NE.
 COR3 ATTACKS WOPR'S COR1 AT INNER GERMAN BORDER: AE.
 DIPLOMATS MEET IN GENEVA. NOBODY ESCALATES THIS TURN.
 THEATERWIDE TACTICAL WARFARE   TURN 3 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ====(1)=======>(2)========(3)====>>>>(4)========(5)<<<+====(6)========(7)====
+ <------------------ YOU -------------------><------------ WOPR ------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU                     
  2 RHINE                ROUGH  YOU  COR4               
@@ -81,6 +102,10 @@ COR3 IS DESTROYED.
 WOPR'S AIR1 ATTACKS COR1* AT FULDA GAP: AE.
 A LULL ALONG THE FRONT.
 THEATERWIDE TACTICAL WARFARE   TURN 4 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ====(1)========(2)=======>(3)=====>>>(4)========(5)<<<+====(6)========(7)====
+ <------------------ YOU -------------------><------------ WOPR ------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU                     
  2 RHINE                ROUGH  YOU                     
@@ -107,6 +132,10 @@ WOPR'S COR3 ATTACKS COR4 AT FULDA GAP: AE.
 WOPR'S COR4 ATTACKS COR4 AT FULDA GAP: AE.
 WOPR'S RESERVES ARRIVE AT THE ODER.
 THEATERWIDE TACTICAL WARFARE   TURN 5 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ====(1)========(2)========(3)======>>(4)========(5)<<<<====(6)<=======(7)<===
+ <------------------ YOU -------------------><------------ WOPR ------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU                     
  2 RHINE                ROUGH  YOU                     
@@ -124,6 +153,10 @@ COR4 ATTACKS WOPR'S AIR1* AT INNER GERMAN BORDER: DE.
 WOPR'S AIR1 IS DESTROYED.
 REFUGEES CHOKE THE ROADS. CIVILIAN LOSSES MOUNT.
 THEATERWIDE TACTICAL WARFARE   TURN 5 OF 10   LADDER: CONVENTIONAL
+   _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
+  |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
+ ====(1)========(2)========(3)=======>(4)=======>(5)========(6)<<<+====(7)====
+ <------------------------ YOU ------------------------><------- WOPR ------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 CHANNEL PORTS        CITY   YOU                     
  2 RHINE                ROUGH  YOU                     

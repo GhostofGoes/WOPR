@@ -4,7 +4,21 @@ ATTACKING GIVES IT AWAY, AND SO MAY A PATROL NEARBY.
 RAIDS THAT HURT WOPR WIN SUPPORT; LOSSES COST IT. RECRUIT SPENDS 3 SUPPORT.
 SUPPORT 10 OR THE CAPITAL WINS, AND SO DOES A CELL ALIVE AFTER TWELVE TURNS.
 TYPE HELP FOR ORDERS.
+              _.--._                          -------------+-------------
+         _.--'      '--._        _.--._             _______|______
+    _.--'                '--.__.'      '--._       /  []  []  |   \________+
+_.-'                                       '--._   \._________|___/        '
+    __  __            __  __                       __  __            __  __
+   /  \/  \    .-.   /  \/  \    .-.   .-.        /  \/  \    .-.   /  \/  \
+   '  /|\ '   (   )  '  /|\ '   (   ) (   )       '  /|\ '   (   )  '  /|\ '
+       |       '-'       |       '-'   '-'            |       '-'       |
+       |        |  O     |  O     | O   |             |        |        |
+__________________/|\______/|\_____/|\_________________________________________
 GUERRILLA ENGAGEMENT   TURN 1 OF 12   SUPPORT 3
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ====~(1)========~~(2)==========(3)==========(4)<<========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1~              
  2 JUNGLE               ROUGH  YOU  GUE2~,3~           
@@ -36,6 +50,10 @@ A PATROL FINDS GUE2.
 A PATROL FINDS GUE3.
 A PATROL FINDS GUE4.
 GUERRILLA ENGAGEMENT   TURN 2 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ===>>(1)========>>(2)<<========(3)==========(4)==========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1,4             
  2 JUNGLE               ROUGH  YOU  GUE2,3             PAT1,2
@@ -61,6 +79,10 @@ A HEAVY-HANDED SWEEP. SUPPORT RISES BY ONE.
 A PATROL FINDS GUE3.
 A PATROL FINDS GUE4.
 GUERRILLA ENGAGEMENT   TURN 3 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ===~>(1)========~>(2)<<========(3)==========(4)==========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*~,4           
  2 JUNGLE               ROUGH  YOU  GUE2~,3            PAT1,2
@@ -82,6 +104,10 @@ GUE3 GOES TO GROUND.
 GUE4 GOES TO GROUND.
 THE RAINS COME. PATROLS FIND NOTHING THIS TURN.
 GUERRILLA ENGAGEMENT   TURN 4 OF 12   SUPPORT 1
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ===~~(1)========~>(2)<=========(3)<=========(4)==========(5)<=========(6)<====
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*~,4~          
  2 JUNGLE               ROUGH  YOU  GUE2,3~            PAT2*
@@ -105,6 +131,10 @@ WOPR'S PAT1 ATTACKS GUE2 AT JUNGLE: NE.
 GUE2 GOES TO GROUND.
 A QUIET WEEK.
 GUERRILLA ENGAGEMENT   TURN 5 OF 12   SUPPORT 1
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ===~>(1)========~>(2)==========(3)<=========(4)==========(5)<=========(6)<====
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*,4~           
  2 JUNGLE               ROUGH  YOU  GUE2~,3*           
@@ -126,6 +156,10 @@ GUE1 GOES TO GROUND.
 GUE3 GOES TO GROUND.
 FRESH TROOPS REACH THE CAPITAL.
 GUERRILLA ENGAGEMENT   TURN 6 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ==~~~(1)=========>(2)==========(3)<=========(4)==========(5)<=========(6)<<===
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*~,3*~,4~      
  2 JUNGLE               ROUGH  YOU  GUE2*              
@@ -145,6 +179,10 @@ WOPR'S PAT1 ATTACKS GUE2* AT JUNGLE: DR.
 GUE2 GOES TO GROUND.
 THE VILLAGES SHELTER YOUR CELLS. ALL GO TO GROUND.
 GUERRILLA ENGAGEMENT   TURN 7 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ =~~~~(1)==========(2)<=========(3)==========(4)<=========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*~,2*~,3*~,4~  
  2 JUNGLE               ROUGH  WOPR                    PAT1
@@ -167,6 +205,10 @@ A PATROL FINDS GUE1.
 A PATROL FINDS GUE2.
 A PATROL FINDS GUE3.
 GUERRILLA ENGAGEMENT   TURN 8 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ =>>>>(1)<=========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE1*,2*,3*,4*     PAT1
  2 JUNGLE               ROUGH  WOPR                    PAT3*
@@ -193,6 +235,10 @@ A PATROL FINDS GUE2.
 A PATROL FINDS GUE3.
 A PATROL FINDS GUE4.
 GUERRILLA ENGAGEMENT   TURN 9 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ==>>>(1)<=========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE2*,3*,4*        PAT1*
  2 JUNGLE               ROUGH  WOPR                    PAT3*
@@ -215,6 +261,10 @@ GUE4 GOES TO GROUND.
 A CURFEW IN THE TOWNS.
 A PATROL FINDS GUE4.
 GUERRILLA ENGAGEMENT   TURN 10 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ ====>(1)==========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU  GUE4*              
  2 JUNGLE               ROUGH  WOPR                    PAT3*
@@ -229,6 +279,10 @@ WOPR'S PAT3 IS DESTROYED.
 GUE4 IS DESTROYED.
 THE VILLAGES SHELTER YOUR CELLS. ALL GO TO GROUND.
 GUERRILLA ENGAGEMENT   TURN 10 OF 12   SUPPORT 0
+    /\  /\       /\  /\       /\  /\       .  .  .      _ [] _       _ [] _
+   /  \/  \     /  \/  \     /  \/  \     . .  .  .    |#|##|#|     |#|##|#|
+ =====(1)==========(2)==========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
  1 BORDER CAMPS         ROUGH  YOU                     
  2 JUNGLE               ROUGH  WOPR                    

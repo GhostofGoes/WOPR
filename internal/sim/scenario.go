@@ -9,8 +9,11 @@ import (
 
 // Scenario is a war game on the engine: data plus hooks.
 type Scenario struct {
-	Title     string    // the map's heading
-	Intro     script.Ls // printed at the start
+	Title string    // the map's heading
+	Intro script.Ls // printed at the start
+	// Art is the title picture, printed fast after the intro and before the first map: at
+	// most ArtRows rows of printable ASCII capitals, each at most 80 columns. Nil for none.
+	Art       script.Ls
 	Regions   []Region
 	Setup     func(s *State) // places units (AddUnit) and sets Vars and Control
 	Verbs     []*Verb        // beyond MOVE, ATTACK and HOLD
@@ -29,7 +32,16 @@ type Scenario struct {
 	Status func(s *State) string
 	// RegionNote is shown after a region's name on the map (contamination); nil for none.
 	RegionNote func(s *State, r int) string
+	// Overlay is drawn over a region in the map's picture, above its ground (a gas cloud,
+	// blowing sand), centred and cut to the region's width; "" for clear air. The row is
+	// left out when no region has one. Nil for none.
+	Overlay func(s *State, r int) string
 }
+
+// ArtRows is the most rows a scenario's Art may have, as for any block on the console.
+// Scenario tests also keep the opening (art, first map, first prompt) on one screen; see
+// Game.OpeningRows.
+const ArtRows = 12
 
 // Verb is an order a unit can be given.
 type Verb struct {
@@ -128,6 +140,10 @@ const (
 	TextVoid
 	TextLoses
 	TextResults
+	TextGround
+	TextRoad
+	TextSpan
+	textKeys // the number of keys
 )
 
 // engineText is the engine's screen text, all original. A # is filled in when shown.
@@ -162,12 +178,23 @@ var engineText = map[TextKey]script.Ls{
 	TextVoid:    script.Orig("# STANDS FAST: #"),
 	TextLoses:   script.Orig("# LOSES A STEP."),
 	TextResults: script.Orig("NE", "AE", "EX", "DR", "DE"),
+	// The map's picture (diagram.go): two rows of ground for each terrain, in Terrain
+	// order (open sand or fields, rough hills, a city's roofs); the road's paving, a
+	// region's number on it, a unit of yours, one hidden, one of WOPR's, and more than fit;
+	// the ends and line of a stretch one side holds.
+	TextGround: script.Orig(
+		" .  .  .", ". .  .  .",
+		" /\\  /\\", "/  \\/  \\",
+		" _ [] _", "|#|##|#|",
+	),
+	TextRoad: script.Orig("=", "(#)", ">", "~", "<", "+"),
+	TextSpan: script.Orig("<", "-", ">"),
 }
 
 // EngineLines is the engine's text, for the provenance test.
 func EngineLines() []script.Ls {
 	out := make([]script.Ls, 0, len(engineText))
-	for k := TextAttack; k <= TextResults; k++ {
+	for k := range textKeys {
 		out = append(out, engineText[k])
 	}
 	return out

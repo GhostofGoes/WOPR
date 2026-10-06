@@ -52,7 +52,7 @@ var (
 var Lines = []script.Ls{
 	lineIntro, lineLevels, lineYouEsc, lineWOPREsc, lineExchange, lineFallout, lineHeldFive, lineLostFive,
 	lineHeldMore, lineHeldLess, lineHeldEven, lineTalks, lineRefugees, lineReserves, lineWOPRRes, lineWeather,
-	lineQuiet, lineEscHelp, lineNoEsc, lineLadder, title, regionNames, unitNames,
+	lineQuiet, lineEscHelp, lineNoEsc, lineLadder, title, regionNames, unitNames, artTitle, artFallout,
 }
 
 var (
@@ -108,6 +108,7 @@ func Scenario() *sim.Scenario {
 	return &sim.Scenario{
 		Title:     title[0].Text,
 		Intro:     lineIntro,
+		Art:       artTitle,
 		Regions:   regions(sim.City, sim.Rough, sim.City, sim.Rough, sim.Open, sim.Rough, sim.City),
 		TurnLimit: turns,
 		Verbs:     []*sim.Verb{Escalate},
@@ -140,9 +141,10 @@ func Scenario() *sim.Scenario {
 			}
 			return a + 2*s.Vars["level"]
 		},
-		Upkeep: upkeep,
-		Status: func(s *sim.State) string { return fill(lineLadder[0].Text, lineLevels[s.Vars["level"]].Text) },
-		AI:     ai,
+		Upkeep:  upkeep,
+		Status:  func(s *sim.State) string { return fill(lineLadder[0].Text, lineLevels[s.Vars["level"]].Text) },
+		AI:      ai,
+		Overlay: overlay,
 		Victory: func(s *sim.State, final bool) (proto.Outcome, string, bool) {
 			if s.Vars["level"] >= strategic {
 				return proto.NoWinner, lineExchange[0].Text, true

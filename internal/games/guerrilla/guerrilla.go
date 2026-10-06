@@ -53,7 +53,7 @@ var (
 var Lines = []script.Ls{
 	lineIntro, lineRise, lineCapital, lineCrushed, lineEndured, lineHides, lineFound,
 	lineRecruited, lineNoRecruit, lineNoHide, lineSupport, lineShelter, lineInformer, lineCurfew, lineSweep,
-	lineAirdrop, lineReinforce, lineQuiet, lineMonsoon, verbHelp, title, regionNames, unitNames,
+	lineAirdrop, lineReinforce, lineQuiet, lineMonsoon, verbHelp, title, regionNames, unitNames, artTitle,
 }
 
 var (
@@ -120,6 +120,7 @@ func Scenario() *sim.Scenario {
 	return &sim.Scenario{
 		Title:     title[0].Text,
 		Intro:     lineIntro,
+		Art:       artTitle,
 		Regions:   regions(sim.Rough, sim.Rough, sim.Rough, sim.Open, sim.City, sim.City),
 		TurnLimit: turns,
 		Verbs:     []*sim.Verb{Hide, Recruit},

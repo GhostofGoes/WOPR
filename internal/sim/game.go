@@ -56,7 +56,11 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	}
 	g.sc.Setup(g.s)
 	g.s.updateControl()
-	outs := []proto.Output{say(g.sc.Intro.Texts()...), table(g.mapLines()...)}
+	outs := []proto.Output{say(g.sc.Intro.Texts()...)}
+	if len(g.sc.Art) > 0 {
+		outs = append(outs, table(g.sc.Art.Texts()...))
+	}
+	outs = append(outs, table(g.mapLines()...))
 	return append(outs, g.beginTurn()...)
 }
 
@@ -260,7 +264,8 @@ func (g *Game) decide(final bool) (proto.Outcome, string, bool) {
 // It leaves 25 columns of 80 for WOPR's units.
 const mapRow = "%2s %-20s %-6s %-4s %-18s %s"
 
-// mapLines is the strip as a table, with the turn and the scenario's status line.
+// mapLines is the map: the turn and the scenario's status line, the strip as a picture
+// (diagram.go), then as a table.
 func (g *Game) mapLines() []string {
 	s := g.s
 	head := g.sc.Title + "   " + g.sc.text(TextTurn, fmt.Sprint(s.Turn), fmt.Sprint(g.sc.TurnLimit))
@@ -268,7 +273,8 @@ func (g *Game) mapLines() []string {
 		head += "   " + g.sc.Status(s)
 	}
 	h := engineText[TextMapHead].Texts()
-	lines := []string{head, fmt.Sprintf(mapRow, "", h[0], h[1], h[2], h[3], h[4])}
+	lines := append([]string{head}, g.diagram()...)
+	lines = append(lines, fmt.Sprintf(mapRow, "", h[0], h[1], h[2], h[3], h[4]))
 	for i, r := range s.Regions {
 		held := g.sc.text(TextHeld)
 		switch s.Control[i] {
