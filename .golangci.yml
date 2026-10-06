@@ -14,6 +14,9 @@ linters:
         - pattern: '^rand\.(Int|IntN|Int32|Int32N|Int64|Int64N|Uint|UintN|Uint32|Uint32N|Uint64|Uint64N|Float32|Float64|ExpFloat64|NormFloat64|Perm|Shuffle|N)$'
           pkg: '^math/rand/v2$'
           msg: use proto.NewRand(seed, streamID); top-level math/rand/v2 functions cannot be seeded
+        - pattern: '^rand\..*$'
+          pkg: '^math/rand$'
+          msg: math/rand (v1) is not used; use proto.NewRand from math/rand/v2
         - pattern: '^time\.(Sleep|After|AfterFunc|Tick|NewTicker|NewTimer)$'
           pkg: '^time$'
           msg: timing goes through the single clock or a context deadline

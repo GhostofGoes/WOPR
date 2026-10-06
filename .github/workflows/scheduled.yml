@@ -39,7 +39,7 @@ jobs:
             echo "## govulncheck"
             if ! go tool -modfile=tools/go.mod govulncheck ./... ; then found=1; fi
             echo "## Outdated modules"
-            go list -m -u -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all | grep . && found=1
+            go list -m -u -f '{{if and .Update (not .Indirect) (not .Main)}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all | grep . && found=1
             echo "## Outdated hooks"
             if ! prek update --check ; then found=1; fi
             echo "## Third-party notices"

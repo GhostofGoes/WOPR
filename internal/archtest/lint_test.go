@@ -47,6 +47,7 @@ func TestLintRulesFire(t *testing.T) {
 		"forbidigo:tea.Tick":  "tea.Tick",
 		"forbidigo:rand.IntN": "rand.IntN",
 		"forbidigo:sleep":     "time.Sleep",
+		"forbidigo:randv1":    "rand.Intn",
 	}
 	for name, fragment := range want {
 		linter, _, _ := strings.Cut(name, ":")

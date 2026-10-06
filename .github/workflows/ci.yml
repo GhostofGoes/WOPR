@@ -8,8 +8,10 @@ on:
 
 permissions: {}
 
+# Pull requests share a group per PR and cancel superseded runs. Pushes to main get a group
+# per commit: a shared group would let a newer pending run replace an older pending one.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || format('ci-{0}', github.sha) }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
