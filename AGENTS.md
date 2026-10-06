@@ -87,20 +87,21 @@ licence is recorded.
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
 - CI (`ci.yml`) runs on every branch push, so a branch is checked before its PR; a PR from a branch here is
   checked by that branch's push run (its `pull_request` run skips every job), and a PR from a fork runs in
-  full.
+  full. The push run tests the branch as it is, not merged with `main`, so the ruleset requires branches to
+  be up to date: updating one is a push, which tests the result.
 - Run `prek run --all-files` and `go test ./...` before pushing.
 - Never re-tag a release. A bad release is fixed with the next patch version and a `retract` in `go.mod`.
 
 ## Secret scanning
 
-The `secrets` job runs gitleaks over the checked-out history (`main` plus the pull request), with
-`--no-color` so its `ERR` lines can be detected; it fails on a finding, on any error, and on an empty scan.
-A finding is handled as `SECURITY.md` describes: rotate the secret, then add its fingerprint to
-`.gitleaksignore` by pull request.
+The `secrets` job runs gitleaks over the checked-out history (the pushed branch, or a fork's pull request
+merged with `main`), with `--no-color` so its `ERR` lines can be detected; it fails on a finding, on any
+error, and on an empty scan. A finding is handled as `SECURITY.md` describes: rotate the secret, then add its
+fingerprint to `.gitleaksignore` by pull request.
 
 To prove the job (the M0 canary), push a throwaway branch containing a fake secret that only gitleaks
-recognises (not a GitHub-supported token pattern, which push protection blocks), open a pull request,
-check that the log says `leaks found` rather than an error, then close it and delete the branch.
+recognises (not a GitHub-supported token pattern, which push protection blocks), check that its CI run's
+`secrets` log says `leaks found` rather than an error, then delete the branch.
 
 ## Takedown runbook
 
@@ -118,8 +119,10 @@ If a rights holder asks for material to be removed:
 
 These live in GitHub settings, not in files. Check them at each milestone:
 
-- **Branch ruleset on `main`:** require a pull request, require the `ci-ok` check, block force pushes and
-  deletion. Allow squash merges only.
+- **Branch ruleset on `main`:** require a pull request; require the `ci-ok` check from GitHub Actions, with
+  "Require branches to be up to date before merging"; block force pushes and deletion. Allow squash merges
+  only (merge commits and rebase merging off). `gh api 'repos/{owner}/{repo}/rules/branches/main'` should
+  list `pull_request` and `required_status_checks` rules.
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases
   before v0.1.0.
 - **Security:** secret scanning with push protection, private vulnerability reporting.

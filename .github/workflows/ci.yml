@@ -27,6 +27,7 @@ jobs:
     name: lint
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -35,9 +36,17 @@ jobs:
           persist-credentials: false
       # No GOTOOLCHAIN before setup-go: with GOTOOLCHAIN=local set, setup-go ignores
       # go.mod's toolchain line. setup-go exports GOTOOLCHAIN=local itself afterwards.
+      # Each job's cache is keyed on the modules it builds: jobs sharing one key race to save
+      # it, and the first to finish (often the smallest) wins for everyone.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          # The hooks run `go mod tidy -diff` in every module; the self-test builds golangci-lint.
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+            tools/lint/go.sum
+            tools/release/go.sum
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
         with:
           prek-version: 0.5.5
@@ -54,6 +63,7 @@ jobs:
     name: secrets
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -64,11 +74,12 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache-dependency-path: tools/go.sum # gitleaks only
       - name: gitleaks (full history)
         shell: bash
-        # Scans the checked-out commit's history (a branch, or a PR merged with main), not every
-        # branch: a stale branch must not block every PR. gitleaks exits 0 when git fails, so errors and an empty
-        # scan are caught from the log, which --no-color keeps greppable.
+        # Scans the checked-out commit's history (a branch, or a fork's PR merged with main), not
+        # every branch: a stale branch must not block every PR. gitleaks exits 0 when git fails, so
+        # errors and an empty scan are caught from the log, which --no-color keeps greppable.
         run: |
           set -o pipefail
           go tool -modfile=tools/go.mod gitleaks git --redact --no-color --no-banner --exit-code 1 \
@@ -84,6 +95,7 @@ jobs:
       matrix:
         runner: [ubuntu-24.04, macos-26, windows-2025]
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -93,6 +105,9 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache-dependency-path: | # the module and govulncheck
+            go.sum
+            tools/go.sum
       - name: go test -race
         if: runner.os != 'Windows'
         run: go test -race ./...
@@ -128,6 +143,7 @@ jobs:
     name: build
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
     env:
@@ -211,13 +227,15 @@ jobs:
       artifact: smoke-bundle
 
   ci-ok:
-    # Skipped on a pull request from this repository, like the rest, and renamed there: a
-    # skipped job counts as passed, so a skipped "ci-ok" posted after a failed push run could
-    # stand in for it.
+    # Skipped on a pull request from this repository, like the rest. A skipped job counts as
+    # passed, so a skipped check named "ci-ok" could stand in for a failed push run. GitHub does
+    # not evaluate a skipped job's name, so that check is listed under this expression's text;
+    # the name must stay an expression and never become plain "ci-ok".
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
     needs: [lint, secrets, test, build, smoke]
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     permissions: {}
     steps:
       - name: All required jobs succeeded

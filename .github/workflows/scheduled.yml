@@ -1,4 +1,4 @@
-# Weekly health report: vulnerabilities, outdated modules and hooks, stale notices.
+# Weekly health report: vulnerabilities, Go patch releases, outdated modules and hooks, stale notices.
 # Without Dependabot (owner decision), this is how drift becomes visible. Findings go to one
 # tracking issue. GitHub disables schedules after 60 days without repository activity;
 # AGENTS.md's milestone checklist re-enables it.
@@ -15,6 +15,7 @@ jobs:
   report:
     name: weekly report
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: read
       issues: write
@@ -25,6 +26,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
+          cache: false # a weekly run would only restore a stale cache, and save one nobody uses
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
         with:
           prek-version: 0.5.5
@@ -43,6 +45,16 @@ jobs:
             echo "## govulncheck"
             go tool -modfile=tools/go.mod govulncheck ./...
             case $? in 0) ;; 3) found=1 ;; *) errors=1 ;; esac
+
+            # A Go patch release can fix the standard library in code govulncheck finds unreachable,
+            # and SECURITY.md's response rule counts from the release, so every one is reported.
+            echo "## Go toolchain"
+            current="$(go list -m -f '{{.Version}}' toolchain)" || errors=1
+            latest="$(go list -m -f '{{.Version}}' toolchain@patch)" || errors=1
+            if [[ -n "${current}" && -n "${latest}" && "${current}" != "${latest}" ]]; then
+              echo "toolchain ${current} -> ${latest}"
+              found=1
+            fi
 
             echo "## Outdated direct dependencies"
             out="$(go list -m -u -f '{{if and .Update (not .Indirect) (not .Main)}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all)" || errors=1

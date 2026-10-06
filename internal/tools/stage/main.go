@@ -91,7 +91,8 @@ func stageTarget(a artifact, out string) error {
 	if err := copyFile(a.Path, filepath.Join(dir, "wopr"+ext)); err != nil {
 		return err
 	}
-	cmd := exec.Command("go", "test", "-c", "-tags", "e2e", "-o", filepath.Join(dir, "e2e.test"+ext), "./internal/e2e")
+	// -trimpath, like GoReleaser's builds, so the packages they share come from the build cache.
+	cmd := exec.Command("go", "test", "-c", "-trimpath", "-tags", "e2e", "-o", filepath.Join(dir, "e2e.test"+ext), "./internal/e2e")
 	cmd.Env = append(os.Environ(), "CGO_ENABLED=0", "GOOS="+a.Goos, "GOARCH="+a.Goarch)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {

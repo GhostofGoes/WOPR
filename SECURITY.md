@@ -28,10 +28,10 @@ Only the latest release receives fixes.
 
 ## Leaked secrets
 
-CI scans the git history with gitleaks on every pull request. If a real secret is found, rotate or revoke
-it first; history on `main` is never rewritten. Then, in a pull request, add the finding's fingerprint
-(from the gitleaks log) to `.gitleaksignore` with a comment saying when and why. False positives are handled
-the same way.
+CI scans the git history with gitleaks on every branch push and every pull request from a fork. If a real
+secret is found, rotate or revoke it first; history on `main` is never rewritten. Then, in a pull request,
+add the finding's fingerprint (from the gitleaks log) to `.gitleaksignore` with a comment saying when and
+why. False positives are handled the same way.
 
 ## Response rule
 

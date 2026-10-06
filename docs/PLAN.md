@@ -66,13 +66,15 @@ decisions"). **D** = derived from a U requirement. **P** = a plan default the ow
 
 | OS | Versions | Architectures | Tested on (CI) |
 |---|---|---|---|
-| Linux | Ubuntu 22.04 and newer, and any distribution with an xterm-class terminal | amd64, arm64 | `ubuntu-24.04` (incl. an `ubuntu:22.04` container), `ubuntu-24.04-arm` |
+| Linux | Ubuntu 22.04 and newer, and any distribution with an xterm-class terminal | amd64, arm64 | `ubuntu-24.04`, `ubuntu-24.04-arm` |
 | macOS | 26 Tahoe | amd64, arm64 | `macos-26-intel`, `macos-26` |
 | Windows | 11 | amd64, arm64 | `windows-2025`, `windows-11-arm` |
 
-Binaries are static (`CGO_ENABLED=0`). Go 1.27's own floor is macOS 13, so builds run fine on 26 (D-5). The
-`ubuntu-22.04` runner image is deprecated and unsupported from 2027-04-17. The 22.04 claim is therefore tested
-by running the smoke step inside an `ubuntu:22.04` container (B-5).
+Binaries are static (`CGO_ENABLED=0`). Go 1.27's own floor is macOS 13, so builds run fine on 26 (D-5). A
+static Linux binary needs nothing from the distribution, only a kernel: Go's floor is Linux 3.2, and 22.04
+ships 5.15. The `ubuntu-22.04` runner image is deprecated and unsupported from 2027-04-17, and an
+`ubuntu:22.04` container would still run on the host's kernel, so CI tests neither; the 22.04 claim rests on
+that floor (B-5).
 
 ---
 
@@ -1237,9 +1239,14 @@ mixed case, as on screen (RF-9):
   setup-go exports `GOTOOLCHAIN=local` itself after installing 1.27.1. `archtest` asserts the exact toolchain in
   CI.
 - **Caching.** `cache: false` in `release.yml` and in any job that runs GoReleaser (B-4, B-9). Compiling
-  GoReleaser from a cold cache costs about 1.5–2 minutes per such job; that is accepted (CR-4).
+  GoReleaser from a cold cache costs about 1.5–2 minutes per such job; that is accepted (CR-4). Every other
+  `ci.yml` job keys its cache on the `go.sum` files of the modules it builds (`cache-dependency-path`): with
+  one shared key, the first job to finish saves the cache for all of them. `scheduled.yml` uses none.
+- **Timeouts.** Every job sets `timeout-minutes` (5 to 15 for the short jobs, 20 for `build`, 30 for `test`
+  and the two release builds), and the smoke step runs the e2e binary with `-test.timeout=5m`, so a hang
+  fails with every goroutine's stack instead of holding a runner for six hours.
 - **`fetch-depth: 0`** in every job that runs GoReleaser, so snapshot versions reflect the latest tag and the
-  release `build` and `repro` jobs produce the same version (CR-7).
+  release `build` and `rebuild` jobs produce the same version (CR-7).
 - **`.gitattributes`**: `* text=auto eol=lf`, plus `*.png binary`. Windows runners check out with
   `core.autocrlf=true`, which would otherwise break goldens (B-3).
 - **Concurrency** (CR-2) is set in `ci.yml` and `release.yml` only, never in the reusable `smoke.yml`: a called
@@ -1264,29 +1271,36 @@ mixed case, as on screen (RF-9):
 CI runs on every branch push (owner decision 2026-10-06), so a branch is checked before anyone opens a pull
 request. To avoid running the same work twice (owner request, same day), a pull request from a branch of this
 repository is checked by that branch's push run, which reports `ci-ok` on the same head commit; its
-`pull_request` run skips every job, and its skipped aggregator is renamed so that it cannot stand in for the
-required `ci-ok`. A fork's pushes never reach this repository, so pull requests from forks run in full. Tags go
-to `release.yml` only.
+`pull_request` run skips every job. A skipped job counts as passed, so the skipped aggregator must not be
+called `ci-ok`: its name is an expression, which GitHub does not evaluate for a skipped job, so its check is
+listed under the expression's text. The name must never become a plain `ci-ok`. A fork's pushes never reach
+this repository, so pull requests from forks run in full. Tags go to `release.yml` only.
+
+The push run tests the branch as it is, not merged with `main` as a `pull_request` run would. The `main`
+ruleset therefore requires branches to be up to date before merging (§12): updating a branch is a push, so
+its run tests exactly the tree the squash merge produces.
 
 | Job | Runner(s) | Does |
 |---|---|---|
 | `lint` | `ubuntu-24.04` | prek via `j178/prek-action` with `prek-version: 0.5.5`. The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
-| `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or the PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
+| `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
 | `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, and checks every archive's contents. Uploads one download per platform, GoReleaser's own archive uploaded as-is (`archive: false`, so it is not zipped again and the tar.gz keeps the binary executable), named after its file such as `wopr_<version>_linux_amd64.tar.gz`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
-| `smoke` | `ubuntu-24.04` (+ an `ubuntu:22.04` container step), `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary; no Go toolchain. Every target has a native runner, so none is skipped. |
-| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()`. Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
+| `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. |
+| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
 
 1. **`verify`** (`contents: read`, `checks: read`). The tag is semver; the tagged commit is an ancestor of
-   `origin/main`; and that commit's `ci-ok` check run succeeded.
+   `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (one still
+   running reads as pending, and a check of the same name from another app is ignored).
 2. **`build`** (`contents: read`, no OIDC). `goreleaser release --clean --skip=publish`, then the size gate,
    then `stage -archives`, which checks that every archive contains `LICENSE`, `README.md`, `NOTICE.md` and
    `THIRD_PARTY_NOTICES.txt` (B-11). The staged files and the archives are uploaded.
 3. **`smoke`**: the reusable workflow, run on the staged release binaries.
-4. **`repro`**: rebuild from a fresh checkout on `ubuntu-24.04-arm` (cross-compiling) and diff `checksums.txt`.
-   Any difference fails the release.
+4. **`rebuild`** runs beside `build`, not after it: GoReleaser again from a fresh checkout on
+   `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. **`repro`** then diffs the two
+   `checksums.txt` files. Any difference fails the release.
 5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`), on a tag push only, and only
    when every earlier job succeeded.
    1. `actions/attest@v4` with `subject-checksums: dist/checksums.txt`.
@@ -1317,6 +1331,9 @@ boundary (AGENTS.md checklist) (B-5).
   check has a rule that separates a **finding** (something to update or fix, filed in the tracking issue) from
   an **error** (the check could not run, which fails the job instead):
   - `govulncheck` on `main`: exit 3 is a finding, any other failure an error;
+  - a newer **Go patch release** than `go.mod`'s `toolchain` line (`go list -m toolchain@patch`), because
+    the response rule below counts from the release, whether or not govulncheck finds the fixed code
+    reachable;
   - outdated **direct** requirements of the main module (`go list -m -u` with a template); indirect upgrades are
     left to govulncheck and the manual cadence, or the report would never be empty;
   - outdated **tools**, selected by each tool module's `tool` pattern (they are indirect requirements there);
@@ -1349,20 +1366,20 @@ boundary (AGENTS.md checklist) (B-5).
   - A finding is handled by rotating the secret first, then adding its fingerprint to `.gitleaksignore` in a
     PR; history on `main` is never rewritten (SECURITY.md, SL-2).
   - M0 proves the job with a **canary**: a throwaway branch with a fake secret that only gitleaks recognises
-    (a GitHub-supported token pattern would be stopped by push protection), opened as a PR. The log must say
-    `leaks found`, not an error. Then the PR is closed and the branch deleted, because a leftover branch would
-    keep matching. AGENTS.md has the steps.
+    (a GitHub-supported token pattern would be stopped by push protection). Its push run's log must say
+    `leaks found`, not an error. Then the branch is deleted, because a leftover branch would keep matching.
+    AGENTS.md has the steps.
   - `.gitignore` adds `*.pem`, `*.key`, `dist/`, `stage/` and editor/OS files.
 - **Repository settings** (S-3, S-7, S-8). The owner applies them in M0; AGENTS.md lists them.
-  - **`main` ruleset**: pull request required; required check `ci-ok`; no force-push; no deletion. Merges are
-    **squash only**, which keeps `main`'s history linear. It does not keep v1's commits out of the public
-    repository: the branch and any PR ref still serve them, and the v1 review quotes three fragments of the
-    CC BY-SA map. `NOTICE.md` therefore credits Franklin Wei's map under CC BY-SA 4.0 for those fragments
-    (SL-6, L-4).
+  - **`main` ruleset**: pull request required; required check `ci-ok` (from GitHub Actions), with branches
+    required to be up to date before merging (§11.2); no force-push; no deletion. Merges are **squash
+    only**, which keeps `main`'s history linear. It does not keep v1's commits out of the public repository:
+    the branch and any PR ref still serve them, and the v1 review quotes three fragments of the CC BY-SA map.
+    `NOTICE.md` therefore credits Franklin Wei's map under CC BY-SA 4.0 for those fragments (SL-6, L-4).
   - **`v*` tag ruleset**: creation, update and deletion restricted, with only the owner able to bypass.
     **Immutable releases** are enabled before v0.1.0.
-  - **Secret scanning** is on by default for public repos. **Push protection** must be enabled at
-    repository level, where it is off by default. Also: private vulnerability reporting, plus `SECURITY.md`.
+  - **Secret scanning** and **push protection** must be enabled at repository level; an audit on 2026-10-06
+    found both off. Also **private vulnerability reporting**, which `SECURITY.md` sends reporters to.
   - **Actions**:
     - allow only listed actions (`actions/*`, `j178/prek-action`);
     - require actions pinned to a full-length commit SHA;
@@ -1460,7 +1477,7 @@ boundary (AGENTS.md checklist) (B-5).
 | M | Deliverable | Exit criteria | Release |
 |---|---|---|---|
 | 0 | **Scaffold** (done). go.mod, `.gitattributes`/`.gitignore`, LICENSE/NOTICE/SECURITY/CONTRIBUTING/CODE_OF_CONDUCT, `legal.go`, `version`, `proto` (types), `games` (types + catalog with 16 `Planned` entries), `cli`, `theme`, `ui` hello-world, `archtest` + lint fixture, `golden`, `tools/*`, `prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, `ci.yml`/`smoke.yml`/`release.yml`/`scheduled.yml`, README (basic), **AGENTS.md** + `CLAUDE.md`, the M0 e2e cases. | `ci-ok` green with all six smoke runners; the lint fixture fires every rule; a **snapshot** dry run of `release.yml` passes `build`/`smoke`/`repro` (CR-1); Appendix A deleted (done in v2.1). M1 may start once `ci-ok` is green. | — |
-| 0b | **Owner settings** (IM-3): the repository settings in AGENTS.md; the gitleaks canary PR turned red for a finding. | Settings applied; canary done. These gate **v0.1.0**, not M1. | — |
+| 0b | **Owner settings** (IM-3): the repository settings in AGENTS.md; the gitleaks canary branch turned red for a finding. | Settings applied; canary done. These gate **v0.1.0**, not M1. | — |
 | 1 | **Console, persona and protocol.** `proto/host` runner, `games/testkit`, clock, typewriter, line editor, `Sanitize*`, scrollback, canvas renderer, front panel, `prompt` (menus, yes/no, clauses; moved from M3, P-4), the ui adapter and its synchronous driver, persona (session, LOGON table, greeting scene, commands, intent, offers, scripted brain, lines with provenance), themes with ANSI/ASCII fallbacks and contrast tests, too-small handling, `gamestest` stub exercising every Output, goldens, fuzz, the M1 e2e cases. 80×24 mockups for chess and the GTW phases (Appendix C). | Every M1 golden flow and the e2e cases marked M0–M1 are green on all runners. | — |
 | 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
@@ -1485,7 +1502,7 @@ M1.
 | RK-1 | Film text is MGM's expression. Movie mode (M6) ships the film's complete WOPR terminal script, much of which the persona already contains (SL-8). | Medium / medium | On-screen terminal text only, no spoken-only dialogue, stills or audio; provenance per line; `NOTICE.md` exclusion, disclaimer and rights-holder contact; nominative use of "WarGames"; a takedown runbook in AGENTS.md (delete releases, patch, `retract`; copies remain in git history and the module mirror). The owner accepts the residual risk. |
 | RK-2 | "WOPR" is a registered US mark (Frontier Technology, class 42). | Low / medium | Different class (SaaS vs a free game); no logo imitation; revisit if contacted. Not legal advice. |
 | RK-3 | Bubble Tea v2 patch churn (v2.0.10 in under a year). | Medium / low | Pin; read release notes on each update; goldens catch rendering changes. |
-| RK-4 | Hosted runner labels retire. | High / low | Pinned labels; checklist at each milestone; `ubuntu:22.04` container for the oldest Linux claim. |
+| RK-4 | Hosted runner labels retire. | High / low | Pinned labels; checklist at each milestone; the oldest Linux claim rests on Go's kernel floor, not on a runner (§1). |
 | RK-5 | Unsigned binaries trigger Gatekeeper and SmartScreen friction. | High / low | Attestations plus verify-first docs; signing post-1.0. |
 | RK-6 | No Dependabot means updates lag. | Medium / medium | Weekly scheduled report issue; govulncheck in CI; monthly manual cadence; 14-day response rule. |
 | RK-7 | 16 games is a large scope. | High / medium | A release per milestone; `Planned` games stay listed and decline in character. |
