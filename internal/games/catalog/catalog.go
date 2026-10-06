@@ -4,6 +4,7 @@ package catalog
 
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/blackjack"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
@@ -22,8 +23,8 @@ func entries() []games.Entry {
 		}},
 		{Info: games.Info{
 			Number: 2, Listed: true, Name: "BLACK JACK", Slug: "black-jack", Aliases: []string{"blackjack"},
-			Layout: proto.LayoutConsole, Blurb: "WOPR deals; get closer to 21 than the dealer without going over.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "WOPR deals; get closer to 21 than the dealer without going over.",
+		}, New: blackjack.New},
 		{Info: games.Info{
 			Number: 3, Listed: true, Name: "GIN RUMMY", Slug: "gin-rummy", Aliases: []string{"gin", "rummy"},
 			Layout: proto.LayoutPanel, PanelRows: 8, Blurb: "Form melds, knock or go gin against WOPR.",

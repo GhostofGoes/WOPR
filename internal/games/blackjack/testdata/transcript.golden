@@ -1,0 +1,78 @@
+THE DEALER STANDS ON SOFT 17. BLACK JACK PAYS 3 TO 2.
+BETS ARE WHOLE DOLLARS FROM $1 TO $25. TYPE LEAVE TO CASH OUT.
+YOU HAVE $100.
+YOUR BET: a lot
+
+A BET IS A WHOLE NUMBER OF DOLLARS FROM $1 TO $25.
+YOUR BET: 10
+
+WOPR SHUFFLES THE DECK.
+DEALER:  10H ??
+YOU:     JH 8S                (18)
+HIT, STAND OR DOUBLE? h
+
+YOU:     JH 8S 9S             (BUST)
+DEALER:  10H JC               (20)
+YOU LOSE $10.
+YOU HAVE $90.
+
+YOUR BET: 10
+
+DEALER:  QC ??
+YOU:     6S KS                (16)
+HIT, STAND OR DOUBLE? h
+
+YOU:     6S KS 3D             (19)
+HIT OR STAND? s
+
+DEALER:  QC 10S               (20)
+THE DEALER STANDS ON 20.
+YOU LOSE $10.
+YOU HAVE $80.
+
+YOUR BET: 10
+
+DEALER:  6H ??
+YOU:     6C 8D                (14)
+HIT, STAND OR DOUBLE? h
+
+YOU:     6C 8D AD             (15)
+HIT OR STAND? s
+
+DEALER:  6H 8H                (14)
+DEALER DRAWS 10D.
+DEALER:  6H 8H 10D            (BUST)
+THE DEALER BUSTS.
+YOU WIN $10.
+YOU HAVE $90.
+
+YOUR BET: 10
+
+DEALER:  5C ??
+YOU:     4C AH                (SOFT 15)
+HIT, STAND OR DOUBLE? h
+
+YOU:     4C AH 4D             (SOFT 19)
+HIT OR STAND? s
+
+DEALER:  5C 9H                (14)
+DEALER DRAWS JD.
+DEALER:  5C 9H JD             (BUST)
+THE DEALER BUSTS.
+YOU WIN $10.
+YOU HAVE $100.
+
+YOUR BET: 10
+
+DEALER:  2D ??
+YOU:     2H JS                (12)
+HIT, STAND OR DOUBLE? h
+
+YOU:     2H JS QS             (BUST)
+DEALER:  2D 4H                (6)
+YOU LOSE $10.
+YOU HAVE $90.
+
+YOUR BET: leave
+
+YOU LEAVE THE TABLE WITH $90.

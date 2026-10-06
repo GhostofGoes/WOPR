@@ -59,6 +59,8 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
   watch the big board. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump; jumps are compulsory.
+- **Black Jack** (`blackjack`): you sit down with $100. Bet $1 to $25, then `h` hit, `s` stand, `d` double
+  down, `p` split a pair. The dealer stands on soft 17; black jack pays 3 to 2. `leave` cashes out.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
 ## Command-line flags
