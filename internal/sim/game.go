@@ -285,19 +285,23 @@ func unitList(us []*Unit, hideHidden bool) string {
 }
 
 // ratioLines is the kill-ratio table: steps each side lost, by category.
-func (g *Game) ratioLines() []string {
+func (g *Game) ratioLines() []string { return RatioTable(g.s.Losses) }
+
+// RatioTable is the kill-ratio table for losses by category (player's, then WOPR's), in
+// the format every war game ends with; the bespoke games use it too.
+func RatioTable(losses [2]map[string]int) []string {
 	var cats []string
 	for side := range 2 {
-		for c := range g.s.Losses[side] {
+		for c := range losses[side] {
 			if !slices.Contains(cats, c) {
 				cats = append(cats, c)
 			}
 		}
 	}
 	slices.Sort(cats)
-	lines := []string{g.sc.text(TextRatios), g.sc.text(TextRatioHead)}
+	lines := []string{engineText[TextRatios][0].Text, engineText[TextRatioHead][0].Text}
 	for _, c := range cats {
-		lines = append(lines, fmt.Sprintf("%-24s %6d %9d", c, g.s.Losses[Player][c], g.s.Losses[WOPR][c]))
+		lines = append(lines, fmt.Sprintf("%-24s %6d %9d", c, losses[Player][c], losses[WOPR][c]))
 	}
 	return lines
 }

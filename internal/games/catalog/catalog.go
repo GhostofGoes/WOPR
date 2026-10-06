@@ -12,6 +12,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/desertwarfare"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
 	"github.com/GhostofGoes/WOPR/internal/games/falkensmaze"
+	"github.com/GhostofGoes/WOPR/internal/games/fightercombat"
 	"github.com/GhostofGoes/WOPR/internal/games/ginrummy"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/games/guerrilla"
@@ -60,8 +61,8 @@ func entries() []games.Entry {
 		}, New: poker.New},
 		{Info: games.Info{
 			Number: 9, Listed: true, Name: "FIGHTER COMBAT", Slug: "fighter-combat", Aliases: []string{"dogfight"},
-			Layout: proto.LayoutConsole, Blurb: "A turn-based dogfight: altitude, energy and aspect.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "A turn-based dogfight: altitude, energy and aspect.",
+		}, New: fightercombat.New},
 		{Info: games.Info{
 			Number: 10, Listed: true, Name: "GUERRILLA ENGAGEMENT", Slug: "guerrilla-engagement", Aliases: []string{"guerrilla"},
 			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "An asymmetric campaign of raids, patrols and support.",

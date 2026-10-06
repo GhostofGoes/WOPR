@@ -60,6 +60,9 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
 - **Desert Warfare** (`desert`): order each unit in turn: `move 4` or `move sollum`, `attack 5`, `hold`;
   `status` shows the map, `help` the orders, `end` holds the rest. Take Benghazi, or hold more of the road
   after ten turns. Units cut off from their depot attack at half.
+- **Fighter Combat** (`dogfight`): each turn pick a manoeuvre (`press`, `extend`, `climb`, `break`, `fire`)
+  while WOPR picks its own. Missiles at range, guns close in from behind; two hits bring an aircraft down.
+  `disengage` at long range ends it even.
 - **Guerrilla Engagement** (`guerrilla`): your cells hide (`hide`), ambush from hiding at double strength
   (`attack 4`), and `recruit` with support. Patrols find cells near them. Survive twelve turns, reach
   support 10, or take the capital.
