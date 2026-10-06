@@ -203,3 +203,26 @@ func TestScrollback(t *testing.T) {
 		t.Errorf("PgDn did not return to the bottom:\n%s", d.screen())
 	}
 }
+
+// Every layout at exactly 80x24, with and without the front panel: the geometry of
+// docs/PLAN.md §4.3 (H' is the height minus the panel row).
+func TestLayoutsAt80x24(t *testing.T) {
+	t.Parallel()
+	var s snapshots
+	for _, panel := range []Panel{PanelOff, PanelOn} {
+		name := map[Panel]string{PanelOff: "no panel", PanelOn: "panel"}[panel]
+		console := instant()
+		console.Panel = panel
+		s.add("console, "+name, newDriver(t, console, 80, 24).settle().line("Joshua"))
+
+		game := Options{Instant: true, Play: "stub", Registry: gamestest.Registry(), Panel: panel}
+		d := newDriver(t, game, 80, 24).settle()
+		s.add("panel layout, "+name, d)
+		d.line("FULL")
+		s.add("full layout, "+name, d)
+		if lines := strings.Count(d.screen(), "\n"); lines != 25 { // 24 rows plus the cursor line
+			t.Errorf("%s: %d rows, want 24", name, lines-1)
+		}
+	}
+	golden.AssertString(t, "layouts_80x24", s.String())
+}
