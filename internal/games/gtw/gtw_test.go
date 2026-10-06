@@ -1,6 +1,7 @@
 package gtw_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,15 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
+// The cadences gtw.go asks for: flights, and the DEFCON 1 blink.
+const (
+	frameEvery = 100 * time.Millisecond
+	blinkEvery = 250 * time.Millisecond
+)
+
+// strikeFrames is a strike plus the hold before a stage that needs no order (gtw.go).
+const strikeFrames = 44 + 10
+
 var info = games.Info{Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Layout: proto.LayoutConsole}
 
 // The film's scenario, through to tic-tac-toe (docs/PLAN.md §6.2).
@@ -22,9 +32,13 @@ func TestFilmScenario(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1983)
 	g.Type("3").Type("2")
-	g.Type("Las Vegas").Type("Seattle, Omaha").Type("")
+	g.Type("Las Vegas").Type("Seattle, Omaha").Type("") // the first strike flies at once
+	g.Type("").Type("")                                 // strikes 2 and 3: the war plan
 	if !g.Contains("FIRST STRIKE LAUNCHED.") || !g.Contains("STRIKE ASSESSMENT COMPLETE.") {
 		t.Fatalf("the exchange did not run:\n%s", g.Transcript())
+	}
+	if !inOrder(g.Transcript(), "DEFCON 4.", "DEFCON 3.", "DEFCON 2.", "DEFCON 1.") {
+		t.Errorf("DEFCON falls a rung a stage:\n%s", g.Transcript())
 	}
 	g.Type("").Type("") // kill ratios, then the climax
 	g.Type("List Games").Type("Chess").Type("Global Thermonuclear War").Type("stop")
@@ -49,6 +63,18 @@ func TestFilmScenario(t *testing.T) {
 		t.Error("tic-tac-toe is not on the list: that is the film's point")
 	}
 	golden.AssertString(t, "film_scenario", g.Transcript())
+}
+
+// inOrder reports whether each of parts appears in s, in order.
+func inOrder(s string, parts ...string) bool {
+	for _, p := range parts {
+		i := strings.Index(s, p)
+		if i < 0 {
+			return false
+		}
+		s = s[i+len(p):]
+	}
+	return true
 }
 
 func listAfter(transcript, cmd string) string {
@@ -101,24 +127,50 @@ func TestSideChoiceFits(t *testing.T) {
 	}
 }
 
-// Every element of the big board is on the 80x19 view, whole: the title, the DEFCON ladder
-// 5..1, the sides' names, the trajectory table and the climax's launch code.
+// Every element of the big board is on the 80x19 view, whole, at every stage: the title,
+// the DEFCON ladder 5..1, the sides' names, the trajectory table, the forces table (your
+// side first), and the last row, which shows one thing by state: the orders hint, the
+// last-orders warning, the legend or the climax's launch code.
 func TestBoardKeepsEveryElement(t *testing.T) {
 	t.Parallel()
 	g := gtw.New()
 	g.Start(proto.Env{Seed: 1, Instant: true})
-	for _, in := range []string{"1", "Moscow, Leningrad, Kiev", "", "", ""} {
-		g.Handle(proto.LineEvent{Text: in})
-	}
-	c := proto.NewCanvas(80, 19)
-	g.View(c)
-	screen := c.String()
-	for _, want := range []string{
+	g.Handle(proto.LineEvent{Text: "1"})
+	g.Handle(proto.LineEvent{Text: "Moscow, Leningrad, Kiev"})
+	always := []string{
 		"GLOBAL THERMONUCLEAR WAR", "DEFCON", "| 5 |", "| 4 |", "| 3 |", "| 2 |", "| 1 |",
-		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING", "A-MM3-A", "E-MM3-A", "LAUNCH CODE: CPE 1704 ___",
+		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING   TRAJECTORY HEADING",
+	}
+	for _, tc := range []struct {
+		stage, last string
+		table       []string // the trajectory and forces rows that must be there
+	}{
+		{"strike 2 orders", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
+			"A-MM3-A", "C-C4-A", "FORCES   ICBM  SLBM   BMB   AIR", "US        500   450   200     0", "USSR      737   562     0   375",
+		}},
+		{"strike 3 orders", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
+			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
+		}},
+		{"assessed", "OUTGOING +   INCOMING *   IMPACT X", []string{
+			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
+		}},
+		{"kill ratios", "", nil},
+		{"climax", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "FORCES   ICBM  SLBM   BMB   AIR"}},
 	} {
-		if !strings.Contains(screen, want) {
-			t.Errorf("the board lost %q:\n%s", want, screen)
+		g.Handle(proto.LineEvent{Text: ""})
+		if tc.table == nil {
+			continue
+		}
+		c := proto.NewCanvas(80, 19)
+		g.View(c)
+		screen := c.String()
+		for _, want := range append(always, tc.table...) {
+			if !strings.Contains(screen, want) {
+				t.Errorf("%s: the board lost %q:\n%s", tc.stage, want, screen)
+			}
+		}
+		if rows := strings.Split(screen, "\n"); strings.TrimSpace(rows[18]) != tc.last {
+			t.Errorf("%s: the last row is %q, want %q", tc.stage, rows[18], tc.last)
 		}
 	}
 }
@@ -137,10 +189,21 @@ func TestBoardViews(t *testing.T) {
 		g.View(c)
 		shots = append(shots, "==== "+label+" ====\n"+c.String()+"\n"+c.StyleMap())
 	}
+	snap("strike 1, frame 0 (DEFCON 5)")
 	g.Handle(proto.TickEvent{Dt: 20 * 100 * time.Millisecond})
-	snap("exchange, frame 20")
+	snap("strike 1, frame 20")
+	g.Handle(proto.TickEvent{Dt: time.Minute}) // the tick stops at the prompt
+	snap("strike 2 orders (DEFCON 4)")
+	g.Handle(proto.LineEvent{Text: "100 0 100"})
+	g.Handle(proto.TickEvent{Dt: 20 * 100 * time.Millisecond})
+	snap("strike 2 (ICBM 100, BOMBERS 100), frame 20")
 	g.Handle(proto.TickEvent{Dt: time.Minute})
-	snap("exchange, done")
+	snap("strike 3 orders (DEFCON 3)")
+	g.Handle(proto.LineEvent{Text: ""})
+	g.Handle(proto.TickEvent{Dt: (strikeFrames + 20) * 100 * time.Millisecond})
+	snap("DEFCON 1, frame 20")
+	g.Handle(proto.TickEvent{Dt: time.Minute})
+	snap("DEFCON 1, assessed")
 	g.Handle(proto.LineEvent{Text: ""})
 	snap("kill ratios")
 	g.Handle(proto.LineEvent{Text: ""})
@@ -160,11 +223,17 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	}
 }
 
+// filmPath reaches the climax pressing only Enter after the target: the first strike, two
+// war-plan strikes, the kill ratios, the climax.
+var filmPath = []string{"2", "Las Vegas", "", "", "", "", ""}
+
 // climax plays the scenario up to the climax.
 func climax(t *testing.T, seed uint64) *testkit.GameSession {
 	t.Helper()
 	g := testkit.Game(t, gtw.New(), info, "", seed)
-	g.Type("2").Type("Las Vegas").Type("").Type("").Type("")
+	for _, in := range filmPath {
+		g.Type(in)
+	}
 	return g
 }
 
@@ -201,7 +270,7 @@ func TestClimaxListUsesTheConsole(t *testing.T) {
 	t.Parallel()
 	g := gtw.New()
 	g.Start(proto.Env{Seed: 1, Instant: true})
-	for _, in := range []string{"2", "Las Vegas", "", "", ""} {
+	for _, in := range filmPath {
 		g.Handle(proto.LineEvent{Text: in})
 	}
 	layout := func(outs []proto.Output) (proto.Layout, bool) {
@@ -225,7 +294,7 @@ func TestHandOffCarriesTheCode(t *testing.T) {
 	t.Parallel()
 	g := gtw.New()
 	g.Start(proto.Env{Seed: 1, Instant: true})
-	for _, in := range []string{"2", "Las Vegas", "", "", ""} {
+	for _, in := range filmPath {
 		g.Handle(proto.LineEvent{Text: in})
 	}
 	for _, o := range g.Handle(proto.LineEvent{Text: "tic-tac-toe"}) {
@@ -249,8 +318,14 @@ func TestAssessmentKeepsTheBlinkAlive(t *testing.T) {
 	g.Handle(proto.LineEvent{Text: "Las Vegas"})
 	g.Handle(proto.LineEvent{Text: ""})
 	var outs []proto.Output
-	for range 200 {
-		outs = append(outs, g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond})...)
+	for range 400 {
+		step := g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond})
+		outs = append(outs, step...)
+		for _, o := range step {
+			if p, ok := o.(proto.Prompt); ok && strings.HasPrefix(p.Text, "STRIKE") {
+				outs = append(outs, g.Handle(proto.LineEvent{Text: ""})...)
+			}
+		}
 	}
 	assessed, every := 0, time.Duration(-1)
 	for _, o := range outs {
@@ -265,5 +340,223 @@ func TestAssessmentKeepsTheBlinkAlive(t *testing.T) {
 	}
 	if assessed != 1 || every <= 0 {
 		t.Fatalf("assessed %d times, last Animate %v", assessed, every)
+	}
+}
+
+// war plays side 2 against Las Vegas and Seattle under the host, answering each strike
+// prompt with the next of orders (Enter once they run out), and returns the session at
+// the assessment with the strikes it was asked for.
+func war(t *testing.T, seed uint64, orders ...string) (*testkit.GameSession, []string) {
+	t.Helper()
+	g := testkit.Game(t, gtw.New(), info, "", seed)
+	g.Type("2").Type("Las Vegas, Seattle").Type("")
+	var prompts []string
+	for {
+		asking, p := g.Asking()
+		if !asking || !strings.HasPrefix(p, "STRIKE ") {
+			break
+		}
+		if len(prompts) == 0 || prompts[len(prompts)-1] != p { // a refusal asks the same strike again
+			prompts = append(prompts, p)
+		}
+		next := ""
+		if len(orders) > 0 {
+			next, orders = orders[0], orders[1:]
+		}
+		g.Type(next)
+	}
+	return g, prompts
+}
+
+// DEFCON walks every rung once, in order, whatever is ordered; a prompt comes only when
+// there is something to order; then the kill ratios, the climax and tic-tac-toe.
+func TestLadderFallsWhateverYouOrder(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		orders  []string
+		prompts int
+	}{
+		{nil, 2},
+		{[]string{"hold", "hold"}, 2},
+		{[]string{"all"}, 1},
+		{[]string{"auto"}, 1},
+		{[]string{"100 0 0", "0 100 0"}, 2},
+		{[]string{"0 0 100", "icbm 50"}, 2},
+		{[]string{"help", "chess", "150", "cease fire", "subs"}, 2},
+	} {
+		g, prompts := war(t, 7, tc.orders...)
+		label := strings.Join(tc.orders, "|")
+		if len(prompts) != tc.prompts {
+			t.Errorf("%s: %d strike prompts %q, want %d", label, len(prompts), prompts, tc.prompts)
+		}
+		var ladder []string // the DEFCON each of WOPR's lines announces
+		for _, l := range strings.Split(g.Transcript(), "\n") {
+			if strings.HasPrefix(l, "ENEMY ") || strings.HasPrefix(l, "FULL-SCALE ") {
+				ladder = append(ladder, l[strings.LastIndex(l, "DEFCON"):])
+			}
+		}
+		if got := strings.Join(ladder, " "); got != "DEFCON 4. DEFCON 3. DEFCON 2. DEFCON 1." {
+			t.Errorf("%s: the ladder reads %q", label, got)
+		}
+		g.Type("").Type("").Type("tic-tac-toe")
+		res, over := g.Result()
+		if launches := g.Launches(); !over || res.Outcome != proto.NoWinner || launches[len(launches)-1] != gtw.TicTacToeSlug {
+			t.Errorf("%s: only tic-tac-toe ends it: %+v %v", label, res, launches)
+		}
+		if wide := g.Wide(80); len(wide) > 0 {
+			t.Errorf("%s: lines wider than 80: %q", label, wide)
+		}
+	}
+}
+
+// Firing everything leaves nothing to order: the last strike runs by itself. AUTO hands
+// WOPR the rest.
+func TestNothingLeftAndAutoSkipPrompts(t *testing.T) {
+	t.Parallel()
+	g, _ := war(t, 1, "all")
+	if !g.Contains("NOTHING LEFT TO LAUNCH.") || !g.Contains("ENEMY BOMBERS INBOUND. DEFCON 2.") {
+		t.Errorf("all:\n%s", g.Transcript())
+	}
+	g, _ = war(t, 1, "auto")
+	if strings.Count(g.Transcript(), "WOPR HAS LAUNCH AUTHORITY.") != 1 || g.Contains("STRIKE 3 OF 3") {
+		t.Errorf("auto:\n%s", g.Transcript())
+	}
+	g, _ = war(t, 1, "hold")
+	if !g.Contains("NO LAUNCH ORDERED.\nENEMY LAUNCH DETECTED. ICBM 250  SLBM 100. DEFCON 3.") {
+		t.Errorf("hold:\n%s", g.Transcript())
+	}
+}
+
+// A refusal or HELP asks the same strike again and moves nothing.
+func TestRefusalsKeepTheStrike(t *testing.T) {
+	t.Parallel()
+	g := testkit.Game(t, gtw.New(), info, "", 1)
+	g.Type("2").Type("Las Vegas").Type("")
+	for in, want := range map[string]string{
+		"50 50":       "ORDER NOT RECOGNISED. TYPE HELP.",
+		"icbm 150":    "PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.",
+		"tic-tac-toe": "** ROUTINE MUST COMPLETE BEFORE RESET **",
+		"gtw":         "** GAME ROUTINE RUNNING **",
+		"?":           "ICBMS HIT ENEMY SILOS.",
+	} {
+		before := len(g.Transcript())
+		g.Type(in)
+		got := g.Transcript()[before:]
+		if !strings.Contains(got, want) || strings.Contains(got, "DEFCON 3.") {
+			t.Errorf("%q: %q", in, got)
+		}
+		if _, p := g.Asking(); p != "STRIKE 2 OF 3 [50 50 100]: " {
+			t.Errorf("%q: then asks %q", in, p)
+		}
+	}
+}
+
+// Under Instant nothing waits for a tick: each line returns everything up to the next
+// prompt, and no clock is started until the climax.
+func TestInstantNeedsNoTicks(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Instant: true, Width: 80, Height: 20})
+	for i, in := range append(filmPath, "tic-tac-toe") {
+		outs := g.Handle(proto.LineEvent{Text: in})
+		asks, done := false, false
+		for _, o := range outs {
+			switch o := o.(type) {
+			case proto.Animate:
+				if o.Every > 0 && i < len(filmPath)-1 {
+					t.Fatalf("input %d (%q) started a clock", i, in)
+				}
+			case proto.Prompt:
+				asks = true
+			case proto.Done:
+				done = true
+			}
+		}
+		if !asks && !done {
+			t.Fatalf("input %d (%q) left nothing asking", i, in)
+		}
+	}
+}
+
+// Paced, a strike starts the clock, a strike prompt stops it, and the assessment keeps a
+// slow clock for the blink unless motion is reduced.
+func TestStrikeCadence(t *testing.T) {
+	t.Parallel()
+	for _, reduce := range []bool{false, true} {
+		g := gtw.New()
+		g.Start(proto.Env{Seed: 1, Width: 80, Height: 20, ReduceMotion: reduce})
+		g.Handle(proto.LineEvent{Text: "2"})
+		g.Handle(proto.LineEvent{Text: "Las Vegas"})
+		var cadence []time.Duration
+		note := func(outs []proto.Output) (prompted bool) {
+			for _, o := range outs {
+				switch o := o.(type) {
+				case proto.Animate:
+					cadence = append(cadence, o.Every)
+				case proto.Prompt:
+					prompted = true
+				}
+			}
+			return prompted
+		}
+		note(g.Handle(proto.LineEvent{Text: ""}))
+		for prompts := 0; prompts < 3; {
+			if note(g.Handle(proto.TickEvent{Dt: time.Minute})) {
+				prompts++
+				if prompts < 3 {
+					note(g.Handle(proto.LineEvent{Text: ""}))
+				}
+			}
+		}
+		blink := blinkEvery
+		if reduce {
+			blink = 0
+		}
+		want := []time.Duration{frameEvery, 0, frameEvery, 0, frameEvery, blink}
+		if fmt.Sprint(cadence) != fmt.Sprint(want) {
+			t.Errorf("reduce motion %v: Animate %v, want %v", reduce, cadence, want)
+		}
+	}
+}
+
+// The board fits: nothing is drawn past column 79 at any stage, on any seed, and the
+// readout is intact at the right edge.
+func TestBoardFits(t *testing.T) {
+	t.Parallel()
+	for seed := range uint64(32) {
+		g := gtw.New()
+		g.Start(proto.Env{Seed: seed, Width: 80, Height: 19})
+		for _, in := range []string{"1", "Moscow, Leningrad, Kiev, Minsk, Odessa, Gorky, Kharkov, Murmansk", ""} {
+			g.Handle(proto.LineEvent{Text: in})
+		}
+		for range 300 {
+			for _, o := range g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond}) {
+				if p, ok := o.(proto.Prompt); ok && strings.HasPrefix(p.Text, "STRIKE") {
+					g.Handle(proto.LineEvent{Text: []string{"100 0 100", "all"}[seed%2]})
+				}
+			}
+			c := proto.NewCanvas(100, 19)
+			g.View(c)
+			for y := range c.H {
+				for x := 80; x < c.W; x++ {
+					if c.At(x, y).R != ' ' {
+						t.Fatalf("seed %d: drawn at %d,%d:\n%s", seed, x, y, c.String())
+					}
+				}
+			}
+		}
+	}
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Instant: true, Width: 80, Height: 19})
+	for _, in := range []string{"1", "Moscow", ""} {
+		g.Handle(proto.LineEvent{Text: in})
+	}
+	c := proto.NewCanvas(80, 19)
+	g.View(c)
+	rows := strings.Split(c.String(), "\n")
+	if !strings.HasSuffix(rows[15], "FORCES   ICBM  SLBM   BMB   AIR") || len(rows[15]) != 80 ||
+		len(rows[16]) != 80 || !strings.HasPrefix(rows[16][49:], "US ") ||
+		len(rows[17]) != 80 || !strings.HasPrefix(rows[17][49:], "USSR ") {
+		t.Errorf("the forces table, your side first, ends at the right edge:\n%s", c.String())
 	}
 }

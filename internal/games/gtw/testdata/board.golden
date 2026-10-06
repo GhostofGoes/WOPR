@@ -1,84 +1,289 @@
-==== exchange, frame 20 ====
+==== strike 1, frame 0 (DEFCON 5) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|               |:/''-\:::::+++++++++++             .___.               |  +---+
-|        .___.  |:\.  '\:::::/++++++++++++++.. ...__/:::\__. ._.        |  | 5 |
-|._______/:::\__/:/\_. |:+++++       .___++++++/\/:::::::::\_/:\______. |  +---+
-||::::::::::::::/-'|*| '\+/-'       ./::::\_/++++::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::/'***:|  '-'        .//\:::::::::++++::::::::::/--\/--'  |  +---+
-| '-' '-\::::::\***/:\_.         ..|:\/::::::::::::++::::::::/'  ''     |  | 3 |
-|       '\::::**:::::/-'         |\/:::::::::::::::::::::::::|          |  +---+
-|        |:::**:::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
+|               |:/''-\:::::::|     '-'             .___.               |  +---+
+|        .___.  |:\.  '\:::::/'             .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. |::::/'       .____. |\_/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|:| '\:/-'       ./::::\_/::::::::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |:|  '-'        .//\:::::::::::::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___/:\_.         ..|:\/:::::::::::::+::::::::/'  ''     |  | 3 |
+|       '\:::::::::::/-'         |\/:::::::::::::::::::::::::|          |  +---+
+|        |::::::::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
 |        '\::::::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
 |         '\::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
 |            '\\_.             |:::::::::::::| '\:/--\:/-'              |
 |             '--'             |:::::::::::/-'  '\|  '\|                |
 +------- UNITED STATES ----------------------- SOVIET UNION ------------+
-TRAJECTORY HEADING   TRAJECTORY HEADING
-A-SS20-A 019 448     C-SS20-A 869 895
-       B 023 673            B 697 086
-
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 019 448     C-SSN8-A 869 895            USSR      750   450   300     0
+       B 023 673            B 697 086            US       1250   750   375     0
+OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...............ldllllldddddooooooooooo.............lllll...............d..ddddd
-d........lllll..ldll..lldddddlooooooooooooooll.lllllldddllll.lll........d..d.5.d
-dllllllllldddlllldllll.ldooooo.......lllloooooollldddddddddllldllllllll.d..ddddd
-dlddddddddddddddllllil.llolll.......llddddlllooooddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddlliiidl..lll........lllldddddddddooooddddddddddllllllll..d..ddddd
-d.lll.lllddddddliiildlll.........llldllddddddddddddooddddddddll..ll.....d..d333d
-d.......llddddiidddddlll.........llldddddddddddddddddddddddddl..........d..ddddd
-d........ldddiidddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
+d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
+d........lllll..ldll..lldddddll.............ll.lllllldddllll.lll........d..d555d
+dllllllllldddlllldllll.lddddll.......llllll.lllllldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllldl.lldlll.......llddddlllddddddddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll..ldl..lll........lllldddddddddddddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllldlll.........llldlldddddddddddddoddddddddll..ll.....d..d.3.d
+d.......lldddddddddddlll.........llldddddddddddddddddddddddddl..........d..ddddd
+d........lddddddddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
 d........llddddddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
 d.........llddddddll............ldlllllldddddddddddddddddll.............d..d.1.d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
 d............lllll.............ldddddddddddddl.lldlllldlll..............d
 d.............llll.............ldddddddddddlll..lll..lll................d
 dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt
-.......t.ttt.ttt............t.ttt.ttt
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
+.......t.ttt.ttt............t.ttt.ttt............LL.......iiii...iii...iii.....i
+dddddddd.o...dddddddd.i...dddddd.t
 
-
-==== exchange, done ====
+==== strike 1, frame 20 ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|               |:/''-\::::++++++++++++             .___.               |  +---+
-|        .___.  |:\.  '+++++*******+++++++++.. ...__/:::\__. ._.        |  | 5 |
-|._______/:::\__/:/++++*****************_++++++/\/:::::::::\_/:\______. |  +---+
-||::::::::::::::/+++*************** *******_/++++::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::++*****+ '-'      *****\*X::***::++++::::::::::/--\/--'  |  +---+
-| '-' '-\::::++\***+:\_.         ..|****:::::*X::::++::::::::/'  ''     |  | 3 |
-|       '\:++:***+:::/-'         |\/::*XX::::::::::::::::::::|          |  +---+
-|        |X+:**+::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
-|        '\:++:::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|               |:/''-\:::::::|   + '-'             .___.               |  +---+
+|        .___.  |:\.  '\::++++++++ ++++++++ .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. ++++:****** ******_.++++/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|+++*******      .***:**_/:++++:::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |****'-'        .//\::::::::::+++::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\_***:\_.         ..|:\/::::::::::::++::::::::/'  ''     |  | 3 |
+|       '+::::****:::/-'         |\/:::::::::::::::::::::::::|          |  +---+
+|       ++X::**:::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
+|       ++++:::::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
+|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
+|             '--'             |:::::::::::/-'  '\|  '\|                |
++------- UNITED STATES ----------------------- SOVIET UNION ------------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 019 448     C-SSN8-A 869 895            USSR      750   450   300     0
+       B 023 673            B 697 086            US        937   562     0   375
+OUTGOING +   INCOMING *   IMPACT X
+
+ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
+d...............ldllllldddddddl...o.lll.............lllll...............d..ddddd
+d........lllll..ldll..llddoooooooo.oooooooo.ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.oooodiiiiii.iiiiiilloooollldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllloooiiiiiii......liiidiilldoooodddddddddddddddddddll.d..d444d
+dlldlllddddddddll..liiiilll........llllddddddddddoooddddddddddllllllll..d..ddddd
+d.lll.lllddddddlliiidlll.........llldllddddddddddddooddddddddll..ll.....d..d.3.d
+d.......loddddiiiidddlll.........llldddddddddddddddddddddddddl..........d..ddddd
+d.......oooddiidddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
+d.......oooodddddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d.1.d
+d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
+d............lllll.............ldddddddddddddl.lldlllldlll..............d
+d.............llll.............ldddddddddddlll..lll..lll................d
+dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
+.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+dddddddd.o...dddddddd.i...dddddd.t
+
+==== strike 2 orders (DEFCON 4) ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|               |:/''-\:::::::|   + '-'             .___.               |  +---+
+|        .___.  |:\.  '\::++++++++ ++++++++ .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. ++++:*****************++/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|+++*******      .*************:::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/' ++****'-'        .//**X::***:******:::::::::/--\/--'  |  +---+
+| '-' '-\::::::\+***:\_.         ..|:\/**::::*X::::*X*X::::::/'  ''     |  | 3 |
+|       '+::::****:::/-'         |\/::::X::::::::::::::::::::|          |  +---+
+|       ++X::**:::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
+|       ++++:::::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
+|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
+|             '--'             |:::::::::::/-'  '\|  '\|                |
++------- UNITED STATES ----------------------- SOVIET UNION ------------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 019 448     C-SSN8-A 869 895            USSR      500   450   200     0
+       B 023 673            B 697 086            US        737   562     0   375
+ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
+
+ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
+d...............ldllllldddddddl...o.lll.............lllll...............d..ddddd
+d........lllll..ldll..llddoooooooo.oooooooo.ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.oooodiiiiiiiiiiiiiiiiioollldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllloooiiiiiii......liiiiiiiiiiiiidddddddddddddddddddll.d..d444d
+dlldlllddddddddll.ooiiiilll........llliiiddiiidiiiiiidddddddddllllllll..d..ddddd
+d.lll.lllddddddloiiidlll.........llldlliiddddiiddddiiiiddddddll..ll.....d..d.3.d
+d.......loddddiiiidddlll.........lllddddiddddddddddddddddddddl..........d..ddddd
+d.......oooddiidddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
+d.......oooodddddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d.1.d
+d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
+d............lllll.............ldddddddddddddl.lldlllldlll..............d
+d.............llll.............ldddddddddddlll..lll..lll................d
+dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
+.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+ddddddd.ddddddd.dd.dddd.dddd.dddddddd.dddd.ddddd.ddddd.ddddd
+
+==== strike 2 (ICBM 100, BOMBERS 100), frame 20 ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|               |:/''-\:::::::|   + '-'             .___.               |  +---+
+|        .___.  |:\.  '\::+++++++++++++++++ .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. ++++++'     **.____+++++/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|+++'+:/-'       **::::\_/:++++:::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |:******        .//*:X::::::::+++::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\_*****_.         ..|:\/:::::::X::::++:X::***:/'  ''     |  | 3 |
+|       '\::::****:::/-'         |\/::::X:::::::::::::::**::*****       |  +---+
+|        |X::**:::::/'          ./:/\:::/-\/\:::::::::::::::/'  **      |  | 2 |
+|        '\::::::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
+|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
+|             '--'             |:::::::::::/-'  '\|  '\|                |
++------- UNITED STATES ----------------------- SOVIET UNION ------------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 476 377     C-SS20-A 485 868            USSR        0   450     0   200
+       B 001 419            B 887 229            US        112   462     0   375
+OUTGOING +   INCOMING *   IMPACT X
+
+ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
+d...............ldllllldddddddl...o.lll.............lllll...............d..ddddd
+d........lllll..ldll..llddooooooooooooooooo.ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.ooooool.....iilllllooooollldddddddddllldllllllll.d..ddddd
+dlddddddddddddddllllooolodlll.......iiddddllldoooodddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll..ldiiiiii........lllididdddddddoooddddddddddllllllll..d..ddddd
+d.lll.lllddddddlliiiiill.........llldlldddddddiddddoodiddiiidll..ll.....d..d333d
+d.......llddddiiiidddlll.........lllddddidddddddddddddddiiddiiiii.......d..ddddd
+d........loddiidddddll..........lldlldddllllldddddddddddddddll..ii......d..d.2.d
+d........llddddddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d.1.d
+d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
+d............lllll.............ldddddddddddddl.lldlllldlll..............d
+d.............llll.............ldddddddddddlll..lll..lll................d
+dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o...ooo.....o...ooo
+.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+dddddddd.o...dddddddd.i...dddddd.t
+
+==== strike 3 orders (DEFCON 3) ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|               |:/''-\:::::::|   + '-'             .___.               |  +---+
+|        .___.  |:\.  '\::+++++++++++++++++ .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. ++++++'     **.____+++++/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|+++++:/-'       **::::\_/:++++:::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/' +++***************//*:X::::::::+++::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\+*****_.         *******::::::X::::++:X::***:/'  ''     |  | 3 |
+|       '\::::****:::/-'         |\/::***X::::::::::::X***::*****       |  +---+
+|        |X::**X::::/'          ./:/\:::X-\/\:::::::::::::::/'  **      |  | 2 |
+|        '\::::::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
+|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
+|             '--'             |:::::::::::/-'  '\|  '\|                |
++------- UNITED STATES ----------------------- SOVIET UNION ------------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 476 377     C-SS20-A 485 868            USSR        0   450     0   200
+       B 001 419            B 887 229            US          0   462     0   375
+LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.
+
+ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
+d...............ldllllldddddddl...o.lll.............lllll...............d..ddddd
+d........lllll..ldll..llddooooooooooooooooo.ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.ooooool.....iilllllooooollldddddddddllldllllllll.d..ddddd
+dlddddddddddddddllllooooodlll.......iiddddllldoooodddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll.oooiiiiiiiiiiiiiiillididdddddddoooddddddddddllllllll..d..ddddd
+d.lll.lllddddddloiiiiill.........iiiiiiiddddddiddddoodiddiiidll..ll.....d..d333d
+d.......llddddiiiidddlll.........lllddiiiiddddddddddddiiiiddiiiii.......d..ddddd
+d........loddiioddddll..........lldlldddilllldddddddddddddddll..ii......d..d.2.d
+d........llddddddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d.1.d
+d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
+d............lllll.............ldddddddddddddl.lldlllldlll..............d
+d.............llll.............ldddddddddddlll..lll..lll................d
+dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o...ooo.....o...ooo
+.......t.ttt.ttt............t.ttt.ttt............LL..........i...iii.....i...iii
+AAAA.AAAAAAA.AA.AAAAAA.A.AAAA.AAAAA.AAAAAAAAAAA
+
+==== DEFCON 1, frame 20 ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|               |:/''-\:::::::|     '-'             .___.               |  +---+
+|        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |:|  '*'*+*+*+ +.+/+:**+:+:+:+:::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___*:*_*  + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
+|       '\:::::*:*:::/-'         |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*::::/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|        '\::::::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
+|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
+|             '--'             |:::::::::::/-'  '\|  '\|                |
++------- UNITED STATES ----------------------- SOVIET UNION ------------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0   200
+       B 824 228            B 623 229            US          0     0     0   375
+OUTGOING +   INCOMING *   IMPACT X
+
+ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
+d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
+d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll..ldl..lilioioio.ololodiiododododddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllidili..o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
+d.......lldddddididddlll.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddididdddll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+d........llddddddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d111d
+d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
+d............lllll.............ldddddddddddddl.lldlllldlll..............d
+d.............llll.............ldddddddddddlll..lll..lll................d
+dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o...ooo
+.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i...iii
+dddddddd.o...dddddddd.i...dddddd.t
+
+==== DEFCON 1, assessed ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|               |:/''-\:::::::|     '-'             .___.               |  +---+
+|        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |:|  '*'*+*+*+*+*+*+*X*+:+:+:+:::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___*:*_*+ + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
+|       '\:::::*:*::+/+'         |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*+:+:/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|        '\:::+::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
 |         'X+:::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
 |            '\\_.             |:::::::::::::| '\:/--\:/-'              |
 |             '--'             |:::::::::::/-'  '\|  '\|                |
 +------- UNITED STATES ----------------------- SOVIET UNION ------------+
-TRAJECTORY HEADING   TRAJECTORY HEADING
-A-SS20-A 019 448     C-SS20-A 869 895
-       B 023 673            B 697 086
-
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
+       B 824 228            B 623 229            US          0     0     0     0
+OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...............ldlllllddddoooooooooooo.............lllll...............d..ddddd
-d........lllll..ldll..loooooiiiiiiioooooooooll.lllllldddllll.lll........d..d.5.d
-dllllllllldddlllldlooooiiiiiiiiiiiiiiiiiloooooollldddddddddllldllllllll.d..ddddd
-dlddddddddddddddloooiiiiiiiiiiiiiii.iiiiiiillooooddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddooiiiiio.lll......iiiiiliiddiiiddooooddddddddddllllllll..d..ddddd
-d.lll.lllddddooliiiodlll.........llliiiidddddiiddddooddddddddll..ll.....d..d.3.d
-d.......lldoodiiiodddlll.........lllddiiiddddddddddddddddddddl..........d..ddddd
-d........loodiioddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
-d........lldoodddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
+d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll..ldl..lilioioioioioioiiiododododddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllidilio.o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
+d.......lldddddididdolol.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddidiododll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+d........lldddoddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
 d.........loodddddll............ldlllllldddddddddddddddddll.............d..d111d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
 d............lllll.............ldddddddddddddl.lldlllldlll..............d
 d.............llll.............ldddddddddddlll..lll..lll................d
 dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt
-.......t.ttt.ttt............t.ttt.ttt
-
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o.....o
+.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i.....i
+dddddddd.o...dddddddd.i...dddddd.t
 
 ==== kill ratios ====
                              PROJECTED KILL RATIOS
@@ -86,31 +291,31 @@ tttttttt.ttt.ttt.....tttttttt.ttt.ttt
     SOVIET UNION                                      UNITED STATES
     UNITS DESTROYED                                   UNITS DESTROYED
                             MILITARY ASSETS
-               68           BOMBERS                             338
-              698           ICBM                                373
-               46           ATTACK SUBS                          84
-               57           TACTICAL AIRCRAFT                  1937
-               90           GROUND FORCES                       179
+              150           BOMBERS                              93
+              250           ICBM                                312
+               78           ATTACK SUBS                          63
+             1951           TACTICAL AIRCRAFT                  1580
+              146           GROUND FORCES                       118
                             CIVILIAN ASSETS
-              43%           HOUSING                             81%
-              89%           COMMUNICATIONS                      60%
-              63%           TRANSPORTATION                      44%
-              49%           FOOD STOCKPILES                     67%
-              93%           HOSPITALS                           81%
+              75%           HOUSING                             61%
+              79%           COMMUNICATIONS                      64%
+              73%           TRANSPORTATION                      59%
+              62%           FOOD STOCKPILES                     50%
+              82%           HOSPITALS                           66%
                             HUMAN RESOURCES (MILLIONS)
-             26.7           NON-FATAL INJURED                  59.5
-             91.4           POPULATION DEATHS                  51.1
+             49.8           NON-FATAL INJURED                  40.3
+            145.1           POPULATION DEATHS                 117.5
 
 .............................bbbbbbbbb.bbbb.bbbbbb
 
 ....LLLLLL.LLLLL......................................LLLLLL.LLLLLL
 ....ddddd.ddddddddd...................................ddddd.ddddddddd
 ............................LLLLLLLL.LLLLLL
-...............oo...........ttttttt.............................iii
+..............ooo...........ttttttt..............................ii
 ..............ooo...........tttt................................iii
 ...............oo...........tttttt.tttt..........................ii
-...............oo...........tttttttt.tttttttt..................iiii
-...............oo...........tttttt.tttttt.......................iii
+.............oooo...........tttttttt.tttttttt..................iiii
+..............ooo...........tttttt.tttttt.......................iii
 ............................LLLLLLLL.LLLLLL
 ..............ooo...........ttttttt.............................iii
 ..............ooo...........tttttttttttttt......................iii
@@ -119,45 +324,45 @@ tttttttt.ttt.ttt.....tttttttt.ttt.ttt
 ..............ooo...........ttttttttt...........................iii
 ............................LLLLL.LLLLLLLLL.LLLLLLLLLL
 .............oooo...........ttttttttt.ttttttt..................iiii
-.............oooo...........tttttttttt.tttttt..................iiii
+............ooooo...........tttttttttt.tttttt.................iiiii
 
 ==== climax ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|               |:/''-\::::++++++++++++             .___.               |  +---+
-|        .___.  |:\.  '+++++*******+++++++++.. ...__/:::\__. ._.        |  | 5 |
-|._______/:::\__/:/++++*****************_++++++/\/:::::::::\_/:\______. |  +---+
-||::::::::::::::/+++*************** *******_/++++::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::++*****+ '-'      *****\*X::***::++++::::::::::/--\/--'  |  +---+
-| '-' '-\::::++\***+:\_.         ..|****:::::*X::::++::::::::/'  ''     |  | 3 |
-|       '\:++:***+:::/-'         |\/::*XX::::::::::::::::::::|          |  +---+
-|        |X+:**+::::/'          ./:/\:::/-\/\:::::::::::::::/'          |  | 2 |
-|        '\:++:::::/'           |:/\/--\\_/\/::::::::::::/--'           |  +---+
+|               |:/''-\:::::::|     '-'             .___.               |  +---+
+|        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
+|._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
+||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
+|'\:/-\::::::::/'  |:|  '*'*+*+*+*+*+*+*X*+:+:+:+:::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___*:*_*+ + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
+|       '\:::::*:*::+/+'         |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*+:+:/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|        '\:::+::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
 |         'X+:::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
 |            '\\_.             |:::::::::::::| '\:/--\:/-'              |
 |             '--'             |:::::::::::/-'  '\|  '\|                |
 +------- UNITED STATES ----------------------- SOVIET UNION ------------+
-TRAJECTORY HEADING   TRAJECTORY HEADING
-A-SS20-A 019 448     C-SS20-A 869 895
-       B 023 673            B 697 086
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
+       B 824 228            B 623 229            US          0     0     0     0
                            LAUNCH CODE: CPE 1704 ___
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...............ldlllllddddoooooooooooo.............lllll...............d..ddddd
-d........lllll..ldll..loooooiiiiiiioooooooooll.lllllldddllll.lll........d..d.5.d
-dllllllllldddlllldlooooiiiiiiiiiiiiiiiiiloooooollldddddddddllldllllllll.d..ddddd
-dlddddddddddddddloooiiiiiiiiiiiiiii.iiiiiiillooooddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddooiiiiio.lll......iiiiiliiddiiiddooooddddddddddllllllll..d..ddddd
-d.lll.lllddddooliiiodlll.........llliiiidddddiiddddooddddddddll..ll.....d..d.3.d
-d.......lldoodiiiodddlll.........lllddiiiddddddddddddddddddddl..........d..ddddd
-d........loodiioddddll..........lldlldddllllldddddddddddddddll..........d..d.2.d
-d........lldoodddddll...........ldlllllllllllddddddddddddllll...........d..ddddd
+d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
+d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
+dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
+dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
+dlldlllddddddddll..ldl..lilioioioioioioiiiododododddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllidilio.o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
+d.......lldddddididdolol.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddidiododll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+d........lldddoddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
 d.........loodddddll............ldlllllldddddddddddddddddll.............d..d111d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
 d............lllll.............ldddddddddddddl.lldlllldlll..............d
 d.............llll.............ldddddddddddlll..lll..lll................d
 dddddddd.LLLLLL.LLLLLL.ddddddddddddddddddddddd.LLLLLL.LLLLL.ddddddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt
-.......t.ttt.ttt............t.ttt.ttt
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o.....o
+.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i.....i
 ...........................AAAAAA.AAAAA.AAA.AAAA.AAA

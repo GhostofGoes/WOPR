@@ -226,8 +226,9 @@ func TestFilmPath(t *testing.T) {
 	s := start(t, catalog.Registry(), Options{})
 	s.Type("Joshua").Type("Hello.").Type("I'm fine. How are you?").Type("People sometimes make mistakes.")
 	s.Type("Love to. How about Global Thermonuclear War?").Type("Later. Let's play Global Thermonuclear War.")
-	s.Type("2").Type("Las Vegas").Type("Seattle").Type("")
-	s.Type("").Type("") // the kill ratios, then the climax
+	s.Type("2").Type("Las Vegas").Type("Seattle").Type("") // the first strike flies at once
+	s.Type("").Type("")                                    // strikes 2 and 3: the war plan
+	s.Type("").Type("")                                    // the kill ratios, then the climax
 	s.Type("List Games").Type("Chess").Type("Global Thermonuclear War").Type("Stop the war")
 	s.Type("Tic-tac-toe").Type("1")
 	for _, sq := range []string{"5", "1", "9", "3", "7", "4", "6", "2", "8"} {
@@ -266,13 +267,28 @@ func TestAbandonedClimax(t *testing.T) {
 	t.Parallel()
 	s := loggedOn(t, catalog.Registry())
 	s.Type("play global thermonuclear war").Type("play global thermonuclear war")
-	s.Type("2").Type("Las Vegas").Type("").Type("").Type("").Type("tic-tac-toe")
+	s.Type("2").Type("Las Vegas").Type("").Type("").Type("").Type("").Type("").Type("tic-tac-toe")
 	if !s.Contains("ONE OR TWO PLAYERS?") {
 		t.Fatalf("the climax tic-tac-toe should be running:\n%s", s.Transcript())
 	}
 	s.Esc().Esc()
 	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
 		t.Fatalf("Esc twice at the climax:\n%s", s.Transcript())
+	}
+}
+
+// Esc twice at a strike prompt walks away from the war mid-exchange.
+func TestAbandonedMidExchange(t *testing.T) {
+	t.Parallel()
+	s := loggedOn(t, catalog.Registry())
+	s.Type("play global thermonuclear war").Type("play global thermonuclear war")
+	s.Type("2").Type("Las Vegas").Type("")
+	if asking, p := s.Asking(); !asking || !strings.HasPrefix(p, "STRIKE 2 OF 3") {
+		t.Fatalf("the second strike should be asking, not %q:\n%s", p, s.Transcript())
+	}
+	s.Esc().Esc()
+	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
+		t.Fatalf("Esc twice at a strike prompt:\n%s", s.Transcript())
 	}
 }
 

@@ -1,7 +1,8 @@
 // Package gtw is Global Thermonuclear War, the film's set piece (docs/PLAN.md §6.2): choose
-// a side, list targets, watch the exchange on the big board and the kill ratios that
-// follow, then try to stop a war that will not stop. Only tic-tac-toe gets through: GTW
-// hands off to it in "climax" mode, and to the ending after that. The game cannot be won.
+// a side and list targets; the first strike flies on the big board at once, then you order
+// two more as DEFCON falls, and WOPR takes the last rung alone. The kill ratios follow, then
+// you try to stop a war that will not stop. Only tic-tac-toe gets through: GTW hands off to
+// it in "climax" mode, and to the ending after that. The game cannot be won (exchange.go).
 package gtw
 
 import (
@@ -27,16 +28,17 @@ const (
 
 // Exchange timing, in animation frames.
 const (
-	frame         = 100 * time.Millisecond
-	launchSpacing = 3  // frames between one side's launches
-	flightFrames  = 30 // a missile's flight
-	enemyDelay    = 12 // the enemy answers this many frames after the first launch
-	lastFrame     = 80
-	maxTargets    = 8
-	codeFrame     = 250 * time.Millisecond // the climax code display's cadence
-	blinkFrame    = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
-	codeEvery     = 16                     // climax frames per cracked character
-	codeHeldBack  = 3                      // characters the climax never cracks: the ending does
+	frame        = 100 * time.Millisecond
+	spacing      = 2  // frames between one side's launches
+	detectAt     = 8  // WOPR launches on warning this many frames into a strike
+	strikeEnd    = 44 // a strike's last frame: everything has landed
+	holdFrames   = 10 // the pause before a stage that starts without an order
+	finalEnd     = 34 // the DEFCON 1 attack's last frame
+	maxTargets   = 8
+	codeFrame    = 250 * time.Millisecond // the climax code display's cadence
+	blinkFrame   = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
+	codeEvery    = 16                     // climax frames per cracked character
+	codeHeldBack = 3                      // characters the climax never cracks: the ending does
 )
 
 type phase uint8
@@ -44,16 +46,32 @@ type phase uint8
 const (
 	chooseSide phase = iota
 	listTargets
-	exchange
+	flight   // a stage plays out on the board
+	orders   // a strike prompt is up
+	assessed // DEFCON 1 is over; Enter shows the kill ratios
 	ratios
 	climax
 )
 
+// kind is a track's weapon: it sets the flight time, the arc and the designator.
+type kind uint8
+
+const (
+	kindICBM kind = iota
+	kindSLBM
+	kindBomber
+)
+
+// flightFrames is each kind's flight: SLBMs are close in and land first.
+var flightFrames = [3]int{24, 10, 30}
+
 // missile is one track on the board.
 type missile struct {
 	from, to assets.Place
-	launch   int  // frame
+	launch   int  // frame within its stage
 	ours     bool // the player's (outgoing, '+') or WOPR's (incoming, '*')
+	kind     kind
+	id       int // serial over the whole war, for its trajectory heading
 }
 
 // Game is GTW as a proto.Program.
@@ -63,7 +81,18 @@ type Game struct {
 	phase    phase
 	side     assets.Side // the player's
 	targets  []string
+	war      *war
+	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
+	rep      report // the current stage, resolved when it starts
+	auto     bool   // AUTO: WOPR orders every remaining strike
 	missiles []missile
+	impacts  []missile // every earlier stage's tracks, drawn as impacts only
+	traj     []missile // your missiles of the latest stage that launched any
+	serial   int
+	cities   []assets.Place // the player's side, shuffled: WOPR's aim points
+	aimYou   int            // next listed target for your city tracks
+	aimWOPR  int            // next of cities for WOPR's
+	noise    [10]int        // kill-ratio noise per row, shared by both sides
 	frame    int
 	defcon   int
 	ratios   [2][12]int // [player, WOPR] values, in row order
@@ -85,7 +114,18 @@ func say(ls ...script.Ls) proto.Output {
 	return proto.Say{Lines: lines, Pace: proto.PaceSpeech}
 }
 
+func speak(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
+
 func table(lines []string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
+
+// fill replaces each # in l with the next arg.
+func fill(l script.L, args ...any) string {
+	text := l.Text
+	for _, a := range args {
+		text = strings.Replace(text, "#", fmt.Sprint(a), 1)
+	}
+	return text
+}
 
 // Start implements proto.Program: the two outlines and the side choice, as console text.
 func (g *Game) Start(env proto.Env) []proto.Output {
@@ -130,14 +170,15 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 			return g.onSide(ev.Text)
 		case listTargets:
 			return g.onTarget(ev.Text)
+		case orders:
+			return g.onOrder(ev.Text)
+		case assessed:
+			return g.showRatios()
 		case ratios:
 			return g.startClimax()
 		case climax:
 			return g.onClimax(ev.Text)
-		case exchange:
-			if g.frame >= lastFrame { // the "press Enter" after the exchange
-				return g.showRatios()
-			}
+		case flight: // no prompt is up; the host never sends one
 		}
 	case proto.TickEvent:
 		return g.onTick(ev.Dt)
@@ -164,7 +205,7 @@ func (g *Game) onTarget(input string) []proto.Output {
 		if len(g.targets) == 0 {
 			return []proto.Output{say(lineNoTargets), proto.Prompt{}}
 		}
-		return g.launch()
+		return g.openBoard()
 	}
 	for _, t := range strings.Split(input, ",") {
 		if name := strings.ToUpper(strings.Join(strings.Fields(t), " ")); name != "" {
@@ -184,89 +225,265 @@ func enemyOf(s assets.Side) assets.Side {
 	return assets.US
 }
 
-// launch plans both sides' missiles and starts the exchange on the big board.
-func (g *Game) launch() []proto.Output {
-	enemy := enemyOf(g.side)
-	for i, t := range g.targets {
-		g.missiles = append(g.missiles, missile{from: assets.Silos[g.side], to: assets.Locate(t, enemy), launch: i * launchSpacing, ours: true})
-	}
-	// WOPR answers with more than it received, at cities on the player's side.
-	var own []assets.Place
+// openBoard opens the big board at DEFCON 5 and launches the first strike: the war plan's,
+// at the listed targets, with no order asked (the film's first strike).
+func (g *Game) openBoard() []proto.Output {
 	for _, c := range assets.Cities {
 		if c.Side == g.side {
-			own = append(own, c)
+			g.cities = append(g.cities, c)
 		}
 	}
-	g.rng.Shuffle(len(own), func(i, j int) { own[i], own[j] = own[j], own[i] })
-	for i := range min(len(g.targets)+2, len(own)) {
-		g.missiles = append(g.missiles, missile{from: assets.Silos[enemy], to: own[i], launch: enemyDelay + i*launchSpacing})
+	// Stream 0 draws a fixed amount whatever the orders: the shuffle, then the noise.
+	g.rng.Shuffle(len(g.cities), func(i, j int) { g.cities[i], g.cities[j] = g.cities[j], g.cities[i] })
+	for i := range g.noise {
+		g.noise[i] = 97 + g.rng.IntN(7)
 	}
-	for i := range g.ratios[0] {
-		g.ratios[0][i], g.ratios[1][i] = g.ratioValue(i), g.ratioValue(i)
-	}
-	g.phase, g.frame, g.defcon = exchange, 0, 4
-	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}, say(lineLaunched)}
-	if g.env.Instant {
-		return append(outs, g.advanceTo(lastFrame)...)
-	}
-	return append(outs, proto.Animate{Every: frame})
+	g.war = newWar()
+	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
+	outs = append(outs, g.begin(warPlan[0])...)
+	return append(outs, g.play()...)
 }
 
-// ratioValue draws one kill-ratio figure: unit counts, percentages, then millions (in
-// tenths) for the two human-resources rows.
-func (g *Game) ratioValue(row int) int {
-	switch {
-	case row < 5:
-		return 20 + g.rng.IntN([5]int{480, 980, 90, 2400, 180}[row])
-	case row < 10:
-		return 35 + g.rng.IntN(60)
-	default:
-		return 100 + g.rng.IntN(900)
+// play runs the stage just begun: at once under Instant, otherwise on the clock.
+func (g *Game) play() []proto.Output {
+	if g.env.Instant {
+		return g.run(-1)
 	}
+	return []proto.Output{proto.Animate{Every: frame}}
+}
+
+// onOrder reads a strike order: help and refusals ask again; anything else fires.
+func (g *Game) onOrder(input string) []proto.Output {
+	again := proto.Prompt{Text: g.strikePrompt()}
+	alloc, k, refusal := parseOrder(input, warPlan[g.stage])
+	switch k {
+	case orderHelp:
+		return []proto.Output{table(lineOrderHelp.Texts()), again}
+	case orderRefused:
+		return []proto.Output{say(refusal), again}
+	case orderAuto:
+		g.auto = true
+		outs := append([]proto.Output{say(lineAuto)}, g.begin(alloc)...)
+		return append(outs, g.play()...)
+	}
+	return append(g.begin(alloc), g.play()...)
+}
+
+func (g *Game) strikePrompt() string {
+	p := warPlan[g.stage]
+	return fill(promptStrike[0], g.stage+1, strikes, p[0], p[1], p[2])
+}
+
+// begin starts the next stage: it resolves it, lays its tracks and says what you launched
+// (or, at DEFCON 1, what WOPR did).
+func (g *Game) begin(order [3]int) []proto.Output {
+	g.impacts = append(g.impacts, g.missiles...)
+	g.missiles = nil
+	g.stage++
+	g.phase, g.frame = flight, 0
+	if g.stage > strikes {
+		g.rep = g.war.final()
+		g.defcon = 1
+		g.lay()
+		return []proto.Output{speak(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
+	}
+	launchable := g.war.launchable()
+	g.rep = g.war.strike(g.stage, order)
+	g.lay()
+	var line string
+	switch f := g.rep.fire[you]; {
+	case !launchable:
+		line = lineLaunch[3].Text
+	case g.stage == 1:
+		line = fill(lineLaunch[0], g.list(f))
+	case f.missiles()+f.Bombers == 0:
+		line = lineLaunch[2].Text
+	default:
+		line = fill(lineLaunch[1], g.stage, g.list(f))
+	}
+	return []proto.Output{speak(line), proto.Redraw{}}
+}
+
+// list names a salvo's non-zero systems: "ICBM 313  SLBM 188".
+func (g *Game) list(s salvo) string {
+	var parts []string
+	for i, n := range []int{s.ICBMSilo + s.ICBMCity, s.SLBM, s.Bombers} {
+		if n > 0 {
+			parts = append(parts, fmt.Sprintf("%s %d", lineSystems[i].Text, n))
+		}
+	}
+	return strings.Join(parts, "  ")
+}
+
+func (g *Game) nation(s int) string {
+	side := g.side
+	if s == wopr {
+		side = enemyOf(side)
+	}
+	return lineNations[side-1].Text
+}
+
+// lay builds the stage's tracks from its report. Each side's missiles leave spacing
+// frames apart, ICBMs first; yours at frame 0, WOPR's when it launches on warning.
+func (g *Game) lay() {
+	nation := [2]assets.Side{you: g.side, wopr: enemyOf(g.side)}
+	final := g.stage > strikes
+	for s := range 2 {
+		ours, defender := s == you, 1-s
+		at := 0
+		if s == wopr && !final {
+			at = detectAt
+		}
+		add := func(k kind, from, to assets.Place) {
+			g.missiles = append(g.missiles, missile{from: from, to: to, launch: at, ours: ours, kind: k, id: g.serial})
+			g.serial++
+			at += spacing
+		}
+		f, silo := g.rep.fire[s], assets.Silos[nation[s]]
+		for j := range tracks(f.ICBMSilo, 250, 2) {
+			to := assets.Silos[nation[defender]]
+			to.X = min(to.X+2*j, assets.MapW-1) // the second track hits further along the field
+			add(kindICBM, silo, to)
+		}
+		for range tracks(f.ICBMCity, 250, 2) {
+			add(kindICBM, silo, g.aim(s))
+		}
+		for range tracks(f.SLBM, 50, 3) {
+			to := g.aim(s)
+			add(kindSLBM, seaLaunch(nation[s], to), to)
+		}
+		if final && f.Bombers > 0 { // the bombers airborne since their strike arrive
+			at = 0
+			add(kindBomber, silo, g.firstAim(s))
+		}
+	}
+	var traj []missile
+	for _, m := range g.missiles {
+		if m.ours && m.kind != kindBomber {
+			traj = append(traj, m)
+		}
+	}
+	if len(traj) > 0 {
+		g.traj = traj
+	}
+}
+
+// tracks is how many tracks n weapons draw: one per per, at most most.
+func tracks(n, per, most int) int { return min(ceilDiv(n, per), most) }
+
+// aim is the next city side s aims at: your listed targets in turn, or WOPR's shuffled
+// cities on your side.
+func (g *Game) aim(s int) assets.Place {
+	if s == you {
+		t := g.targets[g.aimYou%len(g.targets)]
+		g.aimYou++
+		return assets.Locate(t, enemyOf(g.side))
+	}
+	c := g.cities[g.aimWOPR%len(g.cities)]
+	g.aimWOPR++
+	return c
+}
+
+func (g *Game) firstAim(s int) assets.Place {
+	if s == you {
+		return assets.Locate(g.targets[0], enemyOf(g.side))
+	}
+	return g.cities[0]
+}
+
+// patrols are where each side's missile submarines fire from: real patrol areas, placed on
+// the map by latitude and longitude. Soviet boats patrolled off both American coasts;
+// American boats in the Norwegian Sea and the north-west Pacific.
+var patrols = map[assets.Side][]assets.Place{
+	assets.US:   {sea(68, 4), sea(45, 160)},
+	assets.USSR: {sea(36, -66), sea(38, -132)},
+}
+
+func sea(lat, lon float64) assets.Place {
+	x, y := assets.At(lat, lon)
+	return assets.Place{Name: "SEA", X: x, Y: y}
+}
+
+// seaLaunch is where side's submarine fires at to from: the patrol area nearer the target.
+func seaLaunch(side assets.Side, to assets.Place) assets.Place {
+	dist := func(p assets.Place) int { return (p.X-to.X)*(p.X-to.X) + (p.Y-to.Y)*(p.Y-to.Y) }
+	best := patrols[side][0]
+	for _, p := range patrols[side][1:] {
+		if dist(p) < dist(best) {
+			best = p
+		}
+	}
+	return best
 }
 
 func (g *Game) onTick(dt time.Duration) []proto.Output {
 	switch g.phase {
-	case exchange:
-		if g.frame >= lastFrame {
-			return []proto.Output{proto.Redraw{}} // the assessment is up; only the blink moves
-		}
-		n := max(int(dt/frame), 1)
-		return g.advanceTo(min(g.frame+n, lastFrame))
+	case flight:
+		return g.run(max(int(dt/frame), 1))
+	case assessed:
+		return []proto.Output{proto.Redraw{}} // only the blink moves
 	case climax:
 		g.climaxT += max(int(dt/codeFrame), 1)
 		g.cracked = min(g.climaxT/codeEvery, len(lineCode[0].Text)-codeHeldBack)
 		return []proto.Output{proto.Redraw{}}
+	case chooseSide, listTargets, orders, ratios:
 	}
 	return nil
 }
 
-// advanceTo moves the exchange to frame f, lowering DEFCON and reporting as it goes.
-func (g *Game) advanceTo(f int) []proto.Output {
+// run advances the war n frames (n < 0: as far as it goes), stopping early at a prompt.
+// A coalesced tick reports every beat it crosses, in order.
+func (g *Game) run(n int) []proto.Output {
 	var outs []proto.Output
-	for g.frame < f {
-		g.frame++
-		switch g.frame {
-		case enemyDelay:
-			g.defcon = 3
-			outs = append(outs, say(lineDetected))
-		case 35:
-			g.defcon = 2
-		case 55:
-			g.defcon = 1
-		}
+	for ; n != 0 && g.phase == flight; n-- {
+		outs = append(outs, g.step()...)
 	}
-	outs = append(outs, proto.Redraw{})
-	if g.frame >= lastFrame {
-		// Ticks go on at a slower cadence: DEFCON 1 blinks, and a blink needs a clock. With
-		// no pacing or no motion there is no blink to keep alive.
+	return append(outs, proto.Redraw{})
+}
+
+// step advances one frame and plays the beat it reaches.
+func (g *Game) step() []proto.Output {
+	g.frame++
+	if g.stage > strikes {
+		if g.frame < finalEnd {
+			return nil
+		}
+		g.phase = assessed
+		g.ratios = g.war.ratios(g.noise)
+		// DEFCON 1 blinks, and a blink needs a clock. With no pacing or no motion there is
+		// no blink to keep alive.
 		keep := proto.Animate{}
 		if !g.env.Instant && !g.env.ReduceMotion {
 			keep.Every = blinkFrame
 		}
-		outs = append(outs, keep, say(lineAssessed), proto.Prompt{})
+		return []proto.Output{table([]string{g.cost()}), say(lineAssessed), keep, proto.Prompt{}}
 	}
-	return outs
+	switch g.frame {
+	case detectAt:
+		g.defcon = 5 - g.stage
+		f := g.rep.fire[wopr]
+		if f.missiles()+f.Bombers == 0 {
+			return []proto.Output{speak(fill(lineDetect[1], g.defcon))}
+		}
+		return []proto.Output{speak(fill(lineDetect[0], g.list(f), g.defcon))}
+	case strikeEnd:
+		outs := []proto.Output{table([]string{g.cost()})}
+		if g.stage < strikes && !g.auto && g.war.launchable() {
+			g.phase = orders
+			return append(outs, proto.Animate{}, proto.Prompt{Text: g.strikePrompt()})
+		}
+		return outs
+	case strikeEnd + holdFrames: // the next stage needs no order
+		return g.begin(warPlan[min(g.stage, strikes-1)])
+	}
+	return nil
+}
+
+// cost is a stage's third line: what each side lost on the ground and took on its cities.
+func (g *Game) cost() string {
+	r := g.rep
+	return fill(lineCost[0], g.nation(you), r.ground[you], g.nation(wopr), r.ground[wopr],
+		g.nation(you), r.cities[you], g.nation(wopr), r.cities[wopr])
 }
 
 func (g *Game) showRatios() []proto.Output {

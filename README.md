@@ -76,8 +76,10 @@ the two nations and the world (drawn from [Natural Earth](https://www.naturalear
   five regions to win.
 - **Theaterwide Biotoxic and Chemical Warfare** (`biotoxic`): `release 4` puts an agent on a region, `decon`
   cleans a little; it spreads with the wind. Nobody wins.
-- **Global Thermonuclear War** (`gtw`): choose a side, list target cities (an empty line ends the list), and
-  watch the big board. Then try to stop it.
+- **Global Thermonuclear War** (`gtw`): choose a side and list target cities (an empty line ends the list);
+  the first strike flies at once. Then order two more strikes as percentages of your ICBMs, SLBMs and bombers
+  (`50 25 100`, `icbm 50`, `hold`; Enter carries out WOPR's war plan, `auto` hands it the rest) while DEFCON
+  falls to 1. WOPR holds a quarter more of everything. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump twice);
   jumps are compulsory.

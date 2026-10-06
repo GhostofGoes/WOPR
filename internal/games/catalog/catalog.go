@@ -86,7 +86,7 @@ func entries() []games.Entry {
 		}, New: biotoxic.New},
 		{Info: games.Info{
 			Number: 15, Listed: true, Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Aliases: []string{"gtw", "thermonuclear"},
-			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Choose a side, list your targets, and watch the big board.",
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Choose a side, list targets, then order strikes as DEFCON falls.",
 		}, New: gtw.New},
 		{Info: games.Info{
 			Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Aliases: []string{"tictactoe", "ttt", "noughts and crosses"},
