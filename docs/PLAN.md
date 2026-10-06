@@ -155,11 +155,17 @@ the M5 viewing pass:
   (except `LIST GAMES`, which is unnumbered as in the film);
   refuses invalid actions with `** IMPROPER REQUEST **`-style lines; calls the user PROFESSOR.
 - **Anti-pattern**: bordered panes and labelled input boxes. Borders appear only inside the big board and in
-  NORAD notices.
+  NORAD notices, and as a game's own picture (a board's edge, a card's face, a maze's frame).
+- **ASCII art** (decision 26): every game opens with an original title piece and draws its world in printable
+  ASCII capitals. Card games draw card faces and trick tables; chess, checkers and the maze are framed;
+  tic-tac-toe uses large film-style marks; the sims draw their front as a strip; GTW's side choice shows the
+  two nations' outlines and the big board a world map with dim land fill, both generated from Natural Earth
+  (public domain). Every piece fits its layout at 80×24 and is tagged `original`.
 
 The target screens are in **Appendix C**, all at exactly 80×24: the greeting, the GTW side choice, the GTW big
-board, and the chess panel. The GTW mockups use a placeholder for the map. The art is drawn from scratch in M2
-(L-4).
+board, and the chess panel. **As built**, the GTW and chess screens are superseded by the regenerated goldens
+(`internal/ui/testdata/gtw_screens.golden`, `internal/games/chess/testdata/view.golden`), which show the real
+art (L-4).
 
 ---
 
@@ -192,6 +198,7 @@ board, and the chess panel. The GTW mockups use a placeholder for the map. The a
 | 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
+| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's outlines are generated from Natural Earth (public domain, credited in NOTICE.md). | U |
 
 ---
 
