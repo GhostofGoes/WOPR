@@ -182,12 +182,16 @@ board, and the chess panel. The GTW mockups use a placeholder for the map. The a
 | 13 | Releases | v0.1.0 after M2, then a minor release per milestone, then v1.0.0 after M5 (P-2). | U (v0.1.0 after M2); P (the rest) |
 | 14 | Bridge | Minimal: WOPR bids all four seats by point count. The user always plays the declaring side, as declarer plus dummy, with seats rotated when East/West win the contract. Passed-out deals are redealt (G-3). | U (minimal); P (seat rule, G-3) |
 | 15 | Chess rules | `github.com/corentings/chess/v2` v2.6.0, the maintained MIT fork of the archived `notnil/chess`. Search lives in `games/ai` (G-1). | P |
-| 16 | Branching | **`main` is PR-only**. One required check, `ci-ok`. Squash merges only. | U |
+| 16 | Branching | **`main` is PR-only**. One required check, `ci-ok`. Squash merges only. CI also runs on every branch push (§11.2). | U |
 | 17 | Dependabot | **Not used.** Manual update cadence plus a weekly staleness and vulnerability report (§11.5). | U |
 | 18 | Montage names | Keep the list and credit abs0 under BSD-2 now. Verify in the M5 viewing pass. | U |
 | 19 | Movie mode | **M6**: `-m/--movie` replays the film's WOPR terminal scenes (§7). | U |
 | 20 | Tool modules | Three: `tools/` (gitleaks, govulncheck), `tools/lint/` (golangci-lint), `tools/release/` (GoReleaser). golangci-lint's dependencies break gitleaks's build when they share a module (SL-2). | P |
-| 21 | `LIST GAMES` | Printed unnumbered, as in the film, at LOGON and in the Shell. A number typed right after it still selects; `HELP` and the README say so. `--games` stays numbered (RF-6). | P |
+| 21 | `LIST GAMES` | Printed unnumbered, as in the film, at LOGON and in the Shell. A number typed right after it still selects; `HELP` and the README say so. `--games` stays numbered (RF-6). | U (confirmed 2026-10-06) |
+| 22 | Leaving the war | Esc twice may abandon GTW and the climax tic-tac-toe, like any game, with WOPR's remark about the abandoned war; the ending itself cannot be aborted (§6.2). | U |
+| 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
+| 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
+| 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
 
 ---
 
@@ -818,9 +822,9 @@ no verdict of their own.
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. Targets are read until an empty
       line; a multi-line paste arrives as one line, so targets on one line are split on commas.
    3. `SetLayout(Full)`: the big board and trajectories. The player's missiles fly, WOPR answers with more,
-      and DEFCON falls as the tracks cross; then the kill-ratio tables follow. **As built** the exchange is one
-      animated strike, not turns: a force-allocation step (ICBM, SLBM, bombers) and a turn-based DEFCON
-      ladder are not built. They are M5 polish if wanted (owner's call); nothing else depends on them.
+      and DEFCON falls as the tracks cross; then the kill-ratio tables follow. **As built in M2** the exchange
+      is one animated strike, not turns. **M5 makes it turn-based** (decision 24): the DEFCON ladder falls by
+      turn, with a force-allocation step (ICBM, SLBM, bombers) each turn and WOPR's answer.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
@@ -1175,25 +1179,33 @@ mixed case, as on screen (RF-9):
   `core.autocrlf=true`, which would otherwise break goldens (B-3).
 - **Concurrency** (CR-2) is set in `ci.yml` and `release.yml` only, never in the reusable `smoke.yml`: a called
   workflow sees its caller's `github.ref`, and the same group in both deadlocks. Pull requests share a group per
-  PR and cancel superseded runs. Pushes to `main` get a group **per commit**, because with a shared group a
-  newer pending run replaces an older pending one, which would leave a merged commit without `ci-ok`:
+  PR, and pushes to other branches a group per branch; both cancel superseded runs. Pushes to `main` get a group
+  **per commit**, because with a shared group a newer pending run replaces an older pending one, which would
+  leave a merged commit without `ci-ok`:
 
   ```yaml
   concurrency:
-    group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || format('ci-{0}', github.sha) }}
-    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    group: >-
+      ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref)
+      || github.ref == 'refs/heads/main' && format('ci-{0}', github.sha)
+      || format('ci-branch-{0}', github.ref) }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
   ```
 
   `release.yml` uses `release-${{ github.ref }}` and `scheduled.yml` none.
 
-### 11.2 `ci.yml` (on `pull_request` and `push` to `main`)
+### 11.2 `ci.yml` (on `pull_request` and `push` to any branch)
+
+CI runs on every branch push (owner decision 2026-10-06), so a branch is checked before anyone opens a pull
+request. A branch with an open pull request runs twice, on purpose: once as pushed, and once merged with its
+base. Tags go to `release.yml` only.
 
 | Job | Runner(s) | Does |
 |---|---|---|
 | `lint` | `ubuntu-24.04` | prek via `j178/prek-action` with `prek-version: 0.5.5`. The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
-| `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: `main` plus the PR, not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
+| `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or the PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
-| `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, and checks every archive's contents. Uploads one artifact: `wopr-dev` (30 days) on `main`, `wopr-pr<N>` (3 days) on PRs (B-13). |
+| `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, and checks every archive's contents. Uploads one artifact: `wopr-dev` (30 days) on `main`, `wopr-branch` (7 days) on other branches, `wopr-pr<N>` (3 days) on PRs (B-13). |
 | `smoke` | `ubuntu-24.04` (+ an `ubuntu:22.04` container step), `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary; no Go toolchain. Every target has a native runner, so none is skipped. |
 | `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()`. Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
@@ -1385,7 +1397,7 @@ boundary (AGENTS.md checklist) (B-5).
 | 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
-| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); README completed with screenshots; accessibility pass; dependency and runner checklist. | No `reconstructed` tags remain; checklist done. | **v1.0.0** |
+| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24); README completed with screenshots; accessibility pass; dependency and runner checklist. | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; checklist done. | **v1.0.0** |
 | 6 | **Movie mode** (§7): `-m/--movie`, the three host hooks, director, scenes, scene menu, consistency test, e2e cases. | All scenes play; consistency test green; size re-checked. | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
