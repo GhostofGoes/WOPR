@@ -51,6 +51,16 @@ Wait for `LOGON:`. If you have seen the film, you know what to type. If not, `wo
 Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its place in the list. Type
 `LOGOFF` to leave; Ctrl+C always quits.
 
+## Games
+
+Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` until its release):
+
+- **Global Thermonuclear War** (`gtw`): choose a side, list target cities (an empty line ends the list), and
+  watch the big board. Then try to stop it.
+- **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
+- **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump; jumps are compulsory.
+- **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
+
 ## Command-line flags
 
 | Flag | Meaning |

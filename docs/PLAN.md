@@ -517,9 +517,9 @@ Rules:
   Enter is delivered as `LineEvent{""}`; GTW ends its target list that way.
 - **Launch and hand-off** (AR-5, IM-6).
   - The host resolves `Launch{Slug}` through the injected `Resolver`. `ui` builds it from the registry: a
-    `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. From M2 the resolver also
-    knows the reserved slug `ending`, from a `catalog.Internal()` map that `Resolve`, `--games` and `LIST GAMES`
-    never see.
+    `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. The ending is a registry
+    entry with `Info.Internal` set: `Get` (and so the resolver) finds it, while `Resolve`, `Exact`, `All` and
+    `Listed` (so `--games`, intent and `LIST GAMES`) never see it.
   - `Env.Width`/`Height` is the area of the program's placement (its `Info.Layout` and `PanelRows`) at the
     current size; a `ResizeEvent` follows any `SetLayout` or resize that changes it.
   - `Done{Result{Next}}` is chained by the host: the program is replaced by the next one and the program below
@@ -795,11 +795,11 @@ Every game must meet all of these:
 | 4 | Hearts | Panel (trick) | line | 3 | 4 seats, passing, shoot-the-moon; heuristic AI on `cards/trick.go`. Test: legality over 200 seeded deals. |
 | 5 | Bridge | Panel (trick) | line | 3 (last) | Minimal (decision 14). Test: auction and declarer-seat rotation; legality. |
 | 6 | Checkers | Panel | line | 2 | 8×8 English draughts: forced captures, multi-jumps, crowning ends the move, kings move both ways, draw after 40 moves each without progress. The player is Black and moves first. Search depth 6 (deterministic), or iterative deepening to depth 10 within 1.5 s. Test: rules cases, a double-jump puzzle, legality over seeded self-play. A board cursor (key mode) is optional polish. |
-| 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`; `games/ai` alpha-beta with quiescence. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (measured median 27 ms, p99 150 ms). Test: mate-in-1/2 puzzles; no illegal move in 20 seeded self-play games at depth 2. |
+| 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`; `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). Repetition and the fifty-move rule are claimed at once. Test: mates in one and two; no illegal move in 20 seeded self-play games at depth 2. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up; betting heuristic + bluff probability. Test: hand ranking; pot accounting. |
 | 9–14 | Military sims | Console/Panel | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. |
-| 15 | Global Thermonuclear War | Console ⇄ Full | line | 2 | Self-contained film set piece (P-1); §6.2. Cannot be won. |
-| — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax. Unlisted (`Listed: false`), resolvable by name. Test: exhaustive "never loses". |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1); §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. Test: the film scenario transcript, board views, GTW's list against the registry, the UI screens. |
+| — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice; both modes' transcripts. |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
 
@@ -1326,7 +1326,7 @@ boundary (AGENTS.md checklist) (B-5).
 | 0 | **Scaffold** (done). go.mod, `.gitattributes`/`.gitignore`, LICENSE/NOTICE/SECURITY/CONTRIBUTING/CODE_OF_CONDUCT, `legal.go`, `version`, `proto` (types), `games` (types + catalog with 16 `Planned` entries), `cli`, `theme`, `ui` hello-world, `archtest` + lint fixture, `golden`, `tools/*`, `prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, `ci.yml`/`smoke.yml`/`release.yml`/`scheduled.yml`, README (basic), **AGENTS.md** + `CLAUDE.md`, the M0 e2e cases. | `ci-ok` green with all six smoke runners; the lint fixture fires every rule; a **snapshot** dry run of `release.yml` passes `build`/`smoke`/`repro` (CR-1); Appendix A deleted (done in v2.1). M1 may start once `ci-ok` is green. | — |
 | 0b | **Owner settings** (IM-3): the repository settings in AGENTS.md; the gitleaks canary PR turned red for a finding. | Settings applied; canary done. These gate **v0.1.0**, not M1. | — |
 | 1 | **Console, persona and protocol.** `proto/host` runner, `games/testkit`, clock, typewriter, line editor, `Sanitize*`, scrollback, canvas renderer, front panel, `prompt` (menus, yes/no, clauses; moved from M3, P-4), the ui adapter and its synchronous driver, persona (session, LOGON table, greeting scene, commands, intent, offers, scripted brain, lines with provenance), themes with ANSI/ASCII fallbacks and contrast tests, too-small handling, `gamestest` stub exercising every Output, goldens, fuzz, the M1 e2e cases. 80×24 mockups for chess and the GTW phases (Appendix C). | Every M1 golden flow and the e2e cases marked M0–M1 are green on all runners. | — |
-| 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), `catalog.Internal()` for the `ending` slug, the persona's `After` rules, the debug log, original GTW map art, scenario names (`third-party:abs0` for the 40 that match abs0, re-derived in abs0's order). QA on all OSes. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
+| 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. | Definition of done per game. | v0.3.0 |
 | 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); README completed with screenshots; accessibility pass; dependency and runner checklist. | No `reconstructed` tags remain; checklist done. | **v1.0.0** |
