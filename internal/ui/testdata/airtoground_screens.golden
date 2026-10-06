@@ -1,3 +1,4 @@
+==== start (80x24) ====
                                         /\
                                      __/||\__
                   /\                /___||___\                /\
@@ -20,28 +21,13 @@ SORTIE 1 OF 6. AIRCRAFT 12. POINTS 0; 10 TO WIN.
  6  COMMAND BUNKER       4     0/2     3  '--- ^ SAM SITE ---- X DESTROYED ---'
 WOPR: INTERCEPTORS 4. A MOBILE SAM BATTERY IS SOMEWHERE.
 PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 2.
-PACKAGE: help
-
-TARGET <NUMBER OR NAME>, STRIKE <N>, SEAD <N>, ESCORT <N> SET THE PACKAGE;
-GO FLIES IT. STATUS SHOWS THE TARGETS. END CALLS OFF THE CAMPAIGN.
-DESTROYING THE RADAR BLINDS THE SAMS, THE AIRFIELD GROUNDS THE INTERCEPTORS,
-AND THE FUEL DEPOT STOPS WOPR REPLACING THEM.
-PACKAGE: status
-
-SORTIE 1 OF 6. AIRCRAFT 12. POINTS 0; 10 TO WIN.
- #  TARGET           VALUE  DAMAGE  SAMS  .----------- TARGET AREA -----------.
- 1  BRIDGE               3     0/2     1  |  /\   5 \_/ ^^   4 [=-=-=-=-=] ^^ |
- 2  FUEL DEPOT           2     0/2     1  | /  \/\              :             |
- 3  MARSHALLING YARD     2     0/3     0  |~~~~~~~~~~~~~~~ 1 =|=|= ^ ~~~~~~~~~|
- 4  AIRFIELD             3     0/3     2  |   /\/\              :             |
- 5  RADAR                2     0/1     2  | 6 [###] ^^^  3 +-+-+-+ 2 (O)(O) ^ |
- 6  COMMAND BUNKER       4     0/2     3  '--- ^ SAM SITE ---- X DESTROYED ---'
+PACKAGE:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 9, row 22
+==== bunker go (80x24) ====
 WOPR: INTERCEPTORS 4. A MOBILE SAM BATTERY IS SOMEWHERE.
 PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 2.
-PACKAGE: bunker
-
-PACKAGE: TARGET COMMAND BUNKER. STRIKE 4, SEAD 2, ESCORT 2.
-PACKAGE: go
+PACKAGE: bunker go
 
 SORTIE 1: THE COMMAND BUNKER. STRIKE 4, SEAD 2, ESCORT 2.
 WOPR SCRAMBLES INTERCEPTORS: 4.
@@ -59,6 +45,12 @@ SORTIE 2 OF 6. AIRCRAFT 10. POINTS 4; 10 TO WIN.
  4  AIRFIELD             3     0/3     2  |   \ | /             :             |
  5  RADAR                2     0/1     2  | 6 [XXX]      3 +-+-+-+ 2 (O)(O) ^ |
  6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
+WOPR: INTERCEPTORS 4. A MOBILE SAM BATTERY IS SOMEWHERE.
+PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 2.
+PACKAGE:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 9, row 22
+==== target 5 strike 4 sead 3 escort 3 go (80x24) ====
 WOPR: INTERCEPTORS 4. A MOBILE SAM BATTERY IS SOMEWHERE.
 PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 2.
 PACKAGE: target 5 strike 4 sead 3 escort 3 go
@@ -81,13 +73,21 @@ SORTIE 3 OF 6. AIRCRAFT 6. POINTS 6; 10 TO WIN.
  6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
 WOPR: INTERCEPTORS 3. A MOBILE SAM BATTERY IS SOMEWHERE.
 PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 0.
-PACKAGE: target 2 strike 2 sead 2 escort 2 go
+PACKAGE:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 9, row 22
+==== target 2 strike 3 sead 2 go (80x24) ====
+ 5  RADAR                2  DESTROYED     | 6 [XXX]      3 +-+-+-+ 2 (O)(O) ^ |
+ 6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
+WOPR: INTERCEPTORS 3. A MOBILE SAM BATTERY IS SOMEWHERE.
+PACKAGE: TARGET NONE. STRIKE 4, SEAD 2, ESCORT 0.
+PACKAGE: target 2 strike 3 sead 2 go
 
-SORTIE 3: THE FUEL DEPOT. STRIKE 2, SEAD 2, ESCORT 2.
+SORTIE 3: THE FUEL DEPOT. STRIKE 3, SEAD 2, ESCORT 0.
 WOPR SCRAMBLES INTERCEPTORS: 3.
-ESCORTS: INTERCEPTORS DOWN 2, DRIVEN OFF 0; ESCORTS LOST 1.
-INTERCEPTORS: SHOT DOWN 1, TURNED BACK 0; INTERCEPTORS LOST 0.
-SEAD: SITES DESTROYED 0, SUPPRESSED 1; AIRCRAFT LOST 0.
+INTERCEPTORS: SHOT DOWN 2, TURNED BACK 1; INTERCEPTORS LOST 0.
+SEAD: SITES DESTROYED 0, SUPPRESSED 0; AIRCRAFT LOST 0.
+SAMS: SHOT DOWN 0, TURNED BACK 0.
 OVER THE FUEL DEPOT: AIRCRAFT 1, HITS 0, LOST TO FLAK 0.
 SORTIE 4 OF 6. AIRCRAFT 4. POINTS 6; 10 TO WIN.
  #  TARGET           VALUE  DAMAGE  SAMS  .----------- TARGET AREA -----------.
@@ -97,52 +97,8 @@ SORTIE 4 OF 6. AIRCRAFT 4. POINTS 6; 10 TO WIN.
  4  AIRFIELD             3     0/3     2  |   /\/\              :             |
  5  RADAR                2  DESTROYED     | 6 [XXX]      3 +-+-+-+ 2 (O)(O) ^ |
  6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
-WOPR: INTERCEPTORS 2. A MOBILE SAM BATTERY IS SOMEWHERE.
-PACKAGE: TARGET FUEL DEPOT. STRIKE 2, SEAD 2, ESCORT 0.
-PACKAGE: target 2 strike 1 sead 2 escort 1 go
-
-SORTIE 4: THE FUEL DEPOT. STRIKE 1, SEAD 2, ESCORT 1.
-WOPR SCRAMBLES INTERCEPTORS: 2.
-ESCORTS: INTERCEPTORS DOWN 0, DRIVEN OFF 0; ESCORTS LOST 0.
-INTERCEPTORS: SHOT DOWN 0, TURNED BACK 1; INTERCEPTORS LOST 0.
-THE MOBILE SAM BATTERY WAS WAITING AT THE FUEL DEPOT.
-SEAD: SITES DESTROYED 1, SUPPRESSED 1; AIRCRAFT LOST 0.
-NO AIRCRAFT REACH THE FUEL DEPOT.
-SORTIE 5 OF 6. AIRCRAFT 4. POINTS 6; 10 TO WIN.
- #  TARGET           VALUE  DAMAGE  SAMS  .----------- TARGET AREA -----------.
- 1  BRIDGE               3     0/2     1  |  /\   5 \X/      4 [=-=-=-=-=] ^^ |
- 2  FUEL DEPOT           2     0/2     0  | /  \/\              :             |
- 3  MARSHALLING YARD     2     0/3     0  |~~~~~~~~~~~~~~~ 1 =|=|= ^ ~~~~~~~~~|
- 4  AIRFIELD             3     0/3     2  |   /\/\              :             |
- 5  RADAR                2  DESTROYED     | 6 [XXX]      3 +-+-+-+ 2 (O)(O)   |
- 6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
-WOPR: INTERCEPTORS 3. A MOBILE SAM BATTERY IS SOMEWHERE.
-PACKAGE: TARGET FUEL DEPOT. STRIKE 1, SEAD 2, ESCORT 1.
-PACKAGE: target 2 strike 1 sead 1 escort 2 go
-
-SORTIE 5: THE FUEL DEPOT. STRIKE 1, SEAD 1, ESCORT 2.
-WOPR SCRAMBLES INTERCEPTORS: 3.
-ESCORTS: INTERCEPTORS DOWN 0, DRIVEN OFF 2; ESCORTS LOST 0.
-INTERCEPTORS: SHOT DOWN 0, TURNED BACK 1; INTERCEPTORS LOST 0.
-THE MOBILE SAM BATTERY WAS WAITING AT THE FUEL DEPOT.
-SEAD: SITES DESTROYED 0, SUPPRESSED 0; AIRCRAFT LOST 0.
-NO AIRCRAFT REACH THE FUEL DEPOT.
-SORTIE 6 OF 6. AIRCRAFT 4. POINTS 6; 10 TO WIN.
- #  TARGET           VALUE  DAMAGE  SAMS  .----------- TARGET AREA -----------.
- 1  BRIDGE               3     0/2     1  |  /\   5 \X/      4 [=-=-=-=-=] ^^ |
- 2  FUEL DEPOT           2     0/2     0  | /  \/\              :             |
- 3  MARSHALLING YARD     2     0/3     0  |~~~~~~~~~~~~~~~ 1 =|=|= ^ ~~~~~~~~~|
- 4  AIRFIELD             3     0/3     2  |   /\/\              :             |
- 5  RADAR                2  DESTROYED     | 6 [XXX]      3 +-+-+-+ 2 (O)(O)   |
- 6  COMMAND BUNKER       4  DESTROYED     '--- ^ SAM SITE ---- X DESTROYED ---'
 WOPR: INTERCEPTORS 4. A MOBILE SAM BATTERY IS SOMEWHERE.
-PACKAGE: TARGET FUEL DEPOT. STRIKE 1, SEAD 1, ESCORT 2.
-PACKAGE: target 2 strike 1 sead 1 escort 2 go
-
-SORTIE 6: THE FUEL DEPOT. STRIKE 1, SEAD 1, ESCORT 2.
-WOPR SCRAMBLES INTERCEPTORS: 4.
-ESCORTS: INTERCEPTORS DOWN 2, DRIVEN OFF 0; ESCORTS LOST 1.
-INTERCEPTORS: SHOT DOWN 1, TURNED BACK 1; INTERCEPTORS LOST 0.
-THE MOBILE SAM BATTERY WAS WAITING AT THE FUEL DEPOT.
-NO AIRCRAFT REACH THE FUEL DEPOT.
-THE CAMPAIGN ENDS WITH 6 POINTS.
+PACKAGE: TARGET FUEL DEPOT. STRIKE 3, SEAD 1, ESCORT 0.
+PACKAGE:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 9, row 22

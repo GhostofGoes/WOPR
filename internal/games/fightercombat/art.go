@@ -58,7 +58,7 @@ var (
 	picPlanes  = script.Orig(`\==>`, `<==/`, `~~`)
 	picNames   = script.Orig("YOU", "WOPR")
 	picCaption = script.Orig("RANGE #. #.")
-	picAspects = script.Orig("WOPR IS ON YOUR TAIL", "HEAD-ON", "YOU ARE ON ITS TAIL")
+	picAspects = script.Orig("WOPR IS ON YOUR TAIL", "NEUTRAL, HEAD-ON", "YOU ARE ON ITS TAIL")
 )
 
 // Picture geometry: the scale's column, where the player's label starts, where WOPR's

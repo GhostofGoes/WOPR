@@ -20,7 +20,7 @@ WOPR: ENERGY 3, MISSILES 2.
   HIGH :
    MID : YOU \==>                                             <==/ WOPR
    LOW :
-       '---------------------- RANGE LONG. HEAD-ON. ------------------------
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: FIRE
 
 YOU FIRE A MISSILE: A HIT.
@@ -31,7 +31,7 @@ WOPR: DAMAGED. ENERGY 3, MISSILES 1.
   HIGH :
    MID : YOU ~~\==>                                           <==/~~ WOPR
    LOW :
-       '---------------------- RANGE LONG. HEAD-ON. ------------------------
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: FIRE
 
 YOU FIRE A MISSILE: A NEAR MISS.
@@ -42,7 +42,7 @@ WOPR: DAMAGED. ENERGY 2, MISSILES 0.
   HIGH :
    MID : YOU ~~\==>                                           <==/~~ WOPR
    LOW :
-       '---------------------- RANGE LONG. HEAD-ON. ------------------------
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -53,7 +53,7 @@ WOPR: DAMAGED. ENERGY 0, MISSILES 0.
   HIGH :
    MID : YOU ~~\==>
    LOW :                                      <==/~~ WOPR
-       '--------------------- RANGE MEDIUM. HEAD-ON. -----------------------
+       '----------------- RANGE MEDIUM. NEUTRAL, HEAD-ON. ------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -64,7 +64,7 @@ WOPR: DAMAGED. ENERGY 2, MISSILES 0.
   HIGH :
    MID :                      <==/~~ WOPR
    LOW : YOU ~~\==>
-       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: CLIMB
 
 YOU CLIMB.
@@ -75,7 +75,7 @@ WOPR: DAMAGED. ENERGY 4, MISSILES 0.
   HIGH :
    MID : YOU ~~\==>           <==/~~ WOPR
    LOW :
-       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: PRESS
 
 YOU PRESS IN.
@@ -97,7 +97,7 @@ WOPR: DAMAGED. ENERGY 4, MISSILES 0.
   HIGH :
    MID :                      <==/~~ WOPR
    LOW : YOU ~~\==>
-       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
 MANOEUVRE: CLIMB
 
 YOU CLIMB.

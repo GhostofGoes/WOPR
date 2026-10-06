@@ -32,32 +32,32 @@
   HIGH :
    MID : YOU \==>             <==/ WOPR
    LOW :
-       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
 ==== aspect 0, range 1, energy [0 6], hits [1 1] ====
   HIGH :                      <==/~~ WOPR
    MID :
    LOW : YOU ~~\==>
-       '---------------------- RANGE CLOSE. HEAD-ON. -----------------------
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
 ==== aspect 0, range 2, energy [3 3], hits [0 0] ====
   HIGH :
    MID : YOU \==>                             <==/ WOPR
    LOW :
-       '--------------------- RANGE MEDIUM. HEAD-ON. -----------------------
+       '----------------- RANGE MEDIUM. NEUTRAL, HEAD-ON. ------------------
 ==== aspect 0, range 2, energy [0 6], hits [1 1] ====
   HIGH :                                      <==/~~ WOPR
    MID :
    LOW : YOU ~~\==>
-       '--------------------- RANGE MEDIUM. HEAD-ON. -----------------------
+       '----------------- RANGE MEDIUM. NEUTRAL, HEAD-ON. ------------------
 ==== aspect 0, range 3, energy [3 3], hits [0 0] ====
   HIGH :
    MID : YOU \==>                                             <==/ WOPR
    LOW :
-       '---------------------- RANGE LONG. HEAD-ON. ------------------------
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
 ==== aspect 0, range 3, energy [0 6], hits [1 1] ====
   HIGH :                                                      <==/~~ WOPR
    MID :
    LOW : YOU ~~\==>
-       '---------------------- RANGE LONG. HEAD-ON. ------------------------
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
 ==== aspect 1, range 1, energy [3 3], hits [0 0] ====
   HIGH :
    MID : YOU \==>             \==> WOPR
