@@ -94,8 +94,15 @@ func (s *Scrollback) Lines() []Line { return s.lines }
 // newest rows are shown, or older ones when the view is scrolled up. Lines are wrapped
 // lazily from the newest backwards, so rendering cost does not grow with history.
 func (s *Scrollback) Render(w, h int, method ansi.Method, extra ...Row) []Row {
+	rows, _ := s.RenderAt(w, h, method, extra...)
+	return rows
+}
+
+// RenderAt is Render that also returns the row index of the first extra row, or -1 when it
+// is not on screen (the view is scrolled up).
+func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row, int) {
 	if h <= 0 {
-		return nil
+		return nil, -1
 	}
 	out := make([]Row, h)
 	need := h + s.offset
@@ -118,7 +125,10 @@ func (s *Scrollback) Render(w, h int, method ansi.Method, extra ...Row) []Row {
 		for k := range pageRows { // the page starts at the top
 			out[k] = rev[pageRows-1-k]
 		}
-		return out
+		if len(extra) == 0 {
+			return out, -1
+		}
+		return out, pageRows - len(extra)
 	}
 	for ; i >= 0 && len(rev) < need; i-- { // continue into earlier pages
 		rows := wrapRows(s.lines[i], w, method)
@@ -129,13 +139,17 @@ func (s *Scrollback) Render(w, h int, method ansi.Method, extra ...Row) []Row {
 	offset := min(s.offset, max(len(rev)-h, 0))
 	s.offset = offset
 	// rev[offset] is the bottom row of the view.
+	extraAt := -1
 	for k := range h {
 		src := offset + (h - 1 - k)
 		if src < len(rev) {
 			out[k] = rev[src]
 		}
+		if len(extra) > 0 && src == len(extra)-1 {
+			extraAt = k
+		}
 	}
-	return out
+	return out, extraAt
 }
 
 func wrapRows(l Line, w int, method ansi.Method) []Row {

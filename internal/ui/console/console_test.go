@@ -197,3 +197,24 @@ func FuzzSanitizeInput(f *testing.F) {
 		}
 	})
 }
+
+func TestRenderAtReportsTheInputRow(t *testing.T) {
+	t.Parallel()
+	var sb Scrollback
+	sb.Append("A", 0)
+	_, at := sb.RenderAt(80, 5, ansi.WcWidth, Row{Text: "> "})
+	if at != 1 {
+		t.Errorf("input row at %d, want 1", at)
+	}
+	for i := range 10 {
+		sb.Append(strings.Repeat("B", i+1), 0)
+	}
+	rows, at := sb.RenderAt(80, 4, ansi.WcWidth, Row{Text: "> "})
+	if at != 3 || rows[3].Text != "> " {
+		t.Errorf("input row at %d (%q), want the last row", at, rows[3].Text)
+	}
+	sb.Scroll(5)
+	if _, at := sb.RenderAt(80, 4, ansi.WcWidth, Row{Text: "> "}); at != -1 {
+		t.Errorf("scrolled up: input row at %d, want -1", at)
+	}
+}

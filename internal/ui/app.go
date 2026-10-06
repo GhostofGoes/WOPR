@@ -1,21 +1,32 @@
 // Package ui is the Bubble Tea application: the only package that imports Bubble Tea.
-// It turns the protocol in internal/proto into a terminal user interface.
-//
-// M0 ships a minimal screen that proves the stack end to end: alternate screen, theme
-// background, native cursor and exit handling. The console, host and persona arrive in M1.
+// It adapts the host runner (internal/proto/host) and the console (internal/ui/console)
+// to the terminal: input, the single clock, layout and rendering.
 package ui
 
 import (
+	"context"
 	"errors"
 	"os"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 
+	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/proto"
+	"github.com/GhostofGoes/WOPR/internal/proto/host"
 	"github.com/GhostofGoes/WOPR/internal/theme"
+	"github.com/GhostofGoes/WOPR/internal/ui/console"
+	"github.com/GhostofGoes/WOPR/internal/wopr"
+)
+
+// Minimum terminal size.
+const (
+	MinWidth  = 80
+	MinHeight = 24
 )
 
 // Options configure a session.
@@ -29,6 +40,8 @@ type Options struct {
 	Movie        bool
 	Scene        string
 	NoColor      bool // NO_COLOR set to any non-empty value (no-color.org)
+	Panel        bool // show the front-panel row
+	Registry     *games.Registry
 }
 
 // Outcome is how a session ended, for the caller's exit code.
@@ -36,7 +49,7 @@ type Outcome int
 
 // Outcomes.
 const (
-	Finished    Outcome = iota // LOGOFF or SIGTERM
+	Finished    Outcome = iota // LOGOFF, Ctrl+D or SIGTERM
 	Interrupted                // Ctrl+C or SIGINT
 	Panicked                   // the terminal is restored and the stack is on stderr
 	NoTerminal                 // no terminal could be opened
@@ -45,15 +58,11 @@ const (
 
 // Run runs the TUI until the user leaves.
 func Run(opts Options) (Outcome, error) {
-	th, ok := theme.Get(opts.Theme)
-	if !ok {
-		th, _ = theme.Get(theme.Default)
-	}
 	var teaOpts []tea.ProgramOption
 	if opts.NoColor { // colorprofile alone parses NO_COLOR with ParseBool and ignores NO_COLOR=yes
 		teaOpts = append(teaOpts, tea.WithColorProfile(colorprofile.Ascii))
 	}
-	_, err := tea.NewProgram(newModel(th), teaOpts...).Run()
+	_, err := tea.NewProgram(newModel(opts, teaScheduler), teaOpts...).Run()
 	return classify(err), err
 }
 
@@ -86,60 +95,221 @@ func TerminalProblem(getenv func(string) string) string {
 	return ""
 }
 
+type thinkDoneMsg struct {
+	gen   uint64
+	value any
+	err   error
+}
+
 type model struct {
+	opts    Options
 	th      *theme.Theme
 	profile colorprofile.Profile
+	method  ansi.Method
 	w, h    int
+
+	runner  *host.Runner
+	started bool
+	place   host.Placement
+
+	sb      console.Scrollback
+	tw      console.Typewriter
+	ed      console.Editor
+	asking  bool   // the console prompt is active
+	prompt  string // its text
+	held    bool   // Enter pressed before the prompt was active
+	keyMode bool
+	notice  string
+
+	thinks map[uint64]context.CancelFunc
+	clk    clock
+	phase  time.Duration // animation phase for blink and the thinking indicator
+	now    func() time.Time
 }
 
-func newModel(th *theme.Theme) model {
-	return model{th: th, profile: colorprofile.TrueColor}
+func newModel(opts Options, sched Scheduler) *model {
+	th, ok := theme.Get(opts.Theme)
+	if !ok {
+		th, _ = theme.Get(theme.Default)
+	}
+	m := &model{
+		opts: opts, th: th, profile: colorprofile.TrueColor, method: ansi.WcWidth,
+		thinks: map[uint64]context.CancelFunc{}, clk: clock{schedule: sched}, now: time.Now,
+	}
+	m.tw.SetInstant(opts.Instant)
+	return m
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (m *model) Init() tea.Cmd { return nil }
 
-func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+// tooSmall reports whether the terminal is below the minimum size.
+func (m *model) tooSmall() bool { return m.w < MinWidth || m.h < MinHeight }
+
+func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
+		if !m.tooSmall() {
+			if !m.started {
+				cmds = append(cmds, m.start())
+			} else {
+				cmds = append(cmds, m.applyAll(m.runner.Resize()))
+			}
+		}
 	case tea.ColorProfileMsg:
 		m.profile = msg.Profile
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "ctrl+c":
-			return m, tea.Interrupt
-		case "ctrl+z":
-			return m, tea.Suspend
+		cmds = append(cmds, m.key(msg))
+	case tea.PasteMsg:
+		if !m.tooSmall() && !m.keyMode {
+			m.ed.Insert(msg.Content)
+		}
+	case tickMsg:
+		if dt, ok := m.clk.accept(msg); ok {
+			cmds = append(cmds, m.tick(dt))
+		}
+	case thinkDoneMsg:
+		delete(m.thinks, msg.gen)
+		if m.runner != nil {
+			cmds = append(cmds, m.applyAll(m.runner.ThinkResult(msg.gen, msg.value, msg.err)))
 		}
 	}
-	return m, nil
+	cmds = append(cmds, m.maybeArm())
+	return m, tea.Batch(cmds...)
 }
 
-const prompt = "LOGON: "
-
-func (m model) View() tea.View {
-	v := tea.NewView(m.render())
-	v.AltScreen = true
-	if m.w > 0 && m.h > 0 {
-		v.Cursor = tea.NewCursor(len(prompt), 0)
-	}
-	return v
+// start runs the root program once the terminal has a usable size.
+func (m *model) start() tea.Cmd {
+	m.started = true
+	m.runner = host.New(host.Config{
+		Seed: m.opts.Seed, Instant: m.opts.Instant, Deterministic: m.opts.SeedSet,
+		Resolve: m.resolve, Area: m.area,
+	})
+	persona := wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
+	return m.applyAll(m.runner.Start(persona, host.Placement{}))
 }
 
-// render paints the theme background into every cell, so the screen looks the same
-// whatever the terminal's own background is.
-func (m model) render() string {
-	if m.w <= 0 || m.h <= 0 {
-		return ""
+func (m *model) resolve(l proto.Launch) (proto.Program, host.Placement, error) {
+	if m.opts.Registry == nil {
+		return nil, host.Placement{}, games.ErrNotFound
 	}
-	text := m.th.Lip(proto.StyleText, 0, m.profile)
-	lines := make([]string, m.h)
-	for y := range lines {
-		s := ""
-		if y == 0 {
-			s = prompt
+	e, ok := m.opts.Registry.Get(l.Slug)
+	if !ok || e.New == nil {
+		return nil, host.Placement{}, games.ErrNotFound
+	}
+	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows}, nil
+}
+
+// tick advances the typewriter and the runner.
+func (m *model) tick(dt time.Duration) tea.Cmd {
+	if m.tooSmall() {
+		return nil // paused: nothing advances while the TOO SMALL card is up
+	}
+	m.phase += dt
+	for _, ev := range m.tw.Advance(dt, &m.sb) {
+		m.onTypewriter(ev)
+	}
+	cmd := m.applyAll(m.runner.Advance(dt))
+	return tea.Batch(cmd, m.release())
+}
+
+func (m *model) onTypewriter(ev console.Event) {
+	if ev.Prompt {
+		m.asking, m.prompt = true, ev.PromptText
+	}
+}
+
+// release submits a line whose Enter was pressed before the prompt became active.
+func (m *model) release() tea.Cmd {
+	if m.held && m.asking && !m.tw.Busy() {
+		m.held = false
+		return m.submit()
+	}
+	return nil
+}
+
+// busy reports whether the clock must keep running.
+func (m *model) busy() bool {
+	if !m.started || m.tooSmall() {
+		return false
+	}
+	return m.tw.Busy() || m.runner.NeedsTicks() || m.runner.Thinking() || len(m.thinks) > 0
+}
+
+func (m *model) maybeArm() tea.Cmd {
+	if m.busy() {
+		return m.clk.arm(m.now())
+	}
+	if !m.clk.armed {
+		m.clk.idle()
+	}
+	return nil
+}
+
+// applyAll applies runner effects in order.
+func (m *model) applyAll(effects []host.Effect) tea.Cmd {
+	var cmds []tea.Cmd
+	for _, e := range effects {
+		switch e := e.(type) {
+		case host.Print:
+			m.tw.Say(e.Lines, proto.StyleText, e.Pace)
+		case host.Pause:
+			m.tw.Pause(e.D)
+		case host.PageBreak:
+			m.tw.Page()
+		case host.AskLine:
+			m.keyMode = false
+			m.tw.Prompt(e.Prompt)
+		case host.AskKeys:
+			m.keyMode = true
+			m.asking = false
+		case host.StartThink:
+			cmds = append(cmds, m.think(e))
+		case host.CancelThink:
+			if cancel, ok := m.thinks[e.Gen]; ok {
+				cancel()
+				delete(m.thinks, e.Gen)
+			}
+		case host.Notice:
+			m.notice = e.Text
+		case host.Relayout:
+			m.place = e.Placement
+		case host.Redraw:
+		case host.Exit:
+			cmds = append(cmds, tea.Quit)
 		}
-		lines[y] = text.Render(s + strings.Repeat(" ", max(m.w-len(s), 0)))
 	}
-	return strings.Join(lines, "\n")
+	if m.opts.Instant {
+		for _, ev := range m.tw.Flush(&m.sb) {
+			m.onTypewriter(ev)
+		}
+	}
+	return tea.Batch(cmds...)
+}
+
+// think runs a program's slow work off the UI goroutine.
+func (m *model) think(t host.StartThink) tea.Cmd {
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+	if t.Deadline > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), t.Deadline)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
+	m.thinks[t.Gen] = cancel
+	fn, gen := t.Fn, t.Gen
+	return func() tea.Msg {
+		defer cancel()
+		v, err := fn(ctx)
+		return thinkDoneMsg{gen: gen, value: v, err: err}
+	}
+}
+
+// area is the layout area for a placement at the current terminal size.
+func (m *model) area(p host.Placement) (int, int) {
+	g := m.geometry(p)
+	return g.width, g.viewRows
 }

@@ -53,7 +53,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	outcome, err := ui.Run(ui.Options{
 		Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
 		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene,
-		NoColor: getenv("NO_COLOR") != "",
+		NoColor: getenv("NO_COLOR") != "", Panel: panelWanted(getenv), Registry: reg,
 	})
 	switch outcome {
 	case ui.Finished:
@@ -71,6 +71,15 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		warn(stderr, "%v", err)
 		return exitError
 	}
+}
+
+// panelWanted reads WOPR_PANEL; the norad theme shows the front panel by default.
+func panelWanted(getenv func(string) string) bool {
+	switch getenv("WOPR_PANEL") {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }
 
 func warn(w io.Writer, format string, a ...any) {
