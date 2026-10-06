@@ -1,18 +1,24 @@
-# CI for pull requests and main. The only required check is ci-ok (see AGENTS.md).
+# CI for every branch push and every pull request. The only required check is ci-ok (see
+# AGENTS.md). A branch with an open pull request runs twice, on purpose: once as pushed, and
+# once merged with its base.
 name: CI
 
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: ["**"] # every branch; tags go to release.yml
 
 permissions: {}
 
-# Pull requests share a group per PR and cancel superseded runs. Pushes to main get a group
-# per commit: a shared group would let a newer pending run replace an older pending one.
+# Pull requests share a group per PR, and other branches a group per branch; both cancel
+# superseded runs. Pushes to main get a group per commit: a shared group would let a newer
+# pending run replace an older pending one, leaving a merged commit without ci-ok.
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref) || format('ci-{0}', github.sha) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: >-
+    ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref)
+    || github.ref == 'refs/heads/main' && format('ci-{0}', github.sha)
+    || format('ci-branch-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
 
 jobs:
   lint:
@@ -56,8 +62,8 @@ jobs:
           go-version-file: go.mod
       - name: gitleaks (full history)
         shell: bash
-        # Scans the checked-out history (main, plus the PR), not every branch: a stale branch
-        # must not block every PR. gitleaks exits 0 when git fails, so errors and an empty
+        # Scans the checked-out commit's history (a branch, or a PR merged with main), not every
+        # branch: a stale branch must not block every PR. gitleaks exits 0 when git fails, so errors and an empty
         # scan are caught from the log, which --no-color keeps greppable.
         run: |
           set -o pipefail
@@ -135,9 +141,10 @@ jobs:
         run: go run ./internal/tools/stage -archives
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || 'wopr-dev' }}
+          # wopr-dev on main (30 days), wopr-branch on other branches (7), wopr-pr<N> on PRs (3).
+          name: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || github.ref == 'refs/heads/main' && 'wopr-dev' || 'wopr-branch' }}
           path: stage/
-          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || github.ref == 'refs/heads/main' && 30 || 7 }}
           if-no-files-found: error
 
   smoke:
@@ -146,7 +153,7 @@ jobs:
     permissions: {}
     uses: $/.github/workflows/smoke.yml
     with:
-      artifact: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || 'wopr-dev' }}
+      artifact: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || github.ref == 'refs/heads/main' && 'wopr-dev' || 'wopr-branch' }}
 
   ci-ok:
     name: ci-ok

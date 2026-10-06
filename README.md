@@ -122,7 +122,8 @@ Every game in `LIST GAMES` is playable:
 Every push to `main` builds all six targets. Open a
 [CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush),
 download the `wopr-dev` artifact under **Artifacts**, unzip it, and run the binary for your platform
-(`chmod +x` it first on Linux and macOS). Builds from pull requests are for testing only.
+(`chmod +x` it first on Linux and macOS). Builds from other branches (`wopr-branch`) and pull requests
+(`wopr-pr<N>`) are for testing only.
 
 ## Building and contributing
 

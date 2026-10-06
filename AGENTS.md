@@ -84,6 +84,7 @@ licence is recorded.
 ## Pull requests
 
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
+- CI (`ci.yml`) runs on every branch push and every pull request, so a branch is checked before its PR.
 - Run `prek run --all-files` and `go test ./...` before pushing.
 - Never re-tag a release. A bad release is fixed with the next patch version and a `retract` in `go.mod`.
 
