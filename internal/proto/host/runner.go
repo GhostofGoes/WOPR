@@ -406,7 +406,15 @@ func (r *Runner) finish(f *frame, res proto.Result) []Effect {
 			effects = append(effects, CancelThink{Gen: f.thinkGen})
 		}
 		r.stack = r.stack[:len(r.stack)-1]
-		return append(effects, r.launch(*res.Next)...)
+		depth := len(r.stack)
+		effects = append(effects, r.launch(*res.Next)...)
+		if len(r.stack) == depth { // the next program could not be built: report to the program below
+			res.Next = nil
+			below := r.top()
+			effects = append(effects, Relayout{Placement: below.place})
+			return append(effects, r.apply(below, below.prog.Handle(proto.GameOver{Result: res}))...)
+		}
+		return effects
 	}
 	return r.pop(res)
 }

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
 )
@@ -150,3 +151,65 @@ func (s *Session) think(st host.StartThink) []host.Effect {
 	}
 	return s.r.ThinkResult(st.Gen, value, err)
 }
+
+// GameSession is a single game running under a stand-in persona (see Game).
+type GameSession struct {
+	*Session
+	root     *standIn
+	launches []string
+}
+
+// Game runs game under a stand-in persona that launches it in mode and records how it
+// ends. The resolver builds only that game, once; any other launch (a hand-off such as
+// the ending) is recorded and reported as not available, so the stand-in still gets a
+// GameOver.
+func Game(t testing.TB, game proto.Program, info games.Info, mode string, seed uint64) *GameSession {
+	t.Helper()
+	gs := &GameSession{root: &standIn{slug: info.Slug, mode: mode}}
+	built := false
+	cfg := host.Config{
+		Seed: seed,
+		Resolve: func(l proto.Launch) (proto.Program, host.Placement, error) {
+			gs.launches = append(gs.launches, l.Slug)
+			if l.Slug != info.Slug || built {
+				return nil, host.Placement{}, games.ErrNotFound
+			}
+			built = true
+			return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows}, nil
+		},
+	}
+	gs.Session = Start(t, gs.root, host.Placement{}, cfg)
+	return gs
+}
+
+// Result returns the game's result once it has ended.
+func (g *GameSession) Result() (proto.Result, bool) {
+	if g.root.result == nil {
+		return proto.Result{}, false
+	}
+	return *g.root.result, true
+}
+
+// Launches lists every slug the game session asked the host to launch, in order: the game
+// itself first, then any hand-off.
+func (g *GameSession) Launches() []string { return g.launches }
+
+// standIn is the root program for Game: it launches one game and keeps its result.
+type standIn struct {
+	slug, mode string
+	result     *proto.Result
+}
+
+func (s *standIn) Start(proto.Env) []proto.Output {
+	return []proto.Output{proto.Launch{Slug: s.slug, Mode: s.mode}}
+}
+
+func (s *standIn) Handle(ev proto.Event) []proto.Output {
+	if over, ok := ev.(proto.GameOver); ok {
+		r := over.Result
+		s.result = &r
+	}
+	return nil
+}
+
+func (s *standIn) View(*proto.Canvas) {}

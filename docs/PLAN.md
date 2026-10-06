@@ -107,7 +107,9 @@ in our own layout, tagged `reconstructed` (SL-5).
 
 **Provenance tags.** Every script line, scene step and asset carries one. The tag is one of the values below,
 and a `third-party:` tag must name a source credited in `NOTICE.md`; a test enforces both for `lines.go` now and
-for `internal/assets/` and `internal/movie/scenes/` when they land (SL-4).
+for `internal/assets/` and `internal/movie/scenes/` when they land (SL-4). The types and the check live in
+`internal/script` (`script.L`, `script.Validate`), shared by the persona, every game, the assets and the movie
+scenes.
 
 | Tag | Meaning |
 |---|---|
@@ -213,23 +215,24 @@ internal/cli         → games, theme (--theme validation), version, (movie in M
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
 internal/proto/host  → proto                          Bubble-Tea-free runner (A-14)
 internal/prompt      → stdlib                         normalise, clauses, numbers, yes/no
+internal/script      → stdlib                         screen text with provenance tags, and their validator
 internal/theme       → proto, charm.land/lipgloss/v2, github.com/charmbracelet/{colorprofile,x/ansi}
 internal/ui/...      → ui/..., proto, proto/host, prompt, wopr, games, theme, assets, movie,
                        charm.land/*, github.com/charmbracelet/{x/ansi,x/term,colorprofile},
                        github.com/rivo/uniseg
-internal/wopr        → proto, prompt, games (types only; the registry is injected)
+internal/wopr        → proto, prompt, script, games (types only; the registry is injected)
 internal/games       → proto, prompt                  types, Registry, Resolve (one normaliser, AR-4)
 internal/games/catalog                → games, games/..., proto         the only place constructors are wired
 internal/games/gamestest              → proto, games    stub programs; tests only
 internal/games/testkit                → proto, proto/host, games, golden   tests only
-internal/games/ending                 → proto, prompt, games, games/{tictactoe,ai,board}, assets (AR-6)
+internal/games/ending                 → proto, prompt, script, games, games/{tictactoe,ai,board}, assets (AR-6)
 internal/games/{ai,board}             → proto, games
 internal/games/cards                  → proto, games, prompt
-internal/games/...                    → proto, prompt, games, games/{ai,cards,board}, assets, sim,
+internal/games/...                    → proto, prompt, script, games, games/{ai,cards,board}, assets, sim,
                                         github.com/corentings/chess/v2
 internal/sim         → proto                          (M4)
-internal/assets      → stdlib                         embedded art, scenario names (with provenance)
-internal/movie/...   → movie/..., proto, prompt, assets, games/gtw, games/ending      (M6)
+internal/assets      → script                         embedded art, scenario names (with provenance)
+internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, games/ending      (M6)
 internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
 internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
@@ -483,7 +486,7 @@ type Result struct {
 
 ```go
 // internal/games: types only (IM-6).
-type Game = proto.Program
+type Game interface{ proto.Program }
 type Status uint8 // Planned, Playable
 type Info struct {
 	Number    int      // place in LIST GAMES (1..15); 0 when not listed

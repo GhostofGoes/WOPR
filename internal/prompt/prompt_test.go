@@ -50,7 +50,7 @@ func TestNumber(t *testing.T) {
 			t.Errorf("Number(%q) = %d,%v want %d", in, got, good, want)
 		}
 	}
-	for _, in := range []string{"", "seven games", "-1", "99999999999999999999", "7 8", "x"} {
+	for _, in := range []string{"", "seven games", "-1", "99999999999999999999", "7 8", "x", "no"} { // "no" answers yes/no questions
 		if _, good := Number(in); good {
 			t.Errorf("Number(%q) accepted", in)
 		}

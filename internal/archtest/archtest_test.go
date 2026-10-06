@@ -41,6 +41,7 @@ var rules = []rule{
 	{"internal/proto", nil},
 	{"internal/proto/host", []string{"internal/proto"}},
 	{"internal/prompt", nil},
+	{"internal/script", nil},
 	{"internal/theme", []string{"internal/proto", "charm.land/lipgloss/v2", "github.com/charmbracelet/colorprofile", "github.com/charmbracelet/x/ansi"}},
 	{"internal/ui/...", []string{
 		"internal/ui/...", "internal/proto", "internal/proto/host", "internal/prompt", "internal/wopr", "internal/games",
@@ -48,7 +49,7 @@ var rules = []rule{
 		"charm.land/", "github.com/charmbracelet/x/ansi", "github.com/charmbracelet/x/term", "github.com/charmbracelet/colorprofile",
 		"github.com/rivo/uniseg",
 	}},
-	{"internal/wopr", []string{"internal/proto", "internal/prompt", "internal/games"}},
+	{"internal/wopr", []string{"internal/proto", "internal/prompt", "internal/script", "internal/games"}},
 	{"internal/games", []string{"internal/proto", "internal/prompt"}},
 	{"internal/games/catalog", []string{"internal/games", "internal/games/...", "internal/proto"}},
 	{"internal/games/gamestest", []string{"internal/games", "internal/proto"}},
@@ -56,19 +57,19 @@ var rules = []rule{
 	// The climax reuses tic-tac-toe's rules and drawing; games hand off to it by slug
 	// (Result.Next), so no game imports ending.
 	{"internal/games/ending", []string{
-		"internal/proto", "internal/prompt", "internal/games", "internal/games/tictactoe", "internal/games/ai",
-		"internal/games/board", "internal/assets",
+		"internal/proto", "internal/prompt", "internal/script", "internal/games", "internal/games/tictactoe",
+		"internal/games/ai", "internal/games/board", "internal/assets",
 	}},
 	{"internal/games/ai", []string{"internal/proto", "internal/games"}},
 	{"internal/games/cards", []string{"internal/proto", "internal/games", "internal/prompt"}},
 	{"internal/games/board", []string{"internal/proto", "internal/games"}},
 	{"internal/games/...", []string{
-		"internal/proto", "internal/prompt", "internal/games", "internal/games/ai", "internal/games/cards",
-		"internal/games/board", "internal/assets", "internal/sim", "github.com/corentings/chess/v2",
+		"internal/proto", "internal/prompt", "internal/script", "internal/games", "internal/games/ai",
+		"internal/games/cards", "internal/games/board", "internal/assets", "internal/sim", "github.com/corentings/chess/v2",
 	}},
 	{"internal/sim", []string{"internal/proto"}},
-	{"internal/assets", nil},
-	{"internal/movie/...", []string{"internal/movie/...", "internal/proto", "internal/prompt", "internal/assets", "internal/games/gtw", "internal/games/ending"}},
+	{"internal/assets", []string{"internal/script"}},
+	{"internal/movie/...", []string{"internal/movie/...", "internal/proto", "internal/prompt", "internal/script", "internal/assets", "internal/games/gtw", "internal/games/ending"}},
 	{"internal/golden", nil},
 	{"internal/archtest", nil},
 	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty", "github.com/charmbracelet/x/vt", "github.com/charmbracelet/x/term"}},

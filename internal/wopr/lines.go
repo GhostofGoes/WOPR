@@ -1,50 +1,25 @@
 package wopr
 
-// Prov records where a line of script text comes from (docs/PLAN.md §2.1).
-type Prov string
+import "github.com/GhostofGoes/WOPR/internal/script"
 
-// Provenance values.
-const (
-	Film          Prov = "film"          // confirmed against the film (M5 viewing pass)
-	Reconstructed Prov = "reconstructed" // from transcripts or subtitles; not yet confirmed
-	ABS0          Prov = "third-party:abs0/wargames@010ed92:wargames.sh"
-	Original      Prov = "original" // written for this project
+// Script text uses the shared provenance types (docs/PLAN.md §2.1).
+type (
+	// L is one line of script text with its provenance.
+	L = script.L
+	// Ls is a block of lines.
+	Ls = script.Ls
 )
 
-// L is one line of script text with its provenance.
-type L struct {
-	Text string
-	Prov Prov
-}
-
-// Ls is a block of lines.
-type Ls []L
-
-// Texts returns the text of each line.
-func (ls Ls) Texts() []string {
-	out := make([]string, len(ls))
-	for i, l := range ls {
-		out[i] = l.Text
-	}
-	return out
-}
-
-func recon(texts ...string) Ls { return tag(Reconstructed, texts) }
-func orig(texts ...string) Ls  { return tag(Original, texts) }
-
-func tag(p Prov, texts []string) Ls {
-	out := make(Ls, len(texts))
-	for i, t := range texts {
-		out[i] = L{Text: t, Prov: p}
-	}
-	return out
-}
+var (
+	recon = script.Recon
+	orig  = script.Orig
+)
 
 // Script text. Every block is listed in allLines for the provenance test.
 var (
 	lineDialing     = orig("CONNECTING...")
 	lineConnected   = orig("CONNECTED.")
-	lineLogon       = L{"LOGON: ", Reconstructed}
+	lineLogon       = L{Text: "LOGON: ", Prov: script.Reconstructed}
 	lineNotRecog    = recon("IDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--")
 	lineHelpNA      = recon("HELP NOT AVAILABLE")
 	lineHelpGames   = recon("'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES", "WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.")
@@ -63,12 +38,12 @@ var (
 	lineToWin       = recon("TO WIN THE GAME.")
 
 	// The backdoor connect header, as transcribed by abs0/wargames (BSD-2, see NOTICE.md).
-	lineHeader = tag(ABS0, []string{
+	lineHeader = script.Tag(script.ABS0,
 		"#45     11456          11009          11893          11972        11315",
 		"PRT CON. 3.4.5.  SECTRAN 9.4.3.                      PORT STAT: SD-345",
 		"",
 		"(311) 699-7305",
-	})
+	)
 	// The status burst after the header: the film's phrases in our own two-column layout.
 	// Transcriptions disagree on "STATUS:" versus "STATUS"; the M5 viewing pass settles it.
 	lineBurst = recon(

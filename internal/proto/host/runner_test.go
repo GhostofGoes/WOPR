@@ -273,3 +273,24 @@ func TestLaunchSeeds(t *testing.T) {
 		t.Errorf("launch seeds must differ per game and per play: %v", a)
 	}
 }
+
+// A hand-off to a program that cannot be built must still end the game for the program
+// below; otherwise it would wait for a GameOver that never comes.
+func TestHandOffToMissingProgram(t *testing.T) {
+	t.Parallel()
+	ttt := &fake{start: []proto.Output{proto.Prompt{}}}
+	ttt.on = func(proto.Event) []proto.Output {
+		return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.NoWinner, Next: &proto.Launch{Slug: "ending"}}}}
+	}
+	root := &fake{start: []proto.Output{proto.Launch{Slug: "ttt"}}}
+	r := newRunner(map[string]*fake{"ttt": ttt}, false)
+	r.Start(root, Placement{})
+	eff := r.Line("0")
+	got, ok := last(root.events).(proto.GameOver)
+	if !ok || got.Result.Next != nil || got.Result.Outcome != proto.NoWinner || r.Depth() != 1 {
+		t.Fatalf("root events %v, depth %d", root.events, r.Depth())
+	}
+	if !has[Print](eff) || !has[Relayout](eff) {
+		t.Errorf("want the not-available line and a relayout: %#v", eff)
+	}
+}

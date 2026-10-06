@@ -14,6 +14,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
+	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
 // start runs the persona under the host with reg, resolving launches from it.
@@ -205,21 +206,7 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, block := range allLines {
-		for _, l := range block {
-			switch {
-			case l.Prov == Film, l.Prov == Reconstructed, l.Prov == Original:
-			case strings.HasPrefix(string(l.Prov), "third-party:"):
-				repo := strings.SplitN(strings.TrimPrefix(string(l.Prov), "third-party:"), "@", 2)[0]
-				if !strings.Contains(string(notice), repo) {
-					t.Errorf("%q is credited to %s, which NOTICE.md does not mention", l.Text, repo)
-				}
-			default:
-				t.Errorf("%q has no valid provenance (%q)", l.Text, l.Prov)
-			}
-			if l.Text != strings.ToUpper(l.Text) {
-				t.Errorf("WOPR speaks in capitals: %q", l.Text)
-			}
-		}
+	for _, err := range script.Validate(allLines, string(notice)) {
+		t.Error(err)
 	}
 }

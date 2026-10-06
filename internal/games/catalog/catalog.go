@@ -4,6 +4,7 @@ package catalog
 
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
@@ -73,8 +74,8 @@ func entries() []games.Entry {
 		}},
 		{Info: games.Info{
 			Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Aliases: []string{"tictactoe", "ttt", "noughts and crosses"},
-			Layout: proto.LayoutPanel, PanelRows: 9, Blurb: "Perfect play from WOPR. Try zero players.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 9, Status: games.Playable, Blurb: "Perfect play from WOPR. Try zero players.",
+		}, New: tictactoe.New},
 	}
 }
 
