@@ -5,7 +5,7 @@ import "github.com/GhostofGoes/WOPR/internal/script"
 // Script text (docs/PLAN.md Appendix B). Film lines are reconstructed until the M5 viewing
 // pass; everything else is original.
 var (
-	lineLabels    = script.Recon("           UNITED STATES                  SOVIET UNION")
+	lineLabels    = script.Recon("UNITED STATES", "SOVIET UNION") // under the outlines, and on the board
 	lineWhichSide = script.Recon("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")
 	promptSide    = script.Recon("PLEASE CHOOSE ONE: ")
 	lineSideAgain = script.Orig("CHOOSE 1 OR 2.")

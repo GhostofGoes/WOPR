@@ -70,6 +70,59 @@ func TestTargets(t *testing.T) {
 	}
 }
 
+// The side choice is one screen: the two outlines, their names and the question fit 80x24
+// with the front panel (23 console rows), the art printed at table pace.
+func TestSideChoiceFits(t *testing.T) {
+	t.Parallel()
+	var lines []string
+	for _, o := range gtw.New().Start(proto.Env{Seed: 1}) {
+		switch o := o.(type) {
+		case proto.Say:
+			if len(lines) == 0 && o.Pace != proto.PaceTable {
+				t.Errorf("the outlines are printed at %v, want table pace", o.Pace)
+			}
+			lines = append(lines, o.Lines...)
+		case proto.Prompt:
+			lines = append(lines, o.Text)
+		}
+	}
+	if len(lines) > 23 {
+		t.Errorf("the side choice takes %d rows, want at most 23", len(lines))
+	}
+	for _, l := range lines {
+		if len(l) > 80 {
+			t.Errorf("%d columns: %q", len(l), l)
+		}
+	}
+	for _, want := range []string{"UNITED STATES", "SOVIET UNION", "WHICH SIDE DO YOU WANT?"} {
+		if !strings.Contains(strings.Join(lines, "\n"), want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+}
+
+// Every element of the big board is on the 80x19 view, whole: the title, the DEFCON ladder
+// 5..1, the sides' names, the trajectory table and the climax's launch code.
+func TestBoardKeepsEveryElement(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	for _, in := range []string{"1", "Moscow, Leningrad, Kiev", "", "", ""} {
+		g.Handle(proto.LineEvent{Text: in})
+	}
+	c := proto.NewCanvas(80, 19)
+	g.View(c)
+	screen := c.String()
+	for _, want := range []string{
+		"GLOBAL THERMONUCLEAR WAR", "DEFCON", "| 5 |", "| 4 |", "| 3 |", "| 2 |", "| 1 |",
+		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING", "A-MM3-A", "E-MM3-A", "LAUNCH CODE: CPE 1704 ___",
+	} {
+		if !strings.Contains(screen, want) {
+			t.Errorf("the board lost %q:\n%s", want, screen)
+		}
+	}
+}
+
 // The board at each stage, as the player sees it at 80x19 (Full layout with the panel).
 func TestBoardViews(t *testing.T) {
 	t.Parallel()

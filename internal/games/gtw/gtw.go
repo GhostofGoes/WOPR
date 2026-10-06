@@ -87,21 +87,38 @@ func say(ls ...script.Ls) proto.Output {
 
 func table(lines []string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
 
-// Start implements proto.Program: the map and the side choice, as console text.
+// Start implements proto.Program: the two outlines and the side choice, as console text.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	g.rng = proto.NewRand(env.Seed, 0)
-	mapLines := make([]string, 0, len(assets.Map)+2)
-	for _, l := range assets.Map {
-		mapLines = append(mapLines, "   "+l.Text)
-	}
-	mapLines = append(mapLines, lineLabels[0].Text, "")
 	return []proto.Output{
 		proto.SetLayout{Layout: proto.LayoutConsole},
-		table(mapLines),
+		table(append(sideChoice(), "")),
 		say(lineWhichSide),
 		proto.Prompt{Text: promptSide[0].Text},
 	}
+}
+
+// Side-choice geometry: the United States' outline from column 0, 36 columns wide, and the
+// Soviet Union's from column ussrCol, 42 wide, which ends at column 79.
+const (
+	usWidth   = 36
+	ussrCol   = 38
+	ussrWidth = 42
+)
+
+// sideChoice is the film's side-choice picture: the two nations' outlines side by side, each
+// named beneath.
+func sideChoice() []string {
+	lines := make([]string, 0, len(assets.OutlineUS)+1)
+	for i, us := range assets.OutlineUS {
+		row := fmt.Sprintf("%-*s%s", ussrCol, us.Text, assets.OutlineUSSR[i].Text)
+		lines = append(lines, strings.TrimRight(row, " "))
+	}
+	us, ussr := lineLabels[0].Text, lineLabels[1].Text
+	names := strings.Repeat(" ", (usWidth-len(us))/2) + us
+	names += strings.Repeat(" ", ussrCol+(ussrWidth-len(ussr))/2-len(names)) + ussr
+	return append(lines, names)
 }
 
 // Handle implements proto.Program.
