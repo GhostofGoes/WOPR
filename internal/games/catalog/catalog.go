@@ -90,7 +90,7 @@ func entries() []games.Entry {
 		}, New: gtw.New},
 		{Info: games.Info{
 			Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Aliases: []string{"tictactoe", "ttt", "noughts and crosses"},
-			Layout: proto.LayoutPanel, PanelRows: 9, Status: games.Playable, Blurb: "Perfect play from WOPR. Try zero players.",
+			Layout: proto.LayoutPanel, PanelRows: 12, Status: games.Playable, Blurb: "Perfect play from WOPR. Try zero players.",
 		}, New: tictactoe.New},
 		// The climax after zero players: internal, reached only by a hand-off.
 		{Info: games.Info{

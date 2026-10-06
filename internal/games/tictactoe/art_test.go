@@ -10,7 +10,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-const panelRows = 9 // the catalog's PanelRows for tic-tac-toe
+const panelRows = 12 // the catalog's PanelRows for tic-tac-toe
 
 // Every line of art and panel text is printable ASCII in capitals, at most 80 columns,
 // tagged original and listed in Lines (where the provenance test checks it); the title card

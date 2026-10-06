@@ -14,7 +14,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-var info = games.Info{Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Layout: proto.LayoutPanel, PanelRows: 9}
+var info = games.Info{Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Layout: proto.LayoutPanel, PanelRows: 12}
 
 // The quality test (docs/PLAN.md §6.1): against every possible opponent, and whichever
 // optimal move WOPR's seed picks, WOPR never loses, moving first or second.
