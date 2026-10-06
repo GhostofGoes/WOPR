@@ -68,7 +68,7 @@ var rules = []rule{
 		"internal/proto", "internal/prompt", "internal/script", "internal/games", "internal/games/ai",
 		"internal/games/cards", "internal/games/board", "internal/assets", "internal/sim", "github.com/corentings/chess/v2",
 	}},
-	{"internal/sim", []string{"internal/proto"}},
+	{"internal/sim", []string{"internal/proto", "internal/prompt", "internal/script"}},
 	{"internal/assets", []string{"internal/script"}},
 	{"internal/movie/...", []string{"internal/movie/...", "internal/proto", "internal/prompt", "internal/script", "internal/assets", "internal/games/gtw", "internal/games/ending"}},
 	{"internal/golden", nil},

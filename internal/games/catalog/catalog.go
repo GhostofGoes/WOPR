@@ -8,6 +8,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/bridge"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
+	"github.com/GhostofGoes/WOPR/internal/games/desertwarfare"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
 	"github.com/GhostofGoes/WOPR/internal/games/falkensmaze"
 	"github.com/GhostofGoes/WOPR/internal/games/ginrummy"
@@ -64,8 +65,8 @@ func entries() []games.Entry {
 		}},
 		{Info: games.Info{
 			Number: 11, Listed: true, Name: "DESERT WARFARE", Slug: "desert-warfare", Aliases: []string{"desert"},
-			Layout: proto.LayoutConsole, Blurb: "Armour against armour across a desert front, with supply lines.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Armour against armour across a desert front, with supply lines.",
+		}, New: desertwarfare.New},
 		{Info: games.Info{
 			Number: 12, Listed: true, Name: "AIR-TO-GROUND ACTIONS", Slug: "air-to-ground-actions", Aliases: []string{"air-to-ground"},
 			Layout: proto.LayoutConsole, Blurb: "Plan strike packages against defended targets.",

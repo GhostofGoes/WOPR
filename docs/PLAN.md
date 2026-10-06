@@ -231,7 +231,7 @@ internal/games/{ai,board}             → proto, games
 internal/games/cards                  → proto, games, prompt
 internal/games/...                    → proto, prompt, script, games, games/{ai,cards,board}, assets, sim,
                                         github.com/corentings/chess/v2
-internal/sim         → proto                          (M4)
+internal/sim         → proto, prompt, script          the war-game engine (M4)
 internal/assets      → script                         embedded art, scenario names (with provenance)
 internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, games/ending      (M6)
 internal/golden      → stdlib                         golden-file helper (Q-3)
@@ -883,6 +883,30 @@ Guerrilla Engagement, Desert Warfare, Theaterwide Tactical and Biotoxic are **sc
 hooks). Fighter Combat (an energy/aspect dogfight) and Air-to-Ground (sortie packages against SAM threat) do
 not fit a region map. They are bespoke games that reuse only the combat-results and kill-ratio parts (G-2).
 GTW moves onto `sim` only if that removes code.
+
+#### 6.3.1 Engine spec (written first, M4)
+
+- **Map.** A strip of 5 to 7 regions, numbered from the player's rear (1) to WOPR's (N). Each has a name, a
+  terrain (`OPEN`, `ROUGH`, `CITY`; a defender in rough or city ground shifts the odds one or two columns in
+  its favour) and a controller. Adjacent means one apart.
+- **Units.** The scenario's table gives each type a name, attack, defence, move (regions a turn) and range (0:
+  its own region, 1: next door too). A unit has two steps: a loss reduces it, a second destroys it; a
+  reduced unit attacks and defends at half (rounded up). Units carry a kill-ratio category.
+- **A turn.** The player orders each unit in turn (`<verb> [region]`, or `HOLD`); `STATUS` reprints the map,
+  `HELP` the verbs. WOPR's orders come from the scenario's AI. Then movement, combat, one event card, upkeep
+  (supply, scenario hooks) and the victory check. The map prints as a table each turn (Console layout).
+- **Combat-results table.** Odds column = attack ÷ defence, clamped to 1:2 … 4:1, then shifted by terrain;
+  a d6 from the game's stream picks the result: `AE` attacker loses a step, `EX` both do, `DR` the defender
+  retreats a region (or loses a step if it cannot), `DE` the defender loses a step. One table for every
+  scenario and both bespoke games; a test pins its rows.
+- **Events.** Each scenario has a deck of 8–12 cards with a line of text and a hook; one is drawn each turn,
+  and the deck reshuffles from the stream when empty.
+- **End.** A turn limit and a victory hook per scenario: control of objective regions, elimination, or (for
+  Biotoxic) nobody, ever.
+- **Kill ratios.** Losses are counted per category for both sides and printed at the end in GTW's two-column
+  table format; the persona's verdict follows.
+- **Determinism.** Every roll and card comes from `proto.NewRand(Env.Seed, …)`; a scenario test plays a
+  seeded game to the end and checks that every order the AI gives is legal.
 
 ---
 
