@@ -1,6 +1,7 @@
 package chess
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -12,9 +13,14 @@ import (
 
 // Every line of art and panel text is printable ASCII in capitals, at most 80 columns,
 // tagged original and listed in Lines (where the provenance test checks it); the title card
-// is at most 12 rows, the panel's height.
+// is at most 12 rows, the panel's height, and stays two columns clear of the board.
 func TestArt(t *testing.T) {
 	t.Parallel()
+	for _, l := range artTitle {
+		if titleX+len(l.Text) > boardX-2 {
+			t.Errorf("%q comes within two columns of the board", l.Text)
+		}
+	}
 	if len(artTitle) > info.PanelRows {
 		t.Errorf("the title card is %d rows; the panel is %d", len(artTitle), info.PanelRows)
 	}
@@ -41,7 +47,7 @@ func TestArt(t *testing.T) {
 }
 
 // The panel stays inside its 80 columns and PanelRows rows, centred on a wider canvas, even
-// with everything showing: fifteen pieces taken, a check, WOPR's last move.
+// with everything showing: fifteen pieces taken, a check, the last move.
 func TestPanelFits(t *testing.T) {
 	t.Parallel()
 	mate := cg.NewGame() // fool's mate: White in check, beside its side's name
@@ -80,6 +86,32 @@ func TestPanelFits(t *testing.T) {
 		if fen == "fool's mate" && !strings.Contains(c.String(), "WHITE  CHECK") {
 			t.Errorf("the side in check is marked:\n%s", c.String())
 		}
+	}
+}
+
+// LAST is the last move whichever side made it, as in checkers: the player's move, bracketed
+// on the board, until WOPR replies, then WOPR's.
+func TestLastMove(t *testing.T) {
+	t.Parallel()
+	g := New().(*Game)
+	g.Start(proto.Env{Width: 80, Height: info.PanelRows, Deterministic: true})
+	view := func() string {
+		c := proto.NewCanvas(80, info.PanelRows)
+		g.View(c)
+		return c.String()
+	}
+	outs := g.Handle(proto.LineEvent{Text: "e2e4"})
+	if v := view(); !strings.Contains(v, "LAST   E2E4") || !strings.Contains(v, "[P]") || !strings.Contains(v, "[ ]") {
+		t.Errorf("after the player's move, LAST shows it, bracketed:\n%s", v)
+	}
+	th, ok := outs[len(outs)-1].(proto.Think)
+	if !ok {
+		t.Fatalf("WOPR should think after e2e4: %#v", outs)
+	}
+	val, _ := th.Fn(context.Background())
+	g.Handle(proto.ThinkDone{Value: val})
+	if v := view(); !strings.Contains(v, "LAST   "+g.lastText) || g.lastText == "E2E4" || g.g.Position().Board().Piece(g.last).Color() != cg.Black {
+		t.Errorf("after WOPR's reply, LAST shows it (%q):\n%s", g.lastText, v)
 	}
 }
 

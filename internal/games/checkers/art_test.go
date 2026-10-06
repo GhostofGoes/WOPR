@@ -12,9 +12,14 @@ const panelRows = 12 // the catalog's PanelRows for checkers
 
 // Every line of art and panel text is printable ASCII in capitals, at most 80 columns,
 // tagged original and listed in Lines (where the provenance test checks it); the title card
-// is at most 12 rows, the panel's height.
+// is at most 12 rows, the panel's height, and stays two columns clear of the board.
 func TestArt(t *testing.T) {
 	t.Parallel()
+	for _, l := range artTitle {
+		if titleX+len(l.Text) > boardX-2 {
+			t.Errorf("%q comes within two columns of the board", l.Text)
+		}
+	}
 	if len(artTitle) > panelRows {
 		t.Errorf("the title card is %d rows; the panel is %d", len(artTitle), panelRows)
 	}

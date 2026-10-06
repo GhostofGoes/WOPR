@@ -50,9 +50,9 @@ var Lines = []script.Ls{
 type Game struct {
 	env      proto.Env
 	g        *cg.Game
-	from     cg.Square // the square WOPR's last move left
-	last     cg.Square // the square WOPR's last move landed on
-	lastText string    // WOPR's last move, as it said it
+	from     cg.Square // the square the last move left, either side's
+	last     cg.Square // the square the last move landed on
+	lastText string    // the last move in coordinates, as WOPR says its own
 	thinking bool
 	thinkSeq uint64
 }
@@ -176,10 +176,12 @@ func (g *Game) onLine(input string) []proto.Output {
 		return []proto.Output{say(lineResign), proto.Done{Result: g.result(proto.Loss)}}
 	}
 	m, ok := ParseMove(g.g.Position(), input)
-	if !ok || g.g.Move(m, nil) != nil {
+	if !ok {
 		return []proto.Output{say(lineIllegal), ask()}
 	}
-	g.last = cg.NoSquare
+	if _, err := g.play(m); err != nil {
+		return []proto.Output{say(lineIllegal), ask()}
+	}
 	if out := g.over(); out != nil {
 		return out
 	}
@@ -226,11 +228,10 @@ func (g *Game) onThink(done proto.ThinkDone) []proto.Output {
 			}
 		}
 	}
-	text := strings.ToUpper((cg.UCINotation{}).Encode(pos, &chosen))
-	if err := g.g.Move(&chosen, nil); err != nil {
+	text, err := g.play(&chosen)
+	if err != nil {
 		return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.Draw}}}
 	}
-	g.from, g.last, g.lastText = chosen.S1(), chosen.S2(), text
 	outs := []proto.Output{proto.Redraw{}, proto.Say{Lines: []string{lineWOPR[0].Text + text}, Pace: proto.PaceSpeech}}
 	if over := g.over(); over != nil {
 		return append(outs, over...)
@@ -239,6 +240,17 @@ func (g *Game) onThink(done proto.ThinkDone) []proto.Output {
 		outs = append(outs, say(lineCheck))
 	}
 	return append(outs, ask())
+}
+
+// play makes m and keeps it as the last move, which the panel shows whichever side made it.
+// It returns the move in coordinates, as WOPR says its own.
+func (g *Game) play(m *cg.Move) (string, error) {
+	text := strings.ToUpper((cg.UCINotation{}).Encode(g.g.Position(), m))
+	if err := g.g.Move(m, nil); err != nil {
+		return "", err
+	}
+	g.from, g.last, g.lastText = m.S1(), m.S2(), text
+	return text, nil
 }
 
 // over ends the game on mate, stalemate, a claimable draw (claimed at once) or material

@@ -34,8 +34,8 @@ func (g *Game) drawBoards(c *proto.Canvas) {
 	x0 := max((c.W-80)/2, 0)
 	sw, _ := tictactoe.Size(smallRows)
 	bw, bh := tictactoe.Size(tictactoe.BigRows)
-	sideH := (perSide-1)*sideGap + smallRows
-	top := max((c.H-(sideH+1))/2, 0)
+	sideH := (perSide-1)*sideGap + smallRows // the launch code ends level with the side boards
+	top := max((c.H-sideH)/2, 0)
 	for i, b := range g.boards {
 		x, y, h := x0+(80-bw)/2, top+(sideH-bh)/2, tictactoe.BigRows
 		if i > 0 {

@@ -87,7 +87,7 @@ func TestTheShow(t *testing.T) {
 
 // The self-play frame fits the Full layout at 80x24, with the front panel (19 rows) and
 // without (20): all seven boards whole, the launch code below the big board, nothing drawn
-// outside 80 columns.
+// outside 80 columns, and the frame centred, a row or two clear above and below.
 func TestSelfPlayFits(t *testing.T) {
 	t.Parallel()
 	for _, h := range []int{19, 20} {
@@ -99,8 +99,14 @@ func TestSelfPlayFits(t *testing.T) {
 		const w = 100
 		c := proto.NewCanvas(w, h)
 		g.View(c)
-		corners, code := 0, -1
-		for y, row := range strings.Split(c.String(), "\n") {
+		corners, code, first, last := 0, -1, -1, -1
+		for y, row := range strings.Split(strings.TrimSuffix(c.String(), "\n"), "\n") {
+			if strings.TrimSpace(row) != "" {
+				if first < 0 {
+					first = y
+				}
+				last = y
+			}
 			for x, r := range row {
 				if r != ' ' && (x < (w-80)/2 || x >= (w+80)/2) {
 					t.Fatalf("height %d: drawn at column %d, outside 80:\n%s", h, x, c.String())
@@ -113,6 +119,9 @@ func TestSelfPlayFits(t *testing.T) {
 		}
 		if corners != 4*boards || code < tictactoe.BigRows || code >= h {
 			t.Errorf("height %d: %d grid crossings (want %d), code on row %d:\n%s", h, corners, 4*boards, code, c.String())
+		}
+		if above, below := first, h-1-last; above < 1 || below < above || below > above+1 {
+			t.Errorf("height %d: %d rows clear above the frame, %d below:\n%s", h, above, below, c.String())
 		}
 	}
 }

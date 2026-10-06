@@ -48,8 +48,8 @@ const (
 )
 
 // View implements proto.Program: the title card, the board (White in capitals, Black in
-// lower case, WOPR's last move bracketed), and beside it each side's captures, the move
-// number and WOPR's last move.
+// lower case, the last move bracketed), and beside it each side's captures, the move
+// number and the last move, whichever side made it (as in checkers).
 func (g *Game) View(c *proto.Canvas) {
 	x := max((c.W-80)/2, 0)
 	for i, l := range artTitle {

@@ -9,18 +9,20 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-// The panel's title card, drawn for this project: a king (two men stacked), and the name.
+// The panel's title card, drawn for this project: a king, two men stacked under a crown,
+// and the name.
 var artTitle = script.Orig(
-	`   .-"""""""-.`,
-	` .'  .-"""-.  '.`,
-	`(   (       )   )`,
-	`|'.  '-...-'  .'|`,
-	`|  '-._____.-'  |`,
-	`|'-._________.-'|`,
-	`|               |`,
-	` '-._________.-'`,
+	`     *    *    *`,
+	`    / \  / \  / \`,
+	` .-/   \/   \/   \-.`,
+	`(  |_____________|  )`,
+	`|'-._____________.-'|`,
+	`|                   |`,
+	`|'-._____________.-'|`,
+	`|                   |`,
+	` '-._____________.-'`,
 	``,
-	` C H E C K E R S`,
+	`   C H E C K E R S`,
 )
 
 // Panel labels.
@@ -38,7 +40,7 @@ var (
 // Panel geometry: the title card at the left, the board in the middle, the two sides and the
 // state of play at the right, each side level with its own end of the board.
 const (
-	titleX = 3
+	titleX = 2
 	boardX = (80 - board.Width) / 2
 	infoX  = boardX + board.Width + 3
 	valueX = infoX + 7
