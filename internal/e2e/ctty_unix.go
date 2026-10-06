@@ -18,14 +18,16 @@ func controllingTerminal(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: true, Ctty: 0}
 }
 
-// terminalModes snapshots the pty's terminal modes (termios).
+// terminalModes snapshots the pty's terminal modes (termios). It reads them through the
+// master, which shares the slave's modes: on macOS the slave descriptor is revoked when the
+// session leader (wopr) exits, and any ioctl on it then fails with ENOTTY.
 func terminalModes(t *testing.T, p xpty.Pty) any {
 	t.Helper()
 	up, ok := p.(*xpty.UnixPty)
 	if !ok {
 		t.Fatalf("unexpected pty type %T", p)
 	}
-	st, err := term.GetState(up.Slave().Fd())
+	st, err := term.GetState(up.Master().Fd())
 	if err != nil {
 		t.Fatalf("termios: %v", err)
 	}
