@@ -48,3 +48,7 @@ go.work.sum
 # OS cruft
 .DS_Store
 Thumbs.db
+
+# Claude Code: temporary agent worktrees and personal settings (shared config in .claude/ is kept)
+/.claude/worktrees/
+/.claude/settings.local.json
