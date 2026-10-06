@@ -1,0 +1,32 @@
+# Security policy
+
+## Reporting a vulnerability
+
+Please report vulnerabilities privately through GitHub's
+[private vulnerability reporting](https://github.com/GhostofGoes/WOPR/security/advisories/new)
+rather than in a public issue. Include the version (`wopr --version`), your OS, and steps to
+reproduce.
+
+## Supported versions
+
+Only the latest release receives fixes.
+
+## How releases are protected
+
+- Release binaries are built by `.github/workflows/release.yml` from a commit on `main` that passed CI,
+  rebuilt a second time to check they are reproducible, and published with a build-provenance
+  attestation. Verify an archive before running it:
+
+  ```sh
+  gh attestation verify wopr_<version>_<os>_<arch>.tar.gz --repo GhostofGoes/WOPR \
+    --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+    --source-ref refs/tags/v<version> --deny-self-hosted-runners
+  ```
+
+- Tags and releases are never moved or replaced. A bad release is fixed by the next patch version, and
+  `go.mod` gains a `retract` directive for the bad one.
+
+## Response rule
+
+A reachable `govulncheck` finding, or a Go security release that affects the standard library, leads to a
+toolchain bump and a patch release within 14 days.

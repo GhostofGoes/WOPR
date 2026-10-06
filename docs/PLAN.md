@@ -808,7 +808,7 @@ console, typewriter, canvas and game code as interactive play.
   parser.
   - Seed corpora run in plain `go test`.
   - CI runs `go test -run '^$' -fuzz '^FuzzX$' -fuzztime=10s ./pkg` once per target on Linux, and uploads any
-    crasher as an artifact.
+    crashing input as an artifact.
 - **End-to-end** (Q-1, U-8).
   - `internal/e2e` (build tag `e2e`) is a Go test that drives the **real binary** in a pseudo-terminal sized
     **80×24**. It uses `charmbracelet/x/xpty`: a Unix pty, or ConPTY on Windows.

@@ -144,7 +144,7 @@ package's `Imports` and `TestImports` (`go list -deps` gives the transitive set,
 
 **A-7 (Major) — Game-name detection "anywhere in the text" will misfire.** "I don't want to play chess",
 "the Golden Gate **bridge**", "my **hearts** not in it" and "**poker** face" all launch games (L251-252,
-L290), and it pre-empts a future LLM brain. *Fix:* start a game only on explicit intent, per clause. Split
+L290), and it preempts a future LLM brain. *Fix:* start a game only on explicit intent, per clause. Split
 on `. ! ? ;` before normalising, which drops punctuation (L249). A clause matches if, after optional fillers
 (LATER, LOVE TO, OK, YES, WELL), it starts with PLAY, LET'S PLAY, LETS PLAY, LET US PLAY, HOW ABOUT or I WANT
 TO PLAY plus a game, with no negator (NOT, DON'T, DONT, NO, NEVER) earlier in the clause. An exact game name
@@ -771,7 +771,7 @@ there before asserting it. Build the test per target so smoke runners need no Go
 **Q-2 (Minor) — Fuzzing.** Normalisation, `games.Resolve`, the line editor and `Sanitize` are pure
 functions over user input; native fuzz targets are cheap, and their seed corpora run in plain `go test`.
 `go test -fuzz` takes one package and one target per run, so CI calls each separately
-(`-run '^$' -fuzz '^FuzzX$' -fuzztime=10s ./pkg`) and uploads any crasher as an artifact (X27). Fuzzing SAN
+(`-run '^$' -fuzz '^FuzzX$' -fuzztime=10s ./pkg`) and uploads any crashing input as an artifact (X27). Fuzzing SAN
 parsing adds little if the chess library parses.
 
 **Q-3 (Minor) — Golden-file mechanics.** v1 names the driver and flows (L484-489) but not how goldens are

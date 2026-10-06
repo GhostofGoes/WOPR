@@ -1,0 +1,82 @@
+#:schema https://www.schemastore.org/prek.json
+minimum_prek_version = "0.5.5"
+default_language_version.golang = "1.27"                 # golang hooks are built with Go 1.27.x
+default_install_hook_types = ["pre-commit", "pre-push"]  # plain `prek install` installs only pre-commit
+default_stages = ["pre-commit", "manual"]
+
+[update]                 # `prek update`; `auto-update` no longer exists
+cooldown_days = 14
+freeze = true            # rev = "<sha>"  # frozen: vX.Y.Z
+
+# Lower runs first; equal priority runs concurrently. Mutating fixers get distinct priorities.
+[priorities]
+bom = 0
+eol = 1
+ws = 2
+eof = 3
+format = 10
+lint = 20
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "fix-byte-order-marker", priority = "bom" },
+  { id = "mixed-line-ending", args = ["--fix=lf"], priority = "eol" },
+  { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md"], priority = "ws" },
+  { id = "end-of-file-fixer", priority = "eof" },
+  { id = "check-yaml", priority = "lint" },
+  { id = "check-toml", priority = "lint" },
+  { id = "check-json", priority = "lint" },
+  { id = "check-merge-conflict", priority = "lint" },
+  { id = "check-case-conflict", priority = "lint" },
+  { id = "check-illegal-windows-names", priority = "lint" },
+  { id = "check-executables-have-shebangs", priority = "lint" },
+  { id = "check-shebang-scripts-are-executable", priority = "lint" },
+  { id = "check-added-large-files", args = ["--maxkb=512"], priority = "lint" },
+  { id = "detect-private-key", priority = "lint" },
+]
+
+[[repos]]
+repo = "https://github.com/golangci/golangci-lint"
+rev = "114493f9b3e7257d29e4130f2b4a4aadefbb6845"  # frozen: v2.14.0
+hooks = [
+  { id = "golangci-lint-fmt", priority = "format" },
+  { id = "golangci-lint-config-verify", priority = "lint" },
+  { id = "golangci-lint-full", entry = "golangci-lint run", priority = "lint" },  # manifest has --fix
+]
+
+[[repos]]
+repo = "https://github.com/gitleaks/gitleaks"
+rev = "83d9cd684c87d95d656c1458ef04895a7f1cbd8e"  # frozen: v8.30.1
+hooks = [{ id = "gitleaks", stages = ["pre-commit"], priority = "lint" }]  # staged-only; CI scans history
+
+[[repos]]
+repo = "https://github.com/zizmorcore/zizmor-pre-commit"
+rev = "fa412071e4f5d44d44f9e365f4676f9df92456a2"  # frozen: v1.30.1
+hooks = [{ id = "zizmor", args = ["--no-progress"], priority = "lint" }]
+
+[[repos]]
+repo = "https://github.com/codespell-project/codespell"
+rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai"], exclude = '^(go\.sum|internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/)|(^|/)testdata/|\.golden$', priority = "lint" }]
+
+[[repos]]
+repo = "https://github.com/shellcheck-py/shellcheck-py"
+rev = "745eface02aef23e168a8afb6b5737818efbea95"  # frozen: v0.11.0.1
+hooks = [{ id = "shellcheck", args = ["--severity=style", "--enable=all"], priority = "lint" }]
+
+[[repos]]
+repo = "https://github.com/rvben/rumdl-pre-commit"
+rev = "83cecb6b523a053d7d3dfdc4798d705b505a88f9"  # frozen: v0.2.78 (rumdl-check needs >= v0.2.66)
+hooks = [
+  { id = "rumdl-fmt", priority = "format" },
+  { id = "rumdl-check", args = ["--disable", "MD013,MD033,MD041"], priority = "lint" },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  { id = "go-mod-tidy", name = "go mod tidy -diff", language = "system", entry = "go mod tidy -diff", files = '(^|/)go\.(mod|sum)$|\.go$', pass_filenames = false, priority = "lint" },
+  { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
+  { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
+]
