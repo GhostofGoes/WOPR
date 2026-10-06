@@ -136,8 +136,9 @@ func MenuChoice(s string, n int) (int, bool) {
 // Answer is a parsed yes/no reply.
 type Answer int
 
+// Possible answers.
 const (
-	Unclear Answer = iota
+	Unclear Answer = iota // neither yes nor no
 	Yes
 	No
 )

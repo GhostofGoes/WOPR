@@ -44,7 +44,7 @@ func TestClauses(t *testing.T) {
 
 func TestNumber(t *testing.T) {
 	t.Parallel()
-	ok := map[string]int{"7": 7, "7.": 7, "#15": 15, " zero ": 0, "Seven": 7, "0": 0}
+	ok := map[string]int{"7": 7, "7.": 7, "#15": 15, "\tzero\t": 0, "Seven": 7, "0": 0}
 	for in, want := range ok {
 		if got, good := Number(in); !good || got != want {
 			t.Errorf("Number(%q) = %d,%v want %d", in, got, good, want)
