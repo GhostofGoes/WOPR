@@ -10,6 +10,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
 	"github.com/GhostofGoes/WOPR/internal/games/ginrummy"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
+	"github.com/GhostofGoes/WOPR/internal/games/hearts"
 	"github.com/GhostofGoes/WOPR/internal/games/poker"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -33,8 +34,8 @@ func entries() []games.Entry {
 		}, New: ginrummy.New},
 		{Info: games.Info{
 			Number: 4, Listed: true, Name: "HEARTS", Slug: "hearts",
-			Layout: proto.LayoutPanel, PanelRows: 10, Blurb: "Four hands, you against three WOPR seats; avoid hearts and the queen of spades.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 10, Status: games.Playable, Blurb: "Four hands, you against three WOPR seats; avoid hearts and the queen of spades.",
+		}, New: hearts.New},
 		{Info: games.Info{
 			Number: 5, Listed: true, Name: "BRIDGE", Slug: "bridge",
 			Layout: proto.LayoutPanel, PanelRows: 10, Blurb: "WOPR bids all four seats; you play the contract as declarer.",

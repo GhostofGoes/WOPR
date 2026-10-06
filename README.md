@@ -65,6 +65,8 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
   the draw, name up to three cards to throw away by position (`1 3`) or by name (`7h`). WOPR bluffs.
 - **Gin Rummy** (`gin`): first to 100. `s` draws from the stock, `d` takes the discard; then discard by name
   or position. `knock 7h` discards the 7H and knocks (10 or less deadwood); with none, it is gin.
+- **Hearts**: you are South against three WOPR seats. Pass three cards (`qs ah 2d`, or positions), then play
+  a card a trick. Hearts are a point each, the queen of spades 13; the lowest score at 100 wins.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
 ## Command-line flags

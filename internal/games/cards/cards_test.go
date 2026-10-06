@@ -2,6 +2,7 @@ package cards_test
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games/cards"
@@ -98,4 +99,52 @@ func FuzzParse(f *testing.F) {
 			t.Fatalf("Parse(%q) returned an invalid card %v", s, c)
 		}
 	})
+}
+
+func mustHand(t *testing.T, s string) []cards.Card {
+	t.Helper()
+	var out []cards.Card
+	for _, f := range strings.Fields(s) {
+		c, ok := cards.Parse(f)
+		if !ok {
+			t.Fatalf("bad card %q", f)
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+func TestTrick(t *testing.T) {
+	t.Parallel()
+	tr := cards.Trick{Leader: cards.North, Cards: mustHand(t, "10H KH 2S AD")}
+	if tr.Seat(1) != cards.East || tr.Seat(3) != cards.West || !tr.Done() {
+		t.Fatal("seats run clockwise from the leader")
+	}
+	if w := tr.Winner(cards.NoTrump); w != cards.East {
+		t.Errorf("no trump: %s wins, want EAST", cards.SeatNames[w])
+	}
+	if w := tr.Winner(cards.Spades); w != cards.South {
+		t.Errorf("spades trump: %s wins, want SOUTH", cards.SeatNames[w])
+	}
+	if c, ok := tr.Played(cards.West); !ok || c.String() != "AD" {
+		t.Errorf("West played %v", c)
+	}
+	open := cards.Trick{Leader: cards.West, Cards: mustHand(t, "5C")}
+	if open.Next() != cards.North {
+		t.Fatal("North plays after West")
+	}
+	if _, ok := open.Played(cards.East); ok {
+		t.Fatal("East has not played")
+	}
+	h := mustHand(t, "AS 3C 9D")
+	if !cards.Follows(h, open, mustHand(t, "3C")[0]) || cards.Follows(h, open, mustHand(t, "AS")[0]) {
+		t.Error("must follow suit when able")
+	}
+	void := mustHand(t, "AS 9D")
+	if got := cards.Format(cards.Playable(void, open)); got != "AS 9D" {
+		t.Errorf("a void may play anything: %s", got)
+	}
+	if cards.Follows(void, open, mustHand(t, "3C")[0]) {
+		t.Error("a card not in hand is never playable")
+	}
 }
