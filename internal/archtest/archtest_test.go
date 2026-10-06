@@ -131,9 +131,8 @@ func allowed(from string, r rule, imp string, test bool) string {
 		}
 		return ""
 	}
-	target := imp
 	if imp == module || strings.HasPrefix(imp, module+"/") {
-		target = relative(imp)
+		target := relative(imp)
 		if target == from || strings.HasPrefix(target, from+"/") && strings.HasSuffix(r.pkg, "/...") {
 			return ""
 		}
@@ -249,12 +248,11 @@ func TestToolchainMatchesGoMod(t *testing.T) {
 	if os.Getenv("GITHUB_ACTIONS") != "true" {
 		t.Skip("only enforced in CI; locally a newer Go is fine")
 	}
-	f, err := os.Open(filepath.Join(moduleRoot(t), "go.mod"))
+	data, err := os.ReadFile(filepath.Join(moduleRoot(t), "go.mod"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(bytes.NewReader(data))
 	for sc.Scan() {
 		if v, ok := strings.CutPrefix(strings.TrimSpace(sc.Text()), "toolchain "); ok {
 			if runtime.Version() != v {

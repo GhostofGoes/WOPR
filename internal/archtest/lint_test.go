@@ -75,12 +75,11 @@ func TestGolangciLintPinsAgree(t *testing.T) {
 		t.Fatal("prek.toml: golangci-lint rev with a '# frozen: vX.Y.Z' comment not found")
 	}
 	hookVersion := string(m[1])
-	f, err := os.Open(filepath.Join(root, "tools", "go.mod"))
+	data, err := os.ReadFile(filepath.Join(root, "tools", "go.mod"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer f.Close()
-	sc := bufio.NewScanner(f)
+	sc := bufio.NewScanner(bytes.NewReader(data))
 	for sc.Scan() {
 		fields := strings.Fields(sc.Text())
 		if len(fields) >= 2 && fields[0] == "github.com/golangci/golangci-lint/v2" {
