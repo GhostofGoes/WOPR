@@ -158,6 +158,25 @@ func (r *Registry) Get(slug string) (Entry, bool) {
 	return Entry{}, false
 }
 
+// Exact finds a game whose slug, alias or name equals input after normalisation. Unlike
+// Resolve it never matches numbers or prefixes, so conversation cannot start a game by
+// accident.
+func (r *Registry) Exact(input string) (Entry, bool) {
+	in := prompt.Normalize(input)
+	if in == "" {
+		return Entry{}, false
+	}
+	for _, e := range r.entries {
+		keys := append([]string{e.Info.Slug, e.Info.Name}, e.Info.Aliases...)
+		for _, k := range keys {
+			if prompt.Normalize(k) == in {
+				return e, true
+			}
+		}
+	}
+	return Entry{}, false
+}
+
 // ErrNotFound is returned by Resolve when nothing matches.
 var ErrNotFound = errors.New("no such game")
 

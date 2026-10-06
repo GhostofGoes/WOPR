@@ -27,6 +27,7 @@ type rule struct {
 // testOnly may be imported by any package's tests in addition to its own rule.
 var testOnly = []string{
 	"internal/golden", "internal/games/catalog", "internal/games/gamestest", "internal/games/testkit",
+	"internal/proto/host", // tests configure testkit's runner
 }
 
 // rules is the import DAG. Order matters: the first matching rule applies, so specific
