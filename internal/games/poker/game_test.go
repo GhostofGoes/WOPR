@@ -32,10 +32,10 @@ func ended(outs []proto.Output) bool {
 func TestPotAccountingOverSeededGames(t *testing.T) {
 	t.Parallel()
 	inputs := map[string][]string{
-		"CHECK OR BET":  {"c", "b", "check", "bet", "f", "x", "bet 5", "pass", "q"},
-		"OR FOLD":       {"c", "r", "f", "call", "raise", "check", "x", "call it", "i fold"},
-		"DISCARD": {"", "1", "1 2", "2 4 5", "135", "1 2 3 4", "AS", "9"},
-		"ANOTHER": {"y", "", "y", "y", "maybe"},
+		"CHECK OR BET": {"c", "b", "check", "bet", "f", "x", "bet 5", "pass", "q"},
+		"OR FOLD":      {"c", "r", "f", "call", "raise", "check", "x", "call it", "i fold"},
+		"DISCARD":      {"", "1", "1 2", "2 4 5", "135", "1 2 3 4", "AS", "9"},
+		"ANOTHER":      {"y", "", "y", "y", "maybe"},
 	}
 	for seed := range uint64(150) {
 		g := New().(*Game)
