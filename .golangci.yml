@@ -1,4 +1,6 @@
 version: "2"
+run:
+  build-tags: [e2e]            # lint the end-to-end tests too
 linters:
   default: standard            # errcheck, govet, ineffassign, staticcheck, unused
   enable: [revive, gocritic, misspell, forbidigo, depguard]
