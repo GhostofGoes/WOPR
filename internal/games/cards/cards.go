@@ -170,6 +170,15 @@ func Parse(s string) (Card, bool) {
 	return Card{r, s2}, true
 }
 
+// ParseRank reads a rank on its own: A, KING, 10, T, SEVEN.
+func ParseRank(s string) (Rank, bool) {
+	w := strings.Fields(prompt.Normalize(s))
+	if len(w) != 1 {
+		return 0, false
+	}
+	return parseRank(w[0])
+}
+
 func parseRank(w string) (Rank, bool) {
 	if r, ok := rankWords[w]; ok {
 		return r, true

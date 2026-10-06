@@ -30,6 +30,7 @@ var (
 	lineDown      = script.Orig("DOWN #. SCORE #.")
 	callPass      = script.Orig("PASS")
 	strainNames   = script.Orig("C", "D", "H", "S", "NT")
+	seatNames     = script.Orig("SOUTH", "WEST", "NORTH", "EAST") // by seat, as cards numbers them
 
 	// Panel text.
 	panelTitle    = script.Orig("BRIDGE")
@@ -43,7 +44,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineRules, linePassedOut, lineTurned, lineAuction, lineContract, promptHand, promptDummy, lineNotHeld, lineFollow,
-	linePlayHelp, lineFinish, lineTrick, lineMade, lineDown, callPass, strainNames, panelTitle, panelContract,
+	linePlayHelp, lineFinish, lineTrick, lineMade, lineDown, callPass, strainNames, seatNames, panelTitle, panelContract,
 	panelTricks, panelDummy, panelLast, panelVoid,
 }
 

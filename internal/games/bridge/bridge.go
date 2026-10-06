@@ -52,7 +52,7 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 		if ok {
 			break
 		}
-		outs = append(outs, say(fill(lineAuction, cards.SeatNames[g.dealer], g.auctionText()), linePassedOut[0].Text))
+		outs = append(outs, say(fill(lineAuction, seatNames[g.dealer].Text, g.auctionText()), linePassedOut[0].Text))
 		g.dealer = (g.dealer + 1) % cards.Seats
 	}
 	if turned {
@@ -61,8 +61,8 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	d := g.contract.Declarer
 	g.trick = cards.Trick{Leader: (d + 1) % cards.Seats}
 	outs = append(outs, say(
-		fill(lineAuction, cards.SeatNames[g.dealer], g.auctionText()),
-		fill(lineContract, g.contract.String(), cards.SeatNames[d], cards.SeatNames[g.trick.Leader]),
+		fill(lineAuction, seatNames[g.dealer].Text, g.auctionText()),
+		fill(lineContract, g.contract.String(), seatNames[d].Text, seatNames[g.trick.Leader].Text),
 	))
 	return g.run(outs)
 }
@@ -118,9 +118,9 @@ func (g *Game) dummy() int { return partner(g.contract.Declarer) }
 func (g *Game) ask() proto.Output {
 	seat := g.trick.Next()
 	if seat == g.dummy() {
-		return proto.Prompt{Text: fill(promptDummy, cards.SeatNames[seat])}
+		return proto.Prompt{Text: fill(promptDummy, seatNames[seat].Text)}
 	}
-	return proto.Prompt{Text: fill(promptHand, cards.SeatNames[seat])}
+	return proto.Prompt{Text: fill(promptHand, seatNames[seat].Text)}
 }
 
 // run plays WOPR's defenders until declarer or dummy is to play, or the deal ends.
@@ -157,27 +157,28 @@ func (g *Game) takeTrick() proto.Output {
 func trickText(t cards.Trick, winner int) string {
 	var parts []string
 	for i, c := range t.Cards {
-		parts = append(parts, cards.SeatNames[t.Seat(i)]+" "+c.String())
+		parts = append(parts, seatNames[t.Seat(i)].Text+" "+c.String())
 	}
-	return fill(lineTrick, strings.Join(parts, ", "), cards.SeatNames[winner])
+	return fill(lineTrick, strings.Join(parts, ", "), seatNames[winner].Text)
 }
 
 func (g *Game) onPlay(input string) []proto.Output {
 	seat := g.trick.Next()
-	name := cards.SeatNames[seat]
+	name := seatNames[seat].Text
 	again := func(text string) []proto.Output { return []proto.Output{say(text), g.ask()} }
 	norm := prompt.Normalize(input)
 	switch norm {
-	case "LEAVE", "STOP", "DONE", "I'M DONE", "I QUIT":
+	case "LEAVE", "STOP", "DONE", "I'M DONE", "I QUIT", "RESIGN", "I RESIGN":
 		return again(lineFinish[0].Text)
 	}
 	hand := g.hands[seat]
-	var c cards.Card
-	if n, ok := prompt.MenuChoice(input, len(hand)); ok {
-		c = hand[n-1]
-	} else if parsed, ok := cards.Parse(input); ok {
-		c = parsed
-	} else {
+	c, ok := cards.Parse(input)
+	if !ok {
+		// The panel shows ranks by suit, so a bare rank (4, K) means that card: in the suit
+		// led if there is one, else the only one of that rank in the hand.
+		c, ok = g.byRank(hand, input)
+	}
+	if !ok {
 		return again(fill(linePlayHelp, name))
 	}
 	switch {
@@ -189,6 +190,31 @@ func (g *Game) onPlay(input string) []proto.Output {
 	}
 	g.play(seat, c)
 	return g.run(nil)
+}
+
+// byRank finds the card a bare rank names in hand, if exactly one fits.
+func (g *Game) byRank(hand []cards.Card, input string) (cards.Card, bool) {
+	r, ok := cards.ParseRank(input)
+	if !ok {
+		return cards.Card{}, false
+	}
+	var match []cards.Card
+	for _, c := range hand {
+		if c.Rank == r {
+			match = append(match, c)
+		}
+	}
+	if led, ok := g.trick.Led(); ok && len(match) > 1 {
+		for _, c := range match {
+			if c.Suit == led {
+				return c, true
+			}
+		}
+	}
+	if len(match) == 1 {
+		return match[0], true
+	}
+	return cards.Card{}, false
 }
 
 func (g *Game) end(outs []proto.Output) []proto.Output {

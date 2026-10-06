@@ -21,11 +21,11 @@ import (
 //	LAST TRICK: WEST 3D, NORTH 7D, EAST KD, SOUTH AD. SOUTH TAKES IT.
 func (g *Game) draw(c *proto.Canvas) {
 	c.Put(0, 0, panelTitle[0].Text, proto.StyleLabel, proto.AttrBold)
-	head := fill(panelContract, g.contract.String(), cards.SeatNames[g.contract.Declarer]) + "    " +
+	head := fill(panelContract, g.contract.String(), seatNames[g.contract.Declarer].Text) + "    " +
 		fill(panelTricks, fmt.Sprint(g.won[0]), fmt.Sprint(g.won[1]))
 	c.Put(c.W-len(head), 0, head, proto.StyleText, 0)
 	for _, row := range []struct{ seat, y int }{{cards.North, 1}, {cards.South, 5}} {
-		label := cards.SeatNames[row.seat]
+		label := seatNames[row.seat].Text
 		if row.seat == g.dummy() {
 			label += " " + panelDummy[0].Text
 		}
@@ -44,7 +44,7 @@ func (g *Game) draw(c *proto.Canvas) {
 		winning = g.trick.Winner(g.contract.Strain.Trump())
 	}
 	for s, at := range spots {
-		c.Put(at.x, at.y, cards.SeatNames[s], proto.StyleLabel, 0)
+		c.Put(at.x, at.y, seatNames[s].Text, proto.StyleLabel, 0)
 		card, ok := g.trick.Played(s)
 		switch {
 		case ok:
@@ -57,7 +57,7 @@ func (g *Game) draw(c *proto.Canvas) {
 			c.Put(at.x+7, at.y, "--", proto.StyleDim, 0)
 		}
 	}
-	c.Put(0, 7, fill(lineAuction, cards.SeatNames[g.dealer], g.auctionText()), proto.StyleDim, 0)
+	c.Put(0, 7, fill(lineAuction, seatNames[g.dealer].Text, g.auctionText()), proto.StyleDim, 0)
 	if g.lastBy >= 0 {
 		c.Put(0, 8, panelLast[0].Text+" "+trickText(g.last, g.lastBy), proto.StyleDim, 0)
 	}

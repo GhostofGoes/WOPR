@@ -83,3 +83,36 @@ func TestPlayRefusals(t *testing.T) {
 		t.Errorf("leave: %q", out)
 	}
 }
+
+// A bare rank names the card of that rank: in the suit led, or the only one in the hand;
+// RESIGN is refused like the other ways out.
+func TestBareRanks(t *testing.T) {
+	t.Parallel()
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 5, Instant: true, Deterministic: true})
+	seat := g.trick.Next()
+	g.hands[seat] = hand(t, "AS 4S 4H 9D")
+	if c, ok := g.byRank(g.hands[seat], "9"); !ok || c.String() != "9D" {
+		t.Errorf("9: %v %v", c, ok)
+	}
+	if _, ok := g.byRank(g.hands[seat], "4"); ok && len(g.trick.Cards) == 0 {
+		t.Error("4 is ambiguous on a lead")
+	}
+	g.trick.Cards = hand(t, "KH")
+	if c, ok := g.byRank(g.hands[seat], "4"); !ok || c.String() != "4H" {
+		t.Errorf("4 with hearts led: %v %v", c, ok)
+	}
+	g.trick.Cards = nil
+	text := func(outs []proto.Output) string {
+		var b strings.Builder
+		for _, o := range outs {
+			if s, ok := o.(proto.Say); ok {
+				b.WriteString(strings.Join(s.Lines, "\n"))
+			}
+		}
+		return b.String()
+	}
+	if out := text(g.Handle(proto.LineEvent{Text: "resign"})); !strings.Contains(out, "FINISH THE HAND") {
+		t.Errorf("resign: %q", out)
+	}
+}

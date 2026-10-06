@@ -33,8 +33,8 @@ func danger(hand []cards.Card, c cards.Card) int {
 		return 100
 	case c.Suit == cards.Spades && c.Rank > cards.Queen && lowSpades < 3:
 		return 90
-	case c.Suit == cards.Hearts:
-		return 20 + int(c.Rank)
+	case c.Suit == cards.Hearts && c.Rank >= cards.Jack:
+		return 10 + int(c.Rank) // high hearts take tricks full of points; low ones are safe
 	}
 	short := 0
 	if countSuit(hand, c.Suit) <= 2 {

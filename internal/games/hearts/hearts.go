@@ -84,7 +84,7 @@ func (g *Game) newDeal(outs []proto.Output) []proto.Output {
 		return g.startPlay(outs)
 	}
 	g.phase = passing
-	return append(outs, proto.Redraw{}, proto.Prompt{Text: fill(promptPass, cards.SeatNames[(you+dir)%cards.Seats])})
+	return append(outs, proto.Redraw{}, proto.Prompt{Text: fill(promptPass, seatNames[(you+dir)%cards.Seats].Text)})
 }
 
 // pick finds the card the player named: a position on the panel or the card itself.
@@ -99,7 +99,7 @@ func (g *Game) pick(text string) (cards.Card, bool) {
 // onPass reads three cards: positions (1 5 9) or names (QS AH KH).
 func (g *Game) onPass(input string) []proto.Output {
 	again := func(text string) []proto.Output {
-		return []proto.Output{say(text), proto.Prompt{Text: fill(promptPass, cards.SeatNames[(you+Pass(g.deal-1))%cards.Seats])}}
+		return []proto.Output{say(text), proto.Prompt{Text: fill(promptPass, seatNames[(you+Pass(g.deal-1))%cards.Seats].Text)}}
 	}
 	if leaving(prompt.Normalize(input)) {
 		return again(lineFinish[0].Text)
@@ -208,7 +208,7 @@ func seatName(s int) string {
 	if s == you {
 		return lineYou[0].Text
 	}
-	return cards.SeatNames[s]
+	return seatNames[s].Text
 }
 
 func (g *Game) onPlay(input string) []proto.Output {
@@ -253,7 +253,8 @@ func (g *Game) endDeal(outs []proto.Output) []proto.Output {
 	for s := range g.score {
 		g.score[s] += add[s]
 	}
-	outs = append(outs, say(fill(lineHandPoints, g.scoreText(g.taken)), fill(lineScores, g.scoreText(g.score))), proto.Redraw{})
+	hand := fill(lineHandPoints, g.scoreText(add)) // after a moon, what each seat scores, not what it took
+	outs = append(outs, say(hand, fill(lineScores, g.scoreText(g.score))), proto.Redraw{})
 	g.phase = between
 	if slices.Max(g.score[:]) >= GameOver {
 		return append(outs, proto.Done{Result: g.result()})

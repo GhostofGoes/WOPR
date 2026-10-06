@@ -174,3 +174,52 @@ func TestWOPRNeverDiscardsWhatItTook(t *testing.T) {
 		t.Fatalf("WOPR discarded the card it took (%s)", c)
 	}
 }
+
+// Review cases: the best lay-off is not the greedy one, and the defender may break a meld
+// to lay off more.
+func TestLayOffChoices(t *testing.T) {
+	t.Parallel()
+	// 8H fits the eights and the hearts run; on the run, 9H follows: an undercut.
+	got := Score(hand(t, "8C 8D 8S 5H 6H 7H 2C 3C 4C AD"), hand(t, "KS KH KD 2S 3S 4S 5S 6S 8H 9H"))
+	if got.KnockerWins || !got.Undercut || got.Points != 1+UndercutBonus {
+		t.Errorf("greedy lay-off: %+v", got)
+	}
+	// Meld the three sevens rather than 7H-9H, then lay 8H and 9H on 10H-QH: 3 left.
+	got = Score(hand(t, "10H JH QH 2S 3S 4S 5C 6C 7C AC"), hand(t, "7H 7S 7D 8H 9H JS QS KS AD 2D"))
+	if !got.KnockerWins || got.Points != 3-1 {
+		t.Errorf("breaking a meld: %+v", got)
+	}
+}
+
+// Discard wording: KNOCK anywhere, filler words, and GIN only with no deadwood.
+func TestDiscardWording(t *testing.T) {
+	t.Parallel()
+	setup := func() *Game {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 3, Instant: true, Deterministic: true})
+		// 2C-4C, 7s, 9H-JH melded; 2S and 3D deadwood (5) and KS to throw.
+		g.hands[player] = hand(t, "2C 3C 4C 7S 7H 7D 9H 10H JH 2S KS")
+		g.phase, g.hasTook = discarding, false
+		return g
+	}
+	said := func(outs []proto.Output) string {
+		var b strings.Builder
+		for _, o := range outs {
+			if s, ok := o.(proto.Say); ok {
+				b.WriteString(strings.Join(s.Lines, "\n") + "\n")
+			}
+		}
+		return b.String()
+	}
+	for _, in := range []string{"KS knock", "knock with the KS", "Knock KS", "discard KS and knock"} {
+		if out := said(setup().Handle(proto.LineEvent{Text: in})); !strings.Contains(out, "YOU KNOCK WITH 2 DEADWOOD.") {
+			t.Errorf("%q: %q", in, out)
+		}
+	}
+	if out := said(setup().Handle(proto.LineEvent{Text: "gin KS"})); !strings.Contains(out, "GIN NEEDS NONE") {
+		t.Errorf("gin with deadwood: %q", out)
+	}
+	if out := said(setup().Handle(proto.LineEvent{Text: "throw away the KS"})); !strings.Contains(out, "YOU DISCARD THE KS.") {
+		t.Errorf("filler words: %q", out)
+	}
+}

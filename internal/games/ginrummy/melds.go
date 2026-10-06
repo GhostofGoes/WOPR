@@ -168,31 +168,71 @@ func fits(m []cards.Card, c cards.Card) bool {
 	return low(c) == low(m[0])-1 || low(c) == low(m[len(m)-1])+1
 }
 
-// LayOff plays the defender's deadwood onto the knocker's melds, as many cards as fit
-// (laying one off can make room for the next), and returns the deadwood left.
+// LayOff plays the defender's deadwood onto the knocker's melds so that as little as
+// possible is left: it tries every card on every meld it fits, in every order, since laying
+// one card can make room for the next and a card may fit a set and a run.
 func LayOff(knocker [][]cards.Card, deadwood []cards.Card) (laid, left []cards.Card) {
 	melds := make([][]cards.Card, len(knocker))
 	for i, m := range knocker {
 		melds[i] = slices.Clone(m)
 	}
-	left = slices.Clone(deadwood)
-	for progress := true; progress; {
-		progress = false
-		for i := 0; i < len(left); i++ {
+	best, bestLaid := slices.Clone(deadwood), []cards.Card(nil)
+	var search func(melds [][]cards.Card, left, laid []cards.Card)
+	search = func(melds [][]cards.Card, left, laid []cards.Card) {
+		if sum(left) < sum(best) {
+			best, bestLaid = slices.Clone(left), slices.Clone(laid)
+		}
+		for i, c := range left {
 			for j, m := range melds {
-				if fits(m, left[i]) {
-					melds[j] = append(m, left[i])
-					sortMeld(melds[j])
-					laid = append(laid, left[i])
-					left = slices.Delete(left, i, i+1)
-					i--
-					progress = true
-					break
+				if !fits(m, c) {
+					continue
 				}
+				next := slices.Clone(melds)
+				next[j] = append(slices.Clone(m), c)
+				sortMeld(next[j])
+				search(next, slices.Delete(slices.Clone(left), i, i+1), append(slices.Clone(laid), c))
 			}
 		}
 	}
-	return laid, left
+	search(melds, slices.Clone(deadwood), nil)
+	return bestLaid, best
+}
+
+// arrangements lists every way to meld a hand (each set of disjoint melds, none included),
+// for a defender who may break a meld to lay off more.
+func arrangements(hand []cards.Card) []Arrangement {
+	cands := candidates(hand)
+	var out []Arrangement
+	var set []uint32
+	var search func(from int, used uint32)
+	search = func(from int, used uint32) {
+		var a Arrangement
+		for _, m := range set {
+			var meld []cards.Card
+			for i, c := range hand {
+				if m&(1<<i) != 0 {
+					meld = append(meld, c)
+				}
+			}
+			a.Melds = append(a.Melds, meld)
+		}
+		for i, c := range hand {
+			if used&(1<<i) == 0 {
+				a.Deadwood = append(a.Deadwood, c)
+			}
+		}
+		a.Points = sum(a.Deadwood)
+		out = append(out, a)
+		for i := from; i < len(cands); i++ {
+			if cands[i]&used == 0 {
+				set = append(set, cands[i])
+				search(i+1, used|cands[i])
+				set = set[:len(set)-1]
+			}
+		}
+	}
+	search(0, 0)
+	return out
 }
 
 // Scoring.
@@ -220,7 +260,13 @@ func Score(knocker, defender []cards.Card) Outcome {
 	if k.Points == 0 {
 		return Outcome{KnockerWins: true, Points: GinBonus + d.Points, Gin: true}
 	}
+	// The defender chooses its melds too: whichever leaves the least after laying off.
 	laid, left := LayOff(k.Melds, d.Deadwood)
+	for _, a := range arrangements(defender) { // more deadwood before laying off can mean less after
+		if l, rest := LayOff(k.Melds, a.Deadwood); sum(rest) < sum(left) {
+			laid, left = l, rest
+		}
+	}
 	dPoints := sum(left)
 	if dPoints <= k.Points {
 		return Outcome{Points: k.Points - dPoints + UndercutBonus, Undercut: true, Laid: laid}

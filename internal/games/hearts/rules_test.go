@@ -1,6 +1,7 @@
 package hearts
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
@@ -154,5 +155,31 @@ func TestAIChoices(t *testing.T) {
 	h = hand(t, "QS AH 9C")
 	if c := choosePlay(h, tr, Legal(h, tr, false, false)); c.String() != "QS" {
 		t.Errorf("void: dump the queen: %s", c)
+	}
+}
+
+// Review cases: low hearts are safe to keep, so they are not passed before aces; after a
+// moon, the hand's line shows what each seat scores.
+func TestPassKeepsLowHearts(t *testing.T) {
+	t.Parallel()
+	got := cards.Format(choosePass(hand(t, "2H 3H 4H AC KC QC JC AD KD QD JD 5S 6S")))
+	if strings.Contains(got, "H") {
+		t.Errorf("passed low hearts: %s", got)
+	}
+}
+
+func TestMoonLine(t *testing.T) {
+	t.Parallel()
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	g.taken = [cards.Seats]int{26, 0, 0, 0}
+	var said []string
+	for _, o := range g.endDeal(nil) {
+		if s, ok := o.(proto.Say); ok {
+			said = append(said, s.Lines...)
+		}
+	}
+	if !slices.Contains(said, "THIS HAND: YOU 0, WEST 26, NORTH 26, EAST 26.") {
+		t.Errorf("moon: %q", said)
 	}
 }

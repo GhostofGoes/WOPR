@@ -150,7 +150,8 @@ func (g *Game) onDraw(input string) []proto.Output {
 	again := func(text string) []proto.Output {
 		return []proto.Output{say(text), proto.Prompt{Text: promptDraw[0].Text}}
 	}
-	if c, ok := cards.Parse(input); ok {
+	card := strings.TrimPrefix(strings.TrimPrefix(norm, "TAKE "), "THE ") // TAKE THE 2D
+	if c, ok := cards.Parse(card); ok {
 		if c != g.top() {
 			return again(fill(lineNotTop, g.top().String()))
 		}
@@ -178,10 +179,19 @@ func (g *Game) onDiscard(input string) []proto.Output {
 	again := func(text string) []proto.Output {
 		return []proto.Output{say(text), proto.Prompt{Text: promptDiscard[0].Text}}
 	}
-	words := strings.Fields(prompt.Normalize(input))
-	knock := false
-	if len(words) > 0 && (words[0] == "KNOCK" || words[0] == "GIN") {
-		knock, words = true, words[1:]
+	// KNOCK or GIN anywhere (KNOCK 7H, 7H KNOCK, KNOCK WITH THE 7H); filler words go.
+	knock, gin := false, false
+	var words []string
+	for _, w := range strings.Fields(prompt.Normalize(input)) {
+		switch w {
+		case "KNOCK":
+			knock = true
+		case "GIN":
+			knock, gin = true, true
+		case "WITH", "DISCARD", "THROW", "THE", "AWAY", "AND":
+		default:
+			words = append(words, w)
+		}
 	}
 	if len(words) == 0 {
 		if knock {
@@ -200,10 +210,12 @@ func (g *Game) onDiscard(input string) []proto.Output {
 		return again(lineNotBack[0].Text)
 	}
 	rest := cards.Remove(g.hands[player], c)
-	if knock {
-		if dw := Arrange(rest).Points; dw > KnockLimit {
-			return again(fill(lineTooMuch, fmt.Sprint(dw)))
-		}
+	dw := Arrange(rest).Points
+	switch {
+	case gin && dw > 0: // asked for gin, not a knock that risks an undercut
+		return again(fill(lineNotGin, fmt.Sprint(dw)))
+	case knock && dw > KnockLimit:
+		return again(fill(lineTooMuch, fmt.Sprint(dw)))
 	}
 	g.discard(player, c)
 	g.order()

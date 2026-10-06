@@ -20,7 +20,8 @@ var (
 	promptNext       = script.Orig("NEXT HAND? ")
 	lineDrawHelp     = script.Orig("S TO DRAW FROM THE STOCK, D TO TAKE THE DISCARD.")
 	lineNotTop       = script.Orig("THE DISCARD IS THE #.")
-	lineDiscardHelp  = script.Orig("NAME A CARD IN YOUR HAND, OR ITS POSITION. ADD KNOCK TO KNOCK.")
+	lineDiscardHelp  = script.Orig("NAME A CARD IN YOUR HAND, OR ITS POSITION, OR KNOCK 7H TO KNOCK.")
+	lineNotGin       = script.Orig("THAT LEAVES # DEADWOOD. GIN NEEDS NONE; KNOCK 7H TO KNOCK.")
 	lineKnockHow     = script.Orig("KNOCK WITH THE CARD YOU DISCARD, SUCH AS KNOCK 7H.")
 	lineNotBack      = script.Orig("YOU CANNOT DISCARD THE CARD YOU JUST TOOK.")
 	lineTooMuch      = script.Orig("THAT LEAVES # DEADWOOD. A KNOCK NEEDS 10 OR LESS.")
@@ -59,7 +60,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineRules, lineWOPRDeals, lineYouDeal, promptDraw, promptDiscard, promptNext, lineDrawHelp, lineNotTop,
-	lineDiscardHelp, lineKnockHow, lineNotBack, lineTooMuch, lineFinish, lineYouDrew, lineYouTook, lineYouDiscard,
+	lineDiscardHelp, lineNotGin, lineKnockHow, lineNotBack, lineTooMuch, lineFinish, lineYouDrew, lineYouTook, lineYouDiscard,
 	lineWOPRDrew, lineWOPRTook, lineWOPRDiscards, lineWOPRKnocks, lineWOPRGin, lineYouKnock, lineYouGin,
 	lineWOPRHand, lineYourHand, lineYouLay, lineWOPRLays, lineUndercut, lineYouScore, lineWOPRScores, lineScore,
 	lineVoid, lineLeave, panelTitle, panelScore, panelWOPR, panelStock, panelDiscard, panelHand, panelDeadwood,
