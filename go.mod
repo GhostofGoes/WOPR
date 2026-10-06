@@ -12,6 +12,7 @@ require (
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/charmbracelet/x/vt v0.0.0-20261004011457-ad85c59fdf4e
 	github.com/charmbracelet/x/xpty v0.1.4
+	github.com/corentings/chess/v2 v2.6.0
 	github.com/rivo/uniseg v0.4.7
 )
 

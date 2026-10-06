@@ -122,11 +122,11 @@ func TestOfferAndListSelection(t *testing.T) {
 	if !s.Contains("WHICH GAME?") {
 		t.Fatal("accepting the offer must ask which game")
 	}
-	s.Type("7")
+	s.Type("8")
 	if !s.Contains("** GAME ROUTINE NOT AVAILABLE **") {
-		t.Error("choosing 7 (chess, not built yet) must decline in character")
+		t.Error("choosing 8 (poker, not built yet) must decline in character")
 	}
-	s.Type("7")
+	s.Type("8")
 	if strings.Count(s.Transcript(), "GAME ROUTINE NOT AVAILABLE") != 1 {
 		t.Error("a number is a choice only right after a list")
 	}
@@ -179,7 +179,7 @@ func TestPlayFlagStartsTheGame(t *testing.T) {
 	if !s.Contains("WINNER: WOPR") {
 		t.Error("loss verdict")
 	}
-	cat := start(t, catalog.Registry(), Options{Play: "chess"})
+	cat := start(t, catalog.Registry(), Options{Play: "poker"})
 	if !cat.Contains("NOT AVAILABLE") || cat.Runner().Depth() != 1 {
 		t.Error("--play of a planned game must decline in character")
 	}

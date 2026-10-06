@@ -5,6 +5,7 @@ package catalog
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
+	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
@@ -39,8 +40,8 @@ func entries() []games.Entry {
 		}, New: checkers.New},
 		{Info: games.Info{
 			Number: 7, Listed: true, Name: "CHESS", Slug: "chess",
-			Layout: proto.LayoutPanel, PanelRows: 12, Blurb: "Type your moves (e2e4 or Nf3); WOPR answers.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 12, Status: games.Playable, Blurb: "Type your moves (e2e4 or Nf3); WOPR answers.",
+		}, New: chess.New},
 		{Info: games.Info{
 			Number: 8, Listed: true, Name: "POKER", Slug: "poker",
 			Layout: proto.LayoutConsole, Blurb: "Heads-up five-card draw for chips.",
