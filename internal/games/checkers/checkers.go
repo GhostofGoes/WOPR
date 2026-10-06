@@ -25,16 +25,19 @@ const (
 
 // Script text, all original.
 var (
-	lineRules   = script.Orig("YOU ARE BLACK (B) AND MOVE FIRST. WOPR IS WHITE (W).", "TYPE A MOVE AS C3-D4, OR C3XE5 TO JUMP. KINGS ARE CAPITALS.")
+	lineRules   = script.Orig("YOU ARE BLACK (B) AND MOVE FIRST. WOPR IS WHITE (W).", "TYPE A MOVE AS C3-D4, OR C3XE5 TO JUMP (C3XE5XG7 TO JUMP TWICE).", "KINGS ARE CAPITALS.")
 	promptMove  = script.Orig("YOUR MOVE: ")
 	lineIllegal = script.Orig("ILLEGAL MOVE.")
 	lineMustJmp = script.Orig("A JUMP IS AVAILABLE. YOU MUST TAKE IT.")
 	lineWOPR    = script.Orig("WOPR: ") // followed by WOPR's move
 	lineResign  = script.Orig("RESIGNATION ACCEPTED.")
+	lineGoesOn  = script.Orig("THE JUMP GOES ON: ") // followed by the ways it can
+	lineNoMoves = script.Orig("NO MOVES LEFT FOR BLACK.", "NO MOVES LEFT FOR WHITE.")
+	lineNoProg  = script.Orig("DRAWN: 40 MOVES EACH WITHOUT A CAPTURE OR A MAN MOVING.")
 )
 
 // Lines is every script block, for the provenance test.
-var Lines = []script.Ls{lineRules, promptMove, lineIllegal, lineMustJmp, lineWOPR, lineResign}
+var Lines = []script.Ls{lineRules, promptMove, lineIllegal, lineMustJmp, lineWOPR, lineResign, lineGoesOn, lineNoMoves, lineNoProg}
 
 // Game is checkers as a proto.Program.
 type Game struct {
@@ -76,6 +79,13 @@ func (g *Game) onLine(input string) []proto.Output {
 		return []proto.Output{say(lineResign), proto.Done{Result: g.result(proto.Loss)}}
 	}
 	m, ok := g.pos.ParseMove(input)
+	if more := g.pos.Continuations(input); !ok && len(more) > 0 {
+		ways := make([]string, len(more))
+		for i, c := range more {
+			ways[i] = strings.ToUpper(c.String())
+		}
+		return []proto.Output{say(script.Orig(lineGoesOn[0].Text + strings.Join(ways, " OR ") + ".")), proto.Prompt{Text: promptMove[0].Text}}
+	}
 	if !ok {
 		line := lineIllegal
 		if g.pos.MustJump() {
@@ -148,14 +158,14 @@ func (g *Game) over() []proto.Output {
 	if !over {
 		return nil
 	}
-	outcome := proto.Draw
+	outcome, why := proto.Draw, lineNoProg[0].Text
 	switch winner {
 	case Black:
-		outcome = proto.Win
+		outcome, why = proto.Win, lineNoMoves[1].Text // White, to move, cannot
 	case White:
-		outcome = proto.Loss
+		outcome, why = proto.Loss, lineNoMoves[0].Text
 	}
-	return []proto.Output{proto.Redraw{}, proto.Done{Result: g.result(outcome)}}
+	return []proto.Output{proto.Redraw{}, proto.Say{Lines: []string{why}, Pace: proto.PaceSpeech}, proto.Done{Result: g.result(outcome)}}
 }
 
 // result carries the final position: the panel goes when the game does.

@@ -3,6 +3,7 @@ package checkers
 import (
 	"context"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games/ai"
@@ -144,7 +145,8 @@ func TestSearchPrefersTheDoubleJump(t *testing.T) {
 }
 
 // Legality over seeded self-play: every move the search returns is legal, and every game
-// ends (the no-progress rule guarantees it).
+// ends (the no-progress rule guarantees it: every reset needs a capture or a man's move,
+// and there are only so many of those).
 func TestSelfPlayIsLegal(t *testing.T) {
 	t.Parallel()
 	for seed := range uint64(6) {
@@ -153,8 +155,8 @@ func TestSelfPlayIsLegal(t *testing.T) {
 			if _, over := p.Result(); over {
 				break
 			}
-			if ply > 600 {
-				t.Fatalf("seed %d: no result after 600 plies", seed)
+			if ply > 2000 {
+				t.Fatalf("seed %d: no result after 2000 plies", seed)
 			}
 			res, ok := ai.Search[Move](context.Background(), node{p}, ai.Limits{MaxDepth: 2}, proto.NewRand(seed, uint64(ply)))
 			if !ok {
@@ -169,5 +171,73 @@ func TestSelfPlayIsLegal(t *testing.T) {
 			}
 			p = p.Play(res.Move)
 		}
+	}
+}
+
+// A man that crowns has moved as a man: the no-progress count starts again.
+func TestCrowningIsProgress(t *testing.T) {
+	t.Parallel()
+	p := setup(Black, map[string]int8{"c7": blackMan, "a1": blackKing, "h2": whiteKing})
+	p.noProgress = drawPlies - 1
+	m, ok := p.ParseMove("c7-d8")
+	if !ok {
+		t.Fatal("c7-d8 should be legal")
+	}
+	p = p.Play(m)
+	if p.noProgress != 0 {
+		t.Fatalf("crowning left the count at %d", p.noProgress)
+	}
+	if _, over := p.Result(); over {
+		t.Fatal("the game must not be drawn on the move that crowned")
+	}
+}
+
+// The first hop of a multi-jump is enough when only one jump continues it; when several
+// do, Continuations lists them.
+func TestFirstHopOfAMultiJump(t *testing.T) {
+	t.Parallel()
+	p := setup(Black, map[string]int8{"c3": blackMan, "a1": blackMan, "d4": whiteMan, "f6": whiteMan, "h8": whiteMan})
+	for _, in := range []string{"c3xe5", "C3XE5", "c3-e5", "c3xg7", "c3xe5xg7"} {
+		m, ok := p.ParseMove(in)
+		if !ok || m.String() != "c3xe5xg7" {
+			t.Errorf("%q: %v %v", in, m, ok)
+		}
+	}
+	fork := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "d6": whiteMan, "f6": whiteMan})
+	if _, ok := fork.ParseMove("c3xe5"); ok {
+		t.Error("c3xe5 goes on two ways here: not a move by itself")
+	}
+	if c := fork.Continuations("c3xe5"); len(c) != 2 {
+		t.Errorf("continuations: %v", c)
+	}
+	if c := fork.Continuations("c3xe5xc7"); c != nil {
+		t.Errorf("a whole move has no continuations: %v", c)
+	}
+}
+
+func sayText(outs []proto.Output) string {
+	var b strings.Builder
+	for _, o := range outs {
+		if s, ok := o.(proto.Say); ok {
+			b.WriteString(strings.Join(s.Lines, "\n") + "\n")
+		}
+	}
+	return b.String()
+}
+
+// The game names the ways a jump goes on, and says why it ended.
+func TestGameExplains(t *testing.T) {
+	t.Parallel()
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 1, Deterministic: true, Instant: true})
+	g.pos = setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "d6": whiteMan, "f6": whiteMan})
+	if out := sayText(g.Handle(proto.LineEvent{Text: "c3xe5"})); !strings.Contains(out, "THE JUMP GOES ON: C3XE5XC7 OR C3XE5XG7.") &&
+		!strings.Contains(out, "THE JUMP GOES ON: C3XE5XG7 OR C3XE5XC7.") {
+		t.Errorf("fork: %q", out)
+	}
+	// Black takes White's last man: White has no move left.
+	g.pos = setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan})
+	if out := sayText(g.Handle(proto.LineEvent{Text: "c3xe5"})); !strings.Contains(out, "NO MOVES LEFT FOR WHITE.") {
+		t.Errorf("win: %q", out)
 	}
 }

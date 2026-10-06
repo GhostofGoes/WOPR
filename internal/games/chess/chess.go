@@ -5,6 +5,7 @@ package chess
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"time"
 
@@ -75,35 +76,82 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 	return nil
 }
 
-// ParseMove reads a move in coordinate notation (e2e4, e7e8q) or SAN (Nf3, exd5, O-O),
-// forgiving the case of the piece letter, against pos.
+// ParseMove reads a move against pos: coordinates (e2e4, E2-E4, e2 e4, e7e8q, e7e8=Q, and
+// e7e8 alone promotes to a queen) or SAN (Nf3, exd5, O-O, e8=Q). Case is forgiven where it
+// cannot mislead: coordinates are read first, so B1C3 is a knight move, and in SAN a
+// capital piece letter wins (BXC6 is a bishop capture when one is legal, else the b-pawn's).
 func ParseMove(pos *cg.Position, input string) (*cg.Move, bool) {
 	s := strings.TrimSpace(strings.TrimRight(strings.TrimSpace(input), "!?+#"))
 	if s == "" {
 		return nil, false
 	}
-	candidates := []string{s}
-	if l := strings.ToLower(s); l != s {
-		candidates = append(candidates, l)
+	if m, ok := coordinates(pos, s); ok {
+		return m, true
 	}
-	if strings.ContainsRune("kqrnKQRN", rune(s[0])) {
-		candidates = append(candidates, strings.ToUpper(s[:1])+strings.ToLower(s[1:]))
+	var candidates []string
+	add := func(c string) {
+		if c != "" && !slices.Contains(candidates, c) {
+			candidates = append(candidates, c)
+		}
 	}
-	if strings.EqualFold(s, "o-o") || strings.EqualFold(s, "0-0") {
-		candidates = append(candidates, "O-O")
+	switch {
+	case strings.EqualFold(s, "o-o") || s == "0-0":
+		add("O-O")
+	case strings.EqualFold(s, "o-o-o") || s == "0-0-0":
+		add("O-O-O")
 	}
-	if strings.EqualFold(s, "o-o-o") || strings.EqualFold(s, "0-0-0") {
-		candidates = append(candidates, "O-O-O")
+	san := strings.NewReplacer("-", "", " ", "").Replace(s) // Ng1-f3
+	add(san)
+	if strings.ContainsRune("KQRBN", rune(san[0])) {
+		add(san[:1] + strings.ToLower(san[1:]))
+	}
+	add(strings.ToLower(san))
+	if strings.ContainsRune("kqrn", rune(san[0])) {
+		add(strings.ToUpper(san[:1]) + strings.ToLower(san[1:]))
+	}
+	for _, c := range slices.Clone(candidates) {
+		add(promotion(c))
 	}
 	for _, c := range candidates {
-		if m, err := (cg.UCINotation{}).Decode(pos, c); err == nil && legal(pos, m) {
-			return m, true
+		for _, n := range []cg.Notation{cg.AlgebraicNotation{}, cg.LongAlgebraicNotation{}} {
+			if m, err := n.Decode(pos, c); err == nil && legal(pos, m) {
+				return m, true
+			}
 		}
-		if m, err := (cg.AlgebraicNotation{}).Decode(pos, c); err == nil && legal(pos, m) {
+	}
+	return nil, false
+}
+
+// coordinates reads from-and-to squares, with optional separators and promotion piece.
+func coordinates(pos *cg.Position, s string) (*cg.Move, bool) {
+	c := strings.ToLower(strings.NewReplacer("-", "", " ", "", "=", "").Replace(s))
+	if len(c) < 4 || len(c) > 5 || c[0] < 'a' || c[0] > 'h' || c[1] < '1' || c[1] > '8' || c[2] < 'a' || c[2] > 'h' || c[3] < '1' || c[3] > '8' {
+		return nil, false
+	}
+	tries := []string{c}
+	if len(c) == 4 {
+		tries = append(tries, c+"q") // a pawn reaching the last rank with no piece named
+	}
+	for _, t := range tries {
+		if m, err := (cg.UCINotation{}).Decode(pos, t); err == nil && legal(pos, m) {
 			return m, true
 		}
 	}
 	return nil, false
+}
+
+// promotion spells a pawn's promotion the way SAN wants it: e8q, e8=q and E8Q become
+// e8=Q, and a bare e8 becomes e8=Q (the queen).
+func promotion(c string) string {
+	t := strings.ReplaceAll(c, "=", "")
+	n := len(t)
+	switch {
+	case n >= 3 && strings.ContainsRune("qrbnQRBN", rune(t[n-1])) && (t[n-2] == '8' || t[n-2] == '1'):
+		return strings.ToLower(t[:n-1]) + "=" + strings.ToUpper(t[n-1:])
+	case n >= 2 && (t[n-1] == '8' || t[n-1] == '1') && t[0] >= 'a' && t[0] <= 'h':
+		return strings.ToLower(t) + "=Q"
+	}
+	return ""
 }
 
 func legal(pos *cg.Position, m *cg.Move) bool {
@@ -137,14 +185,14 @@ func (g *Game) onLine(input string) []proto.Output {
 func (g *Game) think() []proto.Output {
 	g.thinking = true
 	g.thinkSeq++
-	fen, seed, stream := g.g.FEN(), g.env.Seed, proto.DomainAI|g.thinkSeq
+	fen, history, seed, stream := g.g.FEN(), reversible(g.g), g.env.Seed, proto.DomainAI|g.thinkSeq
 	limits := ai.Limits{MaxDepth: interactiveDepth}
 	if g.env.Deterministic {
 		limits.MaxDepth = deterministicDepth
 	}
 	return []proto.Output{proto.Redraw{}, proto.Think{
 		Fn: func(ctx context.Context) (any, error) {
-			m, ok := best(ctx, fen, limits, proto.NewRand(seed, stream))
+			m, ok := best(ctx, fen, history, limits, proto.NewRand(seed, stream))
 			if !ok {
 				return nil, nil
 			}

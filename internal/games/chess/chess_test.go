@@ -42,7 +42,7 @@ func TestMatePuzzles(t *testing.T) {
 	}
 	for _, p := range puzzles {
 		pos := position(t, p.fen)
-		m, ok := best(context.Background(), p.fen, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(1, 1))
+		m, ok := best(context.Background(), p.fen, nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(1, 1))
 		got := ""
 		if ok {
 			for _, l := range pos.ValidMoves() {
@@ -58,7 +58,7 @@ func TestMatePuzzles(t *testing.T) {
 	// Mate in two with a rook ladder: Ra7 (or Rb7) shuts the seventh rank, then the other
 	// rook mates. Two first moves are equally fast, so check the score.
 	ladder := position(t, "7k/8/8/8/8/8/R7/1R4K1 w - - 0 1")
-	res, ok := ai.Search[move](context.Background(), node{ladder}, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(1, 1))
+	res, ok := ai.Search[move](context.Background(), node{pos: ladder}, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(1, 1))
 	if !ok || res.Score < ai.Mate-3 {
 		t.Errorf("mate in two not found: %+v", res)
 	}
@@ -78,6 +78,40 @@ func TestParseMove(t *testing.T) {
 	for _, in := range []string{"", "e5", "e2e5", "Ke2", "hello", "z9z9"} {
 		if _, ok := ParseMove(start, in); ok {
 			t.Errorf("ParseMove(%q) accepted", in)
+		}
+	}
+	// Coordinates come first, so a capital B there is the b-file; SAN capitals are pieces.
+	for in, want := range map[string]string{
+		"B1C3": "b1c3", "B2B4": "b2b4", "B3": "b2b3", "e2-e4": "e2e4", "E2-E4": "e2e4", "e2 e4": "e2e4",
+		"Ng1-f3": "g1f3", "NG1F3": "g1f3",
+	} {
+		m, ok := ParseMove(start, in)
+		if !ok || (cg.UCINotation{}).Encode(start, m) != want {
+			t.Errorf("ParseMove(%q) = %v, %v; want %s", in, m, ok, want)
+		}
+	}
+	bishop := position(t, "4k3/8/2n5/1P6/4B3/8/8/4K3 w - - 0 1")
+	for in, want := range map[string]string{"BXC6": "e4c6", "BxC6": "e4c6", "Bxc6": "e4c6", "bxc6": "b5c6"} {
+		m, ok := ParseMove(bishop, in)
+		if !ok || (cg.UCINotation{}).Encode(bishop, m) != want {
+			t.Errorf("ParseMove(%q) = %v, %v; want %s", in, m, ok, want)
+		}
+	}
+	afterE4E5 := position(t, "rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq e6 0 2")
+	for in, want := range map[string]string{"BC4": "f1c4", "BB5": "f1b5", "Bc4": "f1c4"} {
+		m, ok := ParseMove(afterE4E5, in)
+		if !ok || (cg.UCINotation{}).Encode(afterE4E5, m) != want {
+			t.Errorf("ParseMove(%q) = %v, %v; want %s", in, m, ok, want)
+		}
+	}
+	promote := position(t, "8/4P3/8/8/8/8/k7/4K3 w - - 0 1")
+	for in, want := range map[string]string{
+		"e8=Q": "e7e8q", "E8=Q": "e7e8q", "e8=q": "e7e8q", "e8q": "e7e8q", "E8Q": "e7e8q", "e8": "e7e8q",
+		"e7e8": "e7e8q", "e7e8q": "e7e8q", "E7E8N": "e7e8n", "e8=N": "e7e8n", "e7-e8=R": "e7e8r",
+	} {
+		m, ok := ParseMove(promote, in)
+		if !ok || (cg.UCINotation{}).Encode(promote, m) != want {
+			t.Errorf("ParseMove(%q) = %v, %v; want %s", in, m, ok, want)
 		}
 	}
 	castle := position(t, "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1")
@@ -106,7 +140,7 @@ func TestSelfPlayIsLegal(t *testing.T) {
 func selfPlay(t *testing.T, seed uint64) {
 	g := cg.NewGame()
 	for ply := 0; ply < 40 && g.Outcome() == cg.NoOutcome; ply++ {
-		m, ok := best(context.Background(), g.FEN(), ai.Limits{MaxDepth: 2}, proto.NewRand(seed, uint64(ply)))
+		m, ok := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: 2}, proto.NewRand(seed, uint64(ply)))
 		if !ok {
 			t.Fatalf("seed %d ply %d: no move in a live game", seed, ply)
 		}
@@ -136,7 +170,7 @@ func TestDeterministicSearchTime(t *testing.T) {
 	var times []time.Duration
 	for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
 		start := time.Now()
-		m, _ := best(context.Background(), g.FEN(), ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
+		m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
 		times = append(times, time.Since(start))
 		for _, l := range g.Position().ValidMoves() {
 			if moveOf(l) == m {
@@ -214,4 +248,53 @@ func TestView(t *testing.T) {
 	c := proto.NewCanvas(80, info.PanelRows)
 	g.View(c)
 	golden.AssertString(t, "view", c.String()+"\n"+c.StyleMap())
+}
+
+// WOPR wins basic endings instead of repeating them away: from king and queen, or king and
+// rook, against a bare king, it mates a shuffling player within 50 moves.
+func TestWinsBasicEndings(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("endings are slow under -short")
+	}
+	for _, fen := range []string{
+		"8/8/8/4k3/8/8/8/q3K3 b - - 0 1", // WOPR (Black) has K+Q
+		"7k/8/8/8/3K4/8/8/r7 b - - 0 1",  // K+R
+	} {
+		for seed := range uint64(6) {
+			opt, err := cg.FEN(fen)
+			if err != nil {
+				t.Fatal(err)
+			}
+			g := &Game{g: cg.NewGame(opt), last: cg.NoSquare}
+			g.Start(proto.Env{Seed: seed, Deterministic: true})
+			r := proto.NewRand(seed, 9)
+			mated := false
+			for move := 0; move < 50 && !mated; move++ {
+				// WOPR moves (it is Black's turn), then the player shuffles a king move.
+				outs := g.think()
+				th := outs[len(outs)-1].(proto.Think)
+				v, _ := th.Fn(context.Background())
+				g.onThink(proto.ThinkDone{Value: v})
+				if g.g.Outcome() != cg.NoOutcome {
+					mated = g.g.Method() == cg.Checkmate
+					if !mated {
+						t.Fatalf("%s seed %d: the game ended %v after %d moves", fen, seed, g.g.Method(), move)
+					}
+					break
+				}
+				legal := g.g.Position().ValidMoves()
+				m := legal[r.IntN(len(legal))]
+				if err := g.g.Move(&m, nil); err != nil {
+					t.Fatal(err)
+				}
+				if g.g.Outcome() != cg.NoOutcome {
+					t.Fatalf("%s seed %d: ended %v after the player's move", fen, seed, g.g.Method())
+				}
+			}
+			if !mated {
+				t.Errorf("%s seed %d: no mate in 50 moves (final %s)", fen, seed, g.g.FEN())
+			}
+		}
+	}
 }

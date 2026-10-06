@@ -199,11 +199,12 @@ func (p Position) Play(m Move) Position {
 			captured = true
 		}
 	}
+	wasKing := isKing(piece) // a man that crowns this move still moved as a man: progress
 	if crowns(piece, m.to()) {
 		piece *= 2
 	}
 	p.sq[m.to()] = piece
-	if captured || !isKing(piece) {
+	if captured || !wasKing {
 		p.noProgress = 0
 	} else {
 		p.noProgress++
@@ -225,20 +226,69 @@ func (p Position) Result() (winner int8, over bool) {
 }
 
 // ParseMove matches what the player typed against the legal moves: "c3-d4", "c3 d4",
-// "c3xe5xg7", or just the start and end of a multi-jump ("c3xg7") when that is unique.
+// "c3xe5xg7", just the start and end of a multi-jump ("c3xg7"), or its first hops
+// ("c3xe5") when only one jump continues them.
 func (p Position) ParseMove(input string) (Move, bool) {
+	squares, ok := typedSquares(input)
+	if !ok {
+		return Move{}, false
+	}
+	if m, ok := p.matchMove(squares); ok {
+		return m, true
+	}
+	if c := p.continuations(squares); len(c) == 1 {
+		return c[0], true
+	}
+	return Move{}, false
+}
+
+// Continuations lists the legal jumps that go on from the hops the player typed, when
+// those hops are not a whole move ("c3xe5" when the jump must continue to g7 or c7).
+func (p Position) Continuations(input string) []Move {
+	squares, ok := typedSquares(input)
+	if !ok {
+		return nil
+	}
+	if _, ok := p.matchMove(squares); ok {
+		return nil
+	}
+	return p.continuations(squares)
+}
+
+func typedSquares(input string) ([]int, bool) {
 	f := strings.FieldsFunc(strings.ToLower(input), func(r rune) bool { return r == '-' || r == 'x' || r == ' ' || r == ':' })
 	if len(f) < 2 {
-		return Move{}, false
+		return nil, false
 	}
 	squares := make([]int, len(f))
 	for i, s := range f {
 		file, rank, ok := board.ParseSquare(s)
 		if !ok {
-			return Move{}, false
+			return nil, false
 		}
 		squares[i] = at(file, rank)
 	}
+	return squares, true
+}
+
+func (p Position) continuations(squares []int) []Move {
+	var out []Move
+	for _, m := range p.Legal() {
+		if !m.jump() || int(m.n) <= len(squares) {
+			continue
+		}
+		prefix := true
+		for i, sq := range squares {
+			prefix = prefix && int(m.path[i]) == sq
+		}
+		if prefix {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+func (p Position) matchMove(squares []int) (Move, bool) {
 	var match []Move
 	for _, m := range p.Legal() {
 		if m.from() != squares[0] || m.to() != squares[len(squares)-1] {

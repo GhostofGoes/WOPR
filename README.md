@@ -58,7 +58,8 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
 - **Global Thermonuclear War** (`gtw`): choose a side, list target cities (an empty line ends the list), and
   watch the big board. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
-- **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump; jumps are compulsory.
+- **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump twice);
+  jumps are compulsory.
 - **Black Jack** (`blackjack`): you sit down with $100. Bet $1 to $25, then `h` hit, `s` stand, `d` double
   down, `p` split a pair. The dealer stands on soft 17; black jack pays 3 to 2. `leave` cashes out.
 - **Poker**: heads-up five-card draw, 100 chips each. `c` checks or calls, `b` bets or raises, `f` folds. At
