@@ -1,0 +1,54 @@
+# Runs each staged binary on its own OS and architecture, with the end-to-end tests that
+# were cross-compiled next to it. Called by ci.yml and release.yml; needs no Go toolchain.
+name: Smoke
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: Name of the staged artifact (stage/<os>_<arch>/{wopr,e2e.test})
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.target }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linux_amd64, runner: ubuntu-24.04 }
+          - { target: linux_arm64, runner: ubuntu-24.04-arm }
+          - { target: darwin_amd64, runner: macos-26-intel }
+          - { target: darwin_arm64, runner: macos-26 }
+          - { target: windows_amd64, runner: windows-2025 }
+          - { target: windows_arm64, runner: windows-11-arm }
+    runs-on: ${{ matrix.runner }}
+    permissions: {}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact }}
+          path: stage
+      - name: End-to-end tests (Unix)
+        if: runner.os != 'Windows'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          chmod +x "stage/${TARGET}/wopr" "stage/${TARGET}/e2e.test"
+          "stage/${TARGET}/e2e.test" -test.v -binary "stage/${TARGET}/wopr"
+      - name: End-to-end tests (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          & "stage/$env:TARGET/e2e.test.exe" -test.v -binary "stage/$env:TARGET/wopr.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: End-to-end tests on Ubuntu 22.04 (oldest supported Linux)
+        if: matrix.target == 'linux_amd64'
+        run: >-
+          docker run --rm -v "$PWD/stage/linux_amd64:/w" -w /w ubuntu:22.04
+          ./e2e.test -test.v -binary ./wopr

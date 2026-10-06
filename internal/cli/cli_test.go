@@ -60,8 +60,8 @@ func TestParse(t *testing.T) {
 			t.Parallel()
 			cfg, act, err := Parse(strings.Fields(tt.args), reg, noEnv)
 			if tt.usage != "" {
-				var ue *UsageError
-				if !errors.As(err, &ue) || !strings.Contains(err.Error(), tt.usage) {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
 					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
 				}
 				return

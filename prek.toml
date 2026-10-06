@@ -58,7 +58,7 @@ hooks = [{ id = "zizmor", args = ["--no-progress"], priority = "lint" }]
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai"], exclude = '^(go\.sum|internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/)|(^|/)testdata/|\.golden$', priority = "lint" }]
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai"], exclude = '^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
@@ -77,6 +77,8 @@ hooks = [
 repo = "local"
 hooks = [
   { id = "go-mod-tidy", name = "go mod tidy -diff", language = "system", entry = "go mod tidy -diff", files = '(^|/)go\.(mod|sum)$|\.go$', pass_filenames = false, priority = "lint" },
+  { id = "go-mod-tidy-tools", name = "go mod tidy -diff (tools)", language = "system", entry = "go -C tools mod tidy -diff", files = '^tools/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
+  { id = "go-mod-tidy-release-tools", name = "go mod tidy -diff (release tools)", language = "system", entry = "go -C tools/release mod tidy -diff", files = '^tools/release/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
 ]

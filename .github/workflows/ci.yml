@@ -1,0 +1,140 @@
+# CI for pull requests and main. The only required check is ci-ok (see AGENTS.md).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No GOTOOLCHAIN before setup-go: with GOTOOLCHAIN=local set, setup-go ignores
+      # go.mod's toolchain line. setup-go exports GOTOOLCHAIN=local itself afterwards.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        with:
+          prek-version: 0.5.5
+      - name: Lint rules still fire
+        env:
+          WOPR_LINT_SELFTEST: "1"
+        run: go test -run 'TestLintRulesFire|TestGolangciLintPinsAgree' ./internal/archtest
+      - name: zizmor online audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: prek run zizmor --all-files
+
+  secrets:
+    name: secrets
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: gitleaks (full history)
+        shell: bash
+        run: |
+          set -o pipefail
+          go tool -modfile=tools/go.mod gitleaks git --redact --exit-code 1 . 2>&1 | tee gitleaks.log
+          if grep -q ' ERR ' gitleaks.log; then echo "::error::gitleaks reported an error"; exit 1; fi
+
+  test:
+    name: test
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-26, windows-2025]
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: go test -race
+        if: runner.os != 'Windows'
+        run: go test -race ./...
+      - name: go test (Windows; the race detector needs a C toolchain)
+        if: runner.os == 'Windows'
+        run: go test ./...
+      - name: Fuzz smoke
+        if: runner.os == 'Linux'
+        run: go test -run '^$' -fuzz '^FuzzClauses$' -fuzztime=10s ./internal/prompt
+      - name: govulncheck
+        if: runner.os == 'Linux'
+        run: go tool -modfile=tools/go.mod govulncheck ./...
+      - name: Third-party notices are current
+        if: runner.os == 'Linux'
+        run: go run ./internal/tools/notices -check
+
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: GoReleaser snapshot (all six targets)
+        run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
+      - name: Size gate
+        run: go run ./internal/tools/sizegate -expect 6
+      - name: Stage binaries and end-to-end tests
+        run: go run ./internal/tools/stage -archives
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || 'wopr-dev' }}
+          path: stage/
+          retention-days: ${{ github.event_name == 'pull_request' && 3 || 30 }}
+          if-no-files-found: error
+
+  smoke:
+    name: smoke
+    needs: build
+    permissions: {}
+    uses: $/.github/workflows/smoke.yml
+    with:
+      artifact: ${{ github.event_name == 'pull_request' && format('wopr-pr{0}', github.event.number) || 'wopr-dev' }}
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [lint, secrets, test, build, smoke]
+    runs-on: ubuntu-24.04
+    permissions: {}
+    steps:
+      - name: All required jobs succeeded
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1
+      - name: OK
+        run: echo "all required jobs passed"
