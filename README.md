@@ -123,11 +123,12 @@ the two nations and the world (drawn from [Natural Earth](https://www.naturalear
 
 ## Development builds
 
-Every push to `main` builds all six targets. Open a
-[CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush),
-download the `wopr-dev` artifact under **Artifacts**, unzip it, and run the binary for your platform
-(`chmod +x` it first on Linux and macOS). Builds from other branches (`wopr-branch`) and pull requests
-(`wopr-pr<N>`) are for testing only.
+Every CI run builds all six targets and keeps one download per platform. Open a
+[CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+and, under **Artifacts**, download the one for your platform, for example
+`wopr_0.0.1-snapshot.1a2b3c4_linux_amd64.tar.gz` or `..._windows_amd64.zip` (about 2.5 MB). It holds the
+binary, already executable on Linux and macOS, with the README, licence and notices. Downloads from `main`
+are kept for 30 days; builds from other branches (7 days) and pull requests (3 days) are for testing only.
 
 ## Building and contributing
 
