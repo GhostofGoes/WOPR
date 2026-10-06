@@ -3,6 +3,7 @@ package biotoxic_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -20,6 +21,7 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	t.Helper()
 	g := biotoxic.New().(*sim.Game)
 	s := testkit.Game(t, g, info, "", seed)
+	s.Type("HELP")
 	for range 300 {
 		if asking, _ := s.Asking(); !asking {
 			break
@@ -31,6 +33,9 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	}
 	if _, over := s.Result(); !over {
 		t.Fatalf("seed %d: no end:\n%s", seed, s.Transcript())
+	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Fatalf("seed %d: lines wider than 80 columns:\n%s", seed, strings.Join(wide, "\n"))
 	}
 	return s
 }
@@ -77,5 +82,19 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	}
 	for _, err := range script.Validate(biotoxic.Lines, string(notice)) {
 		t.Error(err)
+	}
+}
+
+// Only chemical troops carry an agent, and RELEASE must be typed in full.
+func TestOnlyChemicalTroopsRelease(t *testing.T) {
+	t.Parallel()
+	s := testkit.Game(t, biotoxic.New(), info, "", 1)
+	s.Type("REL 4") // CHM1 first
+	if !s.Contains("UNKNOWN ORDER") {
+		t.Fatalf("REL is not RELEASE:\n%s", s.Transcript())
+	}
+	s.Type("HOLD").Type("RELEASE 4") // INF1
+	if !s.Contains("ONLY CHEMICAL TROOPS CARRY AN AGENT.") {
+		t.Fatalf("infantry released an agent:\n%s", s.Transcript())
 	}
 }

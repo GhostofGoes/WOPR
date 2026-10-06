@@ -18,8 +18,10 @@ import (
 var (
 	lineIntro = script.Orig(
 		"THEATERWIDE TACTICAL WARFARE. CORPS AND AIR WINGS ON A EUROPEAN FRONT.",
-		"ANY UNIT MAY ESCALATE: EACH RUNG ADDS TO EVERY ATTACK, AND WOPR ANSWERS IN KIND.",
-		"HOLD FIVE REGIONS TO WIN, OR MORE THAN WOPR AFTER TEN TURNS. TYPE HELP FOR ORDERS.",
+		"ANY UNIT MAY ESCALATE (TYPE THE WORD IN FULL): EACH RUNG ADDS TO EVERY ATTACK,",
+		"AND WOPR ANSWERS IN KIND. THE TOP RUNG ENDS EVERYTHING.",
+		"HOLD FIVE REGIONS TO WIN, OR MORE THAN WOPR AFTER TEN TURNS.",
+		"TYPE HELP FOR ORDERS.",
 	)
 	lineLevels   = script.Orig("CONVENTIONAL", "CHEMICAL", "TACTICAL NUCLEAR", "STRATEGIC")
 	lineYouEsc   = script.Orig("YOU ESCALATE: #.")
@@ -33,8 +35,8 @@ var (
 	lineHeldEven = script.Orig("TIME. THE FRONT IS WHERE IT STARTED.")
 	lineTalks    = script.Orig("DIPLOMATS MEET IN GENEVA. NOBODY ESCALATES THIS TURN.")
 	lineRefugees = script.Orig("REFUGEES CHOKE THE ROADS. CIVILIAN LOSSES MOUNT.")
-	lineReserves = script.Orig("YOUR RESERVES ARRIVE: A FRESH CORPS AT THE CHANNEL PORTS.")
-	lineWOPRRes  = script.Orig("WOPR'S RESERVES ARRIVE AT THE ODER.")
+	lineReserves = script.Orig("YOUR RESERVES ARRIVE: A FRESH CORPS AT THE CHANNEL PORTS.", "YOUR RESERVES CANNOT GET THROUGH.")
+	lineWOPRRes  = script.Orig("WOPR'S RESERVES ARRIVE AT THE ODER.", "WOPR'S RESERVES CANNOT GET THROUGH.")
 	lineWeather  = script.Orig("LOW CLOUD GROUNDS THE AIR WINGS. THEY ATTACK AT HALF.")
 	lineQuiet    = script.Orig("A LULL ALONG THE FRONT.")
 	lineEscHelp  = script.Orig("ESCALATE: CLIMB ONE RUNG OF THE LADDER (ONCE A TURN).")
@@ -73,7 +75,7 @@ func fill(text string, args ...string) string {
 
 // Escalate climbs the ladder; once a turn is enough, the rest of the orders are moot.
 var Escalate = &sim.Verb{
-	Name: "ESCALATE", Help: lineEscHelp[0].Text, Phase: 2,
+	Name: "ESCALATE", Help: lineEscHelp[0].Text, Phase: 2, Drastic: true,
 	Check: func(s *sim.State, _ *sim.Unit, _ int) string {
 		if s.Vars["talks"] > 0 {
 			return lineNoEsc[0].Text
@@ -110,16 +112,16 @@ func Scenario() *sim.Scenario {
 		TurnLimit: turns,
 		Verbs:     []*sim.Verb{Escalate},
 		Setup: func(s *sim.State) {
+			// Three regions each; nobody holds the Fulda Gap between the fronts.
+			s.AddUnit(sim.Player, corps, 1)
 			s.AddUnit(sim.Player, corps, 2)
-			s.AddUnit(sim.Player, corps, 3)
 			s.AddUnit(sim.Player, corps, 2)
-			s.AddUnit(sim.Player, airWing, 1)
+			s.AddUnit(sim.Player, airWing, 0)
 			s.AddUnit(sim.WOPR, corps, 4)
 			s.AddUnit(sim.WOPR, corps, 4)
 			s.AddUnit(sim.WOPR, corps, 5)
 			s.AddUnit(sim.WOPR, corps, 5)
 			s.AddUnit(sim.WOPR, airWing, 6)
-			s.Control[0], s.Control[1], s.Control[6] = sim.Player, sim.Player, sim.WOPR
 		},
 		Events: []sim.Event{
 			{Text: lineTalks[0].Text, Apply: func(s *sim.State) { s.Vars["talks"] = 2 }},
@@ -127,16 +129,8 @@ func Scenario() *sim.Scenario {
 				s.Losses[sim.Player][civilians] += 2
 				s.Losses[sim.WOPR][civilians] += 2
 			}},
-			{Text: lineReserves[0].Text, Apply: func(s *sim.State) {
-				if len(s.In(0, sim.WOPR)) == 0 {
-					s.AddUnit(sim.Player, corps, 0)
-				}
-			}},
-			{Text: lineWOPRRes[0].Text, Apply: func(s *sim.State) {
-				if len(s.In(6, sim.Player)) == 0 {
-					s.AddUnit(sim.WOPR, corps, 6)
-				}
-			}},
+			{Apply: func(s *sim.State) { reserves(s, sim.Player, 0, lineReserves) }},
+			{Apply: func(s *sim.State) { reserves(s, sim.WOPR, 6, lineWOPRRes) }},
 			{Text: lineWeather[0].Text, Apply: func(s *sim.State) { s.Vars["cloud"] = 2 }},
 			{Text: lineQuiet[0].Text},
 		},
@@ -212,7 +206,7 @@ func upkeep(s *sim.State) {
 			}
 		}
 		if len(all) > 0 {
-			s.Lose(all[s.Rand().IntN(len(all))], 1)
+			s.Wound(all[s.Rand().IntN(len(all))])
 		}
 	}
 	if level >= strategic {
@@ -226,10 +220,38 @@ func upkeep(s *sim.State) {
 	}
 }
 
-// ai: the default ground war, plus the ladder. WOPR answers an escalation with one of its
-// own, and climbs when it is losing badly; the talks stop both.
+// reserves brings a fresh corps to side's rear region, unless the enemy is there.
+func reserves(s *sim.State, side, rear int, line script.Ls) {
+	if len(s.In(rear, sim.Enemy(side))) > 0 {
+		s.Say(line[1].Text)
+		return
+	}
+	s.AddUnit(side, corps, rear)
+	s.Say(line[0].Text)
+}
+
+// ai: the default ground war, but corps also attack at even odds (the default waits for
+// 2:1, which corps against corps never reach), plus the ladder. WOPR answers an
+// escalation with one of its own, and climbs when it is losing badly; the talks stop both.
 func ai(s *sim.State) []sim.Order {
 	orders := sim.DefaultAI(s)
+	for i, o := range orders {
+		if o.Unit.Type != corps || o.Verb == sim.Attack {
+			continue
+		}
+		at, col := -1, -1
+		for r := o.Unit.Region - 1; r <= o.Unit.Region+1; r++ {
+			if !s.CanAttack(o.Unit, r) {
+				continue
+			}
+			if c := sim.Column(s.AttackOf(o.Unit), s.DefenceOf(strongest(s, r)), s.Regions[r].Terrain); c > col {
+				at, col = r, c
+			}
+		}
+		if at >= 0 && col >= 1 { // even odds or better
+			orders[i] = sim.Order{Unit: o.Unit, Verb: sim.Attack, Target: at}
+		}
+	}
 	steps := func(side int) int {
 		n := 0
 		for _, u := range s.Living(side) {
@@ -242,4 +264,15 @@ func ai(s *sim.State) []sim.Order {
 		orders[0] = sim.Order{Unit: orders[0].Unit, Verb: Escalate, Target: -1} // pure: climb clears the provocation
 	}
 	return orders
+}
+
+// strongest is the player's visible unit in r with the best defence.
+func strongest(s *sim.State, r int) *sim.Unit {
+	var best *sim.Unit
+	for _, u := range s.In(r, sim.Player) {
+		if !u.Hidden && (best == nil || s.DefenceOf(u) > s.DefenceOf(best)) {
+			best = u
+		}
+	}
+	return best
 }

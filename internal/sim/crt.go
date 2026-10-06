@@ -12,10 +12,8 @@ const (
 	DefenderLoses
 )
 
-// String is the result's code, as a report shows it.
-func (r Result) String() string {
-	return [...]string{"NE", "AL", "EX", "DR", "DL"}[r]
-}
+// String is the result's code, as a report shows it (HELP explains the codes).
+func (r Result) String() string { return engineText[TextResults][r].Text }
 
 // Columns of the table: the odds, attacker to defender.
 const (

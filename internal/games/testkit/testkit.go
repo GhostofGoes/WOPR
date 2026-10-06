@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unicode/utf8"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -92,6 +93,17 @@ func (s *Session) Runner() *host.Runner { return s.r }
 
 // Transcript is everything printed so far. A page break is shown as "[CLEAR]".
 func (s *Session) Transcript() string { return strings.Join(s.lines, "\n") + "\n" }
+
+// Wide lists the transcript's lines wider than cols columns.
+func (s *Session) Wide(cols int) []string {
+	var out []string
+	for _, l := range s.lines {
+		if utf8.RuneCountInString(l) > cols {
+			out = append(out, l)
+		}
+	}
+	return out
+}
 
 // Contains reports whether the transcript contains text.
 func (s *Session) Contains(text string) bool { return strings.Contains(s.Transcript(), text) }

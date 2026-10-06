@@ -81,9 +81,13 @@ type State struct {
 	Turn     int // 1-based
 	Vars     map[string]int
 	Losses   [2]map[string]int // steps lost, by kill-ratio category
-	rng      *rand.Rand
-	said     []string
-	deck     []int
+	// Pending is the player's orders given so far this turn, while the player is still
+	// ordering; checks that share a budget (support, say) count them. Empty when the turn
+	// resolves.
+	Pending []Order
+	rng     *rand.Rand
+	said    []string
+	deck    []int
 }
 
 // Say queues lines for this turn's report.
@@ -120,8 +124,19 @@ func (s *State) Lose(u *Unit, steps int) {
 	u.Steps -= steps
 	s.Losses[u.Side][u.Type.Category] += steps
 	if !u.Alive() {
-		s.Say(s.Scenario.text(TextDestroyed, s.owner(u)+u.Type.Name+string(rune('0'+u.ID))))
+		s.Say(s.Scenario.text(TextDestroyed, s.Label(u)))
 	}
+}
+
+// Label names a unit in a report, with WOPR'S before WOPR's units: ARM1, WOPR'S ARM1.
+func (s *State) Label(u *Unit) string { return s.owner(u) + u.Type.Name + string(rune('0'+u.ID)) }
+
+// Wound takes one step from u and says so (or that it is destroyed).
+func (s *State) Wound(u *Unit) {
+	if u.Steps > 1 {
+		s.Say(s.Scenario.text(TextLoses, s.Label(u)))
+	}
+	s.Lose(u, 1)
 }
 
 // AttackOf is a unit's attack after its losses and the scenario's modifiers.
@@ -273,7 +288,9 @@ func (s *State) drawEvent() {
 	}
 	e := ev[s.deck[0]]
 	s.deck = s.deck[1:]
-	s.Say(e.Text)
+	if e.Text != "" {
+		s.Say(e.Text)
+	}
 	if e.Apply != nil {
 		e.Apply(s)
 	}
@@ -291,8 +308,12 @@ func Nearest(regions int, from int, test func(int) bool) int {
 	return -1
 }
 
-// Toward is the farthest region u can move to on the way to target, or -1.
+// Toward is the farthest region u can move to on the way to target, or -1 (also when u
+// is already there).
 func (s *State) Toward(u *Unit, target int) int {
+	if target == u.Region {
+		return -1
+	}
 	step := 1
 	if target < u.Region {
 		step = -1

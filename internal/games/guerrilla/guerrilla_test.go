@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -32,7 +33,7 @@ func cunning(s *sim.State, u *sim.Unit) string {
 			}
 		}
 	}
-	if s.Vars["support"] >= 3 && s.Control[u.Region] != sim.WOPR {
+	if guerrilla.Recruit.Check(s, u, -1) == "" {
 		return "RECRUIT"
 	}
 	if !u.Hidden {
@@ -45,6 +46,7 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	t.Helper()
 	g := guerrilla.New().(*sim.Game)
 	s := testkit.Game(t, g, info, "", seed)
+	s.Type("HELP")
 	for range 300 {
 		if asking, _ := s.Asking(); !asking {
 			break
@@ -67,6 +69,9 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	}
 	if _, over := s.Result(); !over {
 		t.Fatalf("seed %d: no end:\n%s", seed, s.Transcript())
+	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Fatalf("seed %d: lines wider than 80 columns:\n%s", seed, strings.Join(wide, "\n"))
 	}
 	return s
 }
@@ -108,5 +113,15 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	}
 	for _, err := range script.Validate(guerrilla.Lines, string(notice)) {
 		t.Error(err)
+	}
+}
+
+// Recruits ordered earlier in the turn count against the support: 3 support pays for one.
+func TestRecruitsShareTheSupport(t *testing.T) {
+	t.Parallel()
+	s := testkit.Game(t, guerrilla.New(), info, "", 1)
+	s.Type("RECRUIT").Type("RECRUIT")
+	if !s.Contains("RECRUITING NEEDS 3 SUPPORT") {
+		t.Fatalf("a second recruit on 3 support was accepted:\n%s", s.Transcript())
 	}
 }

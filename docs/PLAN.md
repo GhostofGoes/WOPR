@@ -902,13 +902,18 @@ last escort outnumbered them. GTW stays separate: moving it would not remove cod
   reduced unit attacks and defends at half (rounded up). Units carry a kill-ratio category.
 - **A turn.** The player orders each unit in turn (`<verb> [region]`, or `HOLD`); `STATUS` reprints the map,
   `HELP` the verbs. WOPR's orders come from the scenario's AI. Then movement, combat, one event card, upkeep
-  (supply, scenario hooks) and the victory check. The map prints as a table each turn (Console layout).
+  (supply, scenario hooks) and the victory check. The map prints as a table each turn (Console layout),
+  within 80 columns: a stack of one type prints as `COR1,2*,4`. A region is named by number, by its name,
+  or by the start of any word in it (`ALAMEIN`). Drastic verbs (`ESCALATE`, `RELEASE`) must be typed in
+  full. An order the other side's moves made impossible is reported (`ARM1 STANDS FAST: ...`).
 - **Combat-results table.** Odds column = attack ÷ defence, clamped to 1:2 … 4:1, then shifted by terrain;
-  a d6 from the game's stream picks the result: `AE` attacker loses a step, `EX` both do, `DR` the defender
-  retreats a region (or loses a step if it cannot), `DE` the defender loses a step. One table for every
+  a d6 from the game's stream picks the result: `NE` no effect, `AE` attacker loses a step, `EX` both do,
+  `DR` the defender retreats a region (or loses a step if it cannot), `DE` the defender loses a step. HELP
+  explains the codes. One table for every
   scenario and both bespoke games; a test pins its rows.
-- **Events.** Each scenario has a deck of 8–12 cards with a line of text and a hook; one is drawn each turn,
-  and the deck reshuffles from the stream when empty.
+- **Events.** Each scenario has a deck of 5–12 cards with a headline and a hook; one is drawn each turn,
+  and the deck reshuffles from the stream when empty. A card says only what happened (which unit was made
+  good or lost a step), never an effect that found nothing to act on.
 - **End.** A turn limit and a victory hook per scenario: control of objective regions, elimination, or (for
   Biotoxic) nobody, ever.
 - **Kill ratios.** Losses are counted per category for both sides and printed at the end in GTW's two-column

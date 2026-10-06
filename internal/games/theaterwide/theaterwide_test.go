@@ -21,6 +21,7 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	t.Helper()
 	g := theaterwide.New().(*sim.Game)
 	s := testkit.Game(t, g, info, "", seed)
+	s.Type("HELP")
 	for range 300 {
 		if asking, _ := s.Asking(); !asking {
 			break
@@ -32,6 +33,9 @@ func play(t *testing.T, seed uint64, strategy func(*sim.State, *sim.Unit) string
 	}
 	if _, over := s.Result(); !over {
 		t.Fatalf("seed %d: no end:\n%s", seed, s.Transcript())
+	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Fatalf("seed %d: lines wider than 80 columns:\n%s", seed, strings.Join(wide, "\n"))
 	}
 	return s
 }
@@ -93,5 +97,26 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	}
 	for _, err := range script.Validate(theaterwide.Lines, string(notice)) {
 		t.Error(err)
+	}
+}
+
+// Sitting tight is not a strategy: WOPR's corps take the empty Fulda Gap and press on.
+func TestDoingNothingDoesNotWin(t *testing.T) {
+	t.Parallel()
+	for seed := range uint64(30) {
+		res, _ := play(t, seed, func(*sim.State, *sim.Unit) string { return "END" }).Result()
+		if res.Outcome == proto.Win {
+			t.Fatalf("seed %d: holding every turn won", seed)
+		}
+	}
+}
+
+// E is not a prefix of ESCALATE: a slip of the finger must not climb the ladder.
+func TestEscalateInFull(t *testing.T) {
+	t.Parallel()
+	s := testkit.Game(t, theaterwide.New(), info, "", 1)
+	s.Type("E")
+	if !s.Contains("UNKNOWN ORDER") || s.Contains("YOU ESCALATE") {
+		t.Fatalf("E:\n%s", s.Transcript())
 	}
 }

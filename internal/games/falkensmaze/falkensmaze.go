@@ -38,8 +38,8 @@ var (
 	lineMoved   = script.Orig("WOPR HAS MOVED A WALL.", "THE MAZE IS NOT WHERE YOU LEFT IT.", "PREDICTABLE, PROFESSOR.")
 	lineBias    = script.Orig("YOU FAVOUR # TURNS, PROFESSOR. SO NOTED.")
 	lineTurns   = script.Orig("LEFT", "STRAIGHT", "RIGHT")
-	lineFound   = script.Orig("YOU FOUND THE EXIT IN # MOVES. WOPR MOVED # WALLS.")
-	lineGiveUp  = script.Orig("RETREAT ACCEPTED. THE EXIT WAS # MOVES AWAY.")
+	lineFound   = script.Orig("YOU FOUND THE EXIT IN # MOVES. WOPR MOVED # WALLS.", "YOU FOUND THE EXIT IN # MOVES. WOPR MOVED ONE WALL.")
+	lineGiveUp  = script.Orig("RETREAT ACCEPTED. THE EXIT WAS # MOVES AWAY.", "RETREAT ACCEPTED. THE EXIT WAS ONE MOVE AWAY.")
 	panelMoves  = script.Orig("MOVES #")
 	panelWalls  = script.Orig("WALLS MOVED #")
 	panelHabits = script.Orig("YOUR TURNS: # LEFT  # STRAIGHT  # RIGHT")
@@ -114,7 +114,11 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 		d = west
 	case k.Rune == 'q' || k.Rune == 'Q':
 		left := len(g.m.path(g.player, g.exit)) - 1
-		return []proto.Output{say(fill(lineGiveUp[0].Text, fmt.Sprint(left))), proto.Done{Result: proto.Result{Outcome: proto.Loss}}}
+		line := lineGiveUp[0]
+		if left == 1 {
+			line = lineGiveUp[1]
+		}
+		return []proto.Output{say(fill(line.Text, fmt.Sprint(left))), proto.Done{Result: proto.Result{Outcome: proto.Loss}}}
 	}
 	if d < 0 || !g.m.open(g.player, d) {
 		return nil // a wall, or a key that means nothing here
@@ -131,7 +135,11 @@ func (g *Game) step(d int) []proto.Output {
 	g.moves++
 	g.reveal()
 	if g.player == g.exit {
-		text := fill(lineFound[0].Text, fmt.Sprint(g.moves), fmt.Sprint(g.reroutes))
+		found := lineFound[0]
+		if g.reroutes == 1 {
+			found = lineFound[1]
+		}
+		text := fill(found.Text, fmt.Sprint(g.moves), fmt.Sprint(g.reroutes))
 		return []proto.Output{proto.Redraw{}, say(text), proto.Done{Result: proto.Result{Outcome: proto.Win}}}
 	}
 	outs := []proto.Output{proto.Redraw{}}

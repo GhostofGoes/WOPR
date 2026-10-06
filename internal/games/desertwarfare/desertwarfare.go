@@ -6,6 +6,7 @@ package desertwarfare
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -17,32 +18,32 @@ import (
 var (
 	lineIntro = script.Orig(
 		"DESERT WARFARE. ARMOUR AGAINST ARMOUR ALONG THE COAST ROAD.",
-		"YOUR DEPOT IS AT ALEXANDRIA, WOPR'S AT BENGHAZI. TAKE IT, OR HOLD MORE OF THE ROAD",
-		"AFTER TEN TURNS. A UNIT CUT OFF FROM ITS DEPOT ATTACKS AT HALF. TYPE HELP FOR ORDERS.",
+		"YOUR DEPOT IS AT ALEXANDRIA, WOPR'S AT BENGHAZI. TAKE BENGHAZI,",
+		"OR HOLD MORE OF THE ROAD AFTER TEN TURNS.",
+		"A UNIT CUT OFF FROM ITS DEPOT ATTACKS AT HALF. TYPE HELP FOR ORDERS.",
 	)
-	lineTookDepot  = script.Orig("YOUR ARMOUR ROLLS INTO BENGHAZI.")
-	lineLostDepot  = script.Orig("WOPR HOLDS ALEXANDRIA.")
-	lineHeldMore   = script.Orig("TIME. YOU HOLD MORE OF THE ROAD.")
-	lineHeldLess   = script.Orig("TIME. WOPR HOLDS MORE OF THE ROAD.")
-	lineHeldEven   = script.Orig("TIME. THE ROAD IS SPLIT EVENLY.")
-	lineSandstorm  = script.Orig("A SANDSTORM BLOWS UP. EVERY ATTACK NEXT TURN IS AT HALF.")
-	lineConvoy     = script.Orig("A SUPPLY CONVOY GETS THROUGH. ONE OF YOUR REDUCED UNITS IS MADE GOOD.")
-	lineWOPRConvoy = script.Orig("WOPR'S CONVOY GETS THROUGH. ONE OF ITS REDUCED UNITS IS MADE GOOD.")
-	lineMines      = script.Orig("A MINEFIELD IN THE OPEN COSTS A UNIT A STEP.")
-	lineQuiet      = script.Orig("THE FRONT IS QUIET.")
-	lineHeat       = script.Orig("THE HEAT SLOWS EVERYONE. NOTHING ELSE HAPPENS.")
-	lineAir        = script.Orig("AIR SUPPORT ARRIVES: YOUR ATTACKS NEXT TURN COUNT ONE MORE.")
-	lineWOPRAir    = script.Orig("WOPR'S AIR SUPPORT ARRIVES: ITS ATTACKS NEXT TURN COUNT ONE MORE.")
-	lineSupply     = script.Orig("SUPPLY: # OF YOUR UNITS CUT OFF")
-	unitNames      = script.Orig("ARM", "ARMOUR", "INF", "INFANTRY", "ART", "ARTILLERY")
-	title          = script.Orig("DESERT WARFARE")
-	regionNames    = script.Orig("ALEXANDRIA", "EL ALAMEIN", "MERSA MATRUH", "SIDI BARRANI", "SOLLUM", "TOBRUK", "BENGHAZI")
+	lineTookDepot = script.Orig("YOUR ARMOUR ROLLS INTO BENGHAZI.")
+	lineLostDepot = script.Orig("WOPR HOLDS ALEXANDRIA.")
+	lineHeldMore  = script.Orig("TIME. YOU HOLD MORE OF THE ROAD.")
+	lineHeldLess  = script.Orig("TIME. WOPR HOLDS MORE OF THE ROAD.")
+	lineHeldEven  = script.Orig("TIME. THE ROAD IS SPLIT EVENLY.")
+	lineSandstorm = script.Orig("A SANDSTORM BLOWS UP. EVERY ATTACK NEXT TURN IS AT HALF.")
+	lineConvoy    = script.Orig("YOUR SUPPLY CONVOY GETS THROUGH.", "WOPR'S SUPPLY CONVOY GETS THROUGH.", "# IS MADE GOOD.")
+	lineMines     = script.Orig("A MINEFIELD IN THE OPEN GROUND.", "NOBODY IS CAUGHT IN IT.")
+	lineQuiet     = script.Orig("THE FRONT IS QUIET.")
+	lineHeat      = script.Orig("THE HEAT SLOWS EVERYONE. NOTHING ELSE HAPPENS.")
+	lineAir       = script.Orig("AIR SUPPORT ARRIVES: YOUR ATTACKS NEXT TURN COUNT ONE MORE.")
+	lineWOPRAir   = script.Orig("WOPR'S AIR SUPPORT ARRIVES: ITS ATTACKS NEXT TURN COUNT ONE MORE.")
+	lineSupply    = script.Orig("SUPPLY: # OF YOUR UNITS CUT OFF")
+	unitNames     = script.Orig("ARM", "ARMOUR", "INF", "INFANTRY", "ART", "ARTILLERY")
+	title         = script.Orig("DESERT WARFARE")
+	regionNames   = script.Orig("ALEXANDRIA", "EL ALAMEIN", "MERSA MATRUH", "SIDI BARRANI", "SOLLUM", "TOBRUK", "BENGHAZI")
 )
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineIntro, lineTookDepot, lineLostDepot, lineHeldMore, lineHeldLess, lineHeldEven, lineSandstorm,
-	lineConvoy, lineWOPRConvoy, lineMines, lineQuiet, lineHeat, lineAir, lineWOPRAir, lineSupply, unitNames,
+	lineConvoy, lineMines, lineQuiet, lineHeat, lineAir, lineWOPRAir, lineSupply, unitNames,
 	title, regionNames,
 }
 
@@ -81,7 +82,7 @@ func Scenario() *sim.Scenario {
 		Events: []sim.Event{
 			{Text: lineSandstorm[0].Text, Apply: func(s *sim.State) { s.Vars["sandstorm"] = 2 }},
 			{Text: lineConvoy[0].Text, Apply: func(s *sim.State) { repair(s, sim.Player) }},
-			{Text: lineWOPRConvoy[0].Text, Apply: func(s *sim.State) { repair(s, sim.WOPR) }},
+			{Text: lineConvoy[1].Text, Apply: func(s *sim.State) { repair(s, sim.WOPR) }},
 			{Text: lineMines[0].Text, Apply: mines},
 			{Text: lineQuiet[0].Text},
 			{Text: lineHeat[0].Text},
@@ -165,7 +166,9 @@ func repair(s *sim.State, side int) {
 		}
 	}
 	if len(reduced) > 0 {
-		reduced[s.Rand().IntN(len(reduced))].Steps = 2
+		u := reduced[s.Rand().IntN(len(reduced))]
+		u.Steps = 2
+		s.Say(strings.Replace(lineConvoy[2].Text, "#", s.Label(u), 1))
 	}
 }
 
@@ -177,9 +180,11 @@ func mines(s *sim.State) {
 			exposed = append(exposed, u)
 		}
 	}
-	if len(exposed) > 0 {
-		s.Lose(exposed[s.Rand().IntN(len(exposed))], 1)
+	if len(exposed) == 0 {
+		s.Say(lineMines[1].Text)
+		return
 	}
+	s.Wound(exposed[s.Rand().IntN(len(exposed))])
 }
 
 func victory(s *sim.State, final bool) (proto.Outcome, string, bool) {

@@ -19,8 +19,8 @@ import (
 var (
 	lineIntro = script.Orig(
 		"GUERRILLA ENGAGEMENT. YOUR CELLS ARE HIDDEN IN THE HILLS (MARKED ~ ON THE MAP).",
-		"A HIDDEN CELL CANNOT BE ATTACKED, AND ITS AMBUSH STRIKES TWICE AS HARD; ATTACKING",
-		"OR A NEARBY PATROL GIVES IT AWAY.",
+		"A HIDDEN CELL CANNOT BE ATTACKED, AND ITS AMBUSH STRIKES TWICE AS HARD.",
+		"ATTACKING GIVES IT AWAY, AND SO MAY A PATROL NEARBY.",
 		"RAIDS THAT HURT WOPR WIN SUPPORT; LOSSES COST IT. RECRUIT SPENDS 3 SUPPORT.",
 		"SUPPORT 10 OR THE CAPITAL WINS, AND SO DOES A CELL ALIVE AFTER TWELVE TURNS.",
 		"TYPE HELP FOR ORDERS.",
@@ -36,10 +36,10 @@ var (
 	lineNoHide    = script.Orig("IT IS ALREADY HIDDEN.")
 	lineSupport   = script.Orig("SUPPORT #")
 	lineShelter   = script.Orig("THE VILLAGES SHELTER YOUR CELLS. ALL GO TO GROUND.")
-	lineInformer  = script.Orig("AN INFORMER TALKS. ONE CELL IS EXPOSED.")
-	lineCurfew    = script.Orig("A CURFEW IN THE TOWNS. SUPPORT FALLS BY ONE.")
+	lineInformer  = script.Orig("AN INFORMER TALKS.", "# IS EXPOSED.")
+	lineCurfew    = script.Orig("A CURFEW IN THE TOWNS.", "SUPPORT FALLS BY ONE.")
 	lineSweep     = script.Orig("A HEAVY-HANDED SWEEP. SUPPORT RISES BY ONE.")
-	lineAirdrop   = script.Orig("A SUPPLY DROP. ONE REDUCED CELL IS MADE GOOD.")
+	lineAirdrop   = script.Orig("A SUPPLY DROP REACHES THE HILLS.", "# IS MADE GOOD.")
 	lineReinforce = script.Orig("FRESH TROOPS REACH THE CAPITAL.")
 	lineQuiet     = script.Orig("A QUIET WEEK.")
 	lineMonsoon   = script.Orig("THE RAINS COME. PATROLS FIND NOTHING THIS TURN.")
@@ -87,15 +87,22 @@ var Hide = &sim.Verb{
 	},
 	Apply: func(s *sim.State, u *sim.Unit, _ int) {
 		u.Hidden = true
-		s.Say(fill(lineHides[0].Text, u.Type.Name+fmt.Sprint(u.ID)))
+		s.Say(fill(lineHides[0].Text, s.Label(u)))
 	},
 }
 
-// Recruit spends support on a new hidden cell in the unit's region.
+// Recruit spends support on a new hidden cell in the unit's region. Recruits already
+// ordered this turn count against the support.
 var Recruit = &sim.Verb{
 	Name: "RECRUIT", Help: verbHelp[1].Text, Phase: 2,
 	Check: func(s *sim.State, u *sim.Unit, _ int) string {
-		if s.Vars["support"] < recruitFee || s.Control[u.Region] == sim.WOPR {
+		queued := 0
+		for _, o := range s.Pending {
+			if o.Verb.Name == "RECRUIT" {
+				queued++
+			}
+		}
+		if s.Vars["support"] < recruitFee*(queued+1) || s.Control[u.Region] == sim.WOPR {
 			return lineNoRecruit[0].Text
 		}
 		return ""
@@ -141,15 +148,23 @@ func Scenario() *sim.Scenario {
 					}
 				}
 				if len(hidden) > 0 {
-					hidden[s.Rand().IntN(len(hidden))].Hidden = false
+					u := hidden[s.Rand().IntN(len(hidden))]
+					u.Hidden = false
+					s.Say(fill(lineInformer[1].Text, s.Label(u)))
 				}
 			}},
-			{Text: lineCurfew[0].Text, Apply: func(s *sim.State) { s.Vars["support"] = max(s.Vars["support"]-1, 0) }},
+			{Text: lineCurfew[0].Text, Apply: func(s *sim.State) {
+				if s.Vars["support"] > 0 {
+					s.Vars["support"]--
+					s.Say(lineCurfew[1].Text)
+				}
+			}},
 			{Text: lineSweep[0].Text, Apply: func(s *sim.State) { s.Vars["support"]++ }},
 			{Text: lineAirdrop[0].Text, Apply: func(s *sim.State) {
 				for _, u := range s.Living(sim.Player) {
 					if u.Steps == 1 {
 						u.Steps = 2
+						s.Say(fill(lineAirdrop[1].Text, s.Label(u)))
 						return
 					}
 				}
@@ -223,7 +238,7 @@ func upkeep(s *sim.State) {
 			// Half the time in the same region, one time in six next door.
 			if d == 0 && s.Rand().IntN(6) >= 3 || (d == 1 || d == -1) && s.Rand().IntN(6) >= 5 {
 				u.Hidden = false
-				s.Say(fill(lineFound[0].Text, u.Type.Name+fmt.Sprint(u.ID)))
+				s.Say(fill(lineFound[0].Text, s.Label(u)))
 				break
 			}
 		}

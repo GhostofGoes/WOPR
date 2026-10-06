@@ -18,8 +18,10 @@ import (
 var (
 	lineIntro = script.Orig(
 		"THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE.",
-		"RELEASE PUTS AN AGENT ON A REGION; IT SPREADS WITH THE WIND. DECON CLEANS A LITTLE.",
-		"UNITS AND CIVILIANS IN CONTAMINATED GROUND SUFFER. EIGHT TURNS. TYPE HELP FOR ORDERS.",
+		"CHEMICAL TROOPS RELEASE AN AGENT ON A REGION (TYPE RELEASE IN FULL);",
+		"IT SPREADS WITH THE WIND. DECON CLEANS A LITTLE.",
+		"UNITS AND CIVILIANS IN CONTAMINATED GROUND SUFFER. EIGHT TURNS.",
+		"TYPE HELP FOR ORDERS.",
 	)
 	lineReleased   = script.Orig("# RELEASED ON #.")
 	lineDecon      = script.Orig("DECONTAMINATION AT #.")
@@ -34,8 +36,8 @@ var (
 	lineStock      = script.Orig("A STOCKPILE IS HIT. THE AGENT LEAKS.")
 	lineQuiet      = script.Orig("NOTHING MOVES BUT THE WIND.")
 	lineWOPRs      = script.Orig("WOPR'S ")
-	lineHelp       = script.Orig("RELEASE <REGION>: AN AGENT, UP TO TWO REGIONS AWAY.", "DECON: CLEAN THE UNIT'S OWN REGION A LITTLE.")
-	lineNoRange    = script.Orig("THAT REGION IS OUT OF RANGE.")
+	lineHelp       = script.Orig("RELEASE <REGION>: CHEMICAL TROOPS ONLY, UP TO TWO REGIONS AWAY.", "DECON: CLEAN THE UNIT'S OWN REGION A LITTLE.")
+	lineNoRange    = script.Orig("THAT REGION IS OUT OF RANGE.", "ONLY CHEMICAL TROOPS CARRY AN AGENT.")
 	lineClean      = script.Orig("THERE IS NOTHING TO CLEAN HERE.")
 	lineLevel      = script.Orig("CONTAMINATED: # OF # REGIONS")
 	levelMarks     = script.Orig("", "~", "~~", "~~~")
@@ -73,10 +75,13 @@ func level(s *sim.State, r int) int { return s.Vars[fmt.Sprintf("c%d", r)] }
 
 func setLevel(s *sim.State, r, v int) { s.Vars[fmt.Sprintf("c%d", r)] = min(max(v, 0), maxLevel) }
 
-// Release puts an agent on a region up to two away.
+// Release puts an agent on a region up to two away; only chemical troops carry one.
 var Release = &sim.Verb{
-	Name: "RELEASE", Help: lineHelp[0].Text, Target: true, Phase: 1,
+	Name: "RELEASE", Help: lineHelp[0].Text, Target: true, Phase: 1, Drastic: true,
 	Check: func(s *sim.State, u *sim.Unit, r int) string {
+		if u.Type != chemical {
+			return lineNoRange[1].Text
+		}
 		if r < 0 || r >= len(s.Regions) || abs(r-u.Region) > 2 {
 			return lineNoRange[0].Text
 		}
@@ -189,7 +194,7 @@ func regions(terrain ...sim.Terrain) []sim.Region {
 func New() games.Game { return sim.NewGame(Scenario()) }
 
 // upkeep: contamination of 2 or more spreads one region downwind; units in it may lose a
-// step and civilians in it are counted on the side that holds it.
+// step, and civilians in it count against the side whose half of the front it is.
 func upkeep(s *sim.State) {
 	wind := s.Vars["wind"]
 	next := make([]int, len(s.Regions))

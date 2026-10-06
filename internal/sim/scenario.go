@@ -37,12 +37,15 @@ type Verb struct {
 	Help   string // one line, as HELP lists it
 	Target bool   // takes a region
 	Phase  int    // 0 movement, 1 combat, 2 everything else
+	// Drastic verbs (ESCALATE, RELEASE) must be typed in full, never as a prefix.
+	Drastic bool
 	// Check says why u cannot do this (at target), or "" when it can.
 	Check func(s *State, u *Unit, target int) string
 	Apply func(s *State, u *Unit, target int)
 }
 
-// Event is an event card.
+// Event is an event card. Text is its headline (none when empty); Apply may Say more,
+// such as which unit it touched.
 type Event struct {
 	Text  string
 	Apply func(s *State)
@@ -72,7 +75,7 @@ func (s *State) AddUnit(side int, t *UnitType, r int) *Unit {
 // The built-in verbs.
 var (
 	Move = &Verb{
-		Name: "MOVE", Help: "MOVE <REGION>: up to the unit's move, not through the enemy.", Target: true, Phase: 0,
+		Name: "MOVE", Help: engineText[TextVerbHelp][0].Text, Target: true, Phase: 0,
 		Check: func(s *State, u *Unit, to int) string {
 			if !s.CanMove(u, to) {
 				return s.Scenario.text(TextNoMove)
@@ -82,7 +85,7 @@ var (
 		Apply: func(_ *State, u *Unit, to int) { u.Region = to },
 	}
 	Attack = &Verb{
-		Name: "ATTACK", Help: "ATTACK <REGION>: an enemy in range.", Target: true, Phase: 1,
+		Name: "ATTACK", Help: engineText[TextVerbHelp][1].Text, Target: true, Phase: 1,
 		Check: func(s *State, u *Unit, at int) string {
 			if !s.CanAttack(u, at) {
 				return s.Scenario.text(TextNoAttack)
@@ -91,7 +94,7 @@ var (
 		},
 		Apply: func(s *State, u *Unit, at int) { s.Attack(u, at) },
 	}
-	Hold = &Verb{Name: "HOLD", Help: "HOLD: stay put.", Phase: 2}
+	Hold = &Verb{Name: "HOLD", Help: engineText[TextVerbHelp][2].Text, Phase: 2}
 )
 
 // verbs is every verb in the scenario, built-ins first.
@@ -120,6 +123,11 @@ const (
 	TextRatioHead
 	TextEnd
 	TextTerrains
+	TextVerbHelp
+	TextLegend
+	TextVoid
+	TextLoses
+	TextResults
 )
 
 // engineText is the engine's screen text, all original. A # is filled in when shown.
@@ -131,10 +139,10 @@ var engineText = map[TextKey]script.Ls{
 	TextNoAttack:  script.Orig("NO ENEMY THERE IN RANGE."),
 	TextTurn:      script.Orig("TURN # OF #"),
 	TextOrders:    script.Orig("# IN #: "),
-	TextHelp:      script.Orig("ORDERS: # (STATUS SHOWS THE MAP, END HOLDS THE REST)"),
+	TextHelp:      script.Orig("ORDERS: #.", "STATUS SHOWS THE MAP; END HOLDS THE REST OF THIS TURN'S UNITS."),
 	TextWhere:     script.Orig("WHICH REGION? A NUMBER OR A NAME FROM THE MAP."),
 	TextUnknown:   script.Orig("UNKNOWN ORDER. TYPE HELP."),
-	TextMapHead:   script.Orig("REGION", "GROUND", "HELD BY", "YOUR UNITS", "WOPR'S UNITS"),
+	TextMapHead:   script.Orig("REGION", "GROUND", "HELD", "YOUR UNITS", "WOPR'S UNITS"),
 	TextYou:       script.Orig("YOU"),
 	TextWOPR:      script.Orig("WOPR"),
 	TextHeld:      script.Orig("-"),
@@ -142,12 +150,24 @@ var engineText = map[TextKey]script.Ls{
 	TextRatioHead: script.Orig("STEPS LOST                 YOU      WOPR"),
 	TextEnd:       script.Orig("THE GAME ENDS."),
 	TextTerrains:  script.Orig("OPEN", "ROUGH", "CITY"),
+	TextVerbHelp: script.Orig(
+		"MOVE <REGION>: AS FAR AS THE UNIT'S MOVE, NOT THROUGH THE ENEMY.",
+		"ATTACK <REGION>: AN ENEMY IN RANGE.",
+		"HOLD: STAY PUT.",
+	),
+	TextLegend: script.Orig(
+		"RESULTS: NE NO EFFECT; AE THE ATTACKER LOSES A STEP; EX BOTH DO;",
+		"DR THE DEFENDER FALLS BACK (OR LOSES A STEP); DE THE DEFENDER LOSES A STEP.",
+	),
+	TextVoid:    script.Orig("# STANDS FAST: #"),
+	TextLoses:   script.Orig("# LOSES A STEP."),
+	TextResults: script.Orig("NE", "AE", "EX", "DR", "DE"),
 }
 
 // EngineLines is the engine's text, for the provenance test.
 func EngineLines() []script.Ls {
 	out := make([]script.Ls, 0, len(engineText))
-	for k := TextAttack; k <= TextTerrains; k++ {
+	for k := TextAttack; k <= TextResults; k++ {
 		out = append(out, engineText[k])
 	}
 	return out

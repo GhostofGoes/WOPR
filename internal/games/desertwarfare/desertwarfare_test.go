@@ -3,6 +3,7 @@ package desertwarfare_test
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -22,6 +23,7 @@ func play(t *testing.T, seed uint64) *testkit.GameSession {
 	t.Helper()
 	g := desertwarfare.New().(*sim.Game)
 	s := testkit.Game(t, g, info, "", seed)
+	s.Type("HELP")
 	for step := 0; step < 200; step++ {
 		asking, _ := s.Asking()
 		if !asking {
@@ -34,6 +36,9 @@ func play(t *testing.T, seed uint64) *testkit.GameSession {
 	}
 	if _, over := s.Result(); !over {
 		t.Fatalf("seed %d: the game did not end:\n%s", seed, s.Transcript())
+	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Fatalf("seed %d: lines wider than 80 columns:\n%s", seed, strings.Join(wide, "\n"))
 	}
 	return s
 }

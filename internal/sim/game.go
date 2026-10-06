@@ -75,7 +75,7 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 func (g *Game) beginTurn() []proto.Output {
 	g.queue = g.s.Living(Player)
 	sortUnits(g.queue)
-	g.orders = nil
+	g.orders, g.s.Pending = nil, nil
 	return []proto.Output{g.ask()}
 }
 
@@ -103,7 +103,11 @@ func (g *Game) onOrder(input string) []proto.Output {
 			names = append(names, v.Name)
 			help = append(help, "  "+v.Help)
 		}
-		return append([]proto.Output{say(g.sc.text(TextHelp, strings.Join(names, ", "))), table(help...)}, g.ask())
+		head := engineText[TextHelp]
+		return append([]proto.Output{
+			say(g.sc.text(TextHelp, strings.Join(names, ", ")), head[1].Text), table(help...),
+			say(engineText[TextLegend].Texts()...),
+		}, g.ask())
 	case "END", "DONE":
 		for _, rest := range g.queue {
 			g.orders = append(g.orders, Order{Unit: rest, Verb: Hold, Target: -1})
@@ -131,6 +135,7 @@ func (g *Game) onOrder(input string) []proto.Output {
 		}
 	}
 	g.orders = append(g.orders, Order{Unit: u, Verb: v, Target: target})
+	g.s.Pending = g.orders
 	g.queue = g.queue[1:]
 	if len(g.queue) > 0 {
 		return []proto.Output{g.ask()}
@@ -138,14 +143,14 @@ func (g *Game) onOrder(input string) []proto.Output {
 	return g.resolve()
 }
 
-// verb finds a verb by name or unique prefix (M for MOVE).
+// verb finds a verb by name or unique prefix (M for MOVE); drastic verbs only by name.
 func (g *Game) verb(word string) *Verb {
 	var match []*Verb
 	for _, v := range g.sc.verbs() {
 		if v.Name == word {
 			return v
 		}
-		if strings.HasPrefix(v.Name, word) {
+		if !v.Drastic && strings.HasPrefix(v.Name, word) {
 			match = append(match, v)
 		}
 	}
@@ -155,7 +160,8 @@ func (g *Game) verb(word string) *Verb {
 	return nil
 }
 
-// region reads a region by its number on the map or its name (or a unique prefix).
+// region reads a region by its number on the map or its name: the whole name, or the
+// start of the name or of any word in it (ALAMEIN for EL ALAMEIN), if only one fits.
 func (g *Game) region(text string) int {
 	if n, ok := prompt.Number(text); ok && n >= 1 && n <= len(g.s.Regions) {
 		return n - 1
@@ -163,10 +169,14 @@ func (g *Game) region(text string) int {
 	found := -1
 	for i, r := range g.s.Regions {
 		name := prompt.Normalize(r.Name)
-		switch {
-		case name == text:
+		if name == text {
 			return i
-		case strings.HasPrefix(name, text):
+		}
+		fits := strings.HasPrefix(name, text)
+		for _, word := range strings.Fields(name) {
+			fits = fits || len(text) >= 3 && strings.HasPrefix(word, text)
+		}
+		if fits {
 			if found >= 0 {
 				return -1 // ambiguous
 			}
@@ -184,6 +194,7 @@ func (g *Game) resolve() []proto.Output {
 	if ai == nil {
 		ai = DefaultAI
 	}
+	s.Pending = nil
 	all := append(slices.Clone(g.orders), ai(s)...)
 	for _, u := range s.Units {
 		u.Attacked = false
@@ -193,8 +204,14 @@ func (g *Game) resolve() []proto.Output {
 			if o.Verb.Phase != phase || !o.Unit.Alive() || o.Verb.Apply == nil {
 				continue
 			}
-			if o.Verb.Check != nil && o.Verb.Check(s, o.Unit, o.Target) != "" {
-				continue // the other side's moves made it impossible
+			if o.Verb.Check != nil {
+				// The other side's moves may have made it impossible; the player hears why.
+				if why := o.Verb.Check(s, o.Unit, o.Target); why != "" {
+					if o.Unit.Side == Player {
+						s.Say(g.sc.text(TextVoid, s.Label(o.Unit), why))
+					}
+					continue
+				}
 			}
 			o.Verb.Apply(s, o.Unit, o.Target)
 		}
@@ -240,7 +257,8 @@ func (g *Game) decide(final bool) (proto.Outcome, string, bool) {
 }
 
 // mapRow lays out a row of the map: number, region, ground, holder, both sides' units.
-const mapRow = "%2s %-20s %-7s %-8s %-17s %s"
+// It leaves 25 columns of 80 for WOPR's units.
+const mapRow = "%2s %-20s %-6s %-4s %-18s %s"
 
 // mapLines is the strip as a table, with the turn and the scenario's status line.
 func (g *Game) mapLines() []string {
@@ -271,17 +289,24 @@ func (g *Game) mapLines() []string {
 	return lines
 }
 
-// unitList names units for the map; WOPR's hidden units are not shown.
+// unitList names units for the map, one type at a time with its numbers run together
+// (COR1,2*,4 for COR1, a reduced COR2 and COR4); WOPR's hidden units are not shown.
 func unitList(us []*Unit, hideHidden bool) string {
 	sortUnits(us)
-	var names []string
+	var groups []string
+	var last *UnitType
 	for _, u := range us {
 		if hideHidden && u.Hidden {
 			continue
 		}
-		names = append(names, u.Name())
+		if u.Type == last {
+			groups[len(groups)-1] += "," + strings.TrimPrefix(u.Name(), u.Type.Name)
+			continue
+		}
+		groups = append(groups, u.Name())
+		last = u.Type
 	}
-	return strings.Join(names, " ")
+	return strings.Join(groups, " ")
 }
 
 // ratioLines is the kill-ratio table: steps each side lost, by category.
@@ -301,7 +326,7 @@ func RatioTable(losses [2]map[string]int) []string {
 	slices.Sort(cats)
 	lines := []string{engineText[TextRatios][0].Text, engineText[TextRatioHead][0].Text}
 	for _, c := range cats {
-		lines = append(lines, fmt.Sprintf("%-24s %6d %9d", c, losses[Player][c], losses[WOPR][c]))
+		lines = append(lines, fmt.Sprintf("%-24s %5d %9d", c, losses[Player][c], losses[WOPR][c]))
 	}
 	return lines
 }
