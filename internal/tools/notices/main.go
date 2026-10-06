@@ -66,32 +66,23 @@ func main() {
 	}
 }
 
+// targets are the release platforms; dependencies differ per OS, so the notices cover
+// the union of all of them.
+var targets = [][2]string{
+	{"linux", "amd64"},
+	{"linux", "arm64"},
+	{"darwin", "amd64"},
+	{"darwin", "arm64"},
+	{"windows", "amd64"},
+	{"windows", "arm64"},
+}
+
 func generate(pattern string) ([]byte, error) {
-	cmd := exec.Command("go", "list", "-deps", "-json=Standard,Module", pattern)
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod")
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("go list: %w: %s", err, stderr.String())
-	}
 	mods := map[string]module{}
-	dec := json.NewDecoder(bytes.NewReader(out))
-	for {
-		var p pkg
-		if err := dec.Decode(&p); errors.Is(err, io.EOF) {
-			break
-		} else if err != nil {
+	for _, t := range targets {
+		if err := listModules(pattern, t[0], t[1], mods); err != nil {
 			return nil, err
 		}
-		if p.Standard || p.Module == nil || p.Module.Main {
-			continue
-		}
-		m := *p.Module
-		if m.Replace != nil {
-			m.Dir = m.Replace.Dir
-		}
-		mods[m.Path] = m
 	}
 	goroot, err := exec.Command("go", "env", "GOROOT").Output()
 	if err != nil {
@@ -102,6 +93,35 @@ func generate(pattern string) ([]byte, error) {
 		return nil, fmt.Errorf("go env GOVERSION: %w", err)
 	}
 	return render(strings.TrimSpace(string(goroot)), strings.TrimSpace(string(goversion)), mods)
+}
+
+func listModules(pattern, goos, goarch string, mods map[string]module) error {
+	cmd := exec.Command("go", "list", "-deps", "-json=Standard,Module", pattern)
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return fmt.Errorf("go list (%s/%s): %w: %s", goos, goarch, err, stderr.String())
+	}
+	dec := json.NewDecoder(bytes.NewReader(out))
+	for {
+		var p pkg
+		if err := dec.Decode(&p); errors.Is(err, io.EOF) {
+			break
+		} else if err != nil {
+			return err
+		}
+		if p.Standard || p.Module == nil || p.Module.Main {
+			continue
+		}
+		m := *p.Module
+		if m.Replace != nil {
+			m.Dir = m.Replace.Dir
+		}
+		mods[m.Path] = m
+	}
+	return nil
 }
 
 func render(goroot, goversion string, mods map[string]module) ([]byte, error) {
