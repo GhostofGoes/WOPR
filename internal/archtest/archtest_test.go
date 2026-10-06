@@ -44,6 +44,7 @@ var rules = []rule{
 		"internal/ui/...", "internal/proto", "internal/proto/host", "internal/prompt", "internal/wopr", "internal/games",
 		"internal/theme", "internal/assets", "internal/movie",
 		"charm.land/", "github.com/charmbracelet/x/ansi", "github.com/charmbracelet/x/term", "github.com/charmbracelet/colorprofile",
+		"github.com/rivo/uniseg",
 	}},
 	{"internal/wopr", []string{"internal/proto", "internal/prompt", "internal/games"}},
 	{"internal/games", []string{"internal/proto", "internal/prompt"}},
