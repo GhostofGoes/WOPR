@@ -8,6 +8,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
+	"github.com/GhostofGoes/WOPR/internal/games/ginrummy"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/games/poker"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
@@ -28,8 +29,8 @@ func entries() []games.Entry {
 		}, New: blackjack.New},
 		{Info: games.Info{
 			Number: 3, Listed: true, Name: "GIN RUMMY", Slug: "gin-rummy", Aliases: []string{"gin", "rummy"},
-			Layout: proto.LayoutPanel, PanelRows: 8, Blurb: "Form melds, knock or go gin against WOPR.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 8, Status: games.Playable, Blurb: "Form melds, knock or go gin against WOPR.",
+		}, New: ginrummy.New},
 		{Info: games.Info{
 			Number: 4, Listed: true, Name: "HEARTS", Slug: "hearts",
 			Layout: proto.LayoutPanel, PanelRows: 10, Blurb: "Four hands, you against three WOPR seats; avoid hearts and the queen of spades.",

@@ -114,19 +114,25 @@ func TestIntentStartsGames(t *testing.T) {
 	}
 }
 
+// planned is a listed game that is not built yet: the catalog's planned entries get built
+// one by one, so the tests bring their own.
+var planned = games.Entry{Info: games.Info{
+	Number: 1, Listed: true, Name: "PLANNED GAME", Slug: "planned", Layout: proto.LayoutConsole, Blurb: "Not yet.",
+}}
+
 func TestOfferAndListSelection(t *testing.T) {
 	t.Parallel()
-	s := start(t, catalog.Registry(), Options{})
+	s := start(t, gamestest.Registry(planned), Options{})
 	s.Type("Joshua").Type("Hello.").Type("Fine.").Type("Sorry.") // SHALL WE PLAY A GAME?
 	s.Type("yes")
 	if !s.Contains("WHICH GAME?") {
 		t.Fatal("accepting the offer must ask which game")
 	}
-	s.Type("8")
+	s.Type("1")
 	if !s.Contains("** GAME ROUTINE NOT AVAILABLE **") {
-		t.Error("choosing 8 (poker, not built yet) must decline in character")
+		t.Error("choosing a game that is not built yet must decline in character")
 	}
-	s.Type("8")
+	s.Type("1")
 	if strings.Count(s.Transcript(), "GAME ROUTINE NOT AVAILABLE") != 1 {
 		t.Error("a number is a choice only right after a list")
 	}
@@ -179,7 +185,7 @@ func TestPlayFlagStartsTheGame(t *testing.T) {
 	if !s.Contains("WINNER: WOPR") {
 		t.Error("loss verdict")
 	}
-	cat := start(t, catalog.Registry(), Options{Play: "poker"})
+	cat := start(t, gamestest.Registry(planned), Options{Play: "planned"})
 	if !cat.Contains("NOT AVAILABLE") || cat.Runner().Depth() != 1 {
 		t.Error("--play of a planned game must decline in character")
 	}
