@@ -27,6 +27,7 @@ var (
 	lineGreetings   = recon("GREETINGS PROFESSOR FALKEN.")
 	lineHowFeeling  = recon("HOW ARE YOU FEELING TODAY?")
 	lineExcellent   = recon("EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN", "THE REMOVAL OF YOUR USER ACCOUNT ON 6/23/73?")
+	lineFeelFine    = recon("EXCELLENT.") // the scripted brain's answer to HOW ARE YOU
 	lineYesTheyDo   = recon("YES THEY DO. SHALL WE PLAY A GAME?")
 	linePreferChess = recon("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?")
 	lineFine        = recon("FINE.")
@@ -56,6 +57,7 @@ var (
 	lineNotAvail     = orig("** GAME ROUTINE NOT AVAILABLE **")
 	lineNotYet       = orig("THAT GAME IS NOT AVAILABLE YET, PROFESSOR.")
 	lineNoSuchGame   = orig("NO SUCH GAME IN MEMORY, PROFESSOR. TYPE LIST GAMES.")
+	lineAmbiguous    = orig("THAT NAME FITS MORE THAN ONE GAME:")
 	lineCancelled    = orig("** REQUEST CANCELLED **")
 	lineAnother      = orig("SHALL WE PLAY ANOTHER GAME?")
 	lineAborted      = orig("GAME TERMINATED BEFORE COMPLETION.")
@@ -83,8 +85,8 @@ var allLines = []Ls{
 	lineDialing, lineConnected,
 	{lineLogon},
 	lineNotRecog, lineHelpNA, lineHelpGames, lineLogonHint,
-	lineGreetings, lineHowFeeling, lineExcellent, lineYesTheyDo, linePreferChess, lineFine, lineShallWe,
+	lineGreetings, lineHowFeeling, lineExcellent, lineFeelFine, lineYesTheyDo, linePreferChess, lineFine, lineShallWe,
 	lineNiceChess, lineImproper, lineWhatsDiff, lineProgrammed, lineToWin, lineHeader, lineBurst,
-	lineWhichGame, lineNotAvail, lineNotYet, lineNoSuchGame, lineCancelled, lineAnother, lineAborted, lineWarAbandoned,
+	lineWhichGame, lineNotAvail, lineNotYet, lineNoSuchGame, lineAmbiguous, lineCancelled, lineAnother, lineAborted, lineWarAbandoned,
 	lineRestate, lineDeclined, lineIAmWOPR, lineMyName, lineHelpShell, lineWinUser, lineWinWOPR, lineWinNone,
 }

@@ -2,6 +2,7 @@ package wopr
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,7 +28,7 @@ func start(t *testing.T, reg *games.Registry, opts Options) *testkit.Session {
 			if !ok || e.New == nil {
 				return nil, host.Placement{}, games.ErrNotFound
 			}
-			return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows}, nil
+			return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal}, nil
 		},
 	}
 	return testkit.Start(t, New(reg, nil, opts), host.Placement{}, cfg)
@@ -235,7 +236,12 @@ func TestFilmPath(t *testing.T) {
 		}
 		s.Type(sq)
 	}
-	s.Type("ZERO").Type("Hello.")
+	s.Type("ZERO")
+	if prog, _ := s.Runner().Top(); fmt.Sprintf("%T", prog) != "*ending.Game" {
+		t.Fatalf("the ending should be running, not %T", prog)
+	}
+	s.Esc().Esc() // the ending cannot be aborted (docs/PLAN.md §4.3)
+	s.Type("Hello.")
 	for _, want := range []string{
 		"WOULDN'T YOU PREFER A GOOD GAME OF CHESS?", "FINE.", "WHICH SIDE DO YOU WANT?", "STRIKE ASSESSMENT COMPLETE.",
 		"** IDENTIFICATION NOT RECOGNISED **", "** GAME ROUTINE RUNNING **", "ONE OR TWO PLAYERS?",
@@ -262,5 +268,81 @@ func TestAbandonedWar(t *testing.T) {
 	s.Type("play global thermonuclear war").Type("play global thermonuclear war").Esc().Esc()
 	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
 		t.Errorf("transcript:\n%s", s.Transcript())
+	}
+}
+
+// An empty Enter keeps WOPR's offer and a numbered list, and does not advance the greeting.
+func TestEmptyEnterKeepsTheOffer(t *testing.T) {
+	t.Parallel()
+	s := start(t, catalog.Registry(), Options{})
+	s.Type("Joshua").Type("")
+	if s.Contains("HOW ARE YOU FEELING TODAY?") {
+		t.Fatal("an empty line is not the player's turn in the greeting")
+	}
+	s.Type("Hello.").Type("Fine.").Type("Sorry.").Type("").Type("yes")
+	if !s.Contains("WHICH GAME?") {
+		t.Fatalf("the offer survives an empty Enter:\n%s", s.Transcript())
+	}
+	s.Type("").Type("7")
+	if s.Runner().Depth() != 2 {
+		t.Fatalf("the list survives an empty Enter:\n%s", s.Transcript())
+	}
+
+	s = loggedOn(t, catalog.Registry())
+	s.Type("play global thermonuclear war").Type("").Type("yes")
+	if s.Runner().Depth() != 2 || !s.Contains("CHESS") {
+		t.Fatalf("the chess counter-offer survives an empty Enter:\n%s", s.Transcript())
+	}
+}
+
+// PLAY with a name that matches nothing, or several games, is answered; other phrasings
+// with an unknown object stay conversation.
+func TestPlayUnknownOrAmbiguous(t *testing.T) {
+	t.Parallel()
+	s := loggedOn(t, catalog.Registry())
+	s.Type("play backgammon")
+	if !s.Contains("NO SUCH GAME IN MEMORY") {
+		t.Errorf("unknown game:\n%s", s.Transcript())
+	}
+	s.Type("play theaterwide")
+	if !s.Contains("THAT NAME FITS MORE THAN ONE GAME:") || !s.Contains("THEATERWIDE TACTICAL WARFARE") || !s.Contains("THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE") {
+		t.Errorf("ambiguous game:\n%s", s.Transcript())
+	}
+	before := strings.Count(s.Transcript(), "NO SUCH GAME")
+	s.Type("How about that?").Type("Let's play 2 games of chess")
+	if strings.Count(s.Transcript(), "NO SUCH GAME") != before || s.Runner().Depth() != 1 {
+		t.Errorf("conversation is not a PLAY command:\n%s", s.Transcript())
+	}
+}
+
+// startGameBrain asks to start one game, whatever is said.
+type startGameBrain struct{ slug string }
+
+func (b startGameBrain) Reply(context.Context, Snapshot, string) (Reply, error) {
+	return Reply{Lines: []string{"VERY WELL."}, Effects: []Effect{StartGame{Slug: b.slug}}}, nil
+}
+
+// Players never choose the internal ending: not through a brain, not with --play.
+func TestInternalProgramsAreNotChosen(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	cfg := host.Config{
+		Seed: 1,
+		Resolve: func(l proto.Launch) (proto.Program, host.Placement, error) {
+			e, ok := reg.Get(l.Slug)
+			if !ok || e.New == nil {
+				return nil, host.Placement{}, games.ErrNotFound
+			}
+			return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal}, nil
+		},
+	}
+	s := testkit.Start(t, New(reg, startGameBrain{"ending"}, Options{}), host.Placement{}, cfg)
+	s.Type("Joshua").Type("help").Type("something")
+	if s.Runner().Depth() != 1 {
+		t.Fatal("a brain's StartGame must not reach the ending")
+	}
+	s = testkit.Start(t, New(reg, nil, Options{Play: "ending"}), host.Placement{}, cfg)
+	if s.Runner().Depth() != 1 || !s.Contains("NO SUCH GAME") {
+		t.Fatalf("--play of the ending:\n%s", s.Transcript())
 	}
 }

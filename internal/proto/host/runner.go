@@ -20,6 +20,7 @@ import (
 type Placement struct {
 	Layout    proto.Layout
 	PanelRows int
+	NoAbort   bool // Esc cannot end it: the film's ending (an internal registry entry)
 }
 
 // Resolver builds the program for a Launch (from the game registry).
@@ -164,6 +165,15 @@ func (r *Runner) NeedsTicks() bool {
 	return len(r.stack) > 0 && (r.top().every > 0 || r.escArmed > 0)
 }
 
+// commandWords upper-cases text and turns every run of characters other than A-Z and
+// 0-9 into one space, so "Log off." and "quit!" read as LOG OFF and QUIT. (The host may
+// import only proto; prompt.Normalize does the same for the persona.)
+func commandWords(text string) string {
+	return strings.Join(strings.FieldsFunc(strings.ToUpper(text), func(r rune) bool {
+		return (r < 'A' || r > 'Z') && (r < '0' || r > '9')
+	}), " ")
+}
+
 // hostCommands end the session from anywhere, including inside a game.
 var hostCommands = map[string]bool{"LOGOFF": true, "LOG OFF": true, "EXIT": true, "QUIT": true}
 
@@ -173,7 +183,7 @@ func (r *Runner) Line(text string) []Effect {
 		return nil
 	}
 	effects := r.disarm()
-	if hostCommands[strings.Join(strings.Fields(strings.ToUpper(text)), " ")] {
+	if hostCommands[commandWords(text)] {
 		r.exited = true
 		return append(effects, Exit{})
 	}
@@ -213,6 +223,9 @@ func (r *Runner) Esc() []Effect {
 		f.thinkGen = 0
 		effects := []Effect{CancelThink{Gen: gen}}
 		return append(effects, r.apply(f, f.prog.Handle(proto.ThinkDone{Err: proto.ErrCanceled}))...)
+	}
+	if f.place.NoAbort {
+		return nil // the ending plays out; Ctrl+C still quits
 	}
 	if r.escArmed == 0 {
 		r.escArmed = EscWindow
@@ -340,7 +353,7 @@ func (r *Runner) apply(f *frame, outs []proto.Output) []Effect {
 		case proto.Animate:
 			f.every, f.acc = o.Every, 0
 		case proto.SetLayout:
-			f.place = Placement{Layout: o.Layout, PanelRows: o.PanelRows}
+			f.place.Layout, f.place.PanelRows = o.Layout, o.PanelRows // NoAbort stays with the program
 			f.areaW, f.areaH = r.area(f.place)
 			effects = append(effects, Relayout{Placement: f.place})
 			effects = append(effects, r.apply(f, f.prog.Handle(proto.ResizeEvent{Width: f.areaW, Height: f.areaH}))...)

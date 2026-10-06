@@ -56,6 +56,8 @@ func TestIntentTable(t *testing.T) {
 		"Let's play 2 games of chess", "How about 1 more round?", "Play 3 card monte",
 		"I don't want to play chess", "Let's not play chess", "Let's play chess and checkers",
 		"Chess is a good game.", "I played chess yesterday", "How about that?", "play",
+		// A negator or a one- or two-letter object is not a unique prefix worth acting on.
+		"How about no?", "What about no?", "Play n", "How about a", "Play A", "What about he?", "play the",
 	} {
 		if e, ok := gameIntent(in, reg); ok {
 			t.Errorf("%q must not start a game, started %s", in, e.Info.Slug)

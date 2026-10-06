@@ -327,7 +327,7 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
      | `HELP GAMES` | The games blurb |
      | `LIST GAMES` | The list. No selection is armed. |
      | `JOSHUA` | The backdoor |
-     | `LOGOFF`, `LOG OFF`, `EXIT`, `QUIT` | Exit 0 |
+     | `LOGOFF`, `LOG OFF`, `EXIT`, `QUIT` (punctuation ignored: `Log off.`) | Exit 0 |
      | Empty line | `LOGON:` again |
      | Anything else, including a game name | `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--`, then `Wait`, `Clear` and a short re-dial |
 
@@ -338,8 +338,9 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
 8. **Shell dispatch.** Sanitised input goes, in order, to: host commands (`LOGOFF` family, at every depth of the
    stack) → **phase-gated commands** (`HELP`, `HELP GAMES`, `LIST GAMES`, `PLAY <game>`) → **numbered selection**
    (only on the line right after a list) → **explicit intent** (§4.6) → the **greeting scene** while it is active → **offer acceptance** (§4.6) → **Brain** (asynchronous,
-   via `Think`). A command or an explicit request therefore ends the greeting early; any other line advances it
-   (IM-7, RF-11).
+   via `Think`). A command or an explicit request therefore ends the greeting early; any other non-empty line
+   advances it (IM-7, RF-11). An empty line only re-prompts: it keeps a pending offer and an armed list.
+   `PLAY <name>` that matches no game answers `NO SUCH GAME IN MEMORY`; one that matches several lists them.
 9. **`--play <game>`** pushes the game straight onto a persona in `Shell`, with the greeting marked as done.
    `--movie` runs the movie director as the root program instead of the persona (§7).
 10. **Exit codes.**
@@ -383,8 +384,8 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
     and pops the game with `Done{Aborted}`. Any other key disarms it.
   - While a Brain reply is pending, Esc cancels it: the persona receives `ThinkDone{Err: ErrCanceled}` and
     prints `** REQUEST CANCELLED **` (`original`).
-  - At the Shell, Esc does nothing. The ending (self-play, montage, final dialogue) cannot be aborted with Esc;
-    Ctrl+C still quits. GTW and the climax tic-tac-toe are games, so Esc-Esc ends them like any other (§6.2).
+  - At the Shell, Esc does nothing. The ending (self-play, montage, final dialogue) cannot be aborted with Esc
+    (the resolver marks internal entries `Placement.NoAbort`; it survives `SetLayout`); Ctrl+C still quits. GTW and the climax tic-tac-toe are games, so Esc-Esc ends them like any other (§6.2).
 - **Sanitising** (U-2). Two functions in `ui/console`, both tested. Whitespace controls are mapped **before**
   the other controls are dropped, so pasted lines are never glued together (RF-4).
   - `SanitizeInput` serves typed and pasted text:
@@ -632,7 +633,7 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
   session. On an error, a timeout (scripted: never; LLM: 20 s) or a cancel, the persona answers with a scripted
   line.
 - **The greeting scene** (IM-7, RF-11). After `GREETINGS PROFESSOR FALKEN.` the persona is in `Greeting`. Each
-  line that is not a command or an explicit request advances one scripted WOPR line (`HOW ARE YOU FEELING
+  non-empty line that is not a command or an explicit request advances one scripted WOPR line (`HOW ARE YOU FEELING
   TODAY?`, `EXCELLENT. ...`, `YES THEY DO. SHALL WE PLAY A GAME?`); the last one arms `Offer{Any}` and enters
   `Shell`. A command or an explicit request ends the scene early and is dispatched normally. Scripted rules do
   not run during the scene.

@@ -63,9 +63,8 @@ func Validate(blocks []Ls, notice string) []error {
 			switch {
 			case l.Prov == Film, l.Prov == Reconstructed, l.Prov == Original:
 			case strings.HasPrefix(string(l.Prov), "third-party:"):
-				repo, _, _ := strings.Cut(strings.TrimPrefix(string(l.Prov), "third-party:"), "@")
-				if repo == "" || !strings.Contains(notice, repo) {
-					errs = append(errs, fmt.Errorf("%q is credited to %q, which NOTICE.md does not mention", l.Text, repo))
+				if err := checkThirdParty(l, notice); err != nil {
+					errs = append(errs, err)
 				}
 			default:
 				errs = append(errs, fmt.Errorf("%q has no valid provenance (%q)", l.Text, l.Prov))
@@ -76,4 +75,21 @@ func Validate(blocks []Ls, notice string) []error {
 		}
 	}
 	return errs
+}
+
+// checkThirdParty checks a "third-party:<repo>@<commit>:<path>" tag: every part present,
+// and NOTICE.md crediting the repository by name (as `owner/repo` or its GitHub URL), not
+// merely containing the text somewhere.
+func checkThirdParty(l L, notice string) error {
+	rest := strings.TrimPrefix(string(l.Prov), "third-party:")
+	repo, at, ok1 := strings.Cut(rest, "@")
+	commit, path, ok2 := strings.Cut(at, ":")
+	owner, name, ok3 := strings.Cut(repo, "/")
+	if !ok1 || !ok2 || !ok3 || owner == "" || name == "" || commit == "" || path == "" {
+		return fmt.Errorf("%q has a malformed third-party tag %q (want third-party:<owner/repo>@<commit>:<path>)", l.Text, l.Prov)
+	}
+	if !strings.Contains(notice, "`"+repo+"`") && !strings.Contains(notice, "github.com/"+repo) {
+		return fmt.Errorf("%q is credited to %q, which NOTICE.md does not mention", l.Text, repo)
+	}
+	return nil
 }

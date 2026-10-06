@@ -100,7 +100,7 @@ func defaultRules() []Rule {
 			return starts("WHO ARE YOU")(cs) || starts("WHAT ARE YOU")(cs)
 		}, Lines: lineIAmWOPR},
 		{ID: "joshua", Match: has("JOSHUA"), Lines: lineMyName},
-		{ID: "how-are-you", Match: has("HOW ARE YOU"), Lines: recon("EXCELLENT.")},
+		{ID: "how-are-you", Match: has("HOW ARE YOU"), Lines: lineFeelFine},
 		{ID: "fallback", Pick: []Ls{lineRestate, lineImproper, lineShallWe}},
 	}
 }

@@ -145,6 +145,28 @@ func TestEscArmConfirmAndExpire(t *testing.T) {
 	}
 }
 
+// A NoAbort program (the film's ending) ignores Esc: no notice, nothing popped.
+func TestEscCannotEndANoAbortProgram(t *testing.T) {
+	t.Parallel()
+	// The program changes its layout: NoAbort must survive that.
+	game := &fake{start: []proto.Output{proto.SetLayout{Layout: proto.LayoutConsole}, proto.Prompt{}}}
+	r := New(Config{
+		Resolve: func(proto.Launch) (proto.Program, Placement, error) {
+			return game, Placement{Layout: proto.LayoutFull, NoAbort: true}, nil
+		},
+		Area: func(Placement) (int, int) { return 80, 20 },
+	})
+	r.Start(&fake{start: []proto.Output{proto.Launch{Slug: "ending"}}}, Placement{})
+	for range 3 {
+		if eff := r.Esc(); len(eff) != 0 {
+			t.Fatalf("Esc in a NoAbort program: %v", eff)
+		}
+	}
+	if r.Depth() != 2 {
+		t.Fatal("the program must still be running")
+	}
+}
+
 func TestEscCancelsBrainAtRoot(t *testing.T) {
 	t.Parallel()
 	root := &fake{start: []proto.Output{proto.Think{Budget: 20 * time.Second}}}
@@ -208,6 +230,18 @@ func TestHostCommandsAndLayout(t *testing.T) {
 	}
 	if eff := r.Line("anything"); eff != nil {
 		t.Fatal("nothing runs after Exit")
+	}
+	for _, in := range []string{"Logoff.", "quit!", "Log off.", "EXIT"} {
+		r := newRunner(nil, false)
+		r.Start(&fake{start: []proto.Output{proto.Prompt{}}}, Placement{})
+		if eff := r.Line(in); !has[Exit](eff) {
+			t.Errorf("%q must exit: punctuation does not hide a host command", in)
+		}
+	}
+	r = newRunner(nil, false)
+	r.Start(&fake{start: []proto.Output{proto.Prompt{}}}, Placement{})
+	if eff := r.Line("quite"); has[Exit](eff) {
+		t.Error("QUITE is not QUIT")
 	}
 
 	g2 := &fake{start: []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}}}

@@ -175,7 +175,7 @@ func Game(t testing.TB, game proto.Program, info games.Info, mode string, seed u
 				return nil, host.Placement{}, games.ErrNotFound
 			}
 			built = true
-			return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows}, nil
+			return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows, NoAbort: info.Internal}, nil
 		},
 	}
 	gs.Session = Start(t, gs.root, host.Placement{}, cfg)

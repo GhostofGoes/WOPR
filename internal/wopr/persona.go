@@ -172,6 +172,9 @@ func (p *Persona) backdoor() []proto.Output {
 // --- the greeting scene ---
 
 func (p *Persona) greeting(input string) []proto.Output {
+	if prompt.Normalize(input) == "" { // an empty Enter is not the player's turn
+		return []proto.Output{proto.Prompt{}}
+	}
 	// A command or an explicit request ends the scene early.
 	if isCommand(input) {
 		p.endGreeting()
@@ -211,13 +214,13 @@ func isCommand(input string) bool {
 
 func (p *Persona) shell(input string) []proto.Output {
 	norm := prompt.Normalize(input)
+	if norm == "" { // an empty Enter keeps a pending offer and a numbered list
+		return []proto.Output{proto.Prompt{}}
+	}
 	offer := p.s.offer
 	p.s.offer = ""
 	armed := p.s.menuArmed
 	p.s.menuArmed = false
-	if norm == "" {
-		return []proto.Output{proto.Prompt{}}
-	}
 
 	switch norm {
 	case "HELP", "HELP LOGON":
@@ -236,6 +239,9 @@ func (p *Persona) shell(input string) []proto.Output {
 	}
 	if e, ok := gameIntent(input, p.reg); ok {
 		return p.request(e)
+	}
+	if outs, ok := p.unknownPlay(input); ok {
+		return outs
 	}
 	if offer != "" {
 		switch prompt.YesNo(input) {
@@ -268,10 +274,36 @@ func (p *Persona) request(e games.Entry) []proto.Output {
 	return p.launch(e.Info.Slug)
 }
 
+// unknownPlay answers the PLAY command when its name matches no game, or several. Other
+// phrasings with an unknown object ("HOW ABOUT THAT?") are conversation, for the brain.
+func (p *Persona) unknownPlay(input string) ([]proto.Output, bool) {
+	cs := prompt.Clauses(input)
+	if len(cs) != 1 || len(cs[0].Words) < 2 || cs[0].Words[0] != "PLAY" {
+		return nil, false
+	}
+	object := requestObject(cs[0].Words[1:])
+	if object == "" {
+		return nil, false
+	}
+	_, err := p.reg.Resolve(object)
+	var amb *games.AmbiguousError
+	switch {
+	case errors.As(err, &amb):
+		names := make([]string, len(amb.Candidates))
+		for i, e := range amb.Candidates {
+			names[i] = e.Info.Name
+		}
+		return respond(say(lineAmbiguous), proto.Say{Lines: names, Pace: proto.PaceTable}), true
+	case errors.Is(err, games.ErrNotFound):
+		return respond(say(lineNoSuchGame)), true
+	}
+	return nil, false
+}
+
 func (p *Persona) launch(slug string) []proto.Output {
 	e, ok := p.reg.Get(slug)
 	switch {
-	case !ok:
+	case !ok || e.Info.Internal: // the ending is reached by a hand-off, never by name
 		return respond(say(lineNoSuchGame))
 	case e.Info.Status != games.Playable:
 		return respond(say(lineNotAvail, lineNotYet))

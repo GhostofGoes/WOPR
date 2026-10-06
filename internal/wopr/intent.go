@@ -44,21 +44,36 @@ func gameIntent(input string, reg *games.Registry) (games.Entry, bool) {
 			if prompt.NegatedBefore(words, start+len(strings.Fields(verb))) {
 				break
 			}
-			object := strings.Join(rest[len(strings.Fields(verb)):], " ")
-			for _, a := range gameArticles {
-				object = strings.TrimPrefix(object, a+" ")
-			}
-			object = trimTrailers(object)
+			object := requestObject(rest[len(strings.Fields(verb)):])
 			if e, ok := reg.Exact(object); ok {
 				return e, true
 			}
-			if e, err := reg.Resolve(object); err == nil && object != "" {
+			if _, isNum := prompt.Number(object); !isNum && (len(object) < 3 || prompt.Negators[object]) {
+				break // "HOW ABOUT NO?" asks for nothing, least of all NOUGHTS AND CROSSES
+			}
+			if e, err := reg.Resolve(object); err == nil {
 				return e, true // a number or a unique prefix after an explicit verb
 			}
 			break
 		}
 	}
 	return games.Entry{}, false
+}
+
+// requestObject is what a request asks for: the words after the verb without a leading
+// article or a trailing NOW, PLEASE and the like. A bare article asks for nothing.
+func requestObject(words []string) string {
+	object := strings.Join(words, " ")
+	for _, a := range gameArticles {
+		object = strings.TrimPrefix(object, a+" ")
+	}
+	object = trimTrailers(object)
+	for _, a := range gameArticles {
+		if object == a {
+			return ""
+		}
+	}
+	return object
 }
 
 // trimTrailers removes intentTrailers from the end of a request's object.

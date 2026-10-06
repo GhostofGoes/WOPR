@@ -75,6 +75,19 @@ func TestYesNo(t *testing.T) {
 		"maybe":              Unclear,
 		"":                   Unclear,
 		"yes, but not chess": Yes,
+		"Yes I would":        Yes,
+		"Yeah sure":          Yes,
+		"Sure thing":         Yes,
+		"Why not chess":      Yes,
+		"Okay then":          Yes,
+		"No I wouldn't":      No,
+		"No way":             No,
+		"Never mind":         No,
+		"Of course not":      Unclear,
+		"Yes but not now":    Unclear,
+		"OK no":              Unclear,
+		"No problem":         Unclear,
+		"no doubt":           Unclear,
 	}
 	for in, want := range cases {
 		if got := YesNo(in); got != want {

@@ -148,21 +148,25 @@ var (
 	noPhrases  = []string{"NO", "N", "NOPE", "NAH", "NEGATIVE", "NOT NOW", "LATER", "NO THANKS", "NO THANK YOU", "NEVER"}
 )
 
-// YesNo parses a reply to a yes/no question from its first clause. "Love to. How about
-// chess?" is Yes; "Later." is No; anything else is Unclear.
+// YesNo parses a reply to a yes/no question from its first clause. A clause that starts
+// with a no phrase is No ("No I wouldn't", "Never mind"), except NO PROBLEM and NO DOUBT;
+// one that starts with a yes phrase is Yes unless a negator follows ("Of course not",
+// "Yes but not now" stay Unclear). "Love to. How about chess?" is Yes; "Later." is No.
 func YesNo(s string) Answer {
 	cs := Clauses(s)
 	if len(cs) == 0 {
 		return Unclear
 	}
-	norm := cs[0].Norm
-	for _, p := range noPhrases {
-		if norm == p {
-			return No
+	words := cs[0].Words
+	if !HasPrefix(words, "NO PROBLEM") && !HasPrefix(words, "NO DOUBT") {
+		for _, p := range noPhrases {
+			if HasPrefix(words, p) {
+				return No
+			}
 		}
 	}
 	for _, p := range yesPhrases {
-		if norm == p || HasPrefix(cs[0].Words, p+" PLEASE") {
+		if n := len(strings.Fields(p)); HasPrefix(words, p) && !NegatedBefore(words[n:], len(words)) {
 			return Yes
 		}
 	}

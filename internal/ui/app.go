@@ -212,7 +212,7 @@ func (m *model) resolve(l proto.Launch) (proto.Program, host.Placement, error) {
 	if !ok || e.New == nil {
 		return nil, host.Placement{}, games.ErrNotFound
 	}
-	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows}, nil
+	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal}, nil
 }
 
 // tick advances the typewriter and the runner.
