@@ -27,6 +27,8 @@ type Scenario struct {
 	Upkeep func(s *State)
 	// Status is an extra line under the turn header (SUPPLY 4, ESCALATION 2); nil for none.
 	Status func(s *State) string
+	// RegionNote is shown after a region's name on the map (contamination); nil for none.
+	RegionNote func(s *State, r int) string
 }
 
 // Verb is an order a unit can be given.

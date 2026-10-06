@@ -4,6 +4,7 @@ package catalog
 
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/biotoxic"
 	"github.com/GhostofGoes/WOPR/internal/games/blackjack"
 	"github.com/GhostofGoes/WOPR/internal/games/bridge"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
@@ -16,6 +17,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/guerrilla"
 	"github.com/GhostofGoes/WOPR/internal/games/hearts"
 	"github.com/GhostofGoes/WOPR/internal/games/poker"
+	"github.com/GhostofGoes/WOPR/internal/games/theaterwide"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
@@ -74,12 +76,12 @@ func entries() []games.Entry {
 		}},
 		{Info: games.Info{
 			Number: 13, Listed: true, Name: "THEATERWIDE TACTICAL WARFARE", Slug: "theaterwide-tactical-warfare", Aliases: []string{"tactical"},
-			Layout: proto.LayoutConsole, Blurb: "Corps-level moves on a European front, with an escalation ladder.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Corps-level moves on a European front, with an escalation ladder.",
+		}, New: theaterwide.New},
 		{Info: games.Info{
 			Number: 14, Listed: true, Name: "THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE", Slug: "theaterwide-biotoxic-and-chemical-warfare", Aliases: []string{"biotoxic", "chemical"},
-			Layout: proto.LayoutConsole, Blurb: "Contamination spreads; nobody wins.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Contamination spreads; nobody wins.",
+		}, New: biotoxic.New},
 		{Info: games.Info{
 			Number: 15, Listed: true, Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Aliases: []string{"gtw", "thermonuclear"},
 			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Choose a side, list your targets, and watch the big board.",

@@ -259,7 +259,13 @@ func (g *Game) mapLines() []string {
 		case WOPR:
 			held = g.sc.text(TextWOPR)
 		}
-		lines = append(lines, fmt.Sprintf(mapRow, fmt.Sprint(i+1), r.Name, terrainName(r.Terrain), held,
+		name := r.Name
+		if g.sc.RegionNote != nil {
+			if note := g.sc.RegionNote(s, i); note != "" {
+				name += " " + note
+			}
+		}
+		lines = append(lines, fmt.Sprintf(mapRow, fmt.Sprint(i+1), name, terrainName(r.Terrain), held,
 			unitList(s.In(i, Player), false), unitList(s.In(i, WOPR), true)))
 	}
 	return lines

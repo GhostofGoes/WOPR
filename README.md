@@ -63,6 +63,11 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
 - **Guerrilla Engagement** (`guerrilla`): your cells hide (`hide`), ambush from hiding at double strength
   (`attack 4`), and `recruit` with support. Patrols find cells near them. Survive twelve turns, reach
   support 10, or take the capital.
+- **Theaterwide Tactical Warfare** (`tactical`): corps and air wings on a European front. Any unit may
+  `escalate`; each rung adds to every attack, WOPR answers in kind, and the top rung ends everything. Hold
+  five regions to win.
+- **Theaterwide Biotoxic and Chemical Warfare** (`biotoxic`): `release 4` puts an agent on a region, `decon`
+  cleans a little; it spreads with the wind. Nobody wins.
 - **Global Thermonuclear War** (`gtw`): choose a side, list target cities (an empty line ends the list), and
   watch the big board. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
