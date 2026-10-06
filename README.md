@@ -67,6 +67,8 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
   or position. `knock 7h` discards the 7H and knocks (10 or less deadwood); with none, it is gin.
 - **Hearts**: you are South against three WOPR seats. Pass three cards (`qs ah 2d`, or positions), then play
   a card a trick. Hearts are a point each, the queen of spades 13; the lowest score at 100 wins.
+- **Bridge** (minimal): WOPR bids all four hands by point count and your side always declares. You play
+  both your hand and dummy's (`7h`); WOPR defends. Make the contract to win.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
 ## Command-line flags

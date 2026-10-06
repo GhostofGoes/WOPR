@@ -1,0 +1,78 @@
+==== hearts (80x24) ====
+HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
+
+                                  NORTH
+                     WEST                         EAST   2C
+                                  YOU    --
+YOUR HAND
+QS  KH  8H  6H  4H  KD  JD  10D 8D  4D  AC  QC  9C
+1   2   3   4   5   6   7   8   9   10  11  12  13
+
+
+HEARTS. YOU ARE SOUTH; WOPR PLAYS WEST, NORTH AND EAST.
+EACH HEART IS A POINT AND THE QUEEN OF SPADES 13. TAKE ALL 26 TO SHOOT THE MOON.
+LOWEST SCORE WINS WHEN SOMEONE REACHES 100. NAME CARDS AS 7H OR BY POSITION.
+PASS THREE CARDS TO WEST: 1 2 3
+
+YOU RECEIVE QS KH 6H.
+YOUR PLAY:
+
+
+
+
+
+
+
+cursor: col 11, row 16
+==== gin-rummy (80x24) ====
+GIN RUMMY                                                YOU 0   WOPR 0   TO 100
+WOPR: 10 CARDS          STOCK: 31                  DISCARD: 10C
+
+YOUR HAND
+AD  AH  2S  3C  4H  6D  8C  10H 10S JS
+1   2   3   4   5   6   7   8   9   10
+DEADWOOD: 55
+
+GIN RUMMY TO 100. TEN CARDS EACH; ACES ARE LOW.
+DRAW FROM THE STOCK OR TAKE THE DISCARD, THEN DISCARD. KNOCK WITH 10 OR LESS
+DEADWOOD (KNOCK 7H DISCARDS THE 7H AND KNOCKS); GIN WITH NONE.
+WOPR DEALS.
+STOCK OR DISCARD?
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 18, row 12
+==== bridge (80x24) ====
+BRIDGE                                     CONTRACT 3NT BY NORTH    N-S 0  E-W 0
+NORTH          S Q J 8 6  H 10  D A Q 7  C K Q J 6 2
+                                  NORTH
+                     WEST                         EAST   4S
+                                  SOUTH  --
+SOUTH (DUMMY)  S 10  H A K Q J 6 4  D 5 4 2  C 7 5 4
+
+AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
+
+
+BRIDGE. WOPR BIDS ALL FOUR HANDS BY POINT COUNT.
+YOUR SIDE DECLARES: YOU PLAY YOUR HAND AND DUMMY'S, AND WOPR DEFENDS.
+NAME CARDS AS 7H. ONE DEAL IS A GAME: MAKE THE CONTRACT TO WIN.
+WOPR TURNS THE TABLE SO THAT YOUR SIDE DECLARES.
+AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
+CONTRACT: 3NT BY NORTH. EAST LEADS.
+DUMMY (SOUTH) PLAYS:
+
+
+
+
+
+
+
+cursor: col 21, row 16

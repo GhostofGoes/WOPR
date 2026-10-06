@@ -5,6 +5,7 @@ package catalog
 import (
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/blackjack"
+	"github.com/GhostofGoes/WOPR/internal/games/bridge"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
@@ -38,8 +39,8 @@ func entries() []games.Entry {
 		}, New: hearts.New},
 		{Info: games.Info{
 			Number: 5, Listed: true, Name: "BRIDGE", Slug: "bridge",
-			Layout: proto.LayoutPanel, PanelRows: 10, Blurb: "WOPR bids all four seats; you play the contract as declarer.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 10, Status: games.Playable, Blurb: "WOPR bids all four seats; you play the contract as declarer.",
+		}, New: bridge.New},
 		{Info: games.Info{
 			Number: 6, Listed: true, Name: "CHECKERS", Slug: "checkers", Aliases: []string{"draughts"},
 			Layout: proto.LayoutPanel, PanelRows: 12, Status: games.Playable, Blurb: "8x8 checkers with forced captures and kings.",

@@ -4,6 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/x/ansi"
+
+	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
 	"github.com/GhostofGoes/WOPR/internal/games/gamestest"
 	"github.com/GhostofGoes/WOPR/internal/golden"
@@ -242,4 +245,47 @@ func TestGTWScreens(t *testing.T) {
 	d.line("").line("List Games")
 	s.add("climax", d)
 	golden.AssertString(t, "gtw_screens", s.String())
+}
+
+// Every playable game starts and fits 80x24, with and without the front panel: 24 rows,
+// none wider than 80 columns.
+func TestEveryGameFitsAt80x24(t *testing.T) {
+	t.Parallel()
+	for _, e := range catalog.Registry().All() {
+		if e.Info.Status != games.Playable {
+			continue
+		}
+		for _, panel := range []Panel{PanelOff, PanelOn} {
+			opts := instant()
+			opts.Play, opts.Panel = e.Info.Slug, panel
+			d := newDriver(t, opts, 80, 24).settle()
+			screen := d.screen()
+			rows := strings.Split(strings.TrimSuffix(screen, "\n"), "\n")
+			if len(rows) != 25 { // 24 rows plus the cursor line
+				t.Errorf("%s (panel %d): %d rows", e.Info.Slug, panel, len(rows)-1)
+			}
+			for i, r := range rows[:len(rows)-1] {
+				if w := ansi.StringWidth(r); w > 80 {
+					t.Errorf("%s (panel %d): row %d is %d wide: %q", e.Info.Slug, panel, i, w, r)
+				}
+			}
+		}
+	}
+}
+
+// The card games as the player first sees them: the Hearts mockup the plan asks for,
+// kept current by this golden.
+func TestCardGameScreens(t *testing.T) {
+	t.Parallel()
+	var s snapshots
+	for _, slug := range []string{"hearts", "gin-rummy", "bridge"} {
+		opts := instant()
+		opts.Play = slug
+		d := newDriver(t, opts, 80, 24).settle()
+		if slug == "hearts" {
+			d.line("1 2 3")
+		}
+		s.add(slug, d)
+	}
+	golden.AssertString(t, "card_screens", s.String())
 }
