@@ -120,6 +120,16 @@ func TestRatiosFavourNoOne(t *testing.T) {
 			t.Fatalf("the BOMBERS and ICBM rows are the exchange's counts: %v, %+v", got, w.t)
 		}
 	}
+	// The military rows take the worse of city and silo damage. Firing every ICBM at strike 2
+	// puts 750 warheads on WOPR's silos and 150 on its cities, so its silos set them.
+	w, _ := wage([3]int{100, 0, 0}, [3]int{})
+	if tl := w.t[wopr]; tl.SiloHits != 750 || tl.Cities != 150 {
+		t.Fatalf("WOPR's tally %+v", tl)
+	}
+	noise := [10]int{100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
+	if r := w.ratios(noise); [3]int(r[1][2:5]) != [3]int{65, 1564, 117} {
+		t.Errorf("WOPR's ATTACK SUBS, TACTICAL AIRCRAFT and GROUND FORCES: %v, want silo damage's [65 1564 117]", r[1][2:5])
+	}
 }
 
 // Each system has one effect a player can learn: ICBM orders alone decide what lands on

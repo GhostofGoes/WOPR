@@ -53,6 +53,11 @@ func TestParseOrder(t *testing.T) {
 		"50 subs":                  fire(0, 50, 0),
 		"launch the subs":          fire(0, 100, 0),
 		"icbms and bombers":        fire(100, 0, 100),
+		"bmb 100":                  fire(0, 0, 100),
+		"icbm 0 slbm 0 bmb 100":    fire(0, 0, 100),
+		"bmb":                      fire(0, 0, 100),
+		"air 100":                  refused(bad), // airborne bombers cannot be ordered
+		"air":                      refused(bad),
 		"50 50":                    refused(bad),
 		"1 2 3 4":                  refused(bad),
 		"icbm 50 slbm":             refused(bad),
@@ -63,6 +68,12 @@ func TestParseOrder(t *testing.T) {
 		"150":                      refused(pct),
 		"-50":                      refused(pct),
 		"icbm +5":                  refused(pct),
+		"\u221250":                 refused(pct), // a minus sign
+		"\u201350":                 refused(pct), // an en dash, from smart punctuation
+		"icbm \u221220":            refused(pct),
+		"\uff0d5":                  refused(pct), // a full-width hyphen-minus
+		"\uff0b5":                  refused(pct),
+		"50\u2013100":              refused(bad), // a range, not a sign
 		"12.5":                     refused(pct),
 		"99999999999999999999":     refused(pct),
 		"chess":                    refused(mustRun),

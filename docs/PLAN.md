@@ -815,7 +815,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`; `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). Repetition and the fifty-move rule are claimed at once, so the search sees the game's history: below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop); `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Test: mates in one and two; no illegal move in 20 seeded self-play games at depth 2; K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side; ante 1, fixed limit 5/10, a bet and three raises; bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands); pot accounting. |
 | 9–14 | Military sims | Console/Panel | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. **As built** (all Console): Guerrilla (12 turns; hidden cells, ambush at double strength, recruiting with support; survival wins), Desert (10 turns; supply to the depot), Theaterwide Tactical (10 turns; the escalation ladder, the top rung ends it `WINNER: NONE`) and Biotoxic (8 turns; contamination spreads with the wind) are `sim` scenarios; Fighter Combat (15 turns; simultaneous manoeuvres, energy and aspect) and Air-to-Ground (6 sorties; packages against SAM sites, interceptors and a hidden mobile battery) are bespoke. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks; balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1); §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. **As built in M5**, the exchange is turn-based: three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, the UI screens; no allocation wins (exhaustive), the order grammar, the ladder under every order, Instant without ticks. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1); §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. **As built in M5**, the exchange is turn-based: three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, the UI screens; no allocation wins (exhaustive), the order grammar, the ladder under every order, Instant without ticks, the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice; both modes' transcripts. |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -824,8 +824,8 @@ The climax has **one owner**: `games/ending`. GTW and tic-tac-toe hand off to it
 no verdict of their own.
 
 1. **GTW**, film scenario:
-   1. `SetLayout(Console)`: the map and the `UNITED STATES` / `SOVIET UNION` labels printed as console text
-      (`Say`), then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
+   1. `SetLayout(Console)`: the two nations' outlines, named beneath, printed as console text (`Say`),
+      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. Targets are read until an empty
       line; a multi-line paste arrives as one line, so targets on one line are split on commas.
    3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24). **As built in M5**:
@@ -834,17 +834,20 @@ no verdict of their own.
         the film. Your SLBMs fly at the listed targets, your ICBMs at the enemy's silo field.
       - **Strikes 2 and 3 ask for orders.** `STRIKE 2 OF 3 [50 50 100]:` takes percentages of the ICBMs in
         silos, SLBMs at sea and bombers on the ground still held: `50 25 100`, `40`, `ICBM 50, BOMBERS ALL`,
-        `50 SUBS`, `ALL`, `HOLD` (also `STOP`, `CEASE FIRE`).
+        `50 SUBS`, `BMB 100` (the forces table's heading), `ALL`, `HOLD` (also `STOP`, `CEASE FIRE`). Airborne
+        bombers cannot be ordered, so `AIR` is refused.
         - Enter (or `FIRE`, `YES`) carries out the bracketed plan; strike 3's is `100 100 100`.
         - `AUTO` hands WOPR every remaining strike: `WOPR HAS LAUNCH AUTHORITY.`
         - `HELP` or `?` prints three lines.
         - Refusals ask the same strike again: `ORDER NOT RECOGNISED. TYPE HELP.`,
-          `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.`, a game's name
+          `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.` (also for a signed or decimal number, including a
+          typographic minus or dash such as `–50`), a game's name
           `** ROUTINE MUST COMPLETE BEFORE RESET **`, and GTW `** GAME ROUTINE RUNNING **`.
         - With nothing left to launch, a strike runs by itself.
       - **Each strike prints exactly three strip lines**: your launch, WOPR's launch on warning with the new
         DEFCON, and the cost (`LOST ON THE GROUND: … WARHEADS ON CITIES: …`). DEFCON falls one rung at
-        WOPR's launch, 5 → 4 → 3 → 2, whatever was ordered.
+        WOPR's launch, 5 → 4 → 3 → 2, whatever was ordered. The strip lines print at table pace, so the
+        DEFCON line shows within about half a second of the rung moving.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
@@ -867,10 +870,11 @@ no verdict of their own.
           per row (97–103%) shared by both columns. So your civilian and human rows are never better than
           the other side's.
       - **The board** (80×19 with the front panel; the map box takes rows 0–14).
-        - Rows 15–17: the `TRAJECTORY HEADING` table in two columns on the left (your first two missiles of
-          the latest strike that launched any), and on the right, ending at column 79, a `FORCES` table:
-          ICBMs in silos, SLBMs at sea, bombers grounded (`BMB`) and airborne (`AIR`), your side first. The
-          nations' names say whose figures are whose; the colours only repeat it.
+        - Rows 15–17: the `TRAJECTORY HEADING` table in two columns on the left (your latest two missiles;
+          a strike that drew one track keeps an earlier one in the second column), and on the right, ending
+          at column 79, a `FORCES` table: ICBMs in silos, SLBMs at sea, bombers grounded (`BMB`) and airborne
+          (`AIR`), your side first. The nations' names say whose figures are whose; the colours only repeat
+          it.
         - Row 18 shows one thing, by state: the orders hint at a strike prompt;
           `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` before strike 3; the launch code at the climax;
           otherwise the legend `OUTGOING +   INCOMING *   IMPACT X`.
@@ -878,7 +882,8 @@ no verdict of their own.
           lower than yours so both show between the silo fields. SLBMs hop low from real patrol areas placed
           by latitude and longitude (Soviet boats in the western Atlantic and the eastern Pacific, American
           boats in the Norwegian Sea and the north-west Pacific), whichever is nearer the target. Bombers fly
-          in, dotted, at DEFCON 1.
+          in, dotted, at DEFCON 1: yours on a low arc, WOPR's straight in under it, both sides' dots on the
+          same columns so that where the routes meet one covers the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax. That is two more Enters than M2's single strike, and about 18 s of flight
         instead of 8. Under `Instant` each line returns everything up to the next prompt; nothing waits for
@@ -926,7 +931,8 @@ no verdict of their own.
    that is a deliberate choice, not a loophole. The persona then says an `original` line acknowledging the
    abandoned war (an `AfterAbort` rule that knows the last game was GTW) instead of the plain verdict.
 5. **Goldens.** `film_path` (§9) covers the 0-players path; tic-tac-toe's `climax` golden covers a WOPR win
-   and `NO`; the persona's `TestAbandonedWar` and `TestAbandonedClimax` cover Esc in GTW and in the climax, and
+   and `NO`; the persona's `TestAbandonedWar`, `TestAbandonedMidExchange` and `TestAbandonedClimax` cover Esc
+   in GTW, at a strike prompt and in the climax, and
    `TestFilmPath` presses Esc twice during the ending, which ignores it.
 
 ### 6.3 Sim engine (M4)
@@ -1664,8 +1670,9 @@ HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 ```
 
-On the board: the `FORCES` table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the
-designators `MM3`, `C4`, `SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
+The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `FORCES` table (`FORCES`,
+`ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
+`ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
 figures.

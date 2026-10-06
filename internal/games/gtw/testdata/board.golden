@@ -209,10 +209,10 @@ AAAA.AAAAAAA.AA.AAAAAA.A.AAAA.AAAAA.AAAAAAAAAAA
 |        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
 |._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
 ||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::/'  |:|  '*'*+*+*+ +.+/+:**+:+:+:+:::::::::::::/--\/--'  |  +---+
-| '-' '-\::::::\___*:*_*  + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
-|       '\:::::*:*:::/-'         |\/:::XXX::::::::::::X::::::****       |  +---+
-|        |X::*:*::::/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|'\:/-\::::::::/'  |:|  '-'  + + + +/+\+**:+:+:+::::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___/:\_. + * * * ..|:\/::X:X::X::+X+X:X::::::/'  ''     |  | 3 |
+|       '\:::::::::*:*-* * *     |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*:*::/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
 |        '\::::::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
 |         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
@@ -229,10 +229,10 @@ d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
 d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
 dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
 dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddll..ldl..lilioioio.ololodiiododododddddddddddddllllllll..d..ddddd
-d.lll.lllddddddllllidili..o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
-d.......lldddddididddlll.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
-d........loddididdddll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+dlldlllddddddddll..ldl..lll..o.o.o.ololoiidodododdddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllldlll.o.i.i.i.llldllddididdiddoioididdddddll..ll.....d..d.3.d
+d.......lldddddddddidili.i.i.....llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddidididdll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
 d........llddddddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
 d.........loddddddll............ldlllllldddddddddddddddddll.............d..d111d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
@@ -250,12 +250,12 @@ dddddddd.o...dddddddd.i...dddddd.t
 |        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
 |._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
 ||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::/'  |:|  '*'*+*+*+*+*+*+*X*+:+:+:+:::::::::::::/--\/--'  |  +---+
-| '-' '-\::::::\___*:*_*+ + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
-|       '\:::::*:*::+/+'         |\/:::XXX::::::::::::X::::::****       |  +---+
-|        |X::*:*+:+:/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
-|        '\:::+::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
-|         'X+:::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|'\:/-\::::::::/'  |:|  '-'  + + + +/*\*X*:+:+:+::::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___/:\_+ + * * * *.*:\/::X:X::X::+X+X:X::::::/'  ''     |  | 3 |
+|       '\:::::::::*:*-* * *     |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*:*:+/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|        '\::+:+:::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
 |            '\\_.             |:::::::::::::| '\:/--\:/-'              |
 |             '--'             |:::::::::::/-'  '\|  '\|                |
@@ -270,12 +270,12 @@ d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
 d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
 dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
 dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddll..ldl..lilioioioioioioiiiododododddddddddddddllllllll..d..ddddd
-d.lll.lllddddddllllidilio.o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
-d.......lldddddididdolol.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
-d........loddidiododll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
-d........lldddoddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
-d.........loodddddll............ldlllllldddddddddddddddddll.............d..d111d
+dlldlllddddddddll..ldl..lll..o.o.o.oliliiidodododdddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllldllo.o.i.i.i.ilidllddididdiddoioididdddddll..ll.....d..d.3.d
+d.......lldddddddddidili.i.i.....llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddidididoll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+d........llddododddll...........ldlllllllllllddidddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d111d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
 d............lllll.............ldddddddddddddl.lldlllldlll..............d
 d.............llll.............ldddddddddddlll..lll..lll................d
@@ -332,12 +332,12 @@ dddddddd.o...dddddddd.i...dddddd.t
 |        .___.  |:\.  '\:::::/'     ****    .. ...__/:::\__. ._.        |  | 5 |
 |._______/:::\__/:/\_. |::::/'     *****X_. |\_/\/:::::::::\_/:\______. |  +---+
 ||::::::::::::::/-'|:| '\:/-'       ./**::\_/::::::::::::::::::::::::/' |  | 4 |
-|'\:/-\::::::::/'  |:|  '*'*+*+*+*+*+*+*X*+:+:+:+:::::::::::::/--\/--'  |  +---+
-| '-' '-\::::::\___*:*_*+ + +    ..|:\/::X:X::X:::+:+:X::::::/'  ''     |  | 3 |
-|       '\:::::*:*::+/+'         |\/:::XXX::::::::::::X::::::****       |  +---+
-|        |X::*:*+:+:/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
-|        '\:::+::::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
-|         'X+:::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
+|'\:/-\::::::::/'  |:|  '-'  + + + +/*\*X*:+:+:+::::::::::::::/--\/--'  |  +---+
+| '-' '-\::::::\___/:\_+ + * * * *.*:\/::X:X::X::+X+X:X::::::/'  ''     |  | 3 |
+|       '\:::::::::*:*-* * *     |\/:::XXX::::::::::::X::::::****       |  +---+
+|        |X::*:*:*:+/'          ./:/\:::X-\/\:::::::::::::::X*  **      |  | 2 |
+|        '\::+:+:::/'           |:/\/--\\_/\/::X:::::::::/--'           |  +---+
+|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
 |          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
 |            '\\_.             |:::::::::::::| '\:/--\:/-'              |
 |             '--'             |:::::::::::/-'  '\|  '\|                |
@@ -352,12 +352,12 @@ d...............ldllllldddddddl.....lll.............lllll...............d..ddddd
 d........lllll..ldll..lldddddll.....iiii....ll.lllllldddllll.lll........d..d.5.d
 dllllllllldddlllldllll.lddddll.....iiiiiill.lllllldddddddddllldllllllll.d..ddddd
 dlddddddddddddddlllldl.lldlll.......lliiddlllddddddddddddddddddddddddll.d..d.4.d
-dlldlllddddddddll..ldl..lilioioioioioioiiiododododddddddddddddllllllll..d..ddddd
-d.lll.lllddddddllllidilio.o.o....llldllddididdidddododiddddddll..ll.....d..d.3.d
-d.......lldddddididdolol.........llldddiiiddddddddddddiddddddiiii.......d..ddddd
-d........loddidiododll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
-d........lldddoddddll...........ldlllllllllllddidddddddddllll...........d..ddddd
-d.........loodddddll............ldlllllldddddddddddddddddll.............d..d111d
+dlldlllddddddddll..ldl..lll..o.o.o.oliliiidodododdddddddddddddllllllll..d..ddddd
+d.lll.lllddddddllllldllo.o.i.i.i.ilidllddididdiddoioididdddddll..ll.....d..d.3.d
+d.......lldddddddddidili.i.i.....llldddiiiddddddddddddiddddddiiii.......d..ddddd
+d........loddidididoll..........lldlldddilllldddddddddddddddii..ii......d..d.2.d
+d........llddododddll...........ldlllllllllllddidddddddddllll...........d..ddddd
+d.........loddddddll............ldlllllldddddddddddddddddll.............d..d111d
 d..........llldllll............llddddddddddddllldddddddddll.............d..ddddd
 d............lllll.............ldddddddddddddl.lldlllldlll..............d
 d.............llll.............ldddddddddddlll..lll..lll................d

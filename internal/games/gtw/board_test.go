@@ -1,6 +1,7 @@
 package gtw
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -86,5 +87,44 @@ func TestTablesDoNotOverlap(t *testing.T) {
 	}
 	if forcesX+forcesW != 80 {
 		t.Errorf("the forces table ends at column %d", forcesX+forcesW-1)
+	}
+}
+
+// Both sides' bombers stay dotted where their routes run together: one track covers the
+// other, and they never fill each other's gaps into a solid '+*+*' line.
+func TestBombersStayDotted(t *testing.T) {
+	t.Parallel()
+	for seed := range uint64(8) {
+		for _, side := range []string{"1", "2"} {
+			for _, script := range [][]string{nil, {"0 0 100", "0 0 0"}, {"all"}} {
+				g := New().(*Game)
+				g.Start(proto.Env{Seed: seed, Instant: true})
+				for _, in := range []string{side, "Vladivostok, Leningrad, Las Vegas, Seattle", ""} {
+					g.Handle(proto.LineEvent{Text: in})
+				}
+				for i := 0; g.phase == orders; i++ {
+					in := ""
+					if i < len(script) {
+						in = script[i]
+					}
+					g.Handle(proto.LineEvent{Text: in})
+				}
+				c := proto.NewCanvas(80, 19)
+				g.View(c)
+				for _, row := range strings.Split(c.String(), "\n") {
+					run := 1
+					for i := 1; i < len(row); i++ {
+						if a, b := row[i-1], row[i]; (a == '+' && b == '*') || (a == '*' && b == '+') {
+							run++
+						} else {
+							run = 1
+						}
+						if run >= 6 {
+							t.Fatalf("seed %d, side %s, %q: the bombers run together:\n%s", seed, side, script, c.String())
+						}
+					}
+				}
+			}
+		}
 	}
 }

@@ -3,6 +3,7 @@ package gtw
 import (
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
@@ -32,7 +33,7 @@ var (
 	orderSystems = map[string]int{
 		"ICBM": sysICBM, "ICBMS": sysICBM, "MISSILES": sysICBM,
 		"SLBM": sysSLBM, "SLBMS": sysSLBM, "SUB": sysSLBM, "SUBS": sysSLBM, "SUBMARINES": sysSLBM,
-		"BOMBER": sysBombers, "BOMBERS": sysBombers, "AIR": sysBombers,
+		"BOMBER": sysBombers, "BOMBERS": sysBombers, "BMB": sysBombers, "BMBS": sysBombers, // as the forces table heads them
 	}
 	orderQty = map[string]int{"ALL": 100, "HALF": 50, "NONE": 0}
 )
@@ -172,17 +173,26 @@ func isDigits(w string) bool {
 }
 
 // signedOrDecimal reports a sign or a decimal point touching a digit ("-50", "+5", "12.5"),
-// which Normalize would silently turn into other numbers.
+// which Normalize would silently turn into other numbers. A sign is any dash (an en dash
+// from smart punctuation, a full-width hyphen-minus), a plus or a minus sign.
 func signedOrDecimal(raw string) bool {
 	rs := []rune(raw)
 	digit := func(i int) bool { return i >= 0 && i < len(rs) && rs[i] >= '0' && rs[i] <= '9' }
 	for i, r := range rs {
 		switch {
-		case (r == '-' || r == '+') && digit(i+1) && !digit(i-1):
+		case isSign(r) && digit(i+1) && !digit(i-1):
 			return true
-		case r == '.' && digit(i-1) && digit(i+1):
+		case (r == '.' || r == '\uff0e') && digit(i-1) && digit(i+1):
 			return true
 		}
 	}
 	return false
+}
+
+func isSign(r rune) bool {
+	switch r {
+	case '+', '\u2212', '\uff0b', '\ufe62', '\u207a', '\u207b', '\u208a', '\u208b': // plus, minus, their full-width, small, super- and subscript forms
+		return true
+	}
+	return unicode.Is(unicode.Pd, r)
 }

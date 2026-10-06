@@ -127,50 +127,66 @@ func TestSideChoiceFits(t *testing.T) {
 	}
 }
 
-// Every element of the big board is on the 80x19 view, whole, at every stage: the title,
-// the DEFCON ladder 5..1, the sides' names, the trajectory table, the forces table (your
-// side first), and the last row, which shows one thing by state: the orders hint, the
-// last-orders warning, the legend or the climax's launch code.
+// Every element of the big board is on the 80x19 view, whole, at each strike prompt, the
+// assessment and the climax: the title, the DEFCON ladder 5..1, the sides' names, both
+// trajectory columns, the forces table with your side's row first, and the last row, which
+// shows one thing by state: the orders hint, the last-orders warning, the legend or the
+// climax's launch code. A strike that draws one track still leaves both columns full.
 func TestBoardKeepsEveryElement(t *testing.T) {
 	t.Parallel()
-	g := gtw.New()
-	g.Start(proto.Env{Seed: 1, Instant: true})
-	g.Handle(proto.LineEvent{Text: "1"})
-	g.Handle(proto.LineEvent{Text: "Moscow, Leningrad, Kiev"})
 	always := []string{
 		"GLOBAL THERMONUCLEAR WAR", "DEFCON", "| 5 |", "| 4 |", "| 3 |", "| 2 |", "| 1 |",
-		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING   TRAJECTORY HEADING",
+		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING   TRAJECTORY HEADING", "FORCES   ICBM  SLBM   BMB   AIR",
 	}
-	for _, tc := range []struct {
-		stage, last string
-		table       []string // the trajectory and forces rows that must be there
-	}{
-		{"strike 2 orders", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
-			"A-MM3-A", "C-C4-A", "FORCES   ICBM  SLBM   BMB   AIR", "US        500   450   200     0", "USSR      737   562     0   375",
+	type stage struct {
+		name, order, last string
+		table             []string // the trajectory and forces rows that must be there
+	}
+	enter := []stage{
+		{"strike 2 orders", "", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
+			"A-MM3-A", "C-C4-A", "US        500   450   200     0", "USSR      737   562     0   375",
 		}},
-		{"strike 3 orders", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
+		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
 			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
 		}},
-		{"assessed", "OUTGOING +   INCOMING *   IMPACT X", []string{
+		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
 			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
 		}},
-		{"kill ratios", "", nil},
-		{"climax", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "FORCES   ICBM  SLBM   BMB   AIR"}},
-	} {
-		g.Handle(proto.LineEvent{Text: ""})
-		if tc.table == nil {
-			continue
-		}
-		c := proto.NewCanvas(80, 19)
-		g.View(c)
-		screen := c.String()
-		for _, want := range append(always, tc.table...) {
-			if !strings.Contains(screen, want) {
-				t.Errorf("%s: the board lost %q:\n%s", tc.stage, want, screen)
+		{"kill ratios", "", "", nil},
+		{"climax", "", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "C-C4-A"}},
+	}
+	oneTrack := []stage{ // strike 2 fires 1% of the ICBMs: one track
+		{"strike 2 orders", "1 0 0", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", nil},
+		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{"A-MM3-A", "C-MM3-A"}},
+		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{"A-MM3-A", "C-MM3-A"}},
+	}
+	for _, path := range [][]stage{enter, oneTrack} {
+		g := gtw.New()
+		g.Start(proto.Env{Seed: 1, Instant: true})
+		g.Handle(proto.LineEvent{Text: "1"})
+		g.Handle(proto.LineEvent{Text: "Moscow, Leningrad, Kiev"})
+		order := "" // the empty line that ends the targets
+		for _, tc := range path {
+			g.Handle(proto.LineEvent{Text: order})
+			order = tc.order
+			if tc.last == "" {
+				continue
 			}
-		}
-		if rows := strings.Split(screen, "\n"); strings.TrimSpace(rows[18]) != tc.last {
-			t.Errorf("%s: the last row is %q, want %q", tc.stage, rows[18], tc.last)
+			c := proto.NewCanvas(80, 19)
+			g.View(c)
+			screen := c.String()
+			for _, want := range append(always, tc.table...) {
+				if !strings.Contains(screen, want) {
+					t.Errorf("%s: the board lost %q:\n%s", tc.name, want, screen)
+				}
+			}
+			rows := strings.Split(screen, "\n")
+			if strings.TrimSpace(rows[18]) != tc.last {
+				t.Errorf("%s: the last row is %q, want %q", tc.name, rows[18], tc.last)
+			}
+			if !strings.Contains(rows[16], " US  ") || !strings.Contains(rows[17], " USSR  ") {
+				t.Errorf("%s: the forces table puts your side first:\n%s", tc.name, screen)
+			}
 		}
 	}
 }
@@ -475,6 +491,43 @@ func TestInstantNeedsNoTicks(t *testing.T) {
 		if !asks && !done {
 			t.Fatalf("input %d (%q) left nothing asking", i, in)
 		}
+	}
+}
+
+// The strip's report lines (launch, detection with its DEFCON, cost) print at table pace, so
+// the text keeps up with the board: the DEFCON line shows as the rung moves, not seconds
+// after it behind a line typed at speech pace.
+func TestStripKeepsUpWithTheLadder(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Width: 80, Height: 19})
+	g.Handle(proto.LineEvent{Text: "2"})
+	g.Handle(proto.LineEvent{Text: "Las Vegas"})
+	outs := g.Handle(proto.LineEvent{Text: ""})
+	for range 400 {
+		step := g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond})
+		outs = append(outs, step...)
+		for _, o := range step {
+			if p, ok := o.(proto.Prompt); ok && strings.HasPrefix(p.Text, "STRIKE") {
+				outs = append(outs, g.Handle(proto.LineEvent{Text: ""})...)
+			}
+		}
+	}
+	reports := 0
+	for _, o := range outs {
+		say, ok := o.(proto.Say)
+		if !ok || say.Pace == proto.PaceTable {
+			reports += len(say.Lines)
+			continue
+		}
+		for _, l := range say.Lines {
+			if strings.Contains(l, "DEFCON") || strings.Contains(l, "LAUNCH") || strings.HasPrefix(l, "LOST ON THE GROUND") {
+				t.Errorf("%q prints at %v, want table pace", l, say.Pace)
+			}
+		}
+	}
+	if reports != 3*3+2 { // three lines a strike, two for DEFCON 1
+		t.Errorf("%d lines at table pace, want 11", reports)
 	}
 }
 

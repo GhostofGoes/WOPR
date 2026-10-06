@@ -87,7 +87,7 @@ type Game struct {
 	auto     bool   // AUTO: WOPR orders every remaining strike
 	missiles []missile
 	impacts  []missile // every earlier stage's tracks, drawn as impacts only
-	traj     []missile // your missiles of the latest stage that launched any
+	traj     []missile // your latest missiles, newest first, for the trajectory table
 	serial   int
 	cities   []assets.Place // the player's side, shuffled: WOPR's aim points
 	aimYou   int            // next listed target for your city tracks
@@ -114,7 +114,9 @@ func say(ls ...script.Ls) proto.Output {
 	return proto.Say{Lines: lines, Pace: proto.PaceSpeech}
 }
 
-func speak(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
+// strip prints one of a stage's strip lines at table pace, so the text keeps up with the
+// board: WOPR's launch line, with its DEFCON, shows as the ladder moves, not seconds after.
+func strip(line string) proto.Output { return table([]string{line}) }
 
 func table(lines []string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceTable} }
 
@@ -285,7 +287,7 @@ func (g *Game) begin(order [3]int) []proto.Output {
 		g.rep = g.war.final()
 		g.defcon = 1
 		g.lay()
-		return []proto.Output{speak(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
+		return []proto.Output{strip(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
 	}
 	launchable := g.war.launchable()
 	g.rep = g.war.strike(g.stage, order)
@@ -301,7 +303,7 @@ func (g *Game) begin(order [3]int) []proto.Output {
 	default:
 		line = fill(lineLaunch[1], g.stage, g.list(f))
 	}
-	return []proto.Output{speak(line), proto.Redraw{}}
+	return []proto.Output{strip(line), proto.Redraw{}}
 }
 
 // list names a salvo's non-zero systems: "ICBM 313  SLBM 188".
@@ -357,15 +359,16 @@ func (g *Game) lay() {
 			add(kindBomber, silo, g.firstAim(s))
 		}
 	}
+	// The trajectory table shows this stage's missiles first, and an earlier stage's fill
+	// the column a one-track stage leaves; a stage that launched none leaves it as it was.
 	var traj []missile
 	for _, m := range g.missiles {
 		if m.ours && m.kind != kindBomber {
 			traj = append(traj, m)
 		}
 	}
-	if len(traj) > 0 {
-		g.traj = traj
-	}
+	traj = append(traj, g.traj...)
+	g.traj = traj[:min(len(traj), trajCols)]
 }
 
 // tracks is how many tracks n weapons draw: one per per, at most most.
@@ -456,18 +459,18 @@ func (g *Game) step() []proto.Output {
 		if !g.env.Instant && !g.env.ReduceMotion {
 			keep.Every = blinkFrame
 		}
-		return []proto.Output{table([]string{g.cost()}), say(lineAssessed), keep, proto.Prompt{}}
+		return []proto.Output{strip(g.cost()), say(lineAssessed), keep, proto.Prompt{}}
 	}
 	switch g.frame {
 	case detectAt:
 		g.defcon = 5 - g.stage
 		f := g.rep.fire[wopr]
 		if f.missiles()+f.Bombers == 0 {
-			return []proto.Output{speak(fill(lineDetect[1], g.defcon))}
+			return []proto.Output{strip(fill(lineDetect[1], g.defcon))}
 		}
-		return []proto.Output{speak(fill(lineDetect[0], g.list(f), g.defcon))}
+		return []proto.Output{strip(fill(lineDetect[0], g.list(f), g.defcon))}
 	case strikeEnd:
-		outs := []proto.Output{table([]string{g.cost()})}
+		outs := []proto.Output{strip(g.cost())}
 		if g.stage < strikes && !g.auto && g.war.launchable() {
 			g.phase = orders
 			return append(outs, proto.Animate{}, proto.Prompt{Text: g.strikePrompt()})

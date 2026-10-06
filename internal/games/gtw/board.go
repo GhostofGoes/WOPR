@@ -26,9 +26,9 @@ const (
 	forcesX    = 80 - forcesW          // right-aligned to the 80-column board, clear of the trajectories
 	footRow    = trajRow + 3           // the orders hint, the last-orders warning, the launch code or the legend
 	arcLift    = 0.14                  // how far an ICBM's track rises over the map, in rows per column flown
-	bomberLift = 0.07                  // a bomber's route rises half as far
+	bomberLift = 0.07                  // your bombers' route rises half as far; WOPR's fly straight in
 	slbmLift   = 1.0                   // an SLBM's hop from the sea rises a row, whatever the distance
-	lowerLift  = 0.7                   // WOPR's ICBMs and bombers fly lower: both sides' tracks show
+	lowerLift  = 0.7                   // WOPR's ICBMs fly lower: both sides' tracks show
 	arcSteps   = 80                    // points plotted along a track
 	usLon      = -98.0                 // the longitude each side's name is centred on
 	ussrLon    = 95.0
@@ -83,7 +83,8 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 
 // drawFoot fills the row under the tables with one thing, by state: the orders hint at a
 // strike prompt (the last-orders warning at the last one), the launch code at the climax, and
-// otherwise the legend, its glyphs drawn as the map draws them.
+// otherwise the legend: + and * in their tracks' colours, and X reversed in the neutral text
+// colour, since both sides' impacts show.
 func (g *Game) drawFoot(c *proto.Canvas) {
 	switch {
 	case g.phase == climax:
@@ -177,7 +178,9 @@ func (g *Game) drawDefcon(c *proto.Canvas) {
 // drawTrack draws a track's arc so far: an ICBM's rises over the top of the map, as a polar
 // route does, a bomber's is lower and dotted, and an SLBM's is a short hop from the sea.
 // Outgoing tracks are '+', incoming '*'; an impact is a reversed 'X'. Once its stage has
-// played out, a track is drawn whole.
+// played out, a track is drawn whole. Every bomber's dots fall on the even columns, so where
+// the two sides' routes run together one dotted track covers the other instead of the two
+// filling each other's gaps.
 func (g *Game) drawTrack(c *proto.Canvas, m missile) {
 	if g.phase == flight && g.frame < m.launch {
 		return
@@ -192,7 +195,7 @@ func (g *Game) drawTrack(c *proto.Canvas, m missile) {
 	}
 	for i := 0; i <= int(progress*arcSteps); i++ {
 		x, y := arc(m, float64(i)/arcSteps)
-		if m.kind == kindBomber && (x-m.from.X)%2 != 0 {
+		if m.kind == kindBomber && x%2 != 0 {
 			continue
 		}
 		c.Put(mapLeft+x, mapTop+y, glyph, style, 0)
@@ -203,34 +206,40 @@ func (g *Game) drawTrack(c *proto.Canvas, m missile) {
 }
 
 // arc is a track's position at s (0 to 1) along its flight: a longer ICBM or bomber flight
-// rises higher, and WOPR's less high than yours, since both sides' ICBMs fly between the
-// same two silo fields.
+// rises higher. WOPR's ICBMs rise less high than yours, since both sides' ICBMs fly between
+// the same two silo fields, and its bombers fly straight in, under yours, since both sides'
+// bombers cross the same stretch of the map.
 func arc(m missile, s float64) (int, int) {
 	dx := float64(m.to.X - m.from.X)
-	lift := arcLift * math.Abs(dx)
+	var lift float64
 	switch m.kind {
 	case kindSLBM:
 		lift = slbmLift
 	case kindBomber:
-		lift = bomberLift * math.Abs(dx)
+		if m.ours {
+			lift = bomberLift * math.Abs(dx)
+		}
 	case kindICBM:
-	}
-	if !m.ours && m.kind != kindSLBM {
-		lift *= lowerLift
+		lift = arcLift * math.Abs(dx)
+		if !m.ours {
+			lift *= lowerLift
+		}
 	}
 	x := float64(m.from.X) + dx*s
 	y := float64(m.from.Y) + float64(m.to.Y-m.from.Y)*s - lift*4*s*(1-s)
 	return int(x + 0.5), max(int(y+0.5), 0)
 }
 
-// drawTrajectories is the film's TRAJECTORY HEADING table: a column for each of your first
-// missiles in the latest stage that launched any, two headings each, under an underlined
-// heading. The figures are illustrative, drawn from the seed.
+// drawTrajectories is the film's TRAJECTORY HEADING table: both columns, each under an
+// underlined heading, show your latest missiles (lay), two headings each. The figures are
+// illustrative, drawn from the seed.
 func (g *Game) drawTrajectories(c *proto.Canvas) {
+	for col := range trajCols {
+		c.Put(col*trajW, trajRow, lineTrajectory[0].Text, proto.StyleLabel, proto.AttrUnderline)
+	}
 	for col, m := range g.traj[:min(len(g.traj), trajCols)] {
 		designator := lineDesignator[2*int(g.side-1)+int(m.kind)].Text
 		x := col * trajW
-		c.Put(x, trajRow, lineTrajectory[0].Text, proto.StyleLabel, proto.AttrUnderline)
 		letter := string(rune('A' + 2*col))
 		h := heading(g.env.Seed, m.id)
 		c.Put(x, trajRow+1, fmt.Sprintf("%s-%s-A %03d %03d", letter, designator, h[0], h[1]), proto.StyleText, 0)
