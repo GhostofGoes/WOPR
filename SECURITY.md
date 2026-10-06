@@ -26,6 +26,13 @@ Only the latest release receives fixes.
 - Tags and releases are never moved or replaced. A bad release is fixed by the next patch version, and
   `go.mod` gains a `retract` directive for the bad one.
 
+## Leaked secrets
+
+CI scans the git history with gitleaks on every pull request. If a real secret is found, rotate or revoke
+it first; history on `main` is never rewritten. Then, in a pull request, add the finding's fingerprint
+(from the gitleaks log) to `.gitleaksignore` with a comment saying when and why. False positives are handled
+the same way.
+
 ## Response rule
 
 A reachable `govulncheck` finding, or a Go security release that affects the standard library, leads to a

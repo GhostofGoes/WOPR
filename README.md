@@ -48,8 +48,8 @@ wopr
 
 Wait for `LOGON:`. If you have seen the film, you know what to type. If not, `wopr --help` will tell you.
 
-Once logged on, talk to WOPR, type `LIST GAMES`, and pick one. Type `LOGOFF` to leave; Ctrl+C always
-quits.
+Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its place in the list. Type
+`LOGOFF` to leave; Ctrl+C always quits.
 
 ## Command-line flags
 

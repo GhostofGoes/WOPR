@@ -21,12 +21,14 @@ fictional computer.
 
 ## Third-party text
 
-Two items of screen text were transcribed by the `abs0/wargames` project
-(<https://github.com/abs0/wargames>, `wargames.sh`, commit `010ed92`) and are used under its BSD
-2-clause licence, reproduced below:
+Two items of the film's screen text are taken from the transcription made by the `abs0/wargames`
+project (<https://github.com/abs0/wargames>, `wargames.sh`, commit `010ed92`):
 
 - the "backdoor" connection header block shown after log-on;
 - the list of scenario names shown in the closing montage.
+
+abs0's BSD 2-clause licence, reproduced below, covers the transcription. The text itself is the film's,
+so like the other film text it is not covered by the MIT grant.
 
 ```text
 (Standard 2 clause BSD licence)
@@ -56,6 +58,20 @@ CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ```
+
+## Earlier drafts
+
+An early draft of this project's plan (commit `ada63a0` in the git history) contained fragments of the
+ASCII world map from Franklin Wei's `wargames` project (<https://github.com/built1n/wargames>, file
+`MAP`), and [docs/reviews/PLAN-v1-review.md](docs/reviews/PLAN-v1-review.md) quotes three of them. Those
+fragments are by Franklin Wei and are available under the
+[Creative Commons Attribution-ShareAlike 4.0](https://creativecommons.org/licenses/by-sa/4.0/) licence.
+The `wopr` program does not contain them.
+
+## Rights holders
+
+If you believe something here infringes your rights, contact the maintainer, @GhostofGoes, using the
+contact details on their GitHub profile. The material will be removed or replaced promptly.
 
 ## Third-party software
 

@@ -87,6 +87,29 @@ licence is recorded.
 - Run `prek run --all-files` and `go test ./...` before pushing.
 - Never re-tag a release. A bad release is fixed with the next patch version and a `retract` in `go.mod`.
 
+## Secret scanning
+
+The `secrets` job runs gitleaks over the checked-out history (`main` plus the pull request), with
+`--no-color` so its `ERR` lines can be detected; it fails on a finding, on any error, and on an empty scan.
+A finding is handled as `SECURITY.md` describes: rotate the secret, then add its fingerprint to
+`.gitleaksignore` by pull request.
+
+To prove the job (the M0 canary), push a throwaway branch containing a fake secret that only gitleaks
+recognises (not a GitHub-supported token pattern, which push protection blocks), open a pull request,
+check that the log says `leaks found` rather than an error, then close it and delete the branch.
+
+## Takedown runbook
+
+If a rights holder asks for material to be removed:
+
+1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text).
+2. Remove or replace it in one pull request, and release a patch version.
+3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
+   releases (immutable releases can be deleted, not edited; their tags cannot be reused).
+4. Reply to the requester saying what was done. Copies remain in git history and in the Go module mirror,
+   which has no documented removal process for this case.
+
 ## Repository settings (owner, once)
 
 These live in GitHub settings, not in files. Check them at each milestone:
