@@ -58,7 +58,7 @@ func table(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: 
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.rng = proto.NewRand(env.Seed, 0)
 	g.dealer = player // WOPR deals the first hand
-	return g.newHand([]proto.Output{say(lineRules.Texts()...)})
+	return g.newHand([]proto.Output{table(artTitle.Texts()...), say(lineRules.Texts()...)})
 }
 
 // Handle implements proto.Program.

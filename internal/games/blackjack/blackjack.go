@@ -35,7 +35,6 @@ var (
 	lineDealer    = script.Orig("DEALER:")
 	lineYou       = script.Orig("YOU:")
 	lineHandN     = script.Orig("HAND #:")
-	lineHole      = script.Orig("??")
 	lineDescBJ    = script.Orig("BLACK JACK")
 	lineDescBust  = script.Orig("BUST")
 	lineDescSoft  = script.Orig("SOFT #")
@@ -62,9 +61,9 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineStandS17, lineHitS17, lineLimits, lineLeaveHow, lineMoney, promptBet, lineBadBet, lineShort, lineSameBet, lineShuffle,
-	lineDealer, lineYou, lineHandN, lineHole, lineDescBJ, lineDescBust, lineDescSoft, promptHit, promptDouble,
+	lineDealer, lineYou, lineHandN, lineDescBJ, lineDescBust, lineDescSoft, promptHit, promptDouble,
 	promptSplit, lineActions, lineNoDouble, lineNoSplit, lineNoMoney, lineFinish, lineDealerBJ, lineDraws,
-	lineDealerBst, lineStandsOn, lineWin, lineBJWin, lineLose, linePush, lineBroke, lineLeave,
+	lineDealerBst, lineStandsOn, lineWin, lineBJWin, lineLose, linePush, lineBroke, lineLeave, artTitle,
 }
 
 // fill replaces each # in l's text with the next arg.
@@ -123,6 +122,7 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 		house = lineHitS17
 	}
 	return []proto.Output{
+		table(artTitle.Texts()...),
 		say(house[0].Text, fill(lineLimits, money(g.rules.MinBet*100), money(g.rules.MaxBet*100)), lineLeaveHow[0].Text, fill(lineMoney, money(g.money))),
 		proto.Prompt{Text: promptBet[0].Text},
 	}
@@ -219,7 +219,7 @@ func (g *Game) deal(bet int) []proto.Output {
 	g.dealer = append(g.dealer, g.draw())
 	h.Cards = append(h.Cards, g.draw())
 	g.dealer = append(g.dealer, g.draw())
-	outs = append(outs, table(g.dealerLine(true), g.handLine(0)))
+	outs = append(outs, table(append(g.dealerRows(true), g.handRows(0)...)...))
 
 	if Natural(h.Cards) || (Peeks(g.dealer[0]) && Natural(g.dealer)) {
 		return append(outs, g.finish(false)...) // nothing to play: a natural settles at once
@@ -259,7 +259,7 @@ func (g *Game) onAction(input string) []proto.Output {
 	switch norm := prompt.Normalize(input); norm {
 	case "H", "HIT", "HIT ME", "CARD":
 		h.Cards = append(h.Cards, g.draw())
-		return g.after(table(g.handLine(g.cur)))
+		return g.after(table(g.handRows(g.cur)...))
 	case "S", "STAND", "STAY", "STICK", "HOLD":
 		h.Stood = true
 		return g.after()
@@ -273,7 +273,7 @@ func (g *Game) onAction(input string) []proto.Output {
 		h.Bet *= 2
 		h.Doubled = true
 		h.Cards = append(h.Cards, g.draw())
-		return g.after(table(g.handLine(g.cur)))
+		return g.after(table(g.handRows(g.cur)...))
 	case "P", "SPLIT":
 		switch {
 		case !h.CanSplit(len(g.hands)):
@@ -301,7 +301,7 @@ func (g *Game) split() []proto.Output {
 		c := g.draw()
 		g.hands[i].Cards = append(g.hands[i].Cards, c)
 	}
-	return g.after(table(g.handLine(0), g.handLine(1)))
+	return g.after(table(append(g.handRows(0), g.handRows(1)...)...))
 }
 
 // after moves on once the current hand is done: to the next hand, or to the dealer.
@@ -318,7 +318,7 @@ func (g *Game) after(outs ...proto.Output) []proto.Output {
 // finish turns the hole card, plays the dealer's hand if any of the player's hands still
 // stands, and settles every hand.
 func (g *Game) finish(dealerPlays bool) []proto.Output {
-	outs := []proto.Output{table(g.dealerLine(false))}
+	outs := []proto.Output{table(g.dealerRows(false)...)}
 	if Natural(g.dealer) {
 		outs = append(outs, say(lineDealerBJ[0].Text))
 		dealerPlays = false
@@ -331,7 +331,7 @@ func (g *Game) finish(dealerPlays bool) []proto.Output {
 		for g.rules.DealerHits(g.dealer) {
 			c := g.draw()
 			g.dealer = append(g.dealer, c)
-			outs = append(outs, proto.Wait{D: dealerPause}, say(fill(lineDraws, c.String())), table(g.dealerLine(false)))
+			outs = append(outs, proto.Wait{D: dealerPause}, say(fill(lineDraws, c.String())), table(g.dealerRows(false)...))
 		}
 		if total, _ := Value(g.dealer); total > 21 {
 			outs = append(outs, say(lineDealerBst[0].Text))
@@ -393,31 +393,4 @@ func describe(h []cards.Card) string {
 		return fill(lineDescSoft, fmt.Sprint(total))
 	}
 	return fmt.Sprint(total)
-}
-
-func row(label string, hand string, desc string) string {
-	if desc == "" {
-		return fmt.Sprintf("%-8s %s", label, hand)
-	}
-	return fmt.Sprintf("%-8s %-20s (%s)", label, hand, desc)
-}
-
-// dealerLine shows the dealer's hand, with the hole card face down while hidden.
-func (g *Game) dealerLine(hidden bool) string {
-	if hidden {
-		return row(lineDealer[0].Text, g.dealer[0].String()+" "+lineHole[0].Text, "")
-	}
-	return row(lineDealer[0].Text, cards.Format(g.dealer), describe(g.dealer))
-}
-
-func (g *Game) handLine(i int) string {
-	label := lineYou[0].Text
-	if len(g.hands) > 1 {
-		label = fill(lineHandN, fmt.Sprint(i+1))
-	}
-	h := g.hands[i]
-	if h.FromSplit && Natural(h.Cards) {
-		return row(label, cards.Format(h.Cards), "21") // not a black jack after a split
-	}
-	return row(label, cards.Format(h.Cards), describe(h.Cards))
 }

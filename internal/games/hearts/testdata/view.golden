@@ -1,21 +1,21 @@
 HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
-
-                                  NORTH  5C
-                     WEST   2C                    EAST   6C
-                                  YOU    --
-YOUR HAND
-6S  KH  QH  8H  3H  QD  JD  6D  4D  KC  QC  JC  8C
-1   2   3   4   5   6   7   8   9   10  11  12  13
-
-
+                             .---.
+                      NORTH  |5C |
+               .---.         '---'         .---.
+          WEST |2C |         . - .         |6C | EAST
+               '---'    YOU  :   :         '---'
+                             ' - '
+.---.---.---.---.---.---.---.---.---.---.---.---.---.
+|6S |KH |QH |8H |3H |QD |JD |6D |4D |KC |QC |JC |8C |         YOUR HAND
+  1   2   3   4   5   6   7   8   9  10  11  12  13
 
 LLLLLL............................................ttt.t..tttt.t..ttttt.t..tttt.t
-
-..................................LLLLL..bb
-.....................LLLL...bb....................LLLL...bb
-..................................LLL....dd
-LLLL.LLLL
-tt..tt..tt..tt..tt..tt..tt..tt..tt..tt..tt..tt..tt
-d...d...d...d...d...d...d...d...d...dd..dd..dd..dd
-
-
+.............................bbbbb
+......................LLLLL..bkk.b
+...............bbbbb.........bbbbb.........bbbbb
+..........LLLL.bkk.b.........d.d.d.........bkk.b.LLLL
+...............bbbbb....LLL..d...d.........bbbbb
+.............................d.d.d
+ttttttttttttttttttttttttttttttttttttttttttttttttttttt
+tkk.trr.trr.trr.trr.trr.trr.trr.trr.tkk.tkk.tkk.tkk.t.........LLLL.LLLL
+..d...d...d...d...d...d...d...d...d..dd..dd..dd..dd

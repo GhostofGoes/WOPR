@@ -39,7 +39,8 @@ var (
 	// Panel text.
 	panelTitle  = script.Orig("HEARTS")
 	panelHand   = script.Orig("YOUR HAND")
-	panelLast   = script.Orig("LAST TRICK:")
+	panelLast   = script.Orig("LAST TRICK")
+	panelTaken  = script.Orig("TAKEN BY #")
 	panelBroken = script.Orig("HEARTS BROKEN")
 	panelPass   = script.Orig("PASS #")
 	panelDirs   = script.Orig("", "LEFT", "ACROSS", "RIGHT")
@@ -49,7 +50,7 @@ var (
 var Lines = []script.Ls{
 	lineRules, promptPass, promptPlay, promptNext, lineHold, lineReceived, linePassHelp, linePlayHelp, lineNotHeld,
 	lineFollow, lineLeadTwo, lineNotBroken, lineNoPoints, lineFinish, lineTrick, lineYouTake, linePoints, lineMoon, lineYouMoon,
-	lineHandPoints, lineScores, lineYou, seatNames, panelTitle, panelHand, panelLast, panelBroken, panelPass, panelDirs,
+	lineHandPoints, lineScores, lineYou, seatNames, panelTitle, panelHand, panelLast, panelTaken, panelBroken, panelPass, panelDirs, artTitle,
 }
 
 // fill replaces each # in l's first line with the next arg.

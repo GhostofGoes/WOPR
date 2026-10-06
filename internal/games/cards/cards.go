@@ -1,5 +1,5 @@
 // Package cards is the playing cards the card games share: cards and their text, decks,
-// shuffling with the session's seed, and tricks (trick.go).
+// shuffling with the session's seed, tricks (trick.go), and the cards drawn in ASCII (art.go).
 //
 // Cards print as a rank and a suit letter, in ASCII so that every terminal shows them at
 // one cell a character: AS, 10H, QD, 7C.

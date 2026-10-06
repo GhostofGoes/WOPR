@@ -1,3 +1,11 @@
+ .--------------------------------------------------------------------------.
+ |   B L A C K   J A C K                           [$$$|$$$|$$$|$$$|$$$]    |
+  \  = = = = = = = = = =        .-----.-----.                              /
+   \                            |AS   |JS   |                             /
+    '.                          |  S  |  S  |                           .'
+      '-.                       |    A|    J|                        .-'
+         '--.   ( )     ( )     '-----'-----'      ( )     ( )   .--'
+             '--------------------------------------------------'
 THE DEALER STANDS ON SOFT 17. BLACK JACK PAYS 3 TO 2.
 BETS ARE WHOLE DOLLARS FROM $1 TO $25. ENTER REPEATS YOUR LAST BET.
 TYPE LEAVE TO CASH OUT.
@@ -8,69 +16,157 @@ A BET IS A WHOLE NUMBER OF DOLLARS FROM $1 TO $25.
 YOUR BET: 10
 
 WOPR SHUFFLES THE DECK.
-DEALER:  10H ??
-YOU:     JH 8S                (18)
+         .-----. .-----.
+         |10H  | |/\/\/|
+DEALER:  |  H  | |\/\/\|
+         |   10| |/\/\/|
+         '-----' '-----'
+         .-----. .-----.
+         |JH   | |8S   |
+YOU:     |  H  | |  S  |   (18)
+         |    J| |    8|
+         '-----' '-----'
 HIT, STAND OR DOUBLE? h
 
-YOU:     JH 8S 9S             (BUST)
-DEALER:  10H JC               (20)
+         .-----. .-----. .-----.
+         |JH   | |8S   | |9S   |
+YOU:     |  H  | |  S  | |  S  |   (BUST)
+         |    J| |    8| |    9|
+         '-----' '-----' '-----'
+         .-----. .-----.
+         |10H  | |JC   |
+DEALER:  |  H  | |  C  |   (20)
+         |   10| |    J|
+         '-----' '-----'
 YOU LOSE $10.
 YOU HAVE $90.
 
 YOUR BET: 10
 
-DEALER:  QC ??
-YOU:     6S KS                (16)
+         .-----. .-----.
+         |QC   | |/\/\/|
+DEALER:  |  C  | |\/\/\|
+         |    Q| |/\/\/|
+         '-----' '-----'
+         .-----. .-----.
+         |6S   | |KS   |
+YOU:     |  S  | |  S  |   (16)
+         |    6| |    K|
+         '-----' '-----'
 HIT, STAND OR DOUBLE? h
 
-YOU:     6S KS 3D             (19)
+         .-----. .-----. .-----.
+         |6S   | |KS   | |3D   |
+YOU:     |  S  | |  S  | |  D  |   (19)
+         |    6| |    K| |    3|
+         '-----' '-----' '-----'
 HIT OR STAND? s
 
-DEALER:  QC 10S               (20)
+         .-----. .-----.
+         |QC   | |10S  |
+DEALER:  |  C  | |  S  |   (20)
+         |    Q| |   10|
+         '-----' '-----'
 THE DEALER STANDS ON 20.
 YOU LOSE $10.
 YOU HAVE $80.
 
 YOUR BET: 10
 
-DEALER:  6H ??
-YOU:     6C 8D                (14)
+         .-----. .-----.
+         |6H   | |/\/\/|
+DEALER:  |  H  | |\/\/\|
+         |    6| |/\/\/|
+         '-----' '-----'
+         .-----. .-----.
+         |6C   | |8D   |
+YOU:     |  C  | |  D  |   (14)
+         |    6| |    8|
+         '-----' '-----'
 HIT, STAND OR DOUBLE? h
 
-YOU:     6C 8D AD             (15)
+         .-----. .-----. .-----.
+         |6C   | |8D   | |AD   |
+YOU:     |  C  | |  D  | |  D  |   (15)
+         |    6| |    8| |    A|
+         '-----' '-----' '-----'
 HIT OR STAND? s
 
-DEALER:  6H 8H                (14)
+         .-----. .-----.
+         |6H   | |8H   |
+DEALER:  |  H  | |  H  |   (14)
+         |    6| |    8|
+         '-----' '-----'
 DEALER DRAWS 10D.
-DEALER:  6H 8H 10D            (BUST)
+         .-----. .-----. .-----.
+         |6H   | |8H   | |10D  |
+DEALER:  |  H  | |  H  | |  D  |   (BUST)
+         |    6| |    8| |   10|
+         '-----' '-----' '-----'
 THE DEALER BUSTS.
 YOU WIN $10.
 YOU HAVE $90.
 
 YOUR BET: 10
 
-DEALER:  5C ??
-YOU:     4C AH                (SOFT 15)
+         .-----. .-----.
+         |5C   | |/\/\/|
+DEALER:  |  C  | |\/\/\|
+         |    5| |/\/\/|
+         '-----' '-----'
+         .-----. .-----.
+         |4C   | |AH   |
+YOU:     |  C  | |  H  |   (SOFT 15)
+         |    4| |    A|
+         '-----' '-----'
 HIT, STAND OR DOUBLE? h
 
-YOU:     4C AH 4D             (SOFT 19)
+         .-----. .-----. .-----.
+         |4C   | |AH   | |4D   |
+YOU:     |  C  | |  H  | |  D  |   (SOFT 19)
+         |    4| |    A| |    4|
+         '-----' '-----' '-----'
 HIT OR STAND? s
 
-DEALER:  5C 9H                (14)
+         .-----. .-----.
+         |5C   | |9H   |
+DEALER:  |  C  | |  H  |   (14)
+         |    5| |    9|
+         '-----' '-----'
 DEALER DRAWS JD.
-DEALER:  5C 9H JD             (BUST)
+         .-----. .-----. .-----.
+         |5C   | |9H   | |JD   |
+DEALER:  |  C  | |  H  | |  D  |   (BUST)
+         |    5| |    9| |    J|
+         '-----' '-----' '-----'
 THE DEALER BUSTS.
 YOU WIN $10.
 YOU HAVE $100.
 
 YOUR BET: 10
 
-DEALER:  2D ??
-YOU:     2H JS                (12)
+         .-----. .-----.
+         |2D   | |/\/\/|
+DEALER:  |  D  | |\/\/\|
+         |    2| |/\/\/|
+         '-----' '-----'
+         .-----. .-----.
+         |2H   | |JS   |
+YOU:     |  H  | |  S  |   (12)
+         |    2| |    J|
+         '-----' '-----'
 HIT, STAND OR DOUBLE? h
 
-YOU:     2H JS QS             (BUST)
-DEALER:  2D 4H                (6)
+         .-----. .-----. .-----.
+         |2H   | |JS   | |QS   |
+YOU:     |  H  | |  S  | |  S  |   (BUST)
+         |    2| |    J| |    Q|
+         '-----' '-----' '-----'
+         .-----. .-----.
+         |2D   | |4H   |
+DEALER:  |  D  | |  H  |   (6)
+         |    2| |    4|
+         '-----' '-----'
 YOU LOSE $10.
 YOU HAVE $90.
 

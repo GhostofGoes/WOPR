@@ -50,9 +50,10 @@ var (
 	// Panel text.
 	panelTitle    = script.Orig("GIN RUMMY")
 	panelScore    = script.Orig("YOU #   WOPR #   TO 100")
-	panelWOPR     = script.Orig("WOPR: # CARDS")
-	panelStock    = script.Orig("STOCK: #")
-	panelDiscard  = script.Orig("DISCARD: #")
+	panelWOPR     = script.Orig("WOPR")
+	panelCards    = script.Orig("# CARDS")
+	panelStock    = script.Orig("STOCK")
+	panelDiscard  = script.Orig("DISCARD")
 	panelHand     = script.Orig("YOUR HAND")
 	panelDeadwood = script.Orig("DEADWOOD: #")
 )
@@ -63,7 +64,7 @@ var Lines = []script.Ls{
 	lineDiscardHelp, lineNotGin, lineKnockHow, lineNotBack, lineTooMuch, lineFinish, lineYouDrew, lineYouTook, lineYouDiscard,
 	lineWOPRDrew, lineWOPRTook, lineWOPRDiscards, lineWOPRKnocks, lineWOPRGin, lineYouKnock, lineYouGin,
 	lineWOPRHand, lineYourHand, lineYouLay, lineWOPRLays, lineUndercut, lineYouScore, lineWOPRScores, lineScore,
-	lineVoid, lineLeave, panelTitle, panelScore, panelWOPR, panelStock, panelDiscard, panelHand, panelDeadwood,
+	lineVoid, lineLeave, panelTitle, panelScore, panelWOPR, panelCards, panelStock, panelDiscard, panelHand, panelDeadwood, artTitle,
 }
 
 // fill replaces each # in l's first line with the next arg.

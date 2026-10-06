@@ -191,6 +191,39 @@ func text(outs []proto.Output) string {
 	return b.String()
 }
 
+// readHands replaces each hand drawn as cards in out with a line that reads it back: its
+// label, the indices of its cards (?? for one face down) and its total, as HAND 1: 8S 3C (11).
+func readHands(t *testing.T, out string) string {
+	t.Helper()
+	lines := strings.Split(out, "\n")
+	var b strings.Builder
+	for i := 0; i < len(lines); i++ {
+		if !strings.HasPrefix(strings.TrimSpace(lines[i]), ".-") {
+			b.WriteString(lines[i] + "\n")
+			continue
+		}
+		if i+cards.FaceH > len(lines) {
+			t.Fatalf("a cut-off hand at line %d:\n%s", i, out)
+		}
+		var idx []string
+		for _, f := range strings.Split(lines[i+1][labelW:], "|") {
+			switch f = strings.TrimSpace(f); {
+			case f == "":
+			case strings.Trim(f, `/\`) == "":
+				idx = append(idx, "??")
+			default:
+				idx = append(idx, f)
+			}
+		}
+		mid := lines[i+midRow]
+		label := strings.TrimSpace(mid[:labelW])
+		desc := strings.TrimSpace(mid[strings.LastIndex(mid, "|")+1:])
+		b.WriteString(strings.TrimSpace(label+" "+strings.Join(idx, " ")+" "+desc) + "\n")
+		i += cards.FaceH - 1
+	}
+	return b.String()
+}
+
 func play(t *testing.T, g *Game, lines ...string) string {
 	t.Helper()
 	var all []proto.Output
@@ -206,12 +239,13 @@ func TestSplitAndDouble(t *testing.T) {
 	// Hand 1 doubles on 11 and draws 10H (21); hand 2 stands on 18. Dealer 16 draws 9C: bust.
 	g := stacked(t, "8S 6C 8H 10D 3C 10S 10H 9C")
 	out := play(t, g, "10", "split", "d", "s")
+	out = readHands(t, out)
 	for _, want := range []string{
 		"HIT, STAND, DOUBLE OR SPLIT?",
-		"HAND 1:  8S 3C",
-		"HAND 2:  8H 10S",
+		"HAND 1: 8S 3C (11)",
+		"HAND 2: 8H 10S (18)",
 		"HAND 1: HIT, STAND OR DOUBLE?",
-		"HAND 1:  8S 3C 10H            (21)",
+		"HAND 1: 8S 3C 10H (21)",
 		"HAND 2: HIT, STAND OR DOUBLE?",
 		"DEALER DRAWS 9C.",
 		"THE DEALER BUSTS.",
@@ -225,11 +259,33 @@ func TestSplitAndDouble(t *testing.T) {
 	}
 }
 
+// The longest hand one deck allows, eleven cards to 21, fans out within 80 columns and
+// still shows every card; the dealer's hole card is face down until it turns.
+func TestLongHandFans(t *testing.T) {
+	t.Parallel()
+	g := stacked(t, "AS 9C AH 8D AD AC 2S 2H 2D 2C 3S 3H 3D")
+	out := play(t, g, "10", "h", "h", "h", "h", "h", "h", "h", "h", "h")
+	for _, l := range strings.Split(out, "\n") {
+		if len(l) > 80 {
+			t.Errorf("%d columns: %q", len(l), l)
+		}
+	}
+	read := readHands(t, out)
+	for _, want := range []string{"DEALER: 9C ??", "YOU: AS AH AD AC 2S 2H 2D 2C 3S 3H 3D (21)", "DEALER: 9C 8D (17)"} {
+		if !strings.Contains(read, want) {
+			t.Errorf("missing %q in:\n%s", want, read)
+		}
+	}
+	if !strings.Contains(out, ".---.---.---.---.---.---.---.---.---.---.-----.") {
+		t.Errorf("eleven cards fan out:\n%s", out)
+	}
+}
+
 func TestSplitAcesTakeOneCardEach(t *testing.T) {
 	t.Parallel()
 	g := stacked(t, "AS 9C AH 8D KS 5C")
-	out := play(t, g, "10", "p")
-	for _, want := range []string{"HAND 1:  AS KS                (21)", "HAND 2:  AH 5C                (SOFT 16)", "THE DEALER STANDS ON 17.", "HAND 1: YOU WIN $10.", "HAND 2: YOU LOSE $10.", "YOU HAVE $100."} {
+	out := readHands(t, play(t, g, "10", "p"))
+	for _, want := range []string{"HAND 1: AS KS (21)", "HAND 2: AH 5C (SOFT 16)", "THE DEALER STANDS ON 17.", "HAND 1: YOU WIN $10.", "HAND 2: YOU LOSE $10.", "YOU HAVE $100."} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
 		}

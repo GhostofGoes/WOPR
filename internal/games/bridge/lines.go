@@ -37,7 +37,9 @@ var (
 	panelContract = script.Orig("CONTRACT # BY #")
 	panelTricks   = script.Orig("N-S #  E-W #")
 	panelDummy    = script.Orig("(DUMMY)")
-	panelLast     = script.Orig("LAST TRICK:")
+	panelLast     = script.Orig("LAST TRICK")
+	panelTaken    = script.Orig("TAKEN BY #")
+	panelToPlay   = script.Orig(">")
 	panelVoid     = script.Orig("-")
 )
 
@@ -45,7 +47,7 @@ var (
 var Lines = []script.Ls{
 	lineRules, linePassedOut, lineTurned, lineAuction, lineContract, promptHand, promptDummy, lineNotHeld, lineFollow,
 	linePlayHelp, lineFinish, lineTrick, lineMade, lineDown, callPass, strainNames, seatNames, panelTitle, panelContract,
-	panelTricks, panelDummy, panelLast, panelVoid,
+	panelTricks, panelDummy, panelLast, panelTaken, panelToPlay, panelVoid, artTitle,
 }
 
 // fill replaces each # in l's first line with the next arg.

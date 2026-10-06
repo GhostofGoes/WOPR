@@ -44,6 +44,9 @@ func TestTranscript(t *testing.T) {
 	if len(res.Lines) != 1 || !strings.Contains(res.Lines[0], "SCORE") {
 		t.Fatalf("the result carries the score: %v", res.Lines)
 	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Errorf("wider than 80 columns: %q", wide)
+	}
 	golden.AssertString(t, "transcript", s.Transcript())
 }
 

@@ -51,6 +51,9 @@ func TestTranscript(t *testing.T) {
 	if res.Outcome == proto.Aborted {
 		t.Fatal("leaving is not an abort")
 	}
+	if wide := g.Wide(80); len(wide) > 0 {
+		t.Errorf("wider than 80 columns: %q", wide)
+	}
 	golden.AssertString(t, "transcript", g.Transcript())
 }
 

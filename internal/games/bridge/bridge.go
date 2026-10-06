@@ -43,7 +43,7 @@ func say(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: pr
 // West hold more, bid, and lead.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.rng = proto.NewRand(env.Seed, 0)
-	outs := []proto.Output{say(lineRules.Texts()...)}
+	outs := []proto.Output{proto.Say{Lines: artTitle.Texts(), Pace: proto.PaceTable}, say(lineRules.Texts()...)}
 	turned := false
 	for range maxDeals {
 		turned = g.deal()

@@ -77,7 +77,7 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	g.ai = proto.NewRand(env.Seed, 1)
 	g.chips = [2]int{stake, stake}
 	g.dealer = player // the first hand is WOPR's deal
-	outs := []proto.Output{say(lineRules.Texts()...)}
+	outs := []proto.Output{table(artTitle.Texts()...), say(lineRules.Texts()...)}
 	return g.newHand(outs)
 }
 
@@ -124,7 +124,7 @@ func (g *Game) newHand(outs []proto.Output) []proto.Output {
 	if g.dealer == player {
 		deals = lineYouDeal
 	}
-	outs = append(outs, say(deals[0].Text), table(g.handLines(lineYourHand[0].Text, player, true)...))
+	outs = append(outs, say(deals[0].Text), table(g.handRows(lineYourHand, player, true)...))
 	g.startRound(0)
 	return g.next(outs)
 }
@@ -327,7 +327,7 @@ func (g *Game) onDraw(input string) []proto.Output {
 	g.replace(player, out)
 	outs := []proto.Output{say(lineYouPat[0].Text)}
 	if len(out) > 0 {
-		outs = []proto.Output{say(fill(lineYouDraw, fmt.Sprint(len(out)))), table(g.handLines(lineYourHand[0].Text, player, false)...)}
+		outs = []proto.Output{say(fill(lineYouDraw, fmt.Sprint(len(out)))), table(g.handRows(lineYourHand, player, false)...)}
 	}
 	return g.next(outs)
 }
@@ -396,8 +396,8 @@ func (g *Game) woprDraw() []proto.Output {
 func (g *Game) showdown(outs []proto.Output) []proto.Output {
 	ws, ps := Evaluate(g.hands[wopr]), Evaluate(g.hands[player])
 	outs = append(outs,
-		table(g.handLines(lineWOPRShows[0].Text, wopr, false)[0]),
-		table(g.handLines(lineYouHad[0].Text, player, false)[0]),
+		table(g.handRows(lineWOPRShows, wopr, false)...),
+		table(g.handRows(lineYouHad, player, false)...),
 	)
 	switch {
 	case ps > ws:
@@ -464,18 +464,4 @@ func (g *Game) result() proto.Result {
 		return proto.Result{Outcome: proto.Loss}
 	}
 	return proto.Result{Outcome: proto.Draw}
-}
-
-// handLines shows side p's hand, with the positions under it for the player's own.
-func (g *Game) handLines(label string, p int, positions bool) []string {
-	var b, n strings.Builder
-	for i, c := range g.hands[p] {
-		fmt.Fprintf(&b, "%-4s", c)
-		fmt.Fprintf(&n, "%-4d", i+1)
-	}
-	first := fmt.Sprintf("%-12s%s  (%s)", label, b.String(), Evaluate(g.hands[p]).Name())
-	if positions {
-		return []string{first, strings.TrimRight(fmt.Sprintf("%-12s%s", "", n.String()), " ")}
-	}
-	return []string{first}
 }

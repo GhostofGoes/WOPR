@@ -44,10 +44,11 @@ func TestTranscript(t *testing.T) {
 		case strings.HasPrefix(p, "STOCK"):
 			g.Type("s")
 		default:
-			rows := strings.Split(view(), "\n")
-			cardsRow := strings.Fields(rows[4])
+			row := strings.Split(view(), "\n")[6] // the cards' indices, then the deadwood
+			at := strings.Index(row, "DEADWOOD: ")
+			cardsRow := strings.Fields(strings.ReplaceAll(row[:at], "|", " "))
 			last := cardsRow[len(cardsRow)-1]
-			deadwood := strings.TrimPrefix(strings.TrimSpace(rows[6]), "DEADWOOD: ")
+			deadwood := strings.TrimPrefix(row[at:], "DEADWOOD: ")
 			if dw := deadwood; len(cardsRow) == 11 && (dw == "0" || len(dw) == 1 || dw == "10") {
 				g.Type("knock " + last)
 				if ok, p2 := g.Asking(); ok && strings.HasPrefix(p2, "DISCARD") {
@@ -60,6 +61,9 @@ func TestTranscript(t *testing.T) {
 	}
 	if _, over := g.Result(); !over || !g.Contains("SCORE: YOU") {
 		t.Fatalf("transcript:\n%s", g.Transcript())
+	}
+	if wide := g.Wide(80); len(wide) > 0 {
+		t.Errorf("wider than 80 columns: %q", wide)
 	}
 	golden.AssertString(t, "transcript", g.Transcript())
 }

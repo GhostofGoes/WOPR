@@ -73,7 +73,7 @@ var Lines = []script.Ls{
 	lineWhichCards, lineAgainHelp, lineYouDraw, lineYouPat, lineYouFold, lineWOPRChecks, lineWOPRBets, lineWOPRCalls,
 	lineWOPRRaises, lineWOPRFolds, lineWOPRDraws, lineWOPRPat, lineYouWin, lineWOPRWins, lineSplit, lineBroke,
 	lineWOPRBroke, lineLeave, nameHigh, namePair, nameTwoPair, nameTrips, nameStraight, nameFlush, nameFull, nameQuads,
-	nameSF, nameRoyal, rankOne, rankMany,
+	nameSF, nameRoyal, rankOne, rankMany, artTitle,
 }
 
 // fill replaces each # in l's first line with the next arg.

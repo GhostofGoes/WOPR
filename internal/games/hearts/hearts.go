@@ -50,7 +50,7 @@ func say(lines ...string) proto.Output { return proto.Say{Lines: lines, Pace: pr
 // Start implements proto.Program.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.rng = proto.NewRand(env.Seed, 0)
-	return g.newDeal([]proto.Output{say(lineRules.Texts()...)})
+	return g.newDeal([]proto.Output{proto.Say{Lines: artTitle.Texts(), Pace: proto.PaceTable}, say(lineRules.Texts()...)})
 }
 
 // Handle implements proto.Program.
