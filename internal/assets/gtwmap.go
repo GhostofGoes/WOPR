@@ -25,60 +25,65 @@ const (
 	mapSouth = 10.0
 )
 
-// Map is the big board's map, original line-segment art drawn for this project (the film's
-// glyphs were custom characters; no fan art is used, L-4). The coastlines were traced from
-// Natural Earth's 110m land polygons (public domain) in the projection above, then drawn by
-// hand: North America and Greenland on the left, Europe, Africa's north and the Soviet Union
-// and Asia on the right, Alaska and Chukotka meeting across the Bering Strait at the edges.
-// Every row is at most MapW columns.
+// Fill is the character that marks land inside Map's coastlines.
+const Fill = ':'
+
+// Map is the big board's map, original line-segment art made for this project (the film's
+// glyphs were custom characters; no fan art is used, L-4). Natural Earth's 110m land
+// polygons (public domain) were filled into a fine grid in the projection above, islands
+// under a cell dropped, and each character chosen by marching squares from the land at its
+// four corners: _ - | / \ ' . for the coast, and Fill for the land inside, which the board
+// draws dim. North America and Greenland are on the left, Europe, Africa's north and the
+// Soviet Union and Asia on the right, Alaska and Chukotka meeting across the Bering Strait at
+// the edges. Every row is at most MapW columns.
 var Map = script.Orig(
-	`             \___/ \_        |     \__/       /     _/\`,
-	`        _.--._   .-. \       |               /   __/   \____`,
-	`/-------------. /   \ \    _/        /--.____-/\/           '--------__`,
-	`|              | \__/  \  / (_)    _/   \/                          ___`,
-	`\_ __.__       /  /'-.  \/        /  /\                      __    /`,
-	` \/    \       \_\/  \         /\ \_/_/                     /  \  /`,
-	`        \             \        \/ /                         |   \/`,
-	`        |          ___/        __\__  .-. /\                | .`,
-	`        |         /            |_/ \\ '-' \/            _-\/ )`,
-	`         \    ___ |             /--'._._|  _             | _/`,
-	`          \\  / \/             /       \\   \--        _/`,
-	`            \ \_/\            /         \\  /  \  /\  (`,
-	`             \___ \          (           \\-    \/  \ )`,
+	`               |:/''-\:::::::|     '-'             .___.`,
+	`        .___.  |:\.  '\:::::/'             .. ...__/:::\__. ._.`,
+	`._______/:::\__/:/\_. |::::/'       .____. |\_/\/:::::::::\_/:\______.`,
+	`|::::::::::::::/-'|:| '\:/-'       ./::::\_/::::::::::::::::::::::::/'`,
+	`'\:/-\::::::::/'  |:|  '-'        .//\:::::::::::::::::::::::/--\/--'`,
+	` '-' '-\::::::\___/:\_.         ..|:\/::::::::::::::::::::::/'  ''`,
+	`       '\:::::::::::/-'         |\/:::::::::::::::::::::::::|`,
+	`        |::::::::::/'          ./:/\:::/-\/\:::::::::::::::/'`,
+	`        '\::::::::/'           |:/\/--\\_/\/::::::::::::/--'`,
+	`         '\::::::/'            |:\/\__/:::::::::::::::::\.`,
+	`          '-\:/--'            ./::::::::::::/-\:::::::::/'`,
+	`            '\\_.             |:::::::::::::| '\:/--\:/-'`,
+	`             '--'             |:::::::::::/-'  '\|  '\|`,
 )
 
 // OutlineUS and OutlineUSSR are the side-choice screen's two large outlines, as in the
-// film: the contiguous United States and the Soviet Union, original line-segment art traced
-// from Natural Earth's 50m country polygons (public domain; the Soviet Union is the union of
-// its fifteen republics) and drawn by hand. They have the same number of rows; the United
-// States is 36 columns wide at most and the Soviet Union 42, so the two fit side by side in
-// 80 columns.
+// film: the contiguous United States and the Soviet Union, original line-segment art made
+// the same way as Map from Natural Earth's 50m country polygons (public domain; the Soviet
+// Union is the union of its fifteen republics), each in its own Miller window. They have the
+// same number of rows; the United States is 36 columns wide at most and the Soviet Union 42,
+// so the two fit side by side in 80 columns.
 var (
 	OutlineUS = script.Orig(
-		`  _________________`,
-		` |                 \___       __/\`,
-		` |                    \/\    /    |`,
-		` |                       \__/  __/`,
-		` |                            /`,
-		`  \                           |`,
-		`   \                         /`,
-		`    \_______               _/`,
-		`            \             /`,
-		`             \_   ------\ |`,
-		`               \_/       \/`,
+		`  ._________________.`,
+		` ./                 \____.      ._.`,
+		` |                       |  .___//'`,
+		` |                       \__/   /'`,
+		` |                            /-'`,
+		` '\                          /'`,
+		`  '-\                       /'`,
+		`    '---\ /\              /-'`,
+		`        '-''---\  /------\|`,
+		`               '--'      '\.`,
+		`                          ''`,
 	)
 	OutlineUSSR = script.Orig(
-		`                   /\`,
-		`              ____/  \_____`,
-		`   _  _____/\/             ----------_____`,
-		`  | \/                                ___)`,
-		` _|                            _    _/`,
-		` |                            / \  /`,
-		`/                _____  /\    |  \/`,
-		`\_              /     \/  \  /`,
-		`  \__          /           \/`,
-		`     \__/\    /`,
-		`          \__/`,
+		`                  '-\.`,
+		`                .___/\_.`,
+		`            .___/      \__________.`,
+		`  .__.._____/                     \_____.`,
+		`  '\ \/                               /-'`,
+		` ._/                          /---\/--'`,
+		` |                           /'  ./'`,
+		` |               /---\  /-\  |   ''`,
+		` '---\ /\      /-'   '--' '\/'`,
+		`     '\||    /-'           ''`,
+		`      '''----'`,
 	)
 )
 

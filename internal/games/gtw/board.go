@@ -53,6 +53,11 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 		c.Put(mapLeft-1, mapTop+y, "|", proto.StyleDim, 0)
 		c.Put(boxRight, mapTop+y, "|", proto.StyleDim, 0)
 		c.Put(mapLeft, mapTop+y, row.Text, proto.StyleLand, 0)
+		for x, ch := range row.Text { // the land inside the coast is dim; the coast stays clear
+			if ch == assets.Fill {
+				c.Put(mapLeft+x, mapTop+y, string(ch), proto.StyleDim, 0)
+			}
+		}
 	}
 	for _, m := range g.missiles {
 		g.drawTrack(c, m)

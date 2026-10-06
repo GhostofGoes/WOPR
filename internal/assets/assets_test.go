@@ -89,21 +89,11 @@ func TestMapAndCities(t *testing.T) {
 	}
 }
 
-// Every city lies on land: some outline lies to its left and to its right on its row, or the
-// city sits on the coast itself.
+// Every city and missile field lies on land: its cell is land fill or coast, never sea.
 func TestCitiesAreInsideTheOutline(t *testing.T) {
 	t.Parallel()
-	for _, c := range Cities {
-		row := Map[c.Y].Text
-		onCoast := c.X < len(row) && row[c.X] != ' '
-		left, right := false, false
-		for x := range len(row) {
-			if row[x] != ' ' {
-				left = left || x < c.X
-				right = right || x > c.X
-			}
-		}
-		if !onCoast && (!left || !right) {
+	for _, c := range append(Cities, Silos[US], Silos[USSR]) {
+		if row := Map[c.Y].Text; c.X >= len(row) || row[c.X] == ' ' {
 			t.Errorf("%s at %d,%d is in the sea", c.Name, c.X, c.Y)
 		}
 	}

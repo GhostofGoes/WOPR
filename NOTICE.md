@@ -59,6 +59,12 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ```
 
+## Map data
+
+The big board's map and the side-choice outlines in Global Thermonuclear War are original ASCII art,
+generated for this project from [Natural Earth](https://www.naturalearthdata.com/) land and country
+polygons (1:110m and 1:50m scale). Natural Earth is in the public domain; this credit is a courtesy.
+
 ## Earlier drafts
 
 An early draft of this project's plan (commit `ada63a0` in the git history) contained fragments of the
