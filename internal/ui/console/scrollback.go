@@ -98,8 +98,8 @@ func (s *Scrollback) Render(w, h int, method ansi.Method, extra ...Row) []Row {
 	return rows
 }
 
-// RenderAt is Render that also returns the row index of the first extra row, or -1 when it
-// is not on screen (the view is scrolled up).
+// RenderAt is Render that also returns the row index of the last extra row (where the
+// cursor goes), or -1 when it is not on screen (the view is scrolled up).
 func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row, int) {
 	if h <= 0 {
 		return nil, -1
@@ -128,7 +128,7 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		if len(extra) == 0 {
 			return out, -1
 		}
-		return out, pageRows - len(extra)
+		return out, pageRows - 1
 	}
 	for ; i >= 0 && len(rev) < need; i-- { // continue into earlier pages
 		rows := wrapRows(s.lines[i], w, method)
@@ -145,7 +145,7 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		if src < len(rev) {
 			out[k] = rev[src]
 		}
-		if len(extra) > 0 && src == len(extra)-1 {
+		if len(extra) > 0 && src == 0 { // rev[0] is the last extra row
 			extraAt = k
 		}
 	}

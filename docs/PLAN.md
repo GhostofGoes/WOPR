@@ -376,7 +376,12 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
   - the front panel lights animate when the panel is shown;
   - keys are **buffered** into the line editor, shown on the input row, and Enter is **held**: the line is
     submitted as soon as the prompt is active again, whatever made it active (a tick, a skip, or an instant
-    flush).
+    flush), unless a different program now runs: a line held for a game that ended is dropped with its
+    prompt. The input line wraps onto further rows rather than running past the edge.
+- **Layout changes follow the text.** When a game with a board ends, its last View stays on screen until its
+  final output has been revealed (a typewriter mark), then the layout changes as WOPR's verdict starts.
+  Chess and checkers also hand the final position to the persona in `Result.Lines`, like tic-tac-toe, so it
+  survives `--instant` and stays in the scrollback.
 - **Esc machine** (host-owned; games never see Esc).
   - During a reveal, Esc skips.
   - In a game, the first Esc shows `** PRESS ESC AGAIN TO END GAME **` for 3 s. A pending `Think` keeps

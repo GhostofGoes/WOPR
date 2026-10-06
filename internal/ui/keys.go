@@ -19,13 +19,17 @@ func (m *model) key(k tea.KeyPressMsg) tea.Cmd {
 	if m.tooSmall() || !m.started {
 		return nil // dropped: the user cannot see what they would be typing
 	}
+	var disarm tea.Cmd
+	if k.String() != "esc" {
+		disarm = m.applyAll(m.runner.Disarm()) // any other key closes the Esc window
+	}
 	switch k.String() {
 	case "pgup":
 		m.sb.Scroll(m.consoleRows() - 1)
-		return nil
+		return disarm
 	case "pgdown":
 		m.sb.Scroll(-(m.consoleRows() - 1))
-		return nil
+		return disarm
 	}
 
 	// While text is being revealed, the first key skips it.
@@ -52,9 +56,9 @@ func (m *model) key(k tea.KeyPressMsg) tea.Cmd {
 		if key, r, ok := protoKey(k); ok {
 			return m.applyAll(m.runner.Key(key, r))
 		}
-		return nil
+		return disarm
 	}
-	return m.edit(k)
+	return tea.Batch(disarm, m.edit(k))
 }
 
 // edit handles keys for the line editor. Typing is kept even while WOPR is busy

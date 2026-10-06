@@ -187,8 +187,12 @@ func TestResign(t *testing.T) {
 	t.Parallel()
 	s := testkit.Game(t, New(), info, "", 1)
 	s.Type("resign")
-	if res, over := s.Result(); !over || res.Outcome != proto.Loss {
+	res, over := s.Result()
+	if !over || res.Outcome != proto.Loss {
 		t.Fatalf("resigning loses: %+v", res)
+	}
+	if len(res.Lines) < 9 || !strings.Contains(strings.Join(res.Lines, "\n"), "R  N  B  Q  K  B  N  R") {
+		t.Fatalf("the result carries the final board: %q", res.Lines)
 	}
 }
 

@@ -158,7 +158,10 @@ func (g *Game) over() []proto.Output {
 	return []proto.Output{proto.Redraw{}, proto.Done{Result: g.result(outcome)}}
 }
 
-func (g *Game) result(o proto.Outcome) proto.Result { return proto.Result{Outcome: o} }
+// result carries the final position: the panel goes when the game does.
+func (g *Game) result(o proto.Outcome) proto.Result {
+	return proto.Result{Outcome: o, Lines: board.Text(g.View, max(g.env.Width, 80), max(g.env.Height, 12))}
+}
 
 // View implements proto.Program: dark squares show a dot when empty; men are lower case,
 // kings capitals; WOPR's last move ends in bold.

@@ -55,3 +55,30 @@ func Wrap(line string, width int, method ansi.Method) []string {
 	}
 	return rows
 }
+
+// HardWrap breaks a line into rows of exactly width columns (the last may be shorter),
+// keeping every space: the input line, where the cursor follows the text. A line that
+// fills its last row exactly gets an empty row after it, for the cursor.
+func HardWrap(line string, width int, method ansi.Method) []string {
+	if width < 1 {
+		width = 1
+	}
+	var rows []string
+	var row strings.Builder
+	rowW := 0
+	for _, g := range Graphemes(line) {
+		gw := method.StringWidth(g)
+		if rowW+gw > width && rowW > 0 {
+			rows = append(rows, row.String())
+			row.Reset()
+			rowW = 0
+		}
+		row.WriteString(g)
+		rowW += gw
+	}
+	rows = append(rows, row.String())
+	if rowW >= width {
+		rows = append(rows, "")
+	}
+	return rows
+}

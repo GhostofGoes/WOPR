@@ -63,3 +63,30 @@ func ParseSquare(s string) (file, rank int, ok bool) {
 func SquareName(file, rank int) string {
 	return string([]byte{byte('a' + file), byte('1' + rank)})
 }
+
+// Text renders a View as plain lines for the console: the final position a game hands to
+// the persona in Result.Lines, since the panel goes when the game does. Common leading
+// spaces and trailing blank lines are dropped.
+func Text(view func(*proto.Canvas), w, h int) []string {
+	c := proto.NewCanvas(w, h)
+	view(c)
+	lines := strings.Split(c.String(), "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " ")
+	}
+	for len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	indent := w
+	for _, l := range lines {
+		if l != "" {
+			indent = min(indent, len(l)-len(strings.TrimLeft(l, " ")))
+		}
+	}
+	for i, l := range lines {
+		if len(l) >= indent {
+			lines[i] = l[indent:]
+		}
+	}
+	return lines
+}

@@ -120,7 +120,7 @@ func (g *Game) onLine(input string) []proto.Output {
 		return nil
 	}
 	if norm := prompt.Normalize(input); norm == "RESIGN" || norm == "I RESIGN" {
-		return []proto.Output{say(lineResign), proto.Done{Result: proto.Result{Outcome: proto.Loss}}}
+		return []proto.Output{say(lineResign), proto.Done{Result: g.result(proto.Loss)}}
 	}
 	m, ok := ParseMove(g.g.Position(), input)
 	if !ok || g.g.Move(m, nil) != nil {
@@ -211,7 +211,12 @@ func (g *Game) over() []proto.Output {
 	case cg.InsufficientMaterial:
 		line = lineNoMat
 	}
-	return []proto.Output{proto.Redraw{}, say(line), proto.Done{Result: proto.Result{Outcome: outcome}}}
+	return []proto.Output{proto.Redraw{}, say(line), proto.Done{Result: g.result(outcome)}}
+}
+
+// result carries the final position: the panel goes when the game does.
+func (g *Game) result(o proto.Outcome) proto.Result {
+	return proto.Result{Outcome: o, Lines: board.Text(g.View, max(g.env.Width, 80), max(g.env.Height, 12))}
 }
 
 // View implements proto.Program: White in capitals, Black in lower case, a dot on each

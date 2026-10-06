@@ -78,8 +78,17 @@ type CancelThink struct{ Gen uint64 }
 // Notice shows a transient one-line host message; "" clears it.
 type Notice struct{ Text string }
 
-// Relayout tells the caller the running program's placement changed.
-type Relayout struct{ Placement Placement }
+// Relayout tells the caller the running program's placement changed. NewProgram is set
+// when a different program now runs (a launch, a pop or a hand-off): the old program's
+// prompt, and any line typed ahead for it, no longer apply.
+type Relayout struct {
+	Placement  Placement
+	NewProgram bool
+	// Last is the program that just ended (on a pop), with its placement, so the caller can
+	// keep showing its final View until that program's last output has been revealed.
+	Last      proto.Program
+	LastPlace Placement
+}
 
 // Redraw asks for the running program's View to be drawn again.
 type Redraw struct{}
@@ -320,6 +329,10 @@ func (r *Runner) env(f *frame, mode string) proto.Env {
 	}
 }
 
+// Disarm closes the Esc window: any key other than Esc does (docs/PLAN.md §4.3). The UI
+// calls it for keys that only edit the input line.
+func (r *Runner) Disarm() []Effect { return r.disarm() }
+
 func (r *Runner) disarm() []Effect {
 	if r.escArmed == 0 {
 		return nil
@@ -400,7 +413,7 @@ func (r *Runner) launch(l proto.Launch) []Effect {
 	f := &frame{prog: prog, place: place, launchKey: l, seed: r.launchSeed(l.Slug)}
 	f.areaW, f.areaH = r.area(place)
 	r.stack = append(r.stack, f)
-	effects := []Effect{Relayout{Placement: place}}
+	effects := []Effect{Relayout{Placement: place, NewProgram: true}}
 	return append(effects, r.apply(f, prog.Start(r.env(f, l.Mode)))...)
 }
 
@@ -424,7 +437,7 @@ func (r *Runner) finish(f *frame, res proto.Result) []Effect {
 		if len(r.stack) == depth { // the next program could not be built: report to the program below
 			res.Next = nil
 			below := r.top()
-			effects = append(effects, Relayout{Placement: below.place})
+			effects = append(effects, Relayout{Placement: below.place, NewProgram: true})
 			return append(effects, r.apply(below, below.prog.Handle(proto.GameOver{Result: res}))...)
 		}
 		return effects
@@ -441,6 +454,6 @@ func (r *Runner) pop(res proto.Result) []Effect {
 	}
 	r.stack = r.stack[:len(r.stack)-1]
 	below := r.top()
-	effects = append(effects, Relayout{Placement: below.place})
+	effects = append(effects, Relayout{Placement: below.place, NewProgram: true, Last: f.prog, LastPlace: f.place})
 	return append(effects, r.apply(below, below.prog.Handle(proto.GameOver{Result: res}))...)
 }

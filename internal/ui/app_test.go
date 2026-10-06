@@ -4,12 +4,14 @@ import (
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
 	"github.com/GhostofGoes/WOPR/internal/games/gamestest"
 	"github.com/GhostofGoes/WOPR/internal/golden"
+	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
 func instant() Options {
@@ -288,4 +290,149 @@ func TestCardGameScreens(t *testing.T) {
 		s.add(slug, d)
 	}
 	golden.AssertString(t, "card_screens", s.String())
+}
+
+// Esc's notice above the input line, then PgUp: at some history lengths the view clamps
+// to an offset of one row, the notice is the bottom row and the input line is off screen.
+// View used to index past its rows there and panic.
+func TestEscThenPageUpDoesNotPanic(t *testing.T) {
+	t.Parallel()
+	for k := range 24 {
+		opts := instant()
+		opts.Play = "chess"
+		d := newDriver(t, opts, 80, 24).settle()
+		for range k {
+			d.m.sb.Append("FILLER", 0)
+		}
+		d.send(esc).send(pgUp) // no settling: the Esc window stays open
+		_ = d.screen()
+		d.send(pgUp).send(pgDn)
+		_ = d.screen()
+	}
+}
+
+// A line longer than the console wraps onto further rows instead of running off the edge,
+// and the cursor follows its end.
+func TestLongInputWraps(t *testing.T) {
+	t.Parallel()
+	d := newDriver(t, instant(), 80, 24).settle().line("Joshua")
+	d.typ(strings.Repeat("ABCDEFGHI ", 9) + "XYZ_END")
+	screen := d.screen()
+	if !strings.Contains(screen, "XYZ_END") {
+		t.Fatalf("the end of the line is not on screen:\n%s", screen)
+	}
+	for i, r := range strings.Split(screen, "\n") {
+		if ansi.StringWidth(r) > 80 {
+			t.Errorf("row %d is %d wide", i, ansi.StringWidth(r))
+		}
+	}
+	if !strings.Contains(screen, "cursor: col 17, row 3") { // after "ABCDEFGHI XYZ_END" on the second row
+		t.Errorf("cursor:\n%s", screen)
+	}
+}
+
+// Any key but Esc closes the Esc window: Esc, typing, Esc does not end the game.
+func TestTypingDisarmsEsc(t *testing.T) {
+	t.Parallel()
+	opts := instant()
+	opts.Play = "chess"
+	d := newDriver(t, opts, 80, 24).settle()
+	d.send(esc).send(tea.KeyPressMsg{Code: 'e', Text: "e"})
+	if strings.Contains(d.screen(), "PRESS ESC AGAIN") {
+		t.Fatal("typing must clear the Esc notice")
+	}
+	d.send(esc)
+	if d.m.runner.Depth() != 2 {
+		t.Fatal("Esc, a key, Esc must not end the game")
+	}
+}
+
+// A Think that finishes while the TOO SMALL card is up is held until the size is valid.
+func TestThinkHeldWhileTooSmall(t *testing.T) {
+	t.Parallel()
+	opts := Options{Instant: true, Play: "stub", Registry: gamestest.Registry()}
+	d := newDriver(t, opts, 80, 24).settle()
+	d.slowThinks = true
+	d.press("THINK").send(enter).steps(5)
+	d.resize(60, 20).steps(5)
+	d.finishThinks() // the result arrives behind the card
+	if strings.Contains(strings.Join(transcript(d), "\n"), "THOUGHT.") {
+		t.Fatal("the result must wait behind the TOO SMALL card")
+	}
+	d.resize(80, 24).settle()
+	if !strings.Contains(strings.Join(transcript(d), "\n"), "THOUGHT.") {
+		t.Fatalf("the result arrives once the size is valid:\n%s", d.screen())
+	}
+}
+
+// When a game ends, its prompt and a line typed ahead for it do not carry over to WOPR.
+func TestPopDropsTheGamesTypeahead(t *testing.T) {
+	t.Parallel()
+	opts := instant()
+	opts.Play = "chess"
+	d := newDriver(t, opts, 80, 24).settle()
+	d.slowThinks = true
+	d.press("e2e4").send(enter).steps(3)
+	d.press("d2d4").send(enter) // held while WOPR thinks
+	if !d.m.held {
+		t.Fatal("the second move should be held")
+	}
+	d.send(esc).send(esc).settle()
+	if d.m.runner.Depth() != 1 {
+		t.Fatal("Esc twice ends the game")
+	}
+	if strings.Contains(strings.Join(transcript(d), "\n"), "d2d4") || d.m.ed.Value() != "" {
+		t.Fatalf("the held move must not reach WOPR:\n%s", d.screen())
+	}
+	if d.m.prompt == "YOUR MOVE: " {
+		t.Fatalf("the game's prompt must not linger:\n%s", d.screen())
+	}
+}
+
+// Once the terminal confirms grapheme widths (mode 2027), wrapping measures that way too.
+func TestModeReportSwitchesWidths(t *testing.T) {
+	t.Parallel()
+	d := newDriver(t, instant(), 80, 24).settle()
+	d.send(tea.ModeReportMsg{Mode: ansi.ModeUnicodeCore, Value: ansi.ModeSet})
+	if d.m.method != ansi.GraphemeWidth {
+		t.Fatal("mode 2027 must switch to grapheme widths")
+	}
+}
+
+func transcript(d *driver) []string {
+	var out []string
+	for _, l := range d.m.sb.Lines() {
+		out = append(out, l.Visible())
+	}
+	return out
+}
+
+// A game that ends on a move keeps its board up while its last words type out; the
+// layout changes when WOPR's verdict starts.
+func TestFinalBoardStaysUntilItsLastWords(t *testing.T) {
+	t.Parallel()
+	opts := Options{Seed: 13, SeedSet: true, Registry: catalog.Registry(), Play: "chess"}
+	d := newDriver(t, opts, 80, 24).settle()
+	d.line("f2f3")
+	d.press("g2g4").send(enter)
+	sawMate := false
+	for range 400 {
+		if !d.step() {
+			break
+		}
+		screen := d.screen()
+		if strings.Contains(screen, "WOPR: D8H4") && !strings.Contains(screen, "CHECKMATE.") {
+			sawMate = true // the mating move is out, the game's last line still typing
+			if !strings.Contains(screen, "a  b  c  d  e  f  g  h") {
+				t.Fatalf("the board vanished before the mating move was shown:\n%s", screen)
+			}
+		}
+	}
+	if !sawMate {
+		t.Fatalf("expected fool's mate:\n%s", d.screen())
+	}
+	d.settle()
+	if d.m.last != nil || d.m.place.Layout != proto.LayoutConsole || !strings.Contains(d.screen(), "WINNER: WOPR") {
+		t.Fatalf("after the verdict the console layout returns:\n%s", d.screen())
+	}
 }

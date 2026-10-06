@@ -124,14 +124,20 @@ type model struct {
 	started bool
 	place   host.Placement
 
-	sb      console.Scrollback
-	tw      console.Typewriter
-	ed      console.Editor
-	asking  bool   // the console prompt is active
-	prompt  string // its text
-	held    bool   // Enter pressed before the prompt was active
-	keyMode bool
-	notice  string
+	sb         console.Scrollback
+	tw         console.Typewriter
+	ed         console.Editor
+	asking     bool           // the console prompt is active
+	prompt     string         // its text
+	held       bool           // Enter pressed before the prompt was active
+	heldThinks []thinkDoneMsg // results that arrived while the TOO SMALL card was up
+
+	// The game that just ended, still on screen until its last words are out.
+	last      proto.Program
+	nextPlace host.Placement
+	markID    uint64
+	keyMode   bool
+	notice    string
 
 	thinks map[uint64]context.CancelFunc
 	clk    clock
@@ -169,6 +175,10 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				cmds = append(cmds, m.applyAll(m.runner.Resize()))
 			}
+			for _, d := range m.heldThinks {
+				cmds = append(cmds, m.applyAll(m.runner.ThinkResult(d.gen, d.value, d.err)))
+			}
+			m.heldThinks = nil
 		}
 	case tea.ColorProfileMsg:
 		m.profile = msg.Profile
@@ -179,12 +189,23 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.tooSmall() && !m.keyMode {
 			m.ed.Insert(msg.Content)
 		}
+	case tea.ModeReportMsg:
+		// Bubble Tea switches its renderer to grapheme widths on these answers (tea.go); the
+		// wrapper and the editor must measure the same way.
+		if v := msg.Value; msg.Mode == ansi.ModeUnicodeCore && (v == ansi.ModeReset || v == ansi.ModeSet || v == ansi.ModePermanentlySet) {
+			m.method = ansi.GraphemeWidth
+			m.opts.Log.Printf("grapheme widths (mode 2027 %v)", msg.Value)
+		}
 	case tickMsg:
 		if dt, ok := m.clk.accept(msg); ok {
 			cmds = append(cmds, m.tick(dt))
 		}
 	case thinkDoneMsg:
 		delete(m.thinks, msg.gen)
+		if m.tooSmall() {
+			m.heldThinks = append(m.heldThinks, msg) // held until the size is valid again
+			break
+		}
 		if m.runner != nil {
 			cmds = append(cmds, m.applyAll(m.runner.ThinkResult(msg.gen, msg.value, msg.err)))
 		}
@@ -231,13 +252,29 @@ func (m *model) onTypewriter(ev console.Event) {
 	if ev.Prompt {
 		m.asking, m.prompt = true, ev.PromptText
 	}
+	if ev.Mark != 0 && ev.Mark == m.markID {
+		m.place, m.last = m.nextPlace, nil
+	}
+}
+
+// relayout applies a placement change. When a game with a board ends, its last View stays
+// up until its final output has been revealed (docs/PLAN.md §4.2): the change waits for a
+// typewriter mark. Any other change applies at once and cancels a waiting one.
+func (m *model) relayout(e host.Relayout) {
+	m.markID++
+	if e.Last != nil && e.LastPlace.Layout != proto.LayoutConsole && !m.opts.Instant {
+		m.last, m.nextPlace = e.Last, e.Placement
+		m.tw.Mark(m.markID)
+		return
+	}
+	m.place, m.last = e.Placement, nil
 }
 
 // release submits a line whose Enter was pressed before the prompt became active. Update
 // calls it after every message: the prompt can arrive on a tick, a key's skip, or an
 // instant flush.
 func (m *model) release() tea.Cmd {
-	if m.held && m.asking && !m.tw.Busy() {
+	if m.held && m.asking && !m.tw.Busy() && !m.tooSmall() {
 		m.held = false
 		return m.submit()
 	}
@@ -289,7 +326,14 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 		case host.Notice:
 			m.notice = e.Text
 		case host.Relayout:
-			m.place = e.Placement
+			m.relayout(e)
+			if e.NewProgram { // the old program's prompt and typeahead are not the new one's
+				m.asking, m.prompt = false, ""
+				if m.held {
+					m.held = false
+					m.ed.Clear()
+				}
+			}
 		case host.Redraw:
 		case host.Exit:
 			cmds = append(cmds, tea.Quit)

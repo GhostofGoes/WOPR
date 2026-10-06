@@ -287,3 +287,43 @@ func TestRenderAtReportsTheInputRow(t *testing.T) {
 		t.Errorf("scrolled up: input row at %d, want -1", at)
 	}
 }
+
+// Two extra rows (a notice above the input line): RenderAt reports the last one, and -1
+// once it scrolls off, even when the first is still on screen.
+func TestRenderAtWithTwoExtraRows(t *testing.T) {
+	t.Parallel()
+	var sb Scrollback
+	for i := range 5 {
+		sb.Append(strings.Repeat("L", i+1), 0)
+	}
+	notice, input := Row{Text: "NOTICE"}, Row{Text: "> "}
+	rows, at := sb.RenderAt(80, 6, ansi.WcWidth, notice, input)
+	if at < 0 || rows[at].Text != "> " {
+		t.Fatalf("at %d", at)
+	}
+	sb.Scroll(100) // clamps to an offset of 1: the notice is the bottom row, the input is off screen
+	rows, at = sb.RenderAt(80, 6, ansi.WcWidth, notice, input)
+	if at != -1 {
+		t.Fatalf("the input row is off screen, but at = %d (rows %d)", at, len(rows))
+	}
+}
+
+func TestHardWrap(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		in   string
+		w    int
+		want []string
+	}{
+		{"", 5, []string{""}},
+		{"ABC", 5, []string{"ABC"}},
+		{"ABCDE", 5, []string{"ABCDE", ""}},
+		{"AB CD EF", 3, []string{"AB ", "CD ", "EF"}},
+		{"A  B", 2, []string{"A ", " B", ""}},
+	} {
+		got := HardWrap(tc.in, tc.w, ansi.WcWidth)
+		if strings.Join(got, "|") != strings.Join(tc.want, "|") {
+			t.Errorf("HardWrap(%q, %d) = %q, want %q", tc.in, tc.w, got, tc.want)
+		}
+	}
+}

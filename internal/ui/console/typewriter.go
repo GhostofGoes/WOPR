@@ -14,6 +14,7 @@ type item struct {
 	pace   proto.Pace
 	pause  time.Duration
 	prompt string
+	mark   uint64
 }
 
 type itemKind uint8
@@ -23,12 +24,14 @@ const (
 	itemPause                  // wait, skippable
 	itemPage                   // page break
 	itemPrompt                 // the input line becomes active
+	itemMark                   // a caller's marker, reported when reached
 )
 
 // Event is something the typewriter reached, reported by Advance and Flush.
 type Event struct {
 	Prompt     bool   // an input prompt became active
 	PromptText string // its text ("LOGON: ", or "" for free input)
+	Mark       uint64 // a marker queued with Mark was reached (0: none)
 }
 
 // Typewriter reveals queued output at modem speed. Items run strictly in order, so a
@@ -68,13 +71,19 @@ func (t *Typewriter) Prompt(text string) {
 	t.queue = append(t.queue, item{kind: itemPrompt, prompt: text})
 }
 
+// Mark queues a marker (non-zero), reported as an Event when everything queued before it
+// has been shown: the UI changes the layout there, after the old program's last words.
+func (t *Typewriter) Mark(id uint64) {
+	t.queue = append(t.queue, item{kind: itemMark, mark: id})
+}
+
 // Busy reports whether anything is still being revealed or waited for.
 func (t *Typewriter) Busy() bool { return t.revealing || t.waiting > 0 || len(t.queue) > 0 }
 
 // Revealing reports whether output is being revealed or paused over, rather than only
 // the prompt waiting to appear. That is when a key press counts as "skip".
 func (t *Typewriter) Revealing() bool {
-	return t.revealing || t.waiting > 0 || (len(t.queue) > 0 && t.queue[0].kind != itemPrompt)
+	return t.revealing || t.waiting > 0 || (len(t.queue) > 0 && t.queue[0].kind != itemPrompt && t.queue[0].kind != itemMark)
 }
 
 // Advance moves the typewriter forward by dt and returns the events reached.
@@ -166,6 +175,8 @@ func (t *Typewriter) start(sb *Scrollback) (Event, bool) {
 		sb.PageBreak()
 	case itemPrompt:
 		return Event{Prompt: true, PromptText: it.prompt}, true
+	case itemMark:
+		return Event{Mark: it.mark}, true
 	}
 	return Event{}, false
 }
