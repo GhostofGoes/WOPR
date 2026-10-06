@@ -52,4 +52,4 @@ release:
   disable: true                      # publishing is release.yml's publish job (gh + attest)
 
 changelog:
-  use: git
+  disable: true # release notes come from `gh release create --generate-notes`

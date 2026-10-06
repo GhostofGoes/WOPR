@@ -41,7 +41,8 @@ jobs:
   build:
     name: build
     needs: verify
-    if: always() && (needs.verify.result == 'success' || (github.event_name == 'workflow_dispatch' && needs.verify.result == 'skipped'))
+    # A dry run skips verify; without an explicit condition every later job would be skipped too.
+    if: ${{ !cancelled() && (needs.verify.result == 'success' || (github.event_name == 'workflow_dispatch' && needs.verify.result == 'skipped')) }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -81,6 +82,7 @@ jobs:
   smoke:
     name: smoke
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     permissions: {}
     uses: $/.github/workflows/smoke.yml
     with:
@@ -89,6 +91,7 @@ jobs:
   repro:
     name: reproducible
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-24.04-arm # a different host architecture must give identical archives
     permissions:
       contents: read
@@ -114,8 +117,10 @@ jobs:
 
   publish:
     name: publish
-    needs: [build, smoke, repro]
-    if: github.event_name == 'push'
+    needs: [verify, build, smoke, repro]
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
+      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write

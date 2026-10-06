@@ -32,31 +32,59 @@ jobs:
       - name: Collect findings
         id: collect
         shell: bash
+        # A finding (something to update or fix) goes to the tracking issue. A check that could
+        # not run (network, a failed hook fetch) fails the job instead, so it is not filed as a
+        # finding. Indirect module upgrades are left to govulncheck and the milestone checklist.
         run: |
           set +e
           found=0
+          errors=0
           {
             echo "## govulncheck"
-            if ! go tool -modfile=tools/go.mod govulncheck ./... ; then found=1; fi
-            echo "## Outdated modules"
-            go list -m -u -f '{{if and .Update (not .Indirect) (not .Main)}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all | grep . && found=1
+            go tool -modfile=tools/go.mod govulncheck ./...
+            case $? in 0) ;; 3) found=1 ;; *) errors=1 ;; esac
+
+            echo "## Outdated direct dependencies"
+            out="$(go list -m -u -f '{{if and .Update (not .Indirect) (not .Main)}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' all)" || errors=1
+            if [[ -n "${out}" ]]; then echo "${out}"; found=1; fi
+
+            echo "## Outdated tools"
+            for modfile in tools/go.mod tools/lint/go.mod tools/release/go.mod; do
+              mapfile -t mods < <(go list -modfile="${modfile}" -f '{{.Module.Path}}' tool | sort -u)
+              if [[ ${#mods[@]} -eq 0 ]]; then errors=1; continue; fi
+              out="$(go list -modfile="${modfile}" -m -u -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' "${mods[@]}")" || errors=1
+              if [[ -n "${out}" ]]; then echo "${out}"; found=1; fi
+            done
+
             echo "## Outdated hooks"
-            if ! prek update --check ; then found=1; fi
+            out="$(prek update --check 2>&1)"
+            echo "${out}"
+            if grep -q 'update failed' <<<"${out}"; then errors=1; fi
+            if grep -q 'would update' <<<"${out}"; then found=1; fi
+
             echo "## Third-party notices"
-            if ! go run ./internal/tools/notices -check ; then found=1; fi
+            go run ./internal/tools/notices -check || found=1
           } > report.md 2>&1
           echo "found=${found}" >> "${GITHUB_OUTPUT}"
+          echo "errors=${errors}" >> "${GITHUB_OUTPUT}"
           cat report.md
-      - name: Open or update the tracking issue
-        if: steps.collect.outputs.found == '1'
+      - name: Open, update or close the tracking issue
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
+          FOUND: ${{ steps.collect.outputs.found }}
         run: |
           title="Weekly dependency and vulnerability report"
           number="$(gh issue list --repo "${REPO}" --state open --search "\"${title}\" in:title" --json number --jq '.[0].number // empty')"
-          if [[ -n "${number}" ]]; then
+          if [[ "${FOUND}" == "1" && -n "${number}" ]]; then
             gh issue comment "${number}" --repo "${REPO}" --body-file report.md
-          else
+          elif [[ "${FOUND}" == "1" ]]; then
             gh issue create --repo "${REPO}" --title "${title}" --body-file report.md
+          elif [[ -n "${number}" ]]; then
+            gh issue close "${number}" --repo "${REPO}" --comment "This week's checks found nothing to update."
           fi
+      - name: Fail if a check could not run
+        if: steps.collect.outputs.errors == '1'
+        run: |
+          echo "::error::a check could not run; the log above shows which"
+          exit 1
