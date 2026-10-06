@@ -28,8 +28,8 @@ const MovieMode = "movie"
 // Timing.
 const (
 	tick         = 50 * time.Millisecond
-	boards       = 10 // tic-tac-toe boards played at once, 5 by 2
-	rounds       = 6  // games each board plays
+	boards       = 7 // tic-tac-toe boards played at once: the big board and three each side
+	rounds       = 6 // games each board plays
 	firstStep    = 350 * time.Millisecond
 	fastestStep  = 60 * time.Millisecond
 	speedUp      = 0.75 // each round's step is this fraction of the last
@@ -76,6 +76,7 @@ type Game struct {
 
 	boards [boards]tictactoe.Board
 	toMove [boards]byte
+	last   [boards]int // the square each board last played, -1 for none
 	round  int
 	step   time.Duration
 	acc    time.Duration
@@ -93,7 +94,7 @@ func New() games.Game { return &Game{} }
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	for i := range g.boards {
-		g.toMove[i] = 'X'
+		g.toMove[i], g.last[i] = 'X', -1
 	}
 	g.step = firstStep
 	g.start = min(len(lineCode[0].Text)-heldBack, len(lineCode[0].Text))
@@ -161,8 +162,9 @@ func (g *Game) playStep() {
 			continue
 		}
 		r := proto.NewRand(g.env.Seed, proto.DomainAI|uint64(g.games*boards+i))
-		b[tictactoe.Best(b, g.toMove[i], r)] = g.toMove[i]
-		g.boards[i], g.toMove[i] = b, tictactoe.Other(g.toMove[i])
+		sq := tictactoe.Best(b, g.toMove[i], r)
+		b[sq] = g.toMove[i]
+		g.boards[i], g.toMove[i], g.last[i] = b, tictactoe.Other(g.toMove[i]), sq
 	}
 	if finished < boards {
 		return
@@ -175,7 +177,7 @@ func (g *Game) playStep() {
 	}
 	g.step = max(time.Duration(float64(g.step)*speedUp), fastestStep)
 	for i := range g.boards {
-		g.boards[i], g.toMove[i] = tictactoe.Board{}, 'X'
+		g.boards[i], g.toMove[i], g.last[i] = tictactoe.Board{}, 'X', -1
 	}
 }
 

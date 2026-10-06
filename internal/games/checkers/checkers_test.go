@@ -46,6 +46,9 @@ func TestTranscript(t *testing.T) {
 	if !g.Contains("ILLEGAL MOVE.") || strings.Count(g.Transcript(), "WOPR: ") < 4 {
 		t.Fatalf("transcript:\n%s", g.Transcript())
 	}
+	if wide := g.Wide(80); len(wide) > 0 {
+		t.Errorf("lines wider than 80 columns: %q", wide)
+	}
 	golden.AssertString(t, "transcript", g.Transcript())
 }
 

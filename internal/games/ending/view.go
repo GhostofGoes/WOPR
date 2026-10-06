@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
+	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
@@ -18,34 +19,40 @@ func (g *Game) View(c *proto.Canvas) {
 	}
 }
 
-// drawBoards draws the self-play games, five by two, and the launch code below them.
+// Self-play geometry: board 0 is the big board in the middle, as on NORAD's main screen;
+// the others stand three high down each side, like the screens beside it.
+const (
+	smallRows = 5 // a small board: marks one row high
+	sideGap   = 6 // rows from one small board to the next
+	sideInset = 3 // columns from the edge to a side board
+	codeGap   = 2 // rows from the big board down to the launch code
+	perSide   = (boards - 1) / 2
+)
+
+// drawBoards draws the self-play games and, under the big board, the launch code.
 func (g *Game) drawBoards(c *proto.Canvas) {
-	const cellW, gap = 11, 4
-	left := (c.W - (5*cellW + 4*gap)) / 2
+	x0 := max((c.W-80)/2, 0)
+	sw, _ := tictactoe.Size(smallRows)
+	bw, bh := tictactoe.Size(tictactoe.BigRows)
+	sideH := (perSide-1)*sideGap + smallRows
+	top := max((c.H-(sideH+1))/2, 0)
 	for i, b := range g.boards {
-		x := left + (i%5)*(cellW+gap)
-		y := 1 + (i/5)*6
-		for r, row := range b.Rows() {
-			for j, ch := range row {
-				style := proto.StyleDim
-				switch ch {
-				case 'X':
-					style = proto.StyleBright
-				case 'O':
-					style = proto.StyleText
-				case '|', '-', '+':
-				default:
-					ch = ' ' // an empty square shows nothing: nobody is choosing here
-				}
-				c.Set(x+j, y+r, proto.Cell{R: ch, S: style})
+		x, y, h := x0+(80-bw)/2, top+(sideH-bh)/2, tictactoe.BigRows
+		if i > 0 {
+			col, row := (i-1)%2, (i-1)/2
+			x, y, h = x0+sideInset, top+row*sideGap, smallRows
+			if col == 1 {
+				x = x0 + 80 - sideInset - sw
 			}
 		}
+		b.Draw(c, x, y, h, g.last[i], false)
 	}
 	code := lineCode[0].Text
 	n := g.cracked()
 	shown := code[:n] + strings.Repeat("_", len(code)-n)
 	line := lineCodeLabel[0].Text + shown[:3] + " " + shown[3:7] + " " + shown[7:]
-	c.Put((c.W-len(line))/2, 13, line, proto.StyleAlert, proto.AttrBold)
+	y := top + (sideH-bh)/2 + bh + codeGap
+	c.Put((c.W-len(line))/2, y, line, proto.StyleAlert, proto.AttrBold)
 }
 
 // drawMontage is the scenario table, scrolling up as WOPR runs each strategy.

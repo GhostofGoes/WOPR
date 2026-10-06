@@ -37,7 +37,10 @@ var (
 )
 
 // Lines is every script block, for the provenance test.
-var Lines = []script.Ls{lineRules, promptMove, lineIllegal, lineMustJmp, lineWOPR, lineResign, lineGoesOn, lineNoMoves, lineNoProg}
+var Lines = []script.Ls{
+	lineRules, promptMove, lineIllegal, lineMustJmp, lineWOPR, lineResign, lineGoesOn, lineNoMoves, lineNoProg,
+	artTitle, panelWOPR, panelYou, panelSides, panelMen, panelKings, panelLast, panelMove, panelMore,
+}
 
 // Game is checkers as a proto.Program.
 type Game struct {
@@ -168,35 +171,8 @@ func (g *Game) over() []proto.Output {
 	return []proto.Output{proto.Redraw{}, proto.Say{Lines: []string{why}, Pace: proto.PaceSpeech}, proto.Done{Result: g.result(outcome)}}
 }
 
-// result carries the final position: the panel goes when the game does.
+// result carries the final position: the panel goes when the game does. The title card
+// stays behind.
 func (g *Game) result(o proto.Outcome) proto.Result {
-	return proto.Result{Outcome: o, Lines: board.Text(g.View, max(g.env.Width, 80), max(g.env.Height, 12))}
-}
-
-// View implements proto.Program: dark squares show a dot when empty; men are lower case,
-// kings capitals; WOPR's last move ends in bold.
-func (g *Game) View(c *proto.Canvas) {
-	board.Draw(c, "CHECKERS", func(file, rank int) board.Glyph {
-		if (file+rank)%2 != 0 {
-			return board.Glyph{}
-		}
-		sq := at(file, rank)
-		var gl board.Glyph
-		switch g.pos.sq[sq] {
-		case empty:
-			return board.Glyph{R: '.', S: proto.StyleDim}
-		case blackMan:
-			gl = board.Glyph{R: 'b', S: proto.StyleText}
-		case blackKing:
-			gl = board.Glyph{R: 'B', S: proto.StyleText, A: proto.AttrBold}
-		case whiteMan:
-			gl = board.Glyph{R: 'w', S: proto.StyleBright}
-		case whiteKing:
-			gl = board.Glyph{R: 'W', S: proto.StyleBright, A: proto.AttrBold}
-		}
-		if g.last.n > 0 && sq == g.last.to() {
-			gl.A |= proto.AttrUnderline
-		}
-		return gl
-	})
+	return proto.Result{Outcome: o, Lines: board.Text(func(c *proto.Canvas) { g.drawBoard(c, 0) }, 80, board.Rows)}
 }

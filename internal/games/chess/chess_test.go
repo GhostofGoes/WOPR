@@ -214,6 +214,9 @@ func TestTranscript(t *testing.T) {
 	if !s.Contains("ILLEGAL MOVE.") || strings.Count(s.Transcript(), "WOPR: ") < 3 {
 		t.Fatalf("transcript:\n%s", s.Transcript())
 	}
+	if wide := s.Wide(80); len(wide) > 0 {
+		t.Errorf("lines wider than 80 columns: %q", wide)
+	}
 	golden.AssertString(t, "transcript", s.Transcript())
 }
 
@@ -225,7 +228,7 @@ func TestResign(t *testing.T) {
 	if !over || res.Outcome != proto.Loss {
 		t.Fatalf("resigning loses: %+v", res)
 	}
-	if len(res.Lines) < 9 || !strings.Contains(strings.Join(res.Lines, "\n"), "R  N  B  Q  K  B  N  R") {
+	if len(res.Lines) < 9 || !strings.Contains(strings.Join(res.Lines, "\n"), ":R: N :B: Q :K: B :N: R") {
 		t.Fatalf("the result carries the final board: %q", res.Lines)
 	}
 }

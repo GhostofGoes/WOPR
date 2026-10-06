@@ -41,19 +41,24 @@ var (
 )
 
 // Lines is every script block, for the provenance test.
-var Lines = []script.Ls{lineRules, promptMove, lineIllegal, lineWOPR, lineCheck, lineMate, lineStale, lineDraw, lineNoMat, lineResign}
+var Lines = []script.Ls{
+	lineRules, promptMove, lineIllegal, lineWOPR, lineCheck, lineMate, lineStale, lineDraw, lineNoMat, lineResign,
+	artTitle, panelWOPR, panelYou, panelSides, panelTaken, panelLast, panelMove, panelCheck,
+}
 
 // Game is chess as a proto.Program.
 type Game struct {
 	env      proto.Env
 	g        *cg.Game
+	from     cg.Square // the square WOPR's last move left
 	last     cg.Square // the square WOPR's last move landed on
+	lastText string    // WOPR's last move, as it said it
 	thinking bool
 	thinkSeq uint64
 }
 
 // New returns a game from the starting position.
-func New() games.Game { return &Game{g: cg.NewGame(), last: cg.NoSquare} }
+func New() games.Game { return &Game{g: cg.NewGame(), from: cg.NoSquare, last: cg.NoSquare} }
 
 func say(l script.Ls) proto.Output { return proto.Say{Lines: l.Texts(), Pace: proto.PaceSpeech} }
 
@@ -225,7 +230,7 @@ func (g *Game) onThink(done proto.ThinkDone) []proto.Output {
 	if err := g.g.Move(&chosen, nil); err != nil {
 		return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.Draw}}}
 	}
-	g.last = chosen.S2()
+	g.from, g.last, g.lastText = chosen.S1(), chosen.S2(), text
 	outs := []proto.Output{proto.Redraw{}, proto.Say{Lines: []string{lineWOPR[0].Text + text}, Pace: proto.PaceSpeech}}
 	if over := g.over(); over != nil {
 		return append(outs, over...)
@@ -262,29 +267,8 @@ func (g *Game) over() []proto.Output {
 	return []proto.Output{proto.Redraw{}, say(line), proto.Done{Result: g.result(outcome)}}
 }
 
-// result carries the final position: the panel goes when the game does.
+// result carries the final position: the panel goes when the game does. The title card
+// stays behind.
 func (g *Game) result(o proto.Outcome) proto.Result {
-	return proto.Result{Outcome: o, Lines: board.Text(g.View, max(g.env.Width, 80), max(g.env.Height, 12))}
-}
-
-// View implements proto.Program: White in capitals, Black in lower case, a dot on each
-// empty square; WOPR's last move is underlined.
-func (g *Game) View(c *proto.Canvas) {
-	b := g.g.Position().Board()
-	board.Draw(c, "CHESS", func(file, rank int) board.Glyph {
-		sq := cg.NewSquare(cg.File(file), cg.Rank(rank))
-		p := b.Piece(sq)
-		if p == cg.NoPiece {
-			return board.Glyph{R: '.', S: proto.StyleDim}
-		}
-		r := rune(strings.ToUpper(p.Type().String())[0])
-		gl := board.Glyph{R: r, S: proto.StyleBright}
-		if p.Color() == cg.Black {
-			gl = board.Glyph{R: r + ('a' - 'A'), S: proto.StyleText}
-		}
-		if sq == g.last {
-			gl.A |= proto.AttrUnderline
-		}
-		return gl
-	})
+	return proto.Result{Outcome: o, Lines: board.Text(func(c *proto.Canvas) { g.drawBoard(c, 0) }, 80, board.Rows)}
 }

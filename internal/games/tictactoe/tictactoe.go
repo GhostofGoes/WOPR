@@ -1,6 +1,6 @@
 // Package tictactoe is the game that ends the film: perfect minimax, so nobody can win
 // against WOPR. In the "climax" launch mode it is the closed state machine of
-// docs/PLAN.md §6.2; zero players hands off to the ending, which reuses Best and Rows for
+// docs/PLAN.md §6.2; zero players hands off to the ending, which reuses Best and Draw for
 // WOPR's self-play.
 package tictactoe
 
@@ -47,6 +47,7 @@ var (
 var Lines = []script.Ls{
 	linePlayers, promptPlayers, lineStalemate, lineImproper, lineWOPRWins, linePickSquare, promptMove,
 	promptMoveX, promptMoveO, lineWOPRMove, lineYourMarkIsX, lineHotseatRules,
+	artTitle, artBigX, artBigO, artMidX, artMidO, artSmallX, artSmallO, panelTitle, panelYou, panelWOPR,
 }
 
 // Board is a tic-tac-toe position: squares 0..8, row by row; each is 0, 'X' or 'O'.
@@ -145,24 +146,6 @@ func negamax(b Board, toMove byte, depth int, memo map[Board]int) int {
 	}
 	memo[b] = v
 	return v
-}
-
-// Rows renders the board as five text rows; an empty square shows its number.
-func (b Board) Rows() []string {
-	cell := func(i int) string {
-		if b[i] == 0 {
-			return fmt.Sprint(i + 1)
-		}
-		return string(b[i])
-	}
-	var rows []string
-	for r := range 3 {
-		if r > 0 {
-			rows = append(rows, "---+---+---")
-		}
-		rows = append(rows, fmt.Sprintf(" %s | %s | %s ", cell(3*r), cell(3*r+1), cell(3*r+2)))
-	}
-	return rows
 }
 
 type state uint8
@@ -349,7 +332,7 @@ func (g *Game) onWOPRMove(done proto.ThinkDone) []proto.Output {
 func (g *Game) gameOver() []proto.Output {
 	w := g.b.Winner()
 	if !g.climax {
-		res := proto.Result{Outcome: proto.Draw, Lines: g.b.Rows()}
+		res := proto.Result{Outcome: proto.Draw, Lines: g.b.Text(BigRows)}
 		switch {
 		case w == 0:
 		case g.players == 2 || w == 'X':
@@ -378,35 +361,4 @@ func (g *Game) onAgain(input string) []proto.Output {
 	case prompt.Unclear:
 	}
 	return []proto.Output{say(lineImproper), proto.Prompt{}}
-}
-
-// View implements proto.Program: the board, centred, with the last move in bold.
-func (g *Game) View(c *proto.Canvas) {
-	title := "TIC-TAC-TOE"
-	c.Put((c.W-len(title))/2, 0, title, proto.StyleBright, 0)
-	if g.state == askPlayers {
-		return
-	}
-	x0 := (c.W - 11) / 2
-	for r := range 3 {
-		y := 2 + 2*r
-		if r > 0 {
-			c.Put(x0, y-1, "---+---+---", proto.StyleDim, 0)
-		}
-		for col := range 3 {
-			sq := 3*r + col
-			x := x0 + 4*col
-			if col > 0 {
-				c.Put(x-1, y, "|", proto.StyleDim, 0)
-			}
-			switch m := g.b[sq]; {
-			case m == 0:
-				c.Put(x+1, y, fmt.Sprint(sq+1), proto.StyleDim, 0)
-			case sq == g.last:
-				c.Put(x+1, y, string(m), proto.StyleBright, proto.AttrBold|proto.AttrUnderline)
-			default:
-				c.Put(x+1, y, string(m), proto.StyleText, 0)
-			}
-		}
-	}
 }

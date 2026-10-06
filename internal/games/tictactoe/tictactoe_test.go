@@ -27,7 +27,7 @@ func TestNeverLoses(t *testing.T) {
 			games++
 			if w != 0 && w != wopr {
 				losses++
-				t.Errorf("WOPR (%c) lost:\n%s", wopr, strings.Join(b.Rows(), "\n"))
+				t.Errorf("WOPR (%c) lost:\n%s", wopr, strings.Join(b.Text(5), "\n"))
 			}
 			return
 		}
@@ -93,8 +93,11 @@ func TestOnePlayerGame(t *testing.T) {
 		}
 	}
 	res, over := g.Result()
-	if !over || res.Outcome == proto.Win || len(res.Lines) != 5 {
+	if !over || res.Outcome == proto.Win || len(res.Lines) != tictactoe.BigRows {
 		t.Fatalf("result %+v over=%v:\n%s", res, over, g.Transcript())
+	}
+	if wide := g.Wide(80); len(wide) > 0 {
+		t.Errorf("lines wider than 80 columns: %q", wide)
 	}
 	golden.AssertString(t, "one_player", g.Transcript()+"\n"+strings.Join(res.Lines, "\n")+"\n")
 }
@@ -156,6 +159,9 @@ func TestClimax(t *testing.T) {
 	res, over := g.Result()
 	if !over || g.Launches()[len(g.Launches())-1] != tictactoe.EndingSlug || res.Outcome != proto.NoWinner {
 		t.Fatalf("0 at WANT TO PLAY AGAIN? goes to the ending: %+v %v", res, g.Launches())
+	}
+	if wide := g.Wide(80); len(wide) > 0 {
+		t.Errorf("lines wider than 80 columns: %q", wide)
 	}
 	golden.AssertString(t, "climax", g.Transcript())
 }

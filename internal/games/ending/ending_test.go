@@ -60,7 +60,7 @@ func TestTheShow(t *testing.T) {
 		elapsed += tick
 		for _, b := range g.boards {
 			if w := b.Winner(); w != 0 {
-				t.Fatalf("self-play must never be won, but %c won:\n%s", w, strings.Join(b.Rows(), "\n"))
+				t.Fatalf("self-play must never be won, but %c won:\n%s", w, strings.Join(b.Text(5), "\n"))
 			}
 		}
 		if g.phase == selfPlay && g.round == 3 && marks(g.boards[0]) >= 5 && !sawBoards {
@@ -83,6 +83,38 @@ func TestTheShow(t *testing.T) {
 		t.Errorf("the show runs %v; keep it under 40 s", elapsed)
 	}
 	golden.AssertString(t, "show", strings.Join(shots, "\n"))
+}
+
+// The self-play frame fits the Full layout at 80x24, with the front panel (19 rows) and
+// without (20): all seven boards whole, the launch code below the big board, nothing drawn
+// outside 80 columns.
+func TestSelfPlayFits(t *testing.T) {
+	t.Parallel()
+	for _, h := range []int{19, 20} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 3, Width: 80, Height: h})
+		for g.round < 2 || marks(g.boards[0]) < 9 {
+			g.Handle(proto.TickEvent{Dt: tick})
+		}
+		const w = 100
+		c := proto.NewCanvas(w, h)
+		g.View(c)
+		corners, code := 0, -1
+		for y, row := range strings.Split(c.String(), "\n") {
+			for x, r := range row {
+				if r != ' ' && (x < (w-80)/2 || x >= (w+80)/2) {
+					t.Fatalf("height %d: drawn at column %d, outside 80:\n%s", h, x, c.String())
+				}
+			}
+			corners += strings.Count(row, "+")
+			if strings.Contains(row, lineCodeLabel[0].Text) {
+				code = y
+			}
+		}
+		if corners != 4*boards || code < tictactoe.BigRows || code >= h {
+			t.Errorf("height %d: %d grid crossings (want %d), code on row %d:\n%s", h, corners, 4*boards, code, c.String())
+		}
+	}
 }
 
 func marks(b tictactoe.Board) int {
