@@ -2,8 +2,17 @@ package proto
 
 import (
 	"context"
+	"errors"
 	"time"
 )
+
+// ErrCanceled is ThinkDone.Err when the user cancelled the request (Esc while a brain
+// reply was pending).
+var ErrCanceled = errors.New("cancelled by the user")
+
+// ErrBudget is ThinkDone.Err when a deterministic search ran past its safety cap: the
+// search ignored its Limit. Tests treat it as a failure.
+var ErrBudget = errors.New("think exceeded its safety cap")
 
 // Output is something a program asks the host to do. The set is closed: every output a
 // program can produce is declared in this file.
