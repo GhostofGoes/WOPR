@@ -1,34 +1,52 @@
-# WOPR — Architecture & Scope Plan
+# WOPR — Architecture & Scope Plan (v2)
 
-_Status: architecture and scope plan, agreed 2026-10-06. Implementation follows the milestones at the end of this document._
+_Status: v2, 2026-10-06. Supersedes v1 (commit `ada63a0`). Every change answers a finding in
+[`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md); finding ids such as A-3 are cited inline.
+[`docs/reviews/PLAN-v2-review.md`](reviews/PLAN-v2-review.md) reviews this version. Implementation follows the
+milestones at the end._
 
-## Context
-
-Build `wopr`, a Go terminal-UI recreation of the WOPR (War Operation Plan Response) computer from
-*WarGames* (1983). The repo (`GhostofGoes/WOPR`) is empty apart from a Go `.gitignore`, so this is a
-greenfield design. Goals from the request:
-
-- Every game the film's WOPR offered (the 15 entries of `LIST GAMES`), plus the film's tic-tac-toe ending.
-- Persona and verbiage faithful to the film and to the brother's ChatGPT "WOPR Simulator" prompt
-  (ALL CAPS, addresses the user as PROFESSOR, robotic and direct, numbered lists, refuses invalid moves).
-- Single static binary named `wopr`, Linux + Windows, **< 10 MB**.
-- `wopr` starts the TUI; `--version`, `--help`, `--games` (list and exit), `-p/--play <game>` (launch directly).
-- Optional LLM hookup, or purely scripted responses.
-
-This document is the scope/architecture deliverable; implementation happens in later sessions in the
-milestone order at the bottom.
+**How to read this plan.** It states intent, contracts and constraints. Config files (prek, golangci-lint,
+GoReleaser, workflows) appear only as **M0 seeds** in Appendix A. Once M0 lands, the files in the repository
+are authoritative, and Appendix A is deleted rather than kept in sync (M-2).
 
 ---
 
-## Research findings (what the film actually showed)
+## 1. Requirements
 
-Sources: fan transcripts and simulators on GitHub (`built1n/wargames` TRANSCRIPT, `abs0/wargames`
-shell script, `elfuska/wargames` BASIC-80 simulator), production-technology articles, the brother's prompt.
-Wikipedia and most fan sites were blocked by the egress proxy, so a few details are marked *reconstructed*.
+Each requirement has a source: **U** = stated by the owner; **D** = derived from a U requirement; **P** = a
+plan default the owner may override.
 
-### Games list (verbatim, film order; blank line before the last entry is on screen)
+| # | Requirement | Src | Acceptance |
+|---|---|---|---|
+| R1 | Go terminal-UI recreation of WOPR from *WarGames* (1983), binary named `wopr`. | U | — |
+| R2 | Every game on the film's `LIST GAMES` (15 entries), plus the tic-tac-toe ending. | U | Each game meets the *definition of done* in §6. |
+| R3 | Persona faithful to the film and to the brother's "WOPR Simulator" prompt: ALL CAPS, addresses the user as PROFESSOR, terse, numbered lists, refuses invalid moves. | U | Scripted-brain table tests plus golden transcripts (§9). |
+| R4 | Single static binary, **Linux and Windows**. | U | CI smoke-runs the release binaries on each OS (§10). |
+| R5 | **macOS** (Intel and Apple Silicon) as well. | U (decision 5, v1) | Same as R4. |
+| R6 | Size: **target ≤ 10 MB, hard limit 15 MB** per binary. | U (confirmed 2026-10-06) | CI warns above 10 MB and fails above 15 MB. |
+| R7 | `wopr` starts the TUI; `--version`, `--help`, `--games`, `-p/--play <game>`. | U | §5 CLI tests. |
+| R8 | Optional LLM hookup, or purely scripted responses. | U | Scripted in v1; LLM in M6 behind `Brain` (§4.6). |
+| R9 | Every long flag has a one-letter shorthand. | U (decision 6, v1) | `flags_test.go`. |
+| R10 | Public repository: no secrets, least-privilege CI, reproducible releases with provenance. | D | §11. |
+| R11 | First release ships after the film set pieces; the remaining games arrive in minor releases. | U (2026-10-06) | Milestones (§13). |
 
-```
+Supported platforms (R4/R5): Ubuntu 22.04+ (amd64, arm64), macOS ⟦TBD-macOS-floor⟧+ (amd64, arm64),
+Windows 11+ (amd64, arm64). Static binaries with `CGO_ENABLED=0`.
+
+---
+
+## 2. Research findings (what the film showed)
+
+Sources: fan transcripts and simulators on GitHub (`built1n/wargames`, `abs0/wargames`, `elfuska/wargames`),
+production-technology articles, and the brother's prompt. Those repositories are used **as references only**.
+No text or art is copied from them (L-1; their licences are listed in the review's verification log). Each
+line in `internal/wopr/lines.go` and each asset carries a provenance comment: `film` (as seen on screen), or
+`original` (written for this project). Details that could not be confirmed against the film are marked
+*reconstructed*; M5 includes a viewing pass to correct them.
+
+### 2.1 Games list (verbatim, film order; a blank line precedes the last entry on screen)
+
+```text
 FALKEN'S MAZE
 BLACK JACK
 GIN RUMMY
@@ -46,820 +64,623 @@ THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE
 
 GLOBAL THERMONUCLEAR WAR
 ```
-Tic-tac-toe is not on the list but is played at the climax (Falken: "play tic-tac-toe with yourself").
 
-### Canonical screen text (use verbatim in the scripted brain)
+Tic-tac-toe is not on the list but is played at the climax ("play tic-tac-toe with yourself").
 
-- LOGON gate: `LOGON: ` → unknown name → `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--`.
-  `HELP LOGON` → `HELP NOT AVAILABLE`. `HELP GAMES` → `'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES WHICH
-  HAVE TACTICAL AND STRATEGIC APPLICATIONS.` `LIST GAMES` → list above. `Joshua` → backdoor.
-- Backdoor "connect" header (brother's prompt and transcripts agree):
-  ```
+### 2.2 Canonical screen text (short quotations used by the scripted brain)
+
+⟦TBD-film-facts: confirm LOGON/header order and "connection terminated" behaviour⟧
+
+- **LOGON gate.** `LOGON: ` → unknown name → `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` /
+  `--CONNECTION TERMINATED--`. `HELP LOGON` → `HELP NOT AVAILABLE`. `HELP GAMES` → `'GAMES' REFERS TO MODELS,
+  SIMULATIONS AND GAMES WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.` `LIST GAMES` → the list above.
+  `Joshua` → backdoor.
+- **Backdoor header**, followed by a burst of status lines (`SYSPROC FUNCT READY  ALT NET READY`, …), a clear,
+  then `GREETINGS PROFESSOR FALKEN.`
+
+  ```text
   #45     11456          11009          11893          11972        11315
   PRT CON. 3.4.5.  SECTRAN 9.4.3.                      PORT STAT: SD-345
 
   (311) 699-7305
   ```
-  followed by a burst of status garbage (`SYSPROC FUNCT READY  ALT NET READY`, `CPU AUTH RY-345-AX3
-  SYSCOMP STATUS: ALL PORTS ACTIVE`, `(311) 936-2364`, etc.), clear, then `GREETINGS PROFESSOR FALKEN.`
-- Greeting exchange: `HOW ARE YOU FEELING TODAY?` → `EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN THE
-  REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?` → `YES THEY DO. SHALL WE PLAY A GAME?` →
-  `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?` → `FINE.`
-- Global Thermonuclear War: ASCII map of US + USSR, `UNITED STATES      SOVIET UNION`, `WHICH SIDE DO YOU
-  WANT?` / `1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`; then `AWAITING FIRST STRIKE COMMAND`
-  (underlined) / `PLEASE LIST PRIMARY TARGETS BY CITY AND/OR COUNTRY NAME:`; then map with trajectories and a
-  `TRAJECTORY HEADING` table (`A-SS20-A 526 523 ...`).
-- Call-back dialogue: `I'M SORRY TO HEAR THAT, PROFESSOR.` / `YESTERDAY'S GAME WAS INTERRUPTED.` /
-  `ALTHOUGH PRIMARY GOAL HAS NOT YET BEEN ACHIEVED, SOLUTION IS NEAR.` / `YOU SHOULD KNOW PROFESSOR. YOU
-  PROGRAMMED ME.` / `TO WIN THE GAME.` / `OF COURSE. I SHOULD REACH DEFCON 1 AND LAUNCH MY MISSILES IN 61
-  HOURS. WOULD YOU LIKE TO SEE SOME PROJECTED KILL RATIOS?` / `WHAT'S THE DIFFERENCE?` / `YOU ARE A HARD MAN
-  TO REACH. COULD NOT FIND YOU IN SEATTLE AND NO TERMINAL IS IN OPERATION AT YOUR CLASSIFIED ADDRESS.` /
-  `DOD PENSION FILES INDICATE CURRENT MAILING AS: DR. ROBERT HUME (A.K.A. STEPHEN W. FALKEN) 5 TALL CEDAR
-  ROAD GOOSE ISLAND, OREGON 97014`.
-- Kill-ratio tables: two-column `UNITS DESTROYED | MILITARY ASSETS | UNITS DESTROYED` (BOMBERS, ICBM, ATTACK
-  SUBS, TACTICAL AIRCRAFT, GROUND FORCES), `CIVILIAN ASSETS` (HOUSING, COMMUNICATIONS, TRANSPORTATION, FOOD
-  STOCKPILES, HOSPITALS), `HUMAN RESOURCES` (NON-FATAL INJURED, POPULATION DEATHS in MILLIONS).
-- NORAD-side messages: `** IDENTIFICATION NOT RECOGNISED **` / `** ACCESS DENIED **` / `** GAME ROUTINE
-  RUNNING **` / `** IMPROPER REQUEST **` / `** ROUTINE MUST COMPLETE BEFORE RESET **`; launch code `CPE 1704 TKS`;
-  DEFCON ladder 5→1.
-- Ending: tic-tac-toe self-play montage at increasing speed, then the scenario montage (each ends
+
+- **Greeting scene.** `HOW ARE YOU FEELING TODAY?` → `EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN THE
+  REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?` → `YES THEY DO. SHALL WE PLAY A GAME?`
+- **GTW-vs-chess scene** (a separate scene, not part of the greeting): the first request for Global
+  Thermonuclear War → `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?`. A repeated request (`LATER. LET'S PLAY
+  GLOBAL THERMONUCLEAR WAR.`) → `FINE.`, and the game starts.
+- **Global Thermonuclear War.** ASCII map of the US and USSR; `WHICH SIDE DO YOU WANT?` / `1. UNITED STATES` /
+  `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`; `AWAITING FIRST STRIKE COMMAND` (underlined) / `PLEASE LIST
+  PRIMARY TARGETS BY CITY AND/OR COUNTRY NAME:`; then the map with trajectories and a `TRAJECTORY HEADING`
+  table.
+- **Call-back dialogue, kill-ratio tables, NORAD notices** (`** IDENTIFICATION NOT RECOGNISED **`,
+  `** ACCESS DENIED **`, `** GAME ROUTINE RUNNING **`, `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE
+  BEFORE RESET **`), launch code `CPE 1704 TKS`, DEFCON ladder 5 → 1: as listed in v1 §"Canonical screen
+  text". These are unchanged and move verbatim into `lines.go` in M1.
+- **Ending.** Tic-tac-toe self-play at increasing speed, then the scenario montage (each ends
   `WINNER: NONE`), then `A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY.` / `HOW ABOUT A NICE GAME OF
   CHESS?`
-- Scenario montage names (*reconstructed from fan lists; ~60 total*): `U.S. FIRST STRIKE`, `USSR FIRST STRIKE`,
-  `NATO / WARSAW PACT`, `FAR EAST STRATEGY`, `US USSR ESCALATION`, `MIDDLE EAST WAR`, `USSR CHINA ATTACK`,
-  `INDIA PAKISTAN WAR`, `MEDITERRANEAN WAR`, `HONGKONG VARIANT`, `SEATO DECAPITATING`, `CUBAN PROVOCATION`,
-  `ATLANTIC HEAVY`, `CUBAN PARAMILITARY`, `NICARAGUAN PREEMPTIVE`, `PACIFIC TERRITORIAL`, `BURMESE THEATERWIDE`,
-  `TURKISH DECOY`, `NATO LIGHT`, `ARGENTINA ESCALATION`, `ICELAND MAXIMUM`, `ARABIAN THEATERWIDE`,
-  `U.S. SUBVERSION`, `AUSTRALIAN MANEUVER`, `SUDAN SURPRISE`, `NATO TERRITORIAL`, `ZAIRE ALLIANCE`,
-  `ICELAND INCIDENT`, `ENGLISH ESCALATION`, `MIDDLE EAST HEAVY`, `MEXICAN TAKEOVER`, `CZECH OPTION`,
-  `FRENCH ALLIANCE`, `ARABIAN CLANDESTINE`, `GABON REBELLION`, `SEATO TAKEOVER`, `HAWAIIAN ESCALATION`,
-  `TAIWAN DOMESTIC`, `MONGOLIAN THRUST`, `POLISH DECOY`, `ALASKAN DISCRETIONARY`, `CANADIAN THRUST`,
-  `S.AFRICAN DOMESTIC`, `TUNISIAN INCIDENT`, `MALAYSIAN MANEUVER`, … (full list embedded as a data file).
+- **Scenario montage names** (*reconstructed*, ~60): the list in v1 moves to
+  `internal/assets/scenarios.go` with provenance `reconstructed`.
 
-### Visual aesthetics (what to imitate in a terminal)
+### 2.3 Visual aesthetics
 
-- **David's terminal was a black-and-white Electrohome 17" monitor** driven off-screen by a CompuPro
-  system, not green or amber. On film the text reads as bright white with a faint cool/blue cast on pure
-  black, chunky uppercase glyphs, wide letter spacing, double-spaced WOPR lines, a solid blinking block
-  cursor, text appearing character-by-character at modem speed. → default theme is **white phosphor**, with
-  green/amber as alternates for people who expect them.
-- **NORAD war room**: HP 9845C computers driving HP 1345A vector displays; big board = dark blue/black field,
-  cyan/blue map outlines, red and yellow missile tracks, white labels; DEFCON indicator as a column of boxed
-  numerals 5…1; status text in bordered boxes with `** … **` emphasis. → "norad" theme and the big-board
-  screen for Global Thermonuclear War.
-- **WOPR cabinet**: grey/black slab with rows of blinking amber/red/white lights and a `W.O.P.R.` nameplate →
-  optional idle "front panel" strip and a banner on the connect screen.
-- Verbiage rules (from the film + brother's prompt): ALL CAPS, terse, declarative, never asks clarifying
-  questions, numbers lists `1.  2.  3.`, refuses invalid actions with `** IMPROPER REQUEST **`-style lines,
-  calls the user PROFESSOR.
+⟦TBD-film-facts: monitor / text colour⟧
 
-### Target screens (mockups; these are the look to hit)
+- **David's terminal**: bright, slightly cool white text on black, chunky uppercase glyphs, double-spaced
+  WOPR lines, a solid blinking block cursor, and text appearing at modem speed. → The default theme is
+  `imsai` (white phosphor); `green` and `amber` are alternates.
+- **NORAD war room**: dark blue/black field, cyan/blue map outlines, red and yellow missile tracks, white
+  labels, a DEFCON column of boxed numerals 5…1, and `** … **` notices. → The `norad` theme and the big
+  board.
+- **WOPR cabinet**: rows of blinking lights and a `W.O.P.R.` nameplate. → An optional front-panel strip that
+  also serves as the "thinking" indicator (§4.3).
+- **Verbiage rules**: ALL CAPS, terse, declarative; never asks clarifying questions; numbered lists
+  `1.  2.  3.`; refuses invalid actions with `** IMPROPER REQUEST **`-style lines; calls the user PROFESSOR.
+- **Anti-pattern**: tview-style bordered panes and labelled input boxes. The console is full-bleed text with
+  no chrome. Borders appear only inside the big board and in NORAD notices.
 
-Backdoor logon and greeting. White phosphor on black, ALL CAPS from WOPR, user input echoed as typed,
-blank line between exchanges, solid blinking block cursor, WOPR text revealed at modem speed:
+### 2.4 Target screens
 
-```
-#45     11456          11009          11893          11972        11315
-PRT CON. 3.4.5.  SECTRAN 9.4.3.                      PORT STAT: SD-345
+The two mockups from v1 (backdoor logon/greeting; GTW big board in `norad`) and the optional status strip
+remain the visual targets. They move to `docs/screens.md` in M0. M1 adds two more mockups at **exactly
+80×24**: chess (board panel + console strip) and Hearts (trick view + console strip). These prove that the
+`Panel` layout fits (U-5).
 
-(311) 699-7305
+---
 
+## 3. Decisions
 
-GREETINGS PROFESSOR FALKEN.
-
-Hello.
-
-HOW ARE YOU FEELING TODAY?
-
-I'm fine. How are you?
-
-EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN
-THE REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?
-
-People sometimes make mistakes.
-
-YES THEY DO. SHALL WE PLAY A GAME?
-
-█
-```
-
-Global Thermonuclear War big board in the `norad` palette (map lines dim blue, labels white, targets and
-incoming tracks red, outgoing yellow, DEFCON column lit per level, subs blinking off the coasts):
-
-```
-                   GLOBAL THERMONUCLEAR WAR                      DEFCON
-                                                                 +---+
-   .-.^----------------.                      __----/^\.         | 5 |
-   .                    `--.--.            __/       _/._-_      | 4 |
-    ..---.  * SEATTLE        ^---.     __/         /__/   \/^^\  | 3 |
-          |          \        ./        \.\_--                   | 2 |
-         /  * LAS VEGAS \    .         _/      SOVIET UNION   /  | 1 |
-        |   UNITED STATES  \ ./      _/.          __ /           +---+
-        \                   .       /          ___/ //
-         ^\_.    ______._.           \_/
-
-           UNITED STATES               SOVIET UNION
-
-TRAJECTORY HEADING   TRAJECTORY HEADING   TRAJECTORY HEADING
-------------------   ------------------   ------------------
-A-SS20-A 526 523     C-SS20-A 243 587     E-SS20-A 398 984
-       B 824 235            B 852 754            B 394 345
-
-AWAITING FIRST STRIKE COMMAND
------------------------------
-PLEASE LIST PRIMARY TARGETS BY
-CITY AND/OR COUNTRY NAME: █
-```
-
-Optional one-line status strip under the console (two Lip Gloss styles; hidden by default in `imsai`,
-shown in `norad`):
-
-```
------------------------------------------------------------------
- DEFCON 5   PORT STAT: SD-345   1200 BAUD   ALT NET READY
-```
-
-Anti-pattern to avoid: tview-style bordered panes and labelled input boxes. The film's console is full-bleed
-text with no chrome; borders appear only inside the big board (DEFCON column) and the `** … **` NORAD notices.
-
-### Go ecosystem facts (verified against the module proxy today)
-
-| Library | Latest | Min Go | Notes |
+| # | Decision | Choice | Src |
 |---|---|---|---|
-| `charm.land/bubbletea/v2` | v2.0.10 | **1.26.0** | Elm architecture, cell-based renderer, Windows ConPTY support, `tea.View` declarative views, `tea.KeyPressMsg`, native cursor control, panic recovery with terminal restore. |
-| `charm.land/lipgloss/v2` | v2.0.6 | 1.25 | Styling + automatic color downsampling for 16/256-color terminals. |
-| `charm.land/bubbles/v2` | v2.2.1 | 1.25 | Optional widgets; not planned. |
-| `github.com/gdamore/tcell/v2` | v2.13.10 | 1.24 | Size fallback only (v3.5.0 exists with breaking changes; v2 import remains supported). |
-| `github.com/notnil/chess` | v1.10.0 | 1.14 | Chess rules/move generation (import only the root package, never `chess/image`). |
-| Go toolchain | **go1.27.1** | — | Newest release on the proxy today (1.27.0/1.27.1 exist; 1.26.8 is the previous line). |
-| `golangci-lint` | v2.14.0 | 1.27-capable | Bundles gofmt/goimports/gofumpt formatters, go vet, staticcheck, errcheck, unused, revive, gocritic, forbidigo, misspell. |
-| `prek` | v0.5.x | — | Rust reimplementation of pre-commit; single binary; native `prek.toml` config (also reads pre-commit YAML); GitHub Action `j178/prek-action` v2.0.6. |
-| `golang.org/x/vuln` (govulncheck) | v1.8.0 | — | Vulnerability scan of the dependency graph. |
-
-Local toolchain is Go 1.24.7 with `GOTOOLCHAIN=auto`; Go 1.27.1 downloads through the proxy on first build, so a
-`go 1.27` module builds here. The locally installed golangci-lint (2.5.0, built with Go 1.25) is too old for a
-1.27 module; prek installs the pinned v2.14.x hook build instead. Binary-size figures for the stack are not
-published anywhere reliable; **Milestone 0 measures them** (expected 5–7 MB stripped for Bubble Tea v2 + Lip
-Gloss v2).
-
----
-
-## Decisions (1–4 confirmed by the user in Q&A; 5–7 are routine defaults)
-
-| # | Decision | Choice |
-|---|---|---|
-| 1 | TUI stack | **Bubble Tea v2 + Lip Gloss v2** (no bubbles). Chosen over tcell-only and stdlib+x/term after a side-by-side: least custom plumbing, declarative views, built-in Windows + color downsampling, best testability. Cost: largest binary of the three and a Go ≥ 1.26 floor (we build with 1.27.1). tcell v2 is the documented fallback only if the 15 MB hard limit is threatened. |
-| 2 | LLM | **Scripted brain in v1** behind a `Brain` interface; an LLM provider is a later, optional milestone |
-| 3 | Military sims depth | **Short turn-based mini-wargames** on one shared `sim` engine, with film-style kill-ratio tables |
-| 4 | LOGON gate | **Film-faithful** (`Joshua` backdoor) with hints after repeated failures; `--play` bypasses it |
-| 5 | Compatibility (requirement) | **Linux Ubuntu 22.04+, modern macOS (12 Monterey+ per Go's support policy, Intel + Apple Silicon), Windows 11+**. Static binaries (CGO off) for linux/darwin/windows × amd64/arm64; CI runs the test suite on all three OSes. |
-| 6 | Arg parsing | stdlib `flag`; **every long flag has a one-letter shorthand** (`-v/--version`, `-h/--help`, `-g/--games`, `-p/--play`, `-t/--theme`, `-i/--instant`, `-s/--seed`); a bare positional also means `--play`; no cobra |
-| 7 | Persistence | None in v1 (stateless); `WOPR_*` env vars and flags only |
-| 8 | Toolchain & deps | **Newest sensible versions**: `go 1.27` + `toolchain go1.27.1`, Bubble Tea v2.0.10, Lip Gloss v2.0.6, golangci-lint v2.14.x, prek v0.5.x; Dependabot keeps modules and Actions current |
-| 9 | Lint / static analysis | **prek** configured in **`prek.toml`** (prek-native TOML, not `.pre-commit-config.yaml`), modelled on the sceptre-phenix config: Go-standard tools (golangci-lint fmt + full + config-verify, `go vet`, `go mod tidy -diff`, govulncheck), **gitleaks** (secrets), **zizmor** (GitHub Actions security), **codespell** (spelling), **ShellCheck** via shellcheck-py (all scripts), **rumdl** (Markdown lint + format), plus prek's built-in file hooks; the same config runs locally (`prek install`) and in CI (`j178/prek-action`) |
-| 10 | Size budget | **Target ≤ 10 MB, hard limit 15 MB** per artifact; CI warns above 10 MB and fails above 15 MB |
-| 11 | CI / artifacts / releases | GitHub Actions: lint; **tests on ubuntu-22.04, macos-latest and windows-latest**; **native builds on all three runners** with a smoke test of the produced binary; **one downloadable artifact per platform/arch on every run**; **GitHub Release on every `v*` tag with binaries for Linux, macOS and Windows** (amd64 + arm64) and checksums |
-| 12 | Documentation | A human-facing **README** (install per OS, quick start incl. the `Joshua` logon, in-shell commands, flags, keys, games, troubleshooting) ships in M0 and is completed in M5; **AGENTS.md** is written at the end of M5 |
+| 1 | TUI stack | **Bubble Tea v2 + Lip Gloss v2** (no bubbles). Least custom plumbing, declarative views, Windows and colour downsampling built in, best testability. The M0 spike measured ⟦TBD-size⟧, well inside R6, so no fallback renderer is planned (D-3). | U |
+| 2 | LLM | **Scripted brain in v1** behind `Brain`; LLM provider is M6, optional. | U |
+| 3 | Military sims | **Short turn-based mini-wargames**, each a **data scenario** on one `sim` engine, with kill-ratio tables (G-2). | U (+ review) |
+| 4 | LOGON gate | **Film-faithful** (`Joshua` backdoor), hints after repeated failures; `--play` bypasses it. | U |
+| 5 | Platforms | Linux/macOS/Windows × amd64/arm64, static, CGO off (R4/R5). | U |
+| 6 | Arg parsing | stdlib `flag`; every long flag has a one-letter shorthand; one bare positional means `--play`, and flags may follow it (C-1). No cobra. | U |
+| 7 | Persistence | None in v1; `WOPR_*` env vars and flags only. | P |
+| 8 | Toolchain | `go` directive = the highest minimum any dependency declares (⟦TBD-go-floor⟧); `toolchain go1.27.1` (D-1). Bubble Tea v2.0.10, Lip Gloss v2.0.6. | U (+ review) |
+| 9 | Lint | **prek** with **`prek.toml`**; Go-standard tools, gitleaks, zizmor, codespell, ShellCheck, rumdl; same config locally and in CI. | U |
+| 10 | Size budget | **Target ≤ 10 MB, hard limit 15 MB** (R6). | U |
+| 11 | CI topology | **Build once** with GoReleaser (snapshot on every run, release on tags); **run each binary natively** on its OS/arch, arm64 included (B-2). | U (2026-10-06) |
+| 12 | Docs | README in M0, completed in M5. **AGENTS.md in M0**, updated each milestone (M-1). | U (+ review) |
+| 13 | First release | **v0.1.0 at the end of M2** (film path + chess + checkers); a minor release per later milestone; v1.0.0 after M5 (P-2). | U (2026-10-06) |
+| 14 | Bridge | **Minimal variant**: WOPR bids all four seats by point count; the user plays declarer (G-3). | U (2026-10-06) |
+| 15 | Chess engine | ⟦TBD-chess⟧ | P |
 
 ---
 
-## Architecture
+## 4. Architecture
 
-### Module and layout
+### 4.1 Module, layout and the import DAG
 
-Module path `github.com/GhostofGoes/WOPR`, `go 1.27` + pinned `toolchain go1.27.1`, binary `wopr`.
-Import direction is strictly `cmd → ui → (wopr, games, theme)`; **`games/`, `wopr/` and `theme/` never import
-Bubble Tea**, so every game and the persona are plain Go state machines.
+Module `github.com/GhostofGoes/WOPR`, binary `wopr`.
 
-```
-cmd/wopr/main.go                 thin entry: parse flags, TTY check, dispatch (print-and-exit vs run TUI), exit codes
-internal/cli/                    flag definitions, usage text, --games renderer, game-name resolution (uses games.Resolve)
-internal/version/                Version via -ldflags -X; commit/date/dirty from debug.ReadBuildInfo() vcs.* settings
-internal/theme/                  Lip Gloss v2 palettes: imsai (default), green, amber, norad + DEFCON/track colors
-internal/ui/                     Bubble Tea application (the ONLY package that imports charm.land/bubbletea)
-  app.go                         root model; phases Connect→Logon→Greeting→Shell→InGame→Ending
-  clock.go                       the single generation-tagged tick source (see below)
-  keys.go                        global keys: ctrl+c, pgup/pgdn (shell), esc (abort game)
-  gamehost.go                    adapter: games.Game ⇄ Bubble Tea (events in, outputs to console, Done → persona)
-  console/                       console.go (scrollback), typewriter.go (pacing), input.go (line editor), render.go
-  screens/                       connect banner + status garbage, toosmall card, big board, defcon column, tables
-  testutil/drive.go              synchronous model driver for golden tests (runs returned cmds, unwraps BatchMsg)
-internal/wopr/                   the persona (no tea import)
-  session.go                     state: phase, failed logons, flags/one-shots said, chosen side, seeded *rand.Rand
-  normalize.go                   upper-case, collapse [^A-Z0-9']+ to one space, trim
-  scenes.go                      verbatim film exchanges as explicit state (greeting chain, GTW-vs-chess, ending)
-  commands.go                    phase-gated commands: HELP, HELP LOGON, HELP GAMES, LIST GAMES, LOGOFF/EXIT,
-                                 numbered selection, game-name detection anywhere in the text
-  brain.go                       type Brain interface { Reply(ctx, *Session, input) (Reply, error) }
-  scripted.go                    rule-table responder (ScriptedBrain)
-  lines.go + lines/*.txt         verbatim script lines grouped by scene (go:embed; LF-only via .gitattributes)
-internal/games/                  game framework (no tea import)
-  game.go                        Game, Info, Kind, Env, Event/Output types, Result
-  registry.go                    ordered registry in film order; Resolve(number|slug|alias|name|unique prefix)
-  ai/                            generic alpha-beta over a Position interface (checkers, chess, tic-tac-toe)
-  cards/                         deck, hand, ranking, shuffling; trick.go shared by Hearts and Bridge
-  board/                         2-D board renderer + cursor navigation (checkers, chess, tic-tac-toe, maze)
-  prompt/                        numbered-menu and yes/no parsing reused by every Teletype game
-  testkit/                       play a game from a list of inputs, assert outputs (no terminal)
-  falkensmaze/ blackjack/ ginrummy/ hearts/ bridge/ checkers/ chess/ poker/
-  fightercombat/ guerrilla/ desertwarfare/ airtoground/ theaterwide/ biotoxic/ gtw/ tictactoe/
-internal/sim/                    shared wargame engine for the 5 military sims + GTW (maps, units, turn loop,
-                                 combat resolution, after-action "PROJECTED KILL RATIOS" tables)
-internal/assets/                 embedded ASCII art (world map, US/USSR outlines, WOPR banner), scenario list
-internal/llm/   (later)          Brain implementations backed by an LLM provider
-.gitattributes                   * text=auto; *.go *.txt text eol=lf   (keeps CR out of embedded script lines)
-prek.toml                        prek hook set in TOML (see Tooling); run with `prek install` / `prek run --all-files`
-.golangci.yml                    v2 config; includes forbidigo: no tea.Tick/tea.Every/tea.Sequence outside internal/ui/clock.go
-scripts/                         build.sh, smoke.sh, size-gate.sh: all CI shell lives here so ShellCheck covers it
-.github/workflows/ci.yml         lint (prek) · test matrix (3 OSes) · build matrix (native on 3 OSes) + smoke test + size gate + artifacts
-.github/workflows/release.yml    GoReleaser on v* tags: binaries for Linux/macOS/Windows (amd64+arm64) + checksums
-.github/dependabot.yml           weekly updates for gomod and github-actions
-.goreleaser.yaml                 the six targets, archives, checksums, release notes; no signing/notarization in v1
-Makefile, LICENSE (MIT), NOTICE.md (film-text attribution, non-affiliation)
-README.md                        human-facing usage guide (see Documentation); basic in M0, complete in M5
-AGENTS.md                        written at the end of M5 (see Milestones)
+**Import DAG** (A-6). Edges not listed are forbidden:
+
+```text
+cmd/wopr      → cli, ui, version
+cli           → games (registry only), theme (names only), version
+ui            → proto, wopr, games, theme, charm.land/*
+wopr          → proto, games (registry and Info only)
+games/<game>  → proto, games, games/{ai,cards,board,prompt}, sim (M4)
+games/*       → proto
+sim           → proto
+theme         → proto, charm.land/lipgloss/v2
+proto         → stdlib only
 ```
 
-### Runtime flow
+Only `ui` and `theme` may import `charm.land/*`, and only `ui` may import `charm.land/bubbletea/v2`. The
+DAG is enforced by **`internal/archtest`**, a plain Go test that runs `go list -deps -json` and checks every
+edge. That makes it authoritative, linter-independent, and part of `go test ./...`. The single-clock rule is
+enforced by forbidigo (§12).
 
-1. `main` parses flags. `--version`, `--help`, `--games` print and exit without touching the terminal (so they
-   work in pipes/CI). If stdout is not a terminal, refuse to start the TUI with a one-line error (exit 2).
-2. TUI start: **Connect** (modem dial / "CONNECTING" + status-garbage burst) → **LOGON** gate → backdoor
-   header → `GREETINGS PROFESSOR FALKEN.` → **Greeting** scene → **Shell** (free conversation + commands).
-3. Every shell input is dispatched in this order: **active scene** (if the input answers it) → **commands**
-   (phase-gated) → **game-name detection** anywhere in the text (first GTW mention triggers the one-shot
-   `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?`) → **Brain** (scripted in v1). Scenes and commands are
-   deterministic regardless of brain, which is what lets an LLM be swapped in later without touching games.
-4. Selecting a game hands control to `gamehost`, which feeds the game `Event`s and turns its `Output`s into
-   console text, prompts, animation frames, or a `gameOverMsg`. The persona converts the `Result` into an
-   in-character verdict (`WINNER: NONE`, kill ratios, `SHALL WE PLAY ANOTHER GAME?`) and returns to Shell.
-5. `--play <game>` starts in `InGame` with `session.Greeted = true`; `Done` falls through to the normal Shell,
-   so "return to shell after a direct launch" costs nothing.
-6. Ending sequences (GTW climax, tic-tac-toe self-play montage, scenario montage, `A STRANGE GAME…`) are
-   scripted screens driven by the same clock.
+```text
+cmd/wopr/main.go             flags → dispatch (print-and-exit, or run TUI) → exit code
+internal/version/            Version (-X) with fallback to debug.ReadBuildInfo().Main.Version, then "(devel)" (D-4)
+internal/cli/                Parse(args, stdout, stderr) (Config, Action, error); usage; --games renderer
+internal/proto/              the vocabulary shared by ui and every "program" (persona, games):
+  event.go output.go         Event / Output types (§4.4)
+  key.go                     Key enum (Up, Down, Left, Right, Enter, Esc, Backspace, Tab, Rune) (A-8)
+  canvas.go                  Canvas of cells with semantic Style tags (§4.5) (A-2)
+  pace.go rand.go            Pace; NewRand(seed, stream) over math/rand/v2 PCG (A-11)
+internal/theme/              palettes: map proto.Style → lipgloss.Style per theme
+internal/ui/                 Bubble Tea application — the ONLY package that imports bubbletea
+  app.go                     thin root router: screen mode, global keys, size, dispatch to sub-models (M-3)
+  clock.go                   the single generation-tagged tick source (§4.3)
+  host.go                    runs a proto "program" (persona or game): routes Events, applies Outputs, runs Think
+  console/                   scrollback, typewriter, line editor, Sanitize, render
+  screens/                   connect, too-small, canvas renderer (proto.Canvas → styled string), front panel
+  testutil/drive.go          synchronous driver for golden tests
+internal/wopr/               the persona (no tea import)
+  session.go                 owns the conversation phase (A-5), said-flags, side, history; Snapshot()
+  normalize.go intent.go     normalisation; explicit game-intent parsing (A-7)
+  scenes.go commands.go      film scenes; phase-gated commands
+  brain.go scripted.go       Brain interface; rule-table ScriptedBrain
+  lines.go                   all script lines as Go constants, with provenance comments (A-10)
+internal/games/              registry and shared game libraries (no tea import)
+  registry.go                ordered registry in film order; Resolve(...)
+  ai/                        alpha-beta/negamax with iterative deepening + time budget over a Position interface
+  cards/ board/ prompt/      decks and trick logic; board drawing and cursor; numbered-menu and yes/no parsing
+  testkit/                   play a game from scripted inputs; runs Think on a goroutine so -race sees captured state
+  falkensmaze/ blackjack/ ginrummy/ hearts/ bridge/ checkers/ chess/ poker/ gtw/ tictactoe/
+  fightercombat/ guerrilla/ desertwarfare/ airtoground/ theaterwide/ biotoxic/   (thin wrappers over sim scenarios)
+internal/sim/                M4: engine (map, units, actions, combat-results table, events, turn loop, kill ratios)
+internal/assets/             ASCII art (original), scenario names
+internal/archtest/           import-DAG test
+internal/llm/   (M6)         Brain backed by an LLM over net/http (D-2)
+```
 
-### Key types
+### 4.2 Runtime flow and state ownership
+
+1. `main` parses flags. `--version`, `--help` and `--games` print and exit without touching the terminal.
+   They ignore `EPIPE` (C-3). Otherwise, if **stdin or stdout** is not a terminal, or `TERM=dumb`, print one
+   line naming the cause (on Windows, suggest Windows Terminal) and exit 2 (U-4).
+2. The TUI runs on the **alternate screen** and paints the theme background over the whole frame. On exit,
+   the normal screen is restored and `--CONNECTION TERMINATED--` is printed (U-1).
+3. **State ownership** (A-5). `wopr.Session` owns the conversation phase: `Logon → Greeting → Shell →
+   InGame → Ending`. `ui` owns only the *screen mode* (`Connecting`, `Console`, `GameLayout`, `TooSmall`)
+   and derives it from the session phase, the active game's `Layout`, and the terminal size.
+4. **Connect** (dial animation) → `LOGON:` gate → backdoor header → greeting scene → **Shell**.
+   ⟦TBD-film-facts: a wrong name prints `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION
+   TERMINATED--`, then re-dials and shows `LOGON:` again; it never exits the program.⟧
+5. Shell input passes through `Sanitize` (§4.3), then is dispatched in this order: **active scene** →
+   **commands** (phase-gated) → **explicit game intent** (A-7) → **Brain**. Scenes, commands and intent are
+   deterministic and synchronous. The Brain is asynchronous, and **input is locked while a reply is
+   pending** (A-4).
+6. Starting a game hands the host a `games.Game`. When the game emits `Done`, the persona turns its
+   `Result` into an in-character verdict and returns to Shell.
+7. `--play <game>` starts in `InGame` with the greeting marked as done. `Done` falls through to Shell.
+8. The ending sequences (tic-tac-toe self-play → scenario montage → `A STRANGE GAME…`) are a game-like
+   program, driven by `Animate` on the same clock.
+
+**Explicit game intent** (A-7). A game starts only on: a numbered selection while a list is on screen;
+`PLAY <game>`; `LET'S PLAY <game>`; `HOW ABOUT <game>`; or input that is exactly a game name, slug or alias.
+All matching is on word boundaries after normalisation. "I don't want to play chess" and "the Golden Gate
+bridge" do not start games. The GTW-vs-chess exchange is a scene and fires once.
+
+### 4.3 Console, clock, cursor, input
+
+- **One clock.** `ui/clock.go` owns the only `tea.Tick`. Ticks carry a generation number. At most one is in
+  flight, and stale generations are dropped. The interval is the **minimum over active consumers**
+  (typewriter, game `Animate`, cursor blink of `Blink` cells, front-panel lights). The host accumulates
+  `dt` per consumer and delivers each at its own cadence (A-9). When nothing is busy, no timer runs.
+- **dt-based typewriter**: about 30 cps for speech, fast for tables, instant for boards. `--instant` /
+  `WOPR_INSTANT=1` and "skip" both mean "advance by infinity".
+- **Native cursor**: `tea.View.Cursor` with block shape and blink, parked at the end of the revealing line
+  or on the input line. ⟦TBD-bt-api⟧
+- **Skip policy** (U-3). While the console is revealing text, the first key flushes the queue. Printable keys
+  are *also* delivered to the input line, so typeahead is kept. Enter and Space only skip. PgUp and PgDn
+  always scroll. Ctrl+C always quits. All of this lives in `Update`, so it is unit-testable.
+- **Thinking.** While a `Think` (game AI) or a Brain reply is pending, the input line is locked and the
+  front-panel lights animate (or the cursor blinks, if the strip is hidden). Esc cancels via the context.
+- **Sanitize** (U-2). Every string that did not originate in the binary (typed input, `PasteMsg`, Brain
+  replies, LLM output) passes through `console.Sanitize`, which removes C0 controls except `\n` and `\t`, and
+  removes C1 controls and ESC. The input line is capped at 256 runes; pastes are truncated to that.
+  `Sanitize` and the line editor are fuzz-tested.
+- **Scrollback**: logical lines wrapped at render time and cached per width, capped at 2000, auto-follow on
+  new output. `Render(w, h)` emits exactly `h` rows.
+- **Line editor** (~250 lines): echo as typed, history ↑/↓, Ctrl+U, Backspace, width-aware via
+  `ansi.StringWidth` (U-6). WOPR text is upper-case; user input stays as typed.
+- **Sizing**: blank until the first `WindowSizeMsg`. Below 80×24, the centred `TERMINAL TOO SMALL` card is
+  shown, while ticks keep running and games keep their state. Larger terminals centre the 80-column big
+  board. A game receives a `ResizeEvent` only when its layout area changes.
+
+### 4.4 The program protocol (`internal/proto`)
+
+The persona and every game speak the same protocol to the host. `ui/host.go` is therefore the only place
+that turns Events and Outputs into Bubble Tea messages and commands (A-1, A-3).
 
 ```go
-// internal/games/game.go — no Bubble Tea import
-type Kind uint8
-const ( Teletype Kind = iota; Board; Fullscreen ) // Fullscreen = GTW big board
+// internal/proto — stdlib only.
+type Layout uint8 // static, from Info: where View goes
+const (
+	LayoutConsole Layout = iota // console only (Teletype games, the persona)
+	LayoutPanel                 // View on top; console strip + input below
+	LayoutFull                  // View fills the screen; a 3-line console strip at the bottom
+)
 
-type Info struct { Number int; Name, Slug string; Aliases []string; Kind Kind; Blurb string }
-type Env  struct { Rand *rand.Rand; Width, Height int; Instant bool }
+// Events: host → program.
+type Event interface{ isEvent() }
+type LineEvent   struct{ Text string }              // answers the last Prompt (sanitised, trimmed)
+type KeyEvent    struct{ Key Key; Rune rune }       // only while AwaitKeys is active
+type TickEvent   struct{ Dt time.Duration }         // at the cadence the program asked for
+type ResizeEvent struct{ Width, Height int }        // the program's layout area
+type ThinkDone   struct{ Value any; Err error }     // result of the last Think (Err = context.Canceled on Esc)
 
-type Event interface{ event() }
-type KeyEvent    struct{ Key, Text string } // Key is tea's String(): "up", "enter", "e"
-type LineEvent   struct{ Text string }      // Teletype: a submitted line, trimmed
-type TickEvent   struct{ Dt time.Duration } // delivered only while an Animate is active
-type ResizeEvent struct{ Width, Height int }
+// Outputs: program → host.
+type Output interface{ isOutput() }
+type Say       struct{ Lines []string; Pace Pace }  // through the typewriter
+type Prompt    struct{ Text string }                // line-input mode: host shows the line editor
+type AwaitKeys struct{ Hint string }                // key mode: host routes KeyEvents (maze, board cursor)
+type Animate   struct{ Every time.Duration }        // 0 stops
+type Think     struct {                             // run off the UI goroutine
+	Fn     func(ctx context.Context) (any, error)   // must use only data captured by value
+	Budget time.Duration                            // the host cancels ctx after Budget
+}
+type Redraw struct{}                                // View changed
+type Done   struct{ Result Result }
 
-type Output interface{ output() }
-type Say     struct{ Lines []string; Pace Pace } // narrative through the console typewriter
-type Prompt  struct{ Text string }               // e.g. "YOUR MOVE: "
-type Animate struct{ Every time.Duration }       // 0 stops frames
-type Done    struct{ Result Result }
+type Outcome uint8 // Win, Loss, Draw, NoWinner, Aborted
+type Result struct{ Outcome Outcome; Lines []string } // Lines = kill ratios, verdict detail
+type Pace uint8    // PaceSpeech, PaceTable, PaceInstant
+```
+
+```go
+// internal/games/game.go
+type Status uint8 // Playable, Planned — Planned games are listed; WOPR declines in character (P-2)
+
+type Info struct {
+	Number  int      // position on LIST GAMES (1..15); 0 = unlisted (tic-tac-toe) (G-4)
+	Name    string   // film spelling, upper case
+	Slug    string
+	Aliases []string
+	Layout  proto.Layout
+	Status  Status
+	Blurb   string
+}
+
+type Env struct {
+	Rand          *rand.Rand // math/rand/v2, this game's own stream
+	Width, Height int
+	Instant       bool
+}
 
 type Game interface {
-    Info() Info
-    Start(Env) []Output
-    Handle(Event) []Output
-    View(w, h int) string // direct-draw surface; "" for pure Teletype games
-}
-
-type Outcome uint8 // Win, Loss, Draw, None, Aborted
-type Result struct { Outcome Outcome; Winner string; Lines []string } // Lines = kill ratios etc.
-```
-
-Layout by `Kind`: Teletype → console only; Board → `View` on top, console strip (last N lines + input) below;
-Fullscreen → `View` only, `Say` still goes through the bottom strip. Esc/abort is handled once in `gamehost`
-(yields `Done{Aborted}`); games never implement it.
-
-```go
-// internal/wopr/brain.go
-type Action uint8 // None | StartGame(slug) | Logoff | SetFlag(key)
-type Reply  struct { Lines []string; Then Action; Slug, Flag string }
-type Brain interface { Reply(ctx context.Context, s *Session, input string) (Reply, error) }
-```
-The UI always calls the brain from a `tea.Cmd` that returns `brainReplyMsg{seq, reply}` with a sequence guard,
-even for the scripted brain, so an LLM brain later changes zero UI code. `gamehost` validates `StartGame`
-against the registry, so a brain can never reach game code directly.
-
-```go
-// internal/wopr/scripted.go — the rule table
-type Rule struct {
-    ID    string
-    When  Phase                  // bitmask: Logon | Shell | PostGame
-    Match func(norm string) bool // helpers: Exact(...), HasAll(...), Re(...)
-    Lines []string               // or Pick []string chosen with s.Rand (seeded → reproducible transcripts)
-    Once  bool                   // recorded in s.Said[ID]; afterwards falls through
-    Then  Action
+	Info() Info
+	Start(Env) []proto.Output
+	Handle(proto.Event) []proto.Output
+	View(c *proto.Canvas) // draw into the layout area; never called for LayoutConsole
 }
 ```
-First match in table order wins; specific rules before general; the last rules are the fallbacks
-(`** IMPROPER REQUEST **`, `PLEASE RESTATE YOUR REQUEST, PROFESSOR.`, `SHALL WE PLAY A GAME?`).
 
-### Console, clock and cursor
+Rules:
 
-- **One clock.** `internal/ui/clock.go` owns the only `tea.Tick`. Ticks carry a generation number; at most one
-  is in flight; stale ticks (older generation) are dropped. On an accepted tick the root calls
-  `console.Advance(dt)` and, if an `Animate` is active, `game.Handle(TickEvent{dt})`, then reschedules only if
-  something is still busy. Idle = no timer = no CPU. Flushing/cancelling bumps the generation.
-- **dt-based pacing.** The typewriter is a chars-per-second accumulator, default ≈ 30 cps for WOPR speech,
-  fast for tables, instant for boards; `--instant` / `WOPR_INSTANT=1` and "skip" are both "advance by infinity".
-  Golden tests feed synthetic ticks with a fixed `dt`.
-- **Native cursor.** No hand-rolled blink: `View()` sets `v.Cursor = tea.NewCursor(col, row)` with block shape
-  and blink, parked at the end of the revealing line while the typewriter runs, at the input line otherwise.
-- **Skip policy.** While `console.Busy()`, every `KeyPressMsg` except `ctrl+c` flushes the whole queue and is
-  swallowed; `PasteMsg` likewise; Enter while busy flushes and is swallowed. Games therefore never receive keys
-  mid-narration. Root `Update` order: global keys → busy-flush → route to game (Board/Fullscreen) or input line.
-  This lives in `Update`, not in `tea.WithFilter`, so it is unit-testable.
-- **Scrollback** is logical lines wrapped at render time (resize-safe), capped at ~2000, PgUp/PgDn in Shell,
-  auto-follow on new output. `Console.Render(w, h)` emits exactly `h` rows.
-- **Input line**: custom (~100 lines): echo as typed, history ↑/↓, Ctrl+U clear. WOPR text is forced
-  upper-case; user input stays as typed (as in the film).
-- **Sizing**: size is 0×0 until the first `WindowSizeMsg` (render blank); below 80×24 show the centered
-  `TERMINAL TOO SMALL` card but keep processing ticks; center the 80-column big board on larger terminals.
+- **Input mode is dynamic.** Emitting `Prompt` puts the host in line mode, and the next `LineEvent` answers
+  it. Emitting `AwaitKeys` switches to key mode. Chess and GTW therefore use the shared line editor, and the
+  maze uses keys. The two do not overlap.
+- **Esc** is handled once, by the host. It cancels a pending `Think`, and a second Esc aborts the game
+  (`Done{Aborted}`). Games never handle Esc.
+- **Think** is how every AI move runs (A-3). `Fn` must capture an immutable copy of the position. The game
+  mutates its state only in `Handle(ThinkDone)`. AIs use iterative deepening and return the best move found
+  when `ctx` expires, so play speed is the same on every machine. `testkit` runs `Fn` on a goroutine, so
+  `go test -race` catches captured mutable state.
+- **The persona speaks `proto` too.** It also emits `StartGame{Slug}`, `Logoff{}` and `AskBrain{Input}`,
+  which are host-only outputs declared in `wopr`. The host validates `StartGame` against the registry.
 
-### Themes (Lip Gloss v2; downsampled automatically inside Bubble Tea)
+### 4.5 Canvas and themes
+
+`proto.Canvas` is a `W×H` grid of `Cell{R rune; S Style; A Attr}`. `Style` is **semantic**: `Text`,
+`Bright`, `Dim`, `Accent`, `Incoming`, `Outgoing`, `Land`, `Label`, `Defcon1`…`Defcon5`, `Alert`. `Attr` is
+`Blink`, `Reverse` or `Underline`. Games draw with `Put(x, y, s, style, attr)`. `ui/screens/canvas.go` maps
+each Style to the active theme's Lip Gloss style. `Blink` is rendered by toggling on the clock, not with SGR
+5, which terminals support unevenly. `Canvas.String()` (text only) and `Canvas.StyleMap()` (one letter per
+cell) make golden tests readable and theme-independent (A-2).
 
 | Theme | Text | Bright | Dim | Accent | Background |
 |---|---|---|---|---|---|
-| `imsai` (default, film-accurate) | `#DCE6F0` | `#FFFFFF` | `#7A8694` | `#9EC5FF` | `#000000` |
+| `imsai` (default) | `#DCE6F0` | `#FFFFFF` | `#7A8694` | `#9EC5FF` | `#000000` |
 | `green` (P1) | `#33FF33` | `#B6FFB6` | `#1A8C1A` | `#33FF33` | `#000000` |
 | `amber` (P3) | `#FFB000` | `#FFD27A` | `#8A5E00` | `#FFB000` | `#000000` |
-| `norad` (big board) | `#5AC8FA` | `#FFFFFF` | `#2F6FBF` | `#FF3B30` / `#FFD60A` | `#02060F` |
+| `norad` | `#5AC8FA` | `#FFFFFF` | `#2F6FBF` | `#FF3B30` / `#FFD60A` | `#02060F` |
 
-DEFCON colors (all themes): 5 blue, 4 green, 3 yellow, 2 red, 1 white-on-red. Missile tracks: red
-(incoming) / yellow (outgoing). Sub markers blink. Selected via `--theme` or `WOPR_THEME`. Pure ASCII art
-everywhere by default (Windows conhost font safety); a `--unicode` switch for block glyphs can come later.
+DEFCON colours in all themes: 5 blue, 4 green, 3 yellow, 2 red, 1 white-on-red. Tracks: red incoming, yellow
+outgoing. Colour downsampling and `NO_COLOR` are handled by Bubble Tea's colour profile ⟦TBD-bt-colour⟧.
+Pure ASCII art everywhere by default.
 
-### CLI surface
+### 4.6 Persona and Brain
 
-```
-wopr                         start the TUI (connect → LOGON)
-wopr -v | --version          print version, commit, build date, go version
-wopr -h | --help             usage (documents LOGON: Joshua)
-wopr -g | --games            numbered list of games in film order (+ slugs), then exit
-wopr -p | --play <game>      launch a game directly (number, slug, alias, name, or unique prefix)
-wopr <game>                  same as --play <game>
-wopr -t | --theme <name>     imsai | green | amber | norad     (env WOPR_THEME)
-wopr -i | --instant          no typewriter pacing              (env WOPR_INSTANT=1)
-wopr -s | --seed <n>         deterministic RNG for demos/tests
-```
-Every long flag has a one-letter shorthand. With stdlib `flag`, `-games` and `--games` are the same flag; the
-shorthand is a second registration bound to the same variable, and the usage text prints them together. Any
-future flag must follow the same rule (a `flags_test.go` case asserts each long flag has a short alias).
-`games.Resolve` order: number → slug → alias → exact normalized name → unique prefix. Ambiguity (e.g.
-`theaterwide`) prints the candidates and exits 2. In-shell selection uses the same function. Exit codes: 0 ok,
-1 runtime error (Bubble Tea restores the terminal and returns the wrapped panic), 2 usage/not-a-tty,
-130 on Ctrl+C (`tea.ErrInterrupted`).
+```go
+// internal/wopr/brain.go
+type Snapshot struct {        // a value copy taken in Update; safe to hand to another goroutine
+	Phase   Phase
+	Turn    int
+	Seed    uint64
+	Said    map[string]bool   // copied
+	Flags   map[string]bool   // copied
+	Side    string
+	History []Exchange        // bounded (last 20)
+}
 
-### Game designs (one paragraph each; all vs. WOPR, all end with an in-character verdict; ~600 lines each)
+type Effect interface{ isEffect() }
+type MarkSaid  struct{ ID string }
+type SetFlag   struct{ Key string }
+type StartGame struct{ Slug string }
+type Logoff    struct{}
 
-- **Falken's Maze** — procedurally generated ASCII maze with fog of war, arrow-key navigation, a move
-  counter, and a "learning" twist: WOPR re-routes walls based on the player's habits; the exit is "found"
-  only after WOPR comments on the player's strategy. (Board)
-- **Black Jack** — dealer rules (hit soft 17 configurable), split/double, chips tracked for the session. (Teletype)
-- **Gin Rummy** — standard knock/gin scoring, WOPR melds with a simple deadwood-minimising heuristic. (Teletype + hand view)
-- **Hearts** — 4 hands (you + 3 WOPR), passing, shoot-the-moon, heuristic AI on `cards/trick.go`. (Teletype + trick view)
-- **Bridge** — rubber bridge, 4 hands, point-count natural bidding, simple declarer/defender play AI; you are
-  South, WOPR plays the other three seats. Deliberately scope-limited and the first to cut if time runs out.
-- **Checkers** — 8×8, forced captures, kings, `games/ai` alpha-beta depth ~6. (Board)
-- **Chess** — rules via `notnil/chess`; `games/ai` alpha-beta + material/positional eval, ~3–4 ply + quiescence;
-  algebraic input (`e2e4` / `Nf3`); WOPR occasionally suggests "a nice game of chess". (Board)
-- **Poker** — 5-card draw heads-up with chips, WOPR betting heuristic + bluff probability. (Teletype)
-- **Fighter Combat** — turn-based dogfight: altitude/energy/aspect; CLIMB, DIVE, BREAK L/R, GUNS, MISSILE;
-  ASCII radar scope. (Teletype, `sim`)
-- **Guerrilla Engagement** — asymmetric region grid, allocate cells/patrols, raids vs. hearts-and-minds,
-  ~12 turns. (`sim`)
-- **Desert Warfare** — armour vs. armour on a strip map with supply lines and sandstorm events. (`sim`)
-- **Air-to-Ground Actions** — sortie planning: assign aircraft packages to targets under SAM threat,
-  BDA tables. (`sim`)
-- **Theaterwide Tactical Warfare** — NATO vs. Warsaw Pact corps-level moves on a European strip map with an
-  escalation ladder. (`sim`)
-- **Theaterwide Biotoxic and Chemical Warfare** — same engine with agent deployment and contamination spread;
-  grim kill-ratio tables; always `WINNER: NONE`. (`sim`)
-- **Global Thermonuclear War** — the film set piece: side choice, primary targets, big board with
-  trajectories, DEFCON ladder per turn, force allocation (ICBM/SLBM/bombers), enemy response, kill-ratio
-  tables, then the montage and `A STRANGE GAME…` → offer of chess. It cannot be won. (Fullscreen, `sim`)
-- **Tic-Tac-Toe** — perfect-play minimax via `games/ai`; `NUMBER OF PLAYERS: 0` triggers the accelerating
-  self-play montage into the scenario montage. Unlisted in `LIST GAMES` (as in the film) but playable by name
-  and via `--play tic-tac-toe`; `--games` shows it under an "ALSO AVAILABLE" line.
+type Reply struct{ Lines []string; Effects []Effect }
 
-### Binary size & portability
-
-- Build line (one ldflag; commit/date come from `debug.ReadBuildInfo`):
-  ```
-  CGO_ENABLED=0 GOOS=$os GOARCH=$arch go build -trimpath \
-    -ldflags="-s -w -X github.com/GhostofGoes/WOPR/internal/version.Version=$VERSION" \
-    -o dist/wopr_${os}_${arch}$ext ./cmd/wopr
-  ```
-- Budget: **target ≤ 10 MB, hard limit 15 MB** per artifact. CI prints every artifact size in the step summary,
-  emits a `::warning::` above 10 MB and fails above 15 MB. If the M0 spike lands above 10 MB, use
-  `go tool nm -size -sort size` to find the heavy packages before adding any game code.
-- Fallback ladder only if the hard limit is threatened: (1) style with `charmbracelet/x/ansi` directly instead
-  of Lip Gloss; (2) swap the renderer to tcell v2. **Never UPX** (Windows AV/SmartScreen false positives).
-- **Compatibility matrix (requirement):**
-
-  | OS | Supported | Why the plan satisfies it |
-  |---|---|---|
-  | Linux, Ubuntu 22.04 and newer | amd64, arm64 | CGO off → static binary, no glibc or terminfo dependency; Bubble Tea v2 talks plain VT/ANSI to any xterm-class terminal (GNOME Terminal, Konsole, tmux, SSH). CI tests on `ubuntu-22.04`. |
-  | macOS 12 Monterey and newer | amd64, arm64 | Go 1.27's darwin support floor; Terminal.app and iTerm2 are VT terminals. Unsigned downloads are quarantined by Gatekeeper: document `xattr -d com.apple.quarantine wopr` or a Homebrew tap; notarization is a later option. CI tests on `macos-latest`. |
-  | Windows 11 and newer | amd64, arm64 | Windows Terminal is the default host and ConPTY/VT are always present; Bubble Tea v2 uses the Windows Console API for input and VT for output, so legacy conhost on 11 also works. CI tests on `windows-latest`. |
-
-- Windows specifics: Ctrl+C arrives as a `KeyPressMsg` "ctrl+c" in raw mode, not a signal: handle it
-  explicitly → `tea.Interrupt`. Leave `KeyboardEnhancements` zero (ConPTY lacks the Kitty protocol). Verify
-  `WindowSizeMsg` reports the *window* height in conhost with a 9001-line buffer. Ship `wopr.exe` unsigned and
-  expect a SmartScreen prompt; document it in the README.
-- Panics: do not add a custom `recover` around `p.Run()`; Bubble Tea restores the terminal and returns
-  `ErrProgramKilled` wrapping `ErrProgramPanic`. `main` maps errors to the exit codes above and writes an
-  optional debug log when `WOPR_DEBUG` is set.
-
-### Testing & CI
-
-- Unit tests: game rules through `games/testkit` (chess legality via `notnil/chess`; checkers forced-capture;
-  card scoring; tic-tac-toe minimax never loses), `games.Resolve`, command parser, scripted brain
-  (table-driven input → lines, with `--seed` for the `Pick` rules), typewriter `dt` math, line editor.
-- Golden tests: `ui/testutil/drive.go` runs a model synchronously, executes returned cmds, unwraps
-  `tea.BatchMsg`, feeds synthetic ticks and keys, and snapshots `View().Content` after `ansi.Strip`
-  (byte-stream snapshots of the renderer are brittle across patch releases). Flows: `logon_joshua`,
-  `logon_fail_x3_hint`, `help_games`, `list_games`, `play_stub`, later each set piece. `tea.Sequence` is
-  banned (its message type is unexported, so the driver cannot unwrap it); `teatest/v2` at most for one
-  end-to-end smoke test.
-### Tooling: prek + Go-standard static analysis
-
-One hook set in **`prek.toml`** (prek's native TOML format; prek reads it in preference to any YAML config),
-run the same way locally and in CI. Developers run `prek install` once (installs the git pre-commit and
-pre-push hooks) and `prek run --all-files` on demand; the Makefile wraps both (`make lint`).
-
-Layout and conventions follow the sceptre-phenix `prek.toml` the user pointed at: a schema header, named
-priorities so fixers run before formatters before linters, Python-packaged binaries (shellcheck-py,
-rumdl-pre-commit, zizmor-pre-commit) instead of Docker-based hooks so everything works in CI, and an
-explicit Go `language_version` on the golangci-lint hooks so prek never builds them with an unexpected Go.
-
-```toml
-# prek.toml — run manually: prek run --all-files
-#:schema https://www.schemastore.org/prek.json
-minimum_prek_version = "0.5.0"
-update.cooldown_days = 14
-default_language_version.golang = "1.27"
-
-[priorities]            # same priority = run concurrently; lower runs first
-fixers = 0              # builtin hooks that modify files
-format = 1              # formatters that modify files (golangci-lint fmt, rumdl fmt)
-lint = 2                # read-only linters, run on the already-fixed files
-
-# --- General file checks (prek's Rust-native hooks, no network needed) ---
-[[repos]]
-repo = "builtin"
-
-[[repos.hooks]]
-id = "trailing-whitespace"
-args = ["--markdown-linebreak-ext=md"]
-priority = "fixers"
-
-[[repos.hooks]]
-id = "end-of-file-fixer"
-priority = "fixers"
-
-[[repos.hooks]]
-id = "mixed-line-ending"
-args = ["--fix=lf"]
-priority = "fixers"
-
-[[repos.hooks]]
-id = "fix-byte-order-marker"
-priority = "fixers"
-
-[[repos.hooks]]
-id = "check-yaml"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-toml"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-json"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-merge-conflict"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-case-conflict"            # Windows checkouts
-priority = "format"
-
-[[repos.hooks]]
-id = "check-illegal-windows-names"    # Windows checkouts
-priority = "format"
-
-[[repos.hooks]]
-id = "check-executables-have-shebangs"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-shebang-scripts-are-executable"
-priority = "format"
-
-[[repos.hooks]]
-id = "check-added-large-files"
-args = ["--maxkb=512"]
-priority = "format"
-
-[[repos.hooks]]
-id = "detect-private-key"
-priority = "format"
-
-# --- Go: golangci-lint (prek builds it with its managed Go toolchain) ---
-[[repos]]
-repo = "https://github.com/golangci/golangci-lint"
-rev = "v2.14.0"
-
-[[repos.hooks]]
-id = "golangci-lint-config-verify"
-language_version = "1.27"
-priority = "format"
-
-[[repos.hooks]]
-id = "golangci-lint-fmt"              # gofmt + goimports + gofumpt via the formatters section
-language_version = "1.27"
-priority = "format"
-
-[[repos.hooks]]
-id = "golangci-lint-full"             # whole module: staticcheck, govet, errcheck, unused, revive, gocritic, ...
-language_version = "1.27"
-priority = "lint"
-
-# --- Go: toolchain checks that need the repo's own Go on PATH ---
-[[repos]]
-repo = "local"
-
-[[repos.hooks]]
-id = "go-vet"
-name = "go vet"
-language = "system"
-entry = "go vet ./..."
-types = ["go"]
-pass_filenames = false
-priority = "lint"
-
-[[repos.hooks]]
-id = "go-mod-tidy"
-name = "go mod tidy -diff"
-language = "system"
-entry = "go mod tidy -diff"
-files = '^go\.(mod|sum)$|\.go$'
-pass_filenames = false
-priority = "lint"
-
-[[repos.hooks]]
-id = "go-test"
-name = "go test (short)"
-language = "system"
-entry = "go test -short ./..."
-types = ["go"]
-pass_filenames = false
-stages = ["pre-push"]
-priority = "lint"
-
-[[repos.hooks]]
-id = "govulncheck"
-name = "govulncheck"
-language = "system"
-entry = "go run golang.org/x/vuln/cmd/govulncheck@latest ./..."
-pass_filenames = false
-stages = ["pre-push"]
-priority = "lint"
-
-# --- Secrets: gitleaks on staged changes ---
-[[repos]]
-repo = "https://github.com/gitleaks/gitleaks"
-rev = "v8.x"                           # pin the exact current tag at scaffold time
-hooks = [{ id = "gitleaks", priority = "lint" }]
-
-# --- GitHub Actions security: zizmor (https://docs.zizmor.sh/audits/) ---
-# Covers .github/workflows/*.yml and .github/dependabot.yml. Expect it to enforce:
-# actions pinned by SHA, persist-credentials: false on checkout, least-privilege permissions,
-# no template injection in run: steps.
-[[repos]]
-repo = "https://github.com/zizmorcore/zizmor-pre-commit"
-rev = "v1.26.1"
-
-[[repos.hooks]]
-id = "zizmor"
-args = ["--no-progress", "--fix"]
-priority = "lint"
-
-# --- Spell checking: codespell ---
-# Film text and status garbage are verbatim ("RECOGNISED", "FSKJJSJ", "SS20"), so the script and art
-# directories are skipped rather than littered with ignore entries; golden snapshots too.
-[[repos]]
-repo = "https://github.com/codespell-project/codespell"
-rev = "v2.4.2"
-
-[[repos.hooks]]
-id = "codespell"
-args = [
-  "--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai",
-  "--skip", "go.sum,*.golden,internal/wopr/lines/*,internal/assets/*,testdata/*",
-]
-priority = "lint"
-
-# --- Shell scripts: ShellCheck (shellcheck-py ships the binary via pip; no Docker) ---
-# All CI shell lives in scripts/*.sh (not inline run: blocks) precisely so this hook covers it.
-[[repos]]
-repo = "https://github.com/shellcheck-py/shellcheck-py"
-rev = "v0.11.0.1"
-
-[[repos.hooks]]
-id = "shellcheck"
-args = ["--severity=style", "--enable=all"]
-priority = "lint"
-
-# --- Markdown: rumdl (README.md, AGENTS.md, NOTICE.md, docs) ---
-[[repos]]
-repo = "https://github.com/rvben/rumdl-pre-commit"
-rev = "v0.2.58"
-
-[[repos.hooks]]
-id = "rumdl-fmt"                       # pure formatter, always exits 0
-priority = "format"
-
-[[repos.hooks]]
-id = "rumdl-check"                     # lint; MD013 line length, MD033 inline HTML (badges/screenshots), MD041 first-line heading
-args = ["--disable", "MD013,MD033,MD041"]
-priority = "lint"
+type Brain interface {
+	Reply(ctx context.Context, s Snapshot, input string) (Reply, error)
+}
 ```
 
-`.golangci.yml` (v2 format): `linters.default: standard` plus `staticcheck`, `errcheck`, `govet`, `unused`,
-`revive`, `gocritic`, `misspell`, `forbidigo` (pattern `tea\.(Tick|Every|Sequence)\(` allowed only in
-`internal/ui/clock.go`); `formatters: gofmt, goimports, gofumpt`. All `rev` values are pinned exactly (the ones
-above are current as of the reference config; re-pin with `prek auto-update` at scaffold time and again in
-the M5 checklist, since Dependabot cannot bump hook revs). `prek validate-config` is part of `make lint`.
-Toolchain notes: shellcheck-py, rumdl-pre-commit, zizmor-pre-commit and codespell are `language: python`
-hooks, so prek provisions a Python environment for them (via uv) on first run, locally and in CI's cached
-prek environment; nothing Python-related is checked into the repo.
-
-### CI (GitHub Actions)
-
-All actions pinned to full commit SHAs; `permissions: contents: read` by default; only `GITHUB_TOKEN` is used.
-`actions/setup-go` everywhere with `go-version-file: go.mod` and env `GOTOOLCHAIN=local`, so a toolchain
-mismatch fails loudly instead of silently downloading.
-
-`ci.yml` on push and pull_request, three jobs:
-
-- **lint** (`ubuntu-22.04`) — `j178/prek-action` runs `prek run --show-diff-on-failure --all-files` against
-  `prek.toml`, with its environment cached. This is the only lint path; nothing else to drift from.
-- **test** — matrix over **`ubuntu-22.04`, `macos-latest`, `windows-latest`**: `go test -race ./...` on
-  Linux and macOS, `go test ./...` on Windows (the race detector needs cgo there). Golden tests need no TTY.
-  This matrix is what enforces the compatibility requirement on every commit.
-- **build** — matrix over the same three runners, **building natively on each platform** so the toolchain,
-  linker and resulting binary are exercised where they will run:
-
-  | runner | targets built | smoke test on the runner |
-  |---|---|---|
-  | `ubuntu-22.04` | linux/amd64, linux/arm64 | `./dist/wopr-linux-amd64 --version` and `--games` |
-  | `macos-latest` | darwin/arm64, darwin/amd64 | `./dist/wopr-macos-arm64 --version` and `--games` |
-  | `windows-latest` | windows/amd64, windows/arm64 | `.\dist\wopr-windows-amd64.exe --version` and `--games` |
-
-  Each job runs `scripts/build.sh <os> <arch>` for its two targets, `scripts/smoke.sh` on the native-arch
-  binary (these flags exit without a terminal, so they run fine on a headless runner), `scripts/size-gate.sh`,
-  and then uploads **one artifact per target** with `actions/upload-artifact` (`retention-days: 30`), named
-  exactly `wopr-linux-amd64`, `wopr-linux-arm64`, `wopr-macos-amd64`, `wopr-macos-arm64`,
-  `wopr-windows-amd64`, `wopr-windows-arm64`. To test a build: open the workflow run on GitHub →
-  **Artifacts** section at the bottom → download the zip for your platform → unzip → run (`chmod +x` on
-  Linux/macOS; macOS may also need `xattr -d com.apple.quarantine`). The README's "Try a development build"
-  section repeats these steps.
-
-  Workflow `run:` steps are one-liners that call `scripts/*.sh` (`shell: bash` on all three runners; Git
-  Bash on Windows), so ShellCheck lints every line of CI shell and zizmor sees no template-injection
-  surface. `scripts/size-gate.sh` (portable: `wc -c`, not GNU `stat`):
-  ```bash
-  #!/usr/bin/env bash
-  set -euo pipefail
-  warn=$((10 * 1024 * 1024)); hard=$((15 * 1024 * 1024)); rc=0
-  { echo "| artifact | bytes |"; echo "|---|---|"; } >> "${GITHUB_STEP_SUMMARY:-/dev/stdout}"
-  for f in dist/*; do
-    s=$(wc -c < "$f"); echo "| $f | $s |" >> "${GITHUB_STEP_SUMMARY:-/dev/stdout}"
-    [ "$s" -le "$warn" ] || echo "::warning::$f is $s bytes (> 10 MB target)"
-    [ "$s" -le "$hard" ] || { echo "::error::$f is $s bytes (> 15 MB hard limit)"; rc=1; }
-  done
-  exit "$rc"
-  ```
-
-`release.yml` on `v*` tags (`permissions: contents: write` on this job only): GoReleaser builds the same six
-targets from `.goreleaser.yaml` and publishes a **GitHub Release with binaries for all three platforms**:
-`wopr_<version>_linux_amd64.tar.gz`, `wopr_<version>_linux_arm64.tar.gz`, `wopr_<version>_darwin_amd64.tar.gz`,
-`wopr_<version>_darwin_arm64.tar.gz`, `wopr_<version>_windows_amd64.zip`, `wopr_<version>_windows_arm64.zip`,
-plus `checksums.txt` and release notes generated from the commit log. Tagging `v0.1.0` is the only manual
-step. A `workflow_dispatch` trigger with `--snapshot` lets a release build be dry-run without a tag.
-
-`dependabot.yml`: weekly `gomod` and `github-actions` updates.
-
-### Documentation: README for humans
-
-`README.md` is written for someone who has never seen the code and just wants to play. Basic version lands in
-M0 (install, run, flags, the `Joshua` logon), completed in M5 with screenshots. Sections, in order:
-
-1. **What this is** — one paragraph, the film, the "SHALL WE PLAY A GAME?" screenshot.
-2. **Install** — per OS: download the Release asset for Linux / macOS / Windows (amd64 vs arm64 explained in
-   one line each), unpack, `chmod +x`, macOS Gatekeeper (`xattr -d com.apple.quarantine wopr`), Windows
-   SmartScreen note, optional `go install github.com/GhostofGoes/WOPR/cmd/wopr@latest`.
-3. **Quick start** — run `wopr`, wait for `LOGON:`, type `Joshua`, talk to it, `list games`, pick a number.
-   Spoiler-free hint box for people who don't know the film; what `help games` and `list games` do at the
-   logon prompt.
-4. **Inside the shell** — the commands WOPR understands (`help`, `help games`, `list games`, `play <name|n>`,
-   `logoff`), how games take input (Teletype vs Board), keys (`Esc` abort game, `PgUp/PgDn` scrollback,
-   `Ctrl+C` quit, any key skips the typewriter).
-5. **Command-line flags** — the table from the CLI section with short and long forms and env vars.
-6. **Themes** — the four palettes with a screenshot each; `--theme`/`WOPR_THEME`.
-7. **The games** — the 15 + tic-tac-toe, one line each on how to play and how WOPR plays.
-8. **Troubleshooting** — "TERMINAL TOO SMALL", no colors (set `COLORTERM`/use a modern terminal), Windows
-   console tips, slow typing (`-i`), reproducible runs (`-s`).
-9. **Try a development build** — the Actions artifact steps from the CI section.
-10. **Build from source / contributing** — Go 1.27, `make`, `prek install`, `prek run --all-files`, size
-    budget and compatibility matrix, pointer to `AGENTS.md`.
-11. **Credits & license** — MIT for code, `NOTICE.md` for film text, non-affiliation, thanks to the brother's
-    original WOPR prompt (with his permission).
-
-### Public-repository hygiene
-
-The repository is public. Rules that the tooling enforces and the milestones follow:
-
-- **No secrets, tokens, keys or credentials in the tree, ever.** gitleaks runs on every commit (prek) and in
-  CI; prek's `detect-private-key` hook backs it up. `.gitignore` already excludes `.env`; add `*.pem`, `*.key`,
-  `dist/`, `coverage.*`, and editor/OS cruft.
-- **Workflows use only the automatic `GITHUB_TOKEN`** with least-privilege `permissions:` blocks. No personal
-  tokens, no third-party secrets, no signing keys in v1. Actions are pinned by commit SHA and checkout uses
-  `persist-credentials: false`; zizmor enforces all of this on every commit and in CI.
-- **The app never phones home or writes transcripts.** No telemetry, no network code in v1. The optional
-  `WOPR_DEBUG` log contains only program events, never typed input.
-- **Future LLM milestone**: API keys are read from environment variables only, never from a config file in
-  the repo, and never logged; the README documents this before any provider lands.
-- **Personal information**: no real names, emails, or addresses beyond the film's fictional ones (`DR. ROBERT
-  HUME, 5 TALL CEDAR ROAD`); the brother's prompt is embedded/adapted only with his permission and credited
-  the way he prefers.
-- **Licensing**: code under MIT. The embedded screen lines are short quotations of MGM's film and are called
-  out in `NOTICE.md` with a non-affiliation disclaimer and excluded from the MIT grant.
+- `Update` takes a `Snapshot`, runs `Reply` in a `tea.Cmd`, locks input, and applies `Effects` when the
+  reply arrives (A-4). Nothing outside `Update` mutates the `Session`.
+- The scripted brain draws `Pick` choices from `proto.NewRand(s.Seed, uint64(s.Turn))`, so transcripts are
+  reproducible and no RNG is shared across goroutines.
+- If a reply errors or times out (scripted: never; LLM: 20 s), the persona answers with a scripted fallback
+  line.
+- The rule table (`Rule{ID, When, Match, Lines|Pick, Once, Effects}`) is unchanged from v1 apart from
+  `Effects`. First match wins, specific before general, fallbacks last.
 
 ---
 
-## Milestones
+## 5. CLI
 
-| M | Deliverable | Notes |
+```text
+wopr                         start the TUI (connect → LOGON)
+wopr -v | --version          version, commit, build date, Go version
+wopr -h | --help             usage (documents LOGON: Joshua)
+wopr -g | --games            numbered list in film order (+ slugs; tic-tac-toe under "ALSO AVAILABLE")
+wopr -p | --play <game>      launch a game (number, slug, alias, name, or unique prefix)
+wopr <game> [flags]          same as --play <game>; flags may come before or after
+wopr -t | --theme <name>     imsai | green | amber | norad      (env WOPR_THEME)
+wopr -i | --instant          no typewriter pacing               (env WOPR_INSTANT=1)
+wopr -s | --seed <n>         deterministic RNG for demos/tests
+```
+
+- **Interspersed positional** (C-1). `cli.Parse` calls `fs.Parse` in a loop. Each time it stops at a
+  positional, the positional is recorded and parsing resumes on the rest. More than one positional, or a
+  positional together with `--play`, is a usage error (exit 2). `--` ends flag parsing. Tests cover
+  `wopr gtw -i`, `wopr -i gtw`, `wopr -p gtw -i`, and `wopr gtw chess` (error).
+- Stdlib `flag` accepts `-games` and `--games`, and `-p chess` and `-p=chess`. It does not accept `-pchess`
+  or combined `-is 1`. The help text shows the accepted forms, and tests pin them (C-2).
+- `-v` means version, deliberately; a future verbose flag would be `--verbose`/`-V` (C-4).
+- `games.Resolve`: number (1–15) → slug → alias → exact normalised name → unique prefix. `Number 0` is never
+  matched by number. Ambiguity (e.g. `theaterwide`) prints the candidates and exits 2. `Planned` games
+  resolve, and WOPR declines in character.
+- Exit codes: 0 ok; 1 runtime error (Bubble Tea restores the terminal and returns the wrapped panic);
+  2 usage, not a TTY, or ambiguous game; 130 on Ctrl+C (`tea.ErrInterrupted`). ⟦TBD-bt-errors⟧
+
+---
+
+## 6. Games
+
+**Definition of done** (R-2), for every game: rules implemented; WOPR plays legally, using `Think` for any
+search; Esc abort works; the game ends with an in-character verdict; a `testkit` transcript test exists
+with a fixed seed; the 80×24 layout fits; and the README has a one-line "how to play".
+
+| # | Game | Layout | Input | Milestone | Notes |
+|---|---|---|---|---|---|
+| 1 | Falken's Maze | Panel | keys | M4 | Procedural maze with fog of war. WOPR "learns" a turn bias and re-routes walls; a property test asserts the maze stays solvable after every re-route (G-6). |
+| 2 | Black Jack | Console | line | M3 | Dealer stands on soft 17 (configurable); split/double; chips per session. |
+| 3 | Gin Rummy | Panel (hand) | line | M3 | Knock/gin scoring; deadwood-minimising heuristic. |
+| 4 | Hearts | Panel (trick) | line | M3 | 4 seats; passing; shoot-the-moon; heuristic AI on `cards/trick.go`. |
+| 5 | Bridge | Panel (trick) | line | M3 (last) | **Minimal** (G-3): WOPR bids all four seats with point-count rules; the user is declarer (South) and plays both hands; WOPR defends with `cards/trick.go` heuristics. |
+| 6 | Checkers | Panel | line + keys | M2 | 8×8, forced captures, kings; `games/ai` with iterative deepening. |
+| 7 | Chess | Panel | line | M2 | ⟦TBD-chess⟧ Input `e2e4` / `Nf3`. |
+| 8 | Poker | Console | line | M3 | 5-card draw heads-up; betting heuristic + bluff probability. |
+| 9–14 | Military sims | Console/Panel | line | M4 | One `sim` engine; each game is a scenario value (map, forces, enabled actions, events, victory rule, turn limit) plus at most a few hooks (G-2). Biotoxic always ends `WINNER: NONE`. |
+| 15 | Global Thermonuclear War | Full | line | M2 | **Self-contained** in `games/gtw` (P-1): side choice, targets, salvos, DEFCON ladder, trajectories, kill ratios, montage → `A STRANGE GAME…`. Cannot be won. Shared pieces move to `sim` in M4 only if a second consumer needs them. |
+| — | Tic-Tac-Toe | Panel | line | M2 | Perfect minimax. `NUMBER OF PLAYERS: 0` starts the self-play montage and the ending. Unlisted (`Number 0`), resolvable by name. |
+
+**Sim engine (M4)**, specified before any sim is built. A strip or grid map of named regions; a unit
+table (type, strength, mobility, range); a per-scenario action set (move, attack, air strike, patrol,
+supply, special); a combat-results table drawn with the game's RNG; an event deck (sandstorm, defection,
+contamination spread); a turn limit; and a kill-ratio generator in the film's table format. A sim is about
+150 lines of scenario data and hooks, not a bespoke game.
+
+**AI quality tests** (Q-4): tic-tac-toe never loses; checkers forced-capture puzzles; chess mate-in-1/2
+puzzles; and each AI beats a random player in ≥ 95% of 200 seeded games.
+
+---
+
+## 7. Binary size and portability
+
+- **Build** (GoReleaser, both snapshot and release; §10): `CGO_ENABLED=0`, `-trimpath`,
+  `-ldflags "-s -w -X github.com/GhostofGoes/WOPR/internal/version.Version={{.Version}}"`,
+  `mod_timestamp: {{.CommitTimestamp}}` for reproducible archives.
+- **Measured** (M0 spike, run during this review): ⟦TBD-size-table⟧
+- **Budget**: target ≤ 10 MB, hard limit 15 MB. CI prints sizes in the step summary and the release notes;
+  the README states only the budget (B-8). If a change crosses 10 MB, find the heavy packages with
+  `go tool nm -size -sort size` before adding code. **Never UPX** (Windows AV false positives).
+- **M6 (LLM)** uses `net/http` + `encoding/json` only, no SDK; ⟦TBD-http-delta⟧ (D-2).
+- **Compatibility matrix**:
+
+  | OS | Arch | Notes | CI smoke runner |
+  |---|---|---|---|
+  | Ubuntu 22.04+ | amd64, arm64 | Static; plain VT/ANSI; any xterm-class terminal, tmux, SSH. | ⟦TBD-runners⟧ |
+  | macOS ⟦TBD-macOS-floor⟧+ | amd64, arm64 | Unsigned: document `xattr -d com.apple.quarantine wopr`. No Homebrew tap in v1 ⟦TBD-homebrew⟧. | ⟦TBD-runners⟧ |
+  | Windows 11+ | amd64, arm64 | Windows Terminal (ConPTY) and conhost. mintty without ConPTY is unsupported and detected (U-4). | ⟦TBD-runners⟧ |
+
+- **Windows specifics**: Ctrl+C arrives as a key in raw mode, so it is handled in `Update` as `tea.Interrupt`
+  ⟦TBD-bt-ctrlc⟧. Leave keyboard enhancements off. Verify `WindowSizeMsg` reports the *window* size in
+  conhost with a 9001-line buffer. Ship unsigned, and document the SmartScreen prompt.
+- **Panics**: no custom `recover` around `p.Run()`; Bubble Tea restores the terminal ⟦TBD-bt-panic⟧. `main`
+  maps errors to exit codes. `WOPR_DEBUG=1` writes `os.UserCacheDir()/wopr/debug.log` with mode 0600, never
+  typed input (S-5).
+
+---
+
+## 8. Testing
+
+- **Unit**: game rules via `games/testkit`; `games.Resolve`; `cli.Parse` (including interspersed
+  positionals); intent parsing (false-positive table: "I don't want to play chess", "golden gate bridge");
+  scripted brain (table-driven, seeded); typewriter `dt` math; line editor; `Sanitize`; canvas.
+- **Architecture**: `internal/archtest` checks the import DAG (§4.1).
+- **Golden** (Q-3): `ui/testutil/drive.go` runs the model synchronously, executes returned commands, unwraps
+  `tea.BatchMsg`, feeds synthetic ticks and keys, and snapshots `View()` content after `ansi.Strip`
+  ⟦TBD-bt-view⟧. Goldens live in `testdata/*.golden` (LF-only; §10) and are regenerated with
+  `go test ./internal/ui/... -update`; diffs are reviewed in the PR. `tea.Sequence` is banned, because its
+  message type is unexported and the driver cannot unwrap it ⟦TBD-bt-seq⟧. Flows: `logon_joshua`,
+  `logon_fail_x3_hint`, `help_games`, `list_games`, `intent_false_positives`, `play_stub`, then each set
+  piece.
+- **Fuzz** (Q-2): `normalize`, `Resolve`, intent, the line editor, `Sanitize`, chess move parsing. In CI,
+  each runs for 10 s per target on Linux.
+- **End-to-end** (Q-1): on every OS, the real binary runs in a pseudo-terminal with `--instant --seed 1`,
+  types `Joshua`, waits for `SHALL WE PLAY A GAME?`, sends Ctrl+C, and asserts exit 130 and a restored
+  terminal (alt screen left, cursor visible). ⟦TBD-teatest⟧
+- **Race**: `go test -race ./...` on Linux and macOS; `testkit` runs `Think` on goroutines so races are
+  visible.
+
+---
+
+## 9. Tooling: prek and static analysis
+
+Intent (the M0 seed is in Appendix A.1; the repository file is authoritative afterwards):
+
+- **One hook set in `prek.toml`**, run identically locally (`prek install`, `prek run --all-files`) and in CI
+  (`j178/prek-action`).
+- **Ordering**: fixers → formatters → read-only linters, using prek's priority mechanism
+  ⟦TBD-prek-priority⟧.
+- **Hooks**: built-in file checks (whitespace, EOF, LF line endings, BOM, YAML/TOML/JSON syntax, merge
+  markers, case conflicts, Windows-illegal names, shebangs, large files, private keys) ⟦TBD-prek-builtins⟧;
+  golangci-lint `config-verify`, `fmt` and `full` ⟦TBD-hook-ids⟧; gitleaks (pre-commit only; CI scans
+  separately, §11); zizmor (no `--fix`, T-5); codespell (skips script and art data by **prek `exclude`
+  regex**, not codespell `--skip`) ⟦TBD-codespell⟧; ShellCheck on `scripts/*.sh`; rumdl check + fmt
+  ⟦TBD-rumdl⟧.
+- **Pinning** (T-3): every hook `rev` is a full commit SHA with a `# frozen: vX.Y.Z` comment
+  ⟦TBD-prek-freeze⟧. A monthly scheduled workflow runs `prek auto-update --freeze` with a cooldown and opens a
+  PR using only `GITHUB_TOKEN` (T-7).
+- **govulncheck** (T-4): a Go tool in `tools/go.mod` (`go tool -modfile=tools/go.mod govulncheck ./...`).
+  It is pinned, updated by Dependabot, and kept out of the main module graph. It runs as a pre-push hook,
+  in CI, and on a weekly schedule.
+- **golangci-lint** (`.golangci.yml`, v2): `linters.default: standard`, plus `revive`, `gocritic`,
+  `misspell`, `forbidigo`. Formatters `gofmt`, `goimports`, `gofumpt`. **forbidigo** (T-2):
+  `analyze-types: true` with `{pattern: '^(Tick|Every|Sequence)$', pkg: '^charm\.land/bubbletea/v2$'}`,
+  exempted for `internal/ui/clock.go` via `linters.exclusions.rules` ⟦TBD-forbidigo⟧. No local `go vet` hook,
+  since golangci-lint's `govet` covers it (T-6).
+- **Windows contributors**: every hook works without Bash, except ShellCheck, which needs only the
+  shellcheck-py binary. `make` is optional: every Make target is a single command documented in the README
+  and AGENTS.md.
+
+---
+
+## 10. CI/CD (GitHub Actions)
+
+All actions are pinned to full commit SHAs. `permissions: contents: read` is the workflow default, and jobs
+elevate individually. Only `GITHUB_TOKEN` is used. `actions/setup-go` takes `go-version-file: go.mod`
+⟦TBD-setup-go⟧ with `GOTOOLCHAIN=local`. `persist-credentials: false` on every checkout.
+
+**`.gitattributes`** (B-3): `* text=auto eol=lf`, plus `*.png *.gif binary`. With this, shell scripts and
+goldens are LF on the Windows runners.
+
+**`ci.yml`**, on `pull_request` and on `push` to `main` (B-6), with
+`concurrency: {group: ci-${{ github.ref }}, cancel-in-progress: true}`:
+
+| Job | Runner(s) | Does |
 |---|---|---|
-| 0 | Scaffold + size spike | files below; measured size table in README; CI green |
-| 1 | Console + persona | connect/LOGON/backdoor/greeting flows, themes, clock, typewriter, commands, scripted brain, `--play` with a stub game |
-| 2 | Film set pieces | `games/ai`, `board/`, Tic-Tac-Toe (+ montage/ending), Checkers, Chess, Global Thermonuclear War |
-| 3 | Card games | `cards/` + `cards/trick.go`, `prompt/`; Black Jack, Poker, Gin Rummy, Hearts, Bridge |
-| 4 | Sims + Maze | `sim/` engine + the five military sims; Falken's Maze |
-| 5 | Polish & release | QA on Ubuntu 22.04, macOS, and Windows 11 (Windows Terminal + conhost) using the CI artifacts; complete the README (screenshots via cool-retro-term, themes, games, troubleshooting); `prek auto-update`; **write `AGENTS.md`**; tag `v0.1.0` → Release with Linux/macOS/Windows binaries |
-| 6 (opt) | LLM brain | provider behind `Brain`, env-configured (keys from env only), scripted fallback, size re-check |
+| `lint` | `ubuntu-24.04` | `prek run --all-files --show-diff-on-failure` via `j178/prek-action` ⟦TBD-prek-action⟧ |
+| `secrets` | `ubuntu-24.04` | gitleaks over the pushed commit range (full history on `main`), pinned binary (S-1) |
+| `test` | `ubuntu-22.04`, ⟦TBD-runners: macOS⟧, `windows-2025` | `go test ./...` (`-race` on Linux/macOS); fuzz smoke on Linux; govulncheck on Linux |
+| `build` | `ubuntu-24.04` | `goreleaser release --snapshot --clean` → six binaries; `scripts/size-gate.sh`; upload one artifact per target (`wopr_<os>_<arch>`, the release naming) (B-1) |
+| `smoke` | one runner per os/arch ⟦TBD-runners⟧ | download that target's artifact; `scripts/smoke.sh`: `--version`, `--games`, `--games \| head -1`, then the pty end-to-end test (§8) |
 
-**M0 file order:** `go.mod` (`go 1.27`, `toolchain go1.27.1`) · `.gitattributes` · `.gitignore` additions ·
-`LICENSE` + `NOTICE.md` · `internal/version/version.go` · `internal/games/{game.go,registry.go,registry_test.go}`
-(16 `Info` entries + a `stub` game) · `internal/cli/{flags.go,usage.go,games.go,flags_test.go}`
-(`Parse(args, stdout, stderr) (Config, Action, error)`; short + long flags; test asserting every long flag has a
-shorthand) · `internal/theme/theme.go` · `internal/ui/app.go` hello-world that renders one Lip Gloss-styled line
-(so the spike measures both deps) · `cmd/wopr/main.go` · `.golangci.yml` (incl. the forbidigo tick rule) ·
-`prek.toml` · `scripts/{build.sh,smoke.sh,size-gate.sh}` (ShellCheck-clean, called from CI and the Makefile) ·
-`.github/workflows/{ci.yml,release.yml}` + `.github/dependabot.yml` (zizmor-clean: SHA-pinned actions,
-`persist-credentials: false`, least-privilege `permissions`) · `.goreleaser.yaml` ·
-`Makefile` (`build`, `dist`, `test`, `lint` = `prek validate-config && prek run --all-files`, `size`) ·
-`README.md` basic version (sections 1–5, 9–11 of the Documentation outline) with the measured size table and the
-compatibility matrix. M0 ends with a green `ci.yml` run showing six downloadable artifacts and a
-`workflow_dispatch` snapshot of `release.yml`.
+The smoke matrix runs the *exact* binaries the release would ship (B-2). A target with no native runner is
+marked `smoke: skipped (no runner)` in the step summary, never silently omitted.
 
-**AGENTS.md (end of M5, basic):** what the project is, build/test/lint commands (`make`, `prek`), repository
-layout, the three conventions agents must keep (import direction `ui → games/wopr/theme`, the single clock in
-`internal/ui/clock.go`, no Bubble Tea imports in `games/` or `wopr/`), how to add a game (registry entry +
-package + testkit test), the size budget and compatibility matrix, and the public-repo hygiene rules. Keep it
-short enough to read in a minute; `CLAUDE.md` can simply point at it.
+**`release.yml`** on `v*` tags: the same GoReleaser config, with `setup-go` `cache: false` and no other
+caches (B-4). Permissions `contents: write`, `id-token: write` and `attestations: write`, on this job only.
+It publishes six archives plus `checksums.txt` and runs `actions/attest-build-provenance` on the archives
+(S-2). The README documents `gh attestation verify`. `workflow_dispatch` runs a `--snapshot` dry run with
+read-only permissions.
 
-**M1 file order:** `internal/ui/clock.go` · `internal/ui/console/{console.go,typewriter.go,input.go,render.go}`
-+ tests · `internal/wopr/{normalize.go,session.go,lines.go,lines/*.txt,scenes.go,commands.go,brain.go,
-scripted.go}` + table tests · `internal/ui/screens/{connect.go,toosmall.go}` · `internal/ui/{keys.go,
-gamehost.go,app.go}` with the phase machine · `internal/ui/testutil/drive.go` + `app_test.go` golden flows ·
-`cmd/wopr/main.go` wiring, TTY check, exit codes.
+**`scheduled.yml`** (weekly): govulncheck on `main`, and the prek auto-update PR (monthly).
 
-## Verification (end-to-end)
+**`dependabot.yml`**: `gomod` (root and `tools/`) and `github-actions`, weekly, grouped minor+patch, with
+`cooldown` ⟦TBD-dependabot⟧ (S-6).
 
-1. `make dist` cross-compiles all six targets; every artifact ≤ 10 MB target (CI warns above 10 MB, fails
-   above 15 MB). `prek validate-config && prek run --all-files` passes locally; the `lint`, `test` (three
-   OSes) and `build` (three OSes, native) jobs are green; the run page lists six artifacts
-   (`wopr-linux-amd64` … `wopr-windows-arm64`) that download, unzip and run on each platform.
-   A `workflow_dispatch` snapshot of `release.yml` produces the six archives plus `checksums.txt`; tagging
-   `v0.1.0` publishes them as a GitHub Release.
-2. `wopr -v`, `wopr -h`, `wopr -g` and their long forms print and exit 0 without touching the terminal;
-   `wopr --games | head -1` works in a pipe.
-3. `wopr` → LOGON → wrong name ×3 → hint → `Joshua` → greeting scene → `list games` → `7` → chess board
-   renders; Esc returns to the shell with an in-character remark.
-4. `wopr -p gtw --instant --seed 1` → side selection → targets → big board → DEFCON ladder → montage →
-   `A STRANGE GAME…`; `wopr -p 15`, `wopr -p "global thermonuclear war"` and `wopr gtw` resolve to the same game;
-   `wopr -p theaterwide` exits 2 listing both candidates.
-5. `go test ./... -race` green; golden snapshots stable under `--seed 1 --instant`.
-6. Manual Windows pass in Windows Terminal and legacy conhost (colors, cursor, resize, Ctrl+C restore,
-   SmartScreen prompt noted).
+**`scripts/`**: `size-gate.sh` and `smoke.sh`, both ShellCheck-clean under `--enable=all`, with
+`shopt -s nullglob` and whitespace-trimmed `wc -c` (B-7) ⟦TBD-shellcheck⟧. Builds go through GoReleaser
+only, so there is no `build.sh`.
+
+---
+
+## 11. Security and public-repository hygiene
+
+- **Secrets**: none in the tree, ever. gitleaks runs as a pre-commit hook and as the CI `secrets` job.
+  **GitHub secret scanning with push protection is enabled**, the control a local `--no-verify` cannot
+  bypass (S-1). `.gitignore` adds `*.pem`, `*.key`, `dist/`, `coverage.*` and editor/OS files.
+- **Repository settings** (S-3), applied in M0 and listed in AGENTS.md: a ruleset on `main` (required
+  checks `lint`, `secrets`, `test`, `build`, `smoke`; no force-push; no deletion); a tag ruleset so only the
+  owner can create `v*`; secret scanning + push protection; private vulnerability reporting with
+  `SECURITY.md`; Dependabot security updates.
+- **Workflows**: `GITHUB_TOKEN` only, least privilege, SHA-pinned, `persist-credentials: false`, no
+  `pull_request_target`, no caches in release. zizmor runs in prek, and in CI with `GH_TOKEN` for its online
+  audits (T-5).
+- **Releases**: checksums plus build-provenance attestations (S-2). No signing keys in v1. Notarisation and
+  Authenticode are post-1.0 options.
+- **The app**: no network code in v1, no telemetry, no transcripts. All external text is sanitised before
+  rendering (U-2). The debug log never holds typed input (S-5).
+- **LLM (M6)** (S-4): explicit opt-in (`--llm` / `WOPR_LLM=provider`), with a one-line in-character notice
+  when enabled. API keys are read from the environment only and never logged. 20 s timeout, max-tokens cap,
+  history bounded to 20 exchanges, sanitised output, actions validated against the registry, no logging of
+  prompts or replies. On any error the persona falls back to scripted.
+- **Personal information**: none beyond the film's fictional names and addresses. The brother's prompt is
+  adapted only with **written permission** (an issue comment or a commit by him), which is an entry gate for
+  M1 (L-3).
+- **Licensing** (L-1, L-2): code under MIT. Short film quotations are listed in `NOTICE.md`, excluded from
+  the MIT grant, with a non-affiliation disclaimer. ASCII art is original. "WarGames" is used only
+  nominatively, in the README. No film stills.
+
+---
+
+## 12. Documentation
+
+- **README.md** (M0 basic; completed in M5): what this is; install per OS (Release assets, `chmod +x`,
+  Gatekeeper, SmartScreen, `go install …@latest`, `gh attestation verify`); quick start (`Joshua`); inside the
+  shell; flags; themes; the games (with "coming in vX.Y" for `Planned` ones); troubleshooting (too small,
+  colours/`NO_COLOR`, Windows/mintty, `-i`, `-s`); try a development build (Actions artifacts); build from
+  source; credits and licence.
+- **AGENTS.md** (M0, updated every milestone; `CLAUDE.md` points to it) (M-1): what the project is; commands;
+  the import DAG and how `archtest` enforces it; the single clock; the `proto` protocol rules (dynamic input
+  mode, `Think` captures by value, Esc belongs to the host); how to add a game (registry entry, package,
+  testkit test, definition of done); goldens and `-update`; size budget and compatibility; hygiene and
+  repository settings.
+- **docs/screens.md**: the target-screen mockups.
+- **This plan**: kept current at milestone boundaries; superseded sections are deleted, not annotated.
+
+---
+
+## 13. Milestones
+
+| M | Deliverable | Release |
+|---|---|---|
+| 0 | Scaffold: go.mod, `.gitattributes`, LICENSE/NOTICE/SECURITY, version, `proto` (types only), registry with 16 `Info` entries (all `Planned`), `cli`, `theme`, `ui` hello-world, `archtest`, `.golangci.yml`, `prek.toml`, GoReleaser, `ci.yml`/`release.yml`/`scheduled.yml`/Dependabot, `scripts/`, README basic, **AGENTS.md**, repository settings. Exit: green CI showing six binaries smoke-run on native runners; `release.yml` snapshot dry run; Appendix A deleted. | — |
+| 1 | Console and persona: clock, typewriter, line editor, `Sanitize`, scrollback, host + protocol (with a test-only stub game that emits every Output), persona (session, scenes, commands, intent, scripted brain, lines), connect/LOGON/greeting flows, themes, too-small, golden and fuzz tests, pty e2e test, 80×24 mockups for chess/Hearts/GTW. Gate: written permission for the brother's prompt. | — |
+| 2 | Film set pieces: `games/ai` (iterative deepening + budget), `board/`, canvas renderer, Tic-Tac-Toe + ending/montage, Checkers, Chess, **GTW (self-contained)**. QA on all three OSes. | **v0.1.0** |
+| 3 | Card games: `cards/` + `trick.go`, `prompt/`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**. | v0.2.0 |
+| 4 | Sims and maze: `sim` engine spec → engine → five scenarios; Falken's Maze. | v0.3.0 |
+| 5 | Polish: film viewing pass for *reconstructed* text, README completion with screenshots, accessibility pass (`--instant`, `NO_COLOR`), `prek auto-update`, QA. | **v1.0.0** |
+| 6 (opt) | LLM brain over `net/http`, opt-in, scripted fallback, size re-check. | v1.1.0 |
+
+Effort is tracked per milestone against actuals, not per-game line estimates (P-3).
+
+---
+
+## 14. Verification (end-to-end, per release)
+
+1. CI green: `lint`, `secrets`, `test` (three OSes), `build`, and `smoke` on every native runner. Six
+   artifacts named `wopr_<os>_<arch>`; sizes in the step summary, all ≤ 15 MB (warning above 10 MB).
+2. `wopr -v`, `-h`, `-g` and their long forms print and exit 0 without a terminal. `wopr --games | head -1`
+   exits 0.
+3. `wopr` → LOGON → wrong name ×3 → hint → `Joshua` → greeting → `list games` → `7` → chess board renders →
+   WOPR "thinks" with the front panel animating and Ctrl+C still responsive → Esc returns to the shell with
+   a remark.
+4. `wopr gtw -i -s 1` and `wopr -p 15 -i -s 1` produce identical transcripts: side selection → targets → big
+   board → DEFCON ladder → montage → `A STRANGE GAME…`. `wopr -p theaterwide` exits 2 listing both
+   candidates. `wopr gtw chess` exits 2.
+5. `go test -race ./...` green; goldens stable under `--seed 1 --instant`; `archtest` green.
+6. The pty end-to-end test passes on Linux, macOS and Windows. Manual pass in Windows Terminal and conhost
+   (colours, cursor, resize, Ctrl+C restore, SmartScreen).
+7. On a tag: the release has six archives, `checksums.txt`, and attestations that verify with
+   `gh attestation verify`.
+
+---
+
+## Appendix A — M0 seeds (delete when M0 lands)
+
+### A.1 `prek.toml`
+
+⟦TBD-prek-seed⟧
+
+### A.2 `.golangci.yml` (excerpt)
+
+⟦TBD-golangci-seed⟧
+
+### A.3 `scripts/size-gate.sh`
+
+⟦TBD-size-gate-seed⟧
