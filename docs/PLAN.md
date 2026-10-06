@@ -1262,8 +1262,11 @@ mixed case, as on screen (RF-9):
 ### 11.2 `ci.yml` (on `pull_request` and `push` to any branch)
 
 CI runs on every branch push (owner decision 2026-10-06), so a branch is checked before anyone opens a pull
-request. A branch with an open pull request runs twice, on purpose: once as pushed, and once merged with its
-base. Tags go to `release.yml` only.
+request. To avoid running the same work twice (owner request, same day), a pull request from a branch of this
+repository is checked by that branch's push run, which reports `ci-ok` on the same head commit; its
+`pull_request` run skips every job, and its skipped aggregator is renamed so that it cannot stand in for the
+required `ci-ok`. A fork's pushes never reach this repository, so pull requests from forks run in full. Tags go
+to `release.yml` only.
 
 | Job | Runner(s) | Does |
 |---|---|---|

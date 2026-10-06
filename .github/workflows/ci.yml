@@ -1,6 +1,8 @@
-# CI for every branch push and every pull request. The only required check is ci-ok (see
-# AGENTS.md). A branch with an open pull request runs twice, on purpose: once as pushed, and
-# once merged with its base.
+# CI for every branch push and for pull requests from forks. The only required check is ci-ok
+# (see AGENTS.md). A pull request from a branch of this repository is checked by that branch's
+# push run, which reports ci-ok on the same head commit, so its pull_request run skips every
+# job rather than run the same work twice. A fork's pushes never reach this repository, so its
+# pull requests run in full.
 name: CI
 
 on:
@@ -23,6 +25,7 @@ concurrency:
 jobs:
   lint:
     name: lint
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -49,6 +52,7 @@ jobs:
 
   secrets:
     name: secrets
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -74,6 +78,7 @@ jobs:
 
   test:
     name: test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     strategy:
       fail-fast: false
       matrix:
@@ -121,6 +126,7 @@ jobs:
 
   build:
     name: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -205,8 +211,11 @@ jobs:
       artifact: smoke-bundle
 
   ci-ok:
-    name: ci-ok
-    if: always()
+    # Skipped on a pull request from this repository, like the rest, and renamed there: a
+    # skipped job counts as passed, so a skipped "ci-ok" posted after a failed push run could
+    # stand in for it.
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
     needs: [lint, secrets, test, build, smoke]
     runs-on: ubuntu-24.04
     permissions: {}
