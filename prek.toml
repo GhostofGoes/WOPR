@@ -58,16 +58,17 @@ hooks = [{ id = "zizmor", args = ["--no-progress"], priority = "lint" }]
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai"], exclude = '^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers"], exclude = '^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
-rev = "745eface02aef23e168a8afb6b5737818efbea95"  # frozen: v0.11.0.1
+rev = "a6564f5d57444e123433a5c9af733e3975c77229"  # frozen: v0.11.0.1-1
 hooks = [{ id = "shellcheck", args = ["--severity=style", "--enable=all"], priority = "lint" }]
 
 [[repos]]
 repo = "https://github.com/rvben/rumdl-pre-commit"
-rev = "83cecb6b523a053d7d3dfdc4798d705b505a88f9"  # frozen: v0.2.78 (rumdl-check needs >= v0.2.66)
+# rumdl-check needs >= v0.2.66 (a comment after rev would be lost on `prek update`)
+rev = "83cecb6b523a053d7d3dfdc4798d705b505a88f9"  # frozen: v0.2.78
 hooks = [
   { id = "rumdl-fmt", priority = "format" },
   { id = "rumdl-check", args = ["--disable", "MD013,MD033,MD041"], priority = "lint" },
@@ -78,6 +79,7 @@ repo = "local"
 hooks = [
   { id = "go-mod-tidy", name = "go mod tidy -diff", language = "system", entry = "go mod tidy -diff", files = '(^|/)go\.(mod|sum)$|\.go$', pass_filenames = false, priority = "lint" },
   { id = "go-mod-tidy-tools", name = "go mod tidy -diff (tools)", language = "system", entry = "go -C tools mod tidy -diff", files = '^tools/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
+  { id = "go-mod-tidy-lint-tools", name = "go mod tidy -diff (lint tools)", language = "system", entry = "go -C tools/lint mod tidy -diff", files = '^tools/lint/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
   { id = "go-mod-tidy-release-tools", name = "go mod tidy -diff (release tools)", language = "system", entry = "go -C tools/release mod tidy -diff", files = '^tools/release/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },

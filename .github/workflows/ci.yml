@@ -56,10 +56,15 @@ jobs:
           go-version-file: go.mod
       - name: gitleaks (full history)
         shell: bash
+        # Scans the checked-out history (main, plus the PR), not every branch: a stale branch
+        # must not block every PR. gitleaks exits 0 when git fails, so errors and an empty
+        # scan are caught from the log, which --no-color keeps greppable.
         run: |
           set -o pipefail
-          go tool -modfile=tools/go.mod gitleaks git --redact --exit-code 1 . 2>&1 | tee gitleaks.log
+          go tool -modfile=tools/go.mod gitleaks git --redact --no-color --no-banner --exit-code 1 \
+            --log-opts="--full-history HEAD" . 2>&1 | tee gitleaks.log
           if grep -q ' ERR ' gitleaks.log; then echo "::error::gitleaks reported an error"; exit 1; fi
+          if grep -q ' 0 commits scanned' gitleaks.log; then echo "::error::gitleaks scanned no commits"; exit 1; fi
 
   test:
     name: test

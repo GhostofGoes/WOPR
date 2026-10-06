@@ -33,13 +33,9 @@ linters:
     rules:
       - path: ^internal/ui/clock\.go$
         linters: [forbidigo]
-      - path: ^internal/proto/rand\.go$
-        linters: [forbidigo]
       - path: _test\.go$
         linters: [forbidigo]
         text: 'time\.'
-      - path: ^internal/(wopr/lines\.go|assets/|movie/scenes/)
-        linters: [misspell]
 formatters:
   enable: [gofmt, goimports, gofumpt]
 issues:

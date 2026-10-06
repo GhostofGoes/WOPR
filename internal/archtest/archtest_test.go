@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"go/version"
 	"io"
 	"os"
 	"os/exec"
@@ -245,23 +246,58 @@ func TestRulesMatchThemselves(t *testing.T) {
 }
 
 // CI builds with the toolchain pinned in go.mod. actions/setup-go silently falls back to
-// the go directive when GOTOOLCHAIN=local is set before it runs, so check (D-6).
+// the go directive when GOTOOLCHAIN=local is set before it runs, so CI checks equality
+// (D-6). Locally the toolchain line is a minimum: GOTOOLCHAIN=auto keeps a newer Go.
 func TestToolchainMatchesGoMod(t *testing.T) {
-	if os.Getenv("GITHUB_ACTIONS") != "true" {
-		t.Skip("only enforced in CI; locally a newer Go is fine")
+	want := goModLine(t, filepath.Join(moduleRoot(t), "go.mod"), "toolchain")
+	got := runtime.Version()
+	switch {
+	case os.Getenv("GITHUB_ACTIONS") == "true" && got != want:
+		t.Fatalf("running %s, but go.mod pins %s; check the setup-go step", got, want)
+	case version.Compare(got, want) < 0:
+		t.Fatalf("running %s, older than go.mod's toolchain %s", got, want)
 	}
-	data, err := os.ReadFile(filepath.Join(moduleRoot(t), "go.mod"))
+}
+
+// CI runs every tool module with GOTOOLCHAIN=local and the root toolchain, so no tool
+// module may declare a newer go line. Bump the toolchain first, then the tool.
+func TestToolModulesFitTheToolchain(t *testing.T) {
+	root := moduleRoot(t)
+	toolchain := goModLine(t, filepath.Join(root, "go.mod"), "toolchain")
+	mods, err := filepath.Glob(filepath.Join(root, "tools", "*go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	nested, err := filepath.Glob(filepath.Join(root, "tools", "*", "go.mod"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	mods = append(mods, nested...)
+	if len(mods) < 3 {
+		t.Fatalf("found %d tool modules, want tools/, tools/lint/ and tools/release/", len(mods))
+	}
+	for _, mod := range mods {
+		goLine := "go" + goModLine(t, mod, "go")
+		if version.Compare(goLine, toolchain) > 0 {
+			rel, _ := filepath.Rel(root, mod)
+			t.Errorf("%s needs %s, newer than the root toolchain %s; bump the toolchain first", rel, goLine, toolchain)
+		}
+	}
+}
+
+// goModLine returns the value of a single-line directive ("go", "toolchain") in a go.mod.
+func goModLine(t *testing.T, path, directive string) string {
+	t.Helper()
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	sc := bufio.NewScanner(bytes.NewReader(data))
 	for sc.Scan() {
-		if v, ok := strings.CutPrefix(strings.TrimSpace(sc.Text()), "toolchain "); ok {
-			if runtime.Version() != v {
-				t.Fatalf("running %s, but go.mod pins %s; check the setup-go step", runtime.Version(), v)
-			}
-			return
+		if v, ok := strings.CutPrefix(strings.TrimSpace(sc.Text()), directive+" "); ok {
+			return strings.TrimSpace(v)
 		}
 	}
-	t.Fatal("go.mod has no toolchain line")
+	t.Fatalf("%s has no %s line", path, directive)
+	return ""
 }

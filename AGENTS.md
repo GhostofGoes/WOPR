@@ -23,8 +23,8 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Lint rules self-test | `WOPR_LINT_SELFTEST=1 go test -run TestLintRulesFire ./internal/archtest` |
 | Regenerate golden files | `WOPR_UPDATE_GOLDEN=1 go test ./...`, then review the diff |
 | All hooks | `prek run --all-files` (install once with `prek install`) |
-| Lint | `go tool -modfile=tools/go.mod golangci-lint run ./...` |
-| Format | `go tool -modfile=tools/go.mod golangci-lint fmt ./...` |
+| Lint | `go tool -modfile=tools/lint/go.mod golangci-lint run ./...` |
+| Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
@@ -32,8 +32,11 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` |
 
-Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it. Tools are pinned
-in `tools/go.mod` and `tools/release/go.mod`: never `go run …@latest`.
+Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
+fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:
+`tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint) and `tools/release/go.mod`
+(GoReleaser). They are separate because their dependency graphs conflict. No tool module's `go` line may be
+newer than the root `toolchain` line (a test checks): bump the toolchain first, then the tool.
 
 ## Rules that tests enforce
 
@@ -46,8 +49,8 @@ in `tools/go.mod` and `tools/release/go.mod`: never `go run …@latest`.
 - **Seeded randomness.** Use `proto.NewRand(seed, streamID)` with a stream from the domains in
   `internal/proto/rand.go`. The top-level `math/rand/v2` functions are banned.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
-  and the self-test requires every rule to report it. The golangci-lint version in `prek.toml` and
-  `tools/go.mod` must match.
+  and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
+  (golangci-lint, gitleaks) must have the same version.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
 
 ## The program protocol (`internal/proto`)
@@ -105,8 +108,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
 At every milestone boundary:
 
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/` and `tools/release/`.
-2. Run `prek update`, and keep golangci-lint in step between `prek.toml` and `tools/go.mod`.
+   `go get -tool <tool>@latest` in `tools/`, `tools/lint/` and `tools/release/`.
+2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
 3. Bump action SHAs from their release tags.
 4. Regenerate the notices.
 5. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.
