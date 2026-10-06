@@ -149,9 +149,9 @@ func Parse(s string) (Card, bool) {
 	words := strings.Fields(prompt.Normalize(suitSymbols.Replace(s)))
 	words = slices.DeleteFunc(words, func(w string) bool { return w == "OF" })
 	switch len(words) {
-	case 1: // AS, 10H, TH
+	case 1: // AS, 10H, TH; not ACES, whose last letter is no suit
 		w := words[0]
-		if len(w) < 2 {
+		if len(w) < 2 || len(w) > 3 {
 			return Card{}, false
 		}
 		words = []string{w[:len(w)-1], w[len(w)-1:]}

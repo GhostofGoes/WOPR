@@ -200,13 +200,14 @@ func (g *Game) next(outs []proto.Output) []proto.Output {
 
 func (g *Game) askAct() proto.Output {
 	toCall := g.in[wopr] - g.in[player]
+	pot := fmt.Sprint(g.pot)
 	switch {
 	case toCall == 0:
-		return proto.Prompt{Text: promptCheck[0].Text}
+		return proto.Prompt{Text: fill(promptCheck, pot)}
 	case g.raiseAmount(player) > 0:
-		return proto.Prompt{Text: fill(promptCall, fmt.Sprint(toCall))}
+		return proto.Prompt{Text: fill(promptCall, pot, fmt.Sprint(toCall))}
 	}
-	return proto.Prompt{Text: fill(promptCallOnly, fmt.Sprint(toCall))}
+	return proto.Prompt{Text: fill(promptCallOnly, pot, fmt.Sprint(toCall))}
 }
 
 // apply plays action a for side p. It reports the chips that moved.
@@ -231,30 +232,52 @@ func (g *Game) apply(p int, a action) int {
 func (g *Game) onAct(input string) []proto.Output {
 	toCall := g.in[wopr] - g.in[player]
 	again := func(text string) []proto.Output { return []proto.Output{say(text), g.askAct()} }
-	var outs []proto.Output
-	switch norm := prompt.Normalize(input); norm {
-	case "C", "K", "CHECK", "CALL", "SEE", "CALL IT", "I CALL", "I CHECK":
-		if norm == "CHECK" || norm == "I CHECK" || norm == "K" {
-			if toCall > 0 {
-				return again(fill(lineNoCheck, fmt.Sprint(toCall)))
-			}
+	words := strings.Fields(prompt.Normalize(input))
+	if len(words) > 1 && words[0] == "I" {
+		words = words[1:] // I CALL, I FOLD
+	}
+	if len(words) == 0 {
+		return again(lineActions[0].Text)
+	}
+	// A number after the verb must be the fixed amount: BET 5, CALL 10.
+	amount := func(want int) bool {
+		if len(words) < 2 || words[1] == "IT" {
+			return true
+		}
+		n, ok := prompt.Number(words[1])
+		return ok && n == want
+	}
+	switch words[0] {
+	case "C", "CALL", "SEE":
+		if !amount(toCall) {
+			return again(fill(lineFixed, fmt.Sprint(toCall)))
 		}
 		g.apply(player, call)
-	case "B", "R", "BET", "RAISE", "RERAISE", "I BET", "I RAISE":
-		if g.raiseAmount(player) == 0 {
+	case "K", "X", "CHECK", "PASS":
+		if toCall > 0 {
+			return again(fill(lineNoCheck, fmt.Sprint(toCall)))
+		}
+		g.apply(player, call)
+	case "B", "R", "BET", "RAISE", "RERAISE":
+		n := g.raiseAmount(player)
+		switch {
+		case n == 0 && g.bets >= maxBets:
 			return again(lineCapped[0].Text)
+		case n == 0:
+			return again(lineAllIn[0].Text)
+		case !amount(n):
+			return again(fill(lineFixed, fmt.Sprint(n)))
 		}
 		g.apply(player, raise)
-	case "F", "FOLD", "I FOLD":
-		outs = append(outs, say(lineYouFold[0].Text))
-		return g.award(outs, wopr)
+	case "F", "FOLD":
+		return g.award([]proto.Output{say(lineYouFold[0].Text)}, wopr)
 	default:
-		if leavingWord(norm) {
+		if leavingWord(strings.Join(words, " ")) {
 			return again(lineFinish[0].Text)
 		}
 		return again(lineActions[0].Text)
 	}
-	return g.next(outs)
+	return g.next(nil)
 }
 
 func (g *Game) woprAct() []proto.Output {
@@ -317,20 +340,33 @@ func (g *Game) parseDiscards(input string) ([]int, bool) {
 	}
 	seen := map[int]bool{}
 	var out []int
-	for _, f := range fields {
-		i := -1
-		if n, ok := prompt.MenuChoice(f, 5); ok {
-			i = n - 1
-		} else if c, ok := cards.Parse(f); ok {
-			i = cards.Index(g.hands[player], c)
+	for i := 0; i < len(fields); {
+		if strings.EqualFold(fields[i], "and") {
+			i++
+			continue
 		}
-		if i < 0 {
+		at, used := -1, 1
+		if n, ok := prompt.MenuChoice(fields[i], 5); ok {
+			at = n - 1
+		} else {
+			for _, k := range []int{3, 2, 1} { // TEN OF CLUBS, 10 C, 10C
+				if i+k > len(fields) {
+					continue
+				}
+				if c, ok := cards.Parse(strings.Join(fields[i:i+k], " ")); ok {
+					at, used = cards.Index(g.hands[player], c), k
+					break
+				}
+			}
+		}
+		if at < 0 {
 			return nil, false
 		}
-		if !seen[i] {
-			seen[i] = true
-			out = append(out, i)
+		if !seen[at] {
+			seen[at] = true
+			out = append(out, at)
 		}
+		i += used
 	}
 	return out, true
 }

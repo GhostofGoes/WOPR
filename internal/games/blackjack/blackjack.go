@@ -24,7 +24,8 @@ const dealerPause = 700 * time.Millisecond
 var (
 	lineStandS17  = script.Orig("THE DEALER STANDS ON SOFT 17. BLACK JACK PAYS 3 TO 2.")
 	lineHitS17    = script.Orig("THE DEALER HITS SOFT 17. BLACK JACK PAYS 3 TO 2.")
-	lineLimits    = script.Orig("BETS ARE WHOLE DOLLARS FROM # TO #. TYPE LEAVE TO CASH OUT.")
+	lineLimits    = script.Orig("BETS ARE WHOLE DOLLARS FROM # TO #. ENTER REPEATS YOUR LAST BET.")
+	lineLeaveHow  = script.Orig("TYPE LEAVE TO CASH OUT.")
 	lineMoney     = script.Orig("YOU HAVE #.")
 	promptBet     = script.Orig("YOUR BET: ")
 	lineBadBet    = script.Orig("A BET IS A WHOLE NUMBER OF DOLLARS FROM # TO #.")
@@ -60,7 +61,7 @@ var (
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
-	lineStandS17, lineHitS17, lineLimits, lineMoney, promptBet, lineBadBet, lineShort, lineSameBet, lineShuffle,
+	lineStandS17, lineHitS17, lineLimits, lineLeaveHow, lineMoney, promptBet, lineBadBet, lineShort, lineSameBet, lineShuffle,
 	lineDealer, lineYou, lineHandN, lineHole, lineDescBJ, lineDescBust, lineDescSoft, promptHit, promptDouble,
 	promptSplit, lineActions, lineNoDouble, lineNoSplit, lineNoMoney, lineFinish, lineDealerBJ, lineDraws,
 	lineDealerBst, lineStandsOn, lineWin, lineBJWin, lineLose, linePush, lineBroke, lineLeave,
@@ -122,7 +123,7 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 		house = lineHitS17
 	}
 	return []proto.Output{
-		say(house[0].Text, fill(lineLimits, money(g.rules.MinBet*100), money(g.rules.MaxBet*100)), fill(lineMoney, money(g.money))),
+		say(house[0].Text, fill(lineLimits, money(g.rules.MinBet*100), money(g.rules.MaxBet*100)), lineLeaveHow[0].Text, fill(lineMoney, money(g.money))),
 		proto.Prompt{Text: promptBet[0].Text},
 	}
 }
@@ -164,8 +165,11 @@ func (g *Game) onBet(input string) []proto.Output {
 	var outs []proto.Output
 	bet, ok := prompt.Number(input)
 	if norm == "" {
-		if g.lastBet == 0 || g.lastBet*100 > g.money {
-			return g.askBet()
+		switch {
+		case g.lastBet == 0:
+			return g.askBet(say(fill(lineBadBet, money(g.rules.MinBet*100), money(g.rules.MaxBet*100))))
+		case g.lastBet*100 > g.money:
+			return g.askBet(say(fill(lineShort, money(g.money))))
 		}
 		bet, ok = g.lastBet, true
 		outs = append(outs, say(fill(lineSameBet, money(bet*100))))
@@ -228,10 +232,11 @@ func (g *Game) deal(bet int) []proto.Output {
 func (g *Game) ask() proto.Output {
 	h := &g.hands[g.cur]
 	text := promptHit[0].Text
+	afford := g.committed()+h.Bet <= g.money // doubling and splitting both bet the stake again
 	switch {
-	case h.CanSplit(len(g.hands)):
+	case afford && h.CanSplit(len(g.hands)):
 		text = promptSplit[0].Text
-	case h.CanDouble():
+	case afford && h.CanDouble():
 		text = promptDouble[0].Text
 	}
 	if len(g.hands) > 1 {
@@ -287,9 +292,15 @@ func (g *Game) onAction(input string) []proto.Output {
 
 func (g *Game) split() []proto.Output {
 	first := g.hands[0]
-	a := Hand{Cards: []cards.Card{first.Cards[0], g.draw()}, Bet: first.Bet, FromSplit: true}
-	b := Hand{Cards: []cards.Card{first.Cards[1], g.draw()}, Bet: first.Bet, FromSplit: true}
-	g.hands = []Hand{a, b}
+	// Both hands are on the table before either draws, so a refilled deck leaves them out.
+	g.hands = []Hand{
+		{Cards: []cards.Card{first.Cards[0]}, Bet: first.Bet, FromSplit: true},
+		{Cards: []cards.Card{first.Cards[1]}, Bet: first.Bet, FromSplit: true},
+	}
+	for i := range g.hands {
+		c := g.draw()
+		g.hands[i].Cards = append(g.hands[i].Cards, c)
+	}
 	return g.after(table(g.handLine(0), g.handLine(1)))
 }
 
@@ -378,7 +389,7 @@ func describe(h []cards.Card) string {
 		return lineDescBJ[0].Text
 	case total > 21:
 		return lineDescBust[0].Text
-	case soft:
+	case soft && total < 21: // a soft 21 is just 21
 		return fill(lineDescSoft, fmt.Sprint(total))
 	}
 	return fmt.Sprint(total)

@@ -20,15 +20,16 @@ var (
 	lineYourHand   = script.Orig("YOUR HAND:")
 	lineYouHad     = script.Orig("YOU SHOW:")
 	lineWOPRShows  = script.Orig("WOPR SHOWS:")
-	linePot        = script.Orig("POT #.")
-	promptCheck    = script.Orig("CHECK OR BET? ")
-	promptCall     = script.Orig("CALL #, RAISE OR FOLD? ")
-	promptCallOnly = script.Orig("CALL # OR FOLD? ")
+	promptCheck    = script.Orig("POT #. CHECK OR BET? ")
+	promptCall     = script.Orig("POT #. CALL #, RAISE OR FOLD? ")
+	promptCallOnly = script.Orig("POT #. CALL # OR FOLD? ")
 	promptDraw     = script.Orig("DISCARD (1-5, OR NONE): ")
 	promptAgain    = script.Orig("ANOTHER HAND? ")
-	lineActions    = script.Orig("C TO CHECK OR CALL, B TO BET OR RAISE, F TO FOLD.")
+	lineActions    = script.Orig("C TO CHECK OR CALL, B TO BET OR RAISE, F TO FOLD. X CHECKS.")
 	lineNoCheck    = script.Orig("THERE IS A BET OF # TO CALL.")
 	lineCapped     = script.Orig("NO MORE RAISES THIS ROUND.")
+	lineAllIn      = script.Orig("YOU CANNOT RAISE: A STACK IS ALL IN.")
+	lineFixed      = script.Orig("BETS ARE FIXED: THAT IS #.")
 	lineFinish     = script.Orig("FINISH THE HAND FIRST.")
 	lineTooMany    = script.Orig("YOU MAY DISCARD UP TO THREE CARDS.")
 	lineWhichCards = script.Orig("NAME CARDS BY POSITION, 1 TO 5, OR AS THEY SHOW, SUCH AS 7H.")
@@ -67,8 +68,8 @@ var (
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
-	lineRules, lineChips, lineWOPRDeals, lineYouDeal, lineYourHand, lineYouHad, lineWOPRShows, linePot, promptCheck,
-	promptCall, promptCallOnly, promptDraw, promptAgain, lineActions, lineNoCheck, lineCapped, lineFinish, lineTooMany,
+	lineRules, lineChips, lineWOPRDeals, lineYouDeal, lineYourHand, lineYouHad, lineWOPRShows, promptCheck,
+	promptCall, promptCallOnly, promptDraw, promptAgain, lineActions, lineNoCheck, lineCapped, lineAllIn, lineFixed, lineFinish, lineTooMany,
 	lineWhichCards, lineAgainHelp, lineYouDraw, lineYouPat, lineYouFold, lineWOPRChecks, lineWOPRBets, lineWOPRCalls,
 	lineWOPRRaises, lineWOPRFolds, lineWOPRDraws, lineWOPRPat, lineYouWin, lineWOPRWins, lineSplit, lineBroke,
 	lineWOPRBroke, lineLeave, nameHigh, namePair, nameTwoPair, nameTrips, nameStraight, nameFlush, nameFull, nameQuads,

@@ -299,3 +299,38 @@ func TestMoneyFormat(t *testing.T) {
 		}
 	}
 }
+
+// Review fixes: the prompt offers only what the player can afford; a split with the deck
+// running out never duplicates a card; a soft 21 is 21; a bare Enter says why it did nothing.
+func TestReviewFixes(t *testing.T) {
+	t.Parallel()
+	g := stacked(t, "8S 9C 8H 10D")
+	g.money = 1500
+	if out := play(t, g, "10"); !strings.Contains(out, "> HIT OR STAND?") {
+		t.Errorf("$15 cannot cover a split or a double of $10:\n%s", out)
+	}
+
+	g = stacked(t, "8S 6C 8H 10D 3C") // the deck runs out on the second hand's card
+	play(t, g, "10", "p")
+	seen := map[cards.Card]bool{}
+	for _, c := range append(append(append([]cards.Card{}, g.dealer...), g.hands[0].Cards...), g.hands[1].Cards...) {
+		if seen[c] {
+			t.Fatalf("%s is on the table twice", c)
+		}
+		seen[c] = true
+	}
+	for _, c := range g.shoe {
+		if seen[c] {
+			t.Fatalf("%s is both on the table and in the deck", c)
+		}
+	}
+
+	if got := describe(hand(t, "AS 5H 5D")); got != "21" {
+		t.Errorf("soft 21 shows as %q", got)
+	}
+
+	g = stacked(t, "8S 9C 8H 10D")
+	if out := play(t, g, ""); !strings.Contains(out, "A BET IS A WHOLE NUMBER") {
+		t.Errorf("Enter before any bet:\n%s", out)
+	}
+}

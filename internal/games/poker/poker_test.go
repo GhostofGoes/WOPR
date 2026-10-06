@@ -37,7 +37,7 @@ func TestTranscript(t *testing.T) {
 			g.Type("y")
 		case strings.HasPrefix(p, "DISCARD"):
 			g.Type("1 2")
-		case strings.HasPrefix(p, "CHECK") && !bet:
+		case strings.Contains(p, "CHECK OR BET") && !bet:
 			bet = true
 			g.Type("bet")
 		default:
