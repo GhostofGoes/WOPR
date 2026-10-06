@@ -67,7 +67,7 @@ func TestTheShow(t *testing.T) {
 			sawBoards = true
 			snap("self-play, round 4")
 		}
-		if g.phase == montage && g.shown == 25 && !sawMontage {
+		if g.phase == montage && g.shown >= 25 && !sawMontage {
 			sawMontage = true
 			snap("montage")
 		}
@@ -79,6 +79,9 @@ func TestTheShow(t *testing.T) {
 		t.Errorf("montage %v, shown %d, cracked %d", sawMontage, g.shown, g.cracked())
 	}
 	t.Logf("the show lasts %v", elapsed)
+	if elapsed > 40*time.Second {
+		t.Errorf("the show runs %v; keep it under 40 s", elapsed)
+	}
 	golden.AssertString(t, "show", strings.Join(shots, "\n"))
 }
 
@@ -103,5 +106,86 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	}
 	if Slug != tictactoe.EndingSlug {
 		t.Error("tic-tac-toe hands off to this slug")
+	}
+}
+
+// The montage moves the whole table, so it redraws at most 3 times a second, at any tick
+// size; with --reduce-motion it does not speed up.
+func TestMontageFlashCap(t *testing.T) {
+	t.Parallel()
+	for _, rm := range []bool{false, true} {
+		for _, dt := range []time.Duration{tick, 66 * time.Millisecond, 100 * time.Millisecond} {
+			g := New().(*Game)
+			g.Start(proto.Env{Seed: 3, Width: 80, Height: 19, ReduceMotion: rm})
+			for g.phase == selfPlay {
+				g.Handle(proto.TickEvent{Dt: dt})
+			}
+			var changes []time.Duration // when the montage table changed
+			last, now := -1, time.Duration(0)
+			counts := map[int]bool{}
+			for g.phase == montage {
+				g.Handle(proto.TickEvent{Dt: dt})
+				now += dt
+				if g.shown != last {
+					changes = append(changes, now)
+					if last >= 0 {
+						counts[g.shown-last] = true
+					}
+					last = g.shown
+				}
+			}
+			for i := 3; i < len(changes); i++ {
+				if changes[i]-changes[i-3] < time.Second {
+					t.Fatalf("reduce motion %v, dt %v: four montage frames within %v", rm, dt, changes[i]-changes[i-3])
+				}
+			}
+			if rm && len(counts) > 2 { // a steady step, and perhaps a short last frame
+				t.Errorf("reduce motion must not accelerate: steps %v", counts)
+			}
+		}
+	}
+}
+
+// An empty Enter at GREETINGS PROFESSOR FALKEN. (one pressed to hurry the show along) is
+// not the answer.
+func TestEmptyLineDoesNotAnswerTheGreeting(t *testing.T) {
+	t.Parallel()
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	outs := g.Handle(proto.LineEvent{Text: ""})
+	if g.phase != greeting || len(outs) != 1 {
+		t.Fatalf("an empty line re-prompts: %v", outs)
+	}
+	g.Handle(proto.LineEvent{Text: "Hello."})
+	if g.phase != done {
+		t.Fatal("Hello. answers")
+	}
+}
+
+// The launch code carries on from what GTW cracked and is complete by the last round.
+func TestLaunchCodeProgress(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		mode  string
+		first int
+	}{{"", 7}, {"code:2", 2}, {"code:7", 7}, {"code:0", 0}, {"code:99", 10}} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 1, Mode: tc.mode})
+		if got := g.cracked(); got != tc.first {
+			t.Errorf("%q: starts at %d, want %d", tc.mode, got, tc.first)
+		}
+		prev := g.cracked()
+		for g.phase == selfPlay {
+			g.Handle(proto.TickEvent{Dt: tick})
+			if g.phase == selfPlay {
+				if g.cracked() < prev {
+					t.Fatalf("%q: the code went backwards", tc.mode)
+				}
+				prev = g.cracked()
+			}
+		}
+		if prev != len("CPE1704TKS") {
+			t.Errorf("%q: the last self-play frame shows %d characters, want all 10", tc.mode, prev)
+		}
 	}
 }

@@ -244,8 +244,12 @@ func TestGTWScreens(t *testing.T) {
 	s.add("big board", d)
 	d.line("")
 	s.add("kill ratios", d)
-	d.line("").line("List Games")
+	d.line("")
 	s.add("climax", d)
+	d.line("List Games")
+	s.add("climax: LIST GAMES in the console", d)
+	d.line("Chess")
+	s.add("climax: the board again", d)
 	golden.AssertString(t, "gtw_screens", s.String())
 }
 

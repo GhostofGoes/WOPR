@@ -106,3 +106,111 @@ func TestEveryLineHasProvenance(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+// climax plays the scenario up to the climax.
+func climax(t *testing.T, seed uint64) *testkit.GameSession {
+	t.Helper()
+	g := testkit.Game(t, gtw.New(), info, "", seed)
+	g.Type("2").Type("Las Vegas").Type("").Type("").Type("")
+	return g
+}
+
+// The climax reads requests the way players type them: apostrophes, aliases without
+// spaces, TTT as a word.
+func TestClimaxReadsRequests(t *testing.T) {
+	t.Parallel()
+	for in, want := range map[string]string{
+		"Let's play chess":                    "** IDENTIFICATION NOT RECOGNISED **",
+		"Let’s play Global Thermonuclear War": "** GAME ROUTINE RUNNING **",
+		"blackjack":                           "** IDENTIFICATION NOT RECOGNISED **",
+		"How about a game of poker?":          "** IDENTIFICATION NOT RECOGNISED **",
+		"gtw":                                 "** GAME ROUTINE RUNNING **",
+	} {
+		g := climax(t, 1)
+		before := len(g.Transcript())
+		g.Type(in)
+		if got := g.Transcript()[before:]; !strings.Contains(got, want) {
+			t.Errorf("%q: %q, want %s", in, got, want)
+		}
+	}
+	for _, in := range []string{"play ttt", "Let's play tic tac toe", "TIC-TAC-TOE", "noughts and crosses"} {
+		g := climax(t, 1)
+		g.Type(in)
+		if _, over := g.Result(); !over {
+			t.Errorf("%q must hand off to tic-tac-toe", in)
+		}
+	}
+}
+
+// LIST GAMES moves the climax to the console, where all sixteen lines fit, and the next
+// input brings the board back.
+func TestClimaxListUsesTheConsole(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	for _, in := range []string{"2", "Las Vegas", "", "", ""} {
+		g.Handle(proto.LineEvent{Text: in})
+	}
+	layout := func(outs []proto.Output) (proto.Layout, bool) {
+		for _, o := range outs {
+			if l, ok := o.(proto.SetLayout); ok {
+				return l.Layout, true
+			}
+		}
+		return 0, false
+	}
+	if l, ok := layout(g.Handle(proto.LineEvent{Text: "List Games"})); !ok || l != proto.LayoutConsole {
+		t.Fatal("LIST GAMES must switch to the console")
+	}
+	if l, ok := layout(g.Handle(proto.LineEvent{Text: "chess"})); !ok || l != proto.LayoutFull {
+		t.Fatal("the next input brings the board back")
+	}
+}
+
+// The hand-off tells tic-tac-toe (and through it the ending) how much of the code is cracked.
+func TestHandOffCarriesTheCode(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	for _, in := range []string{"2", "Las Vegas", "", "", ""} {
+		g.Handle(proto.LineEvent{Text: in})
+	}
+	for _, o := range g.Handle(proto.LineEvent{Text: "tic-tac-toe"}) {
+		if d, ok := o.(proto.Done); ok {
+			if d.Result.Next == nil || d.Result.Next.Mode != gtw.ClimaxMode+":7" {
+				t.Fatalf("hand-off: %+v", d.Result.Next)
+			}
+			return
+		}
+	}
+	t.Fatal("no hand-off")
+}
+
+// After the exchange, DEFCON 1 keeps blinking: the clock keeps running (paced only), and
+// the assessment is announced once.
+func TestAssessmentKeepsTheBlinkAlive(t *testing.T) {
+	t.Parallel()
+	g := gtw.New()
+	g.Start(proto.Env{Seed: 1, Width: 80, Height: 20})
+	g.Handle(proto.LineEvent{Text: "2"})
+	g.Handle(proto.LineEvent{Text: "Las Vegas"})
+	g.Handle(proto.LineEvent{Text: ""})
+	var outs []proto.Output
+	for range 200 {
+		outs = append(outs, g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond})...)
+	}
+	assessed, every := 0, time.Duration(-1)
+	for _, o := range outs {
+		switch o := o.(type) {
+		case proto.Say:
+			if strings.Contains(strings.Join(o.Lines, " "), "STRIKE ASSESSMENT COMPLETE.") {
+				assessed++
+			}
+		case proto.Animate:
+			every = o.Every
+		}
+	}
+	if assessed != 1 || every <= 0 {
+		t.Fatalf("assessed %d times, last Animate %v", assessed, every)
+	}
+}

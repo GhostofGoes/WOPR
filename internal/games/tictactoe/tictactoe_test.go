@@ -181,3 +181,22 @@ func TestViewFitsItsPanel(t *testing.T) {
 	g.View(c)
 	golden.AssertString(t, "view", c.String()+"\n"+c.StyleMap())
 }
+
+// At the climax, the launch mode carries how much of the code GTW cracked; zero players
+// passes it on to the ending.
+func TestClimaxPassesTheCodeOn(t *testing.T) {
+	t.Parallel()
+	for mode, want := range map[string]string{"climax:5": "code:5", "climax": "", "": ""} {
+		g := tictactoe.New()
+		g.Start(proto.Env{Seed: 1, Instant: true, Mode: mode})
+		var next *proto.Launch
+		for _, o := range g.Handle(proto.LineEvent{Text: "0"}) {
+			if d, ok := o.(proto.Done); ok {
+				next = d.Result.Next
+			}
+		}
+		if next == nil || next.Slug != tictactoe.EndingSlug || next.Mode != want {
+			t.Errorf("mode %q: hand-off %+v, want mode %q", mode, next, want)
+		}
+	}
+}

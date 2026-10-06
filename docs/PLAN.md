@@ -817,20 +817,24 @@ no verdict of their own.
       (`Say`), then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. Targets are read until an empty
       line; a multi-line paste arrives as one line, so targets on one line are split on commas.
-   3. `SetLayout(Full)`: the big board, trajectories, and the DEFCON ladder by turn. Force allocation covers
-      ICBM, SLBM and bombers; then the enemy responds, and the kill-ratio tables follow.
+   3. `SetLayout(Full)`: the big board and trajectories. The player's missiles fly, WOPR answers with more,
+      and DEFCON falls as the tracks cross; then the kill-ratio tables follow. **As built** the exchange is one
+      animated strike, not turns: a force-allocation step (ICBM, SLBM, bombers) and a turn-based DEFCON
+      ladder are not built. They are M5 polish if wanted (owner's call); nothing else depends on them.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
       |---|---|
-      | `LIST GAMES` | The film list (tic-tac-toe is not on it) |
+      | `LIST GAMES` | The film list (tic-tac-toe is not on it), in the console, where its 16 lines fit; the next input brings the board back |
       | The name of another game (`CHESS`, `POKER`, …) | `** IDENTIFICATION NOT RECOGNISED **`, `** ACCESS DENIED **` |
       | `GLOBAL THERMONUCLEAR WAR` | `** GAME ROUTINE RUNNING **` |
       | Anything else | In turn: `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE BEFORE RESET **`, `** ACCESS DENIED **` |
 
       Each third rejection adds an `original` hint naming tic-tac-toe.
-   5. `TIC-TAC-TOE` (or any intent naming it) gives `Done{NoWinner, Next: Launch{tictactoe, "climax"}}`. The host
-      chains the hand-off (§4.4).
+   5. `TIC-TAC-TOE` (or any intent naming it: `TTT`, `LET'S PLAY TIC TAC TOE`) gives
+      `Done{NoWinner, Next: Launch{tictactoe, "climax:N"}}`, N being the launch code characters cracked so far.
+      The host chains the hand-off (§4.4). Requests are read without apostrophes or spaces, so
+      `LET'S PLAY CHESS` and `BLACKJACK` name their games.
 2. **Tic-tac-toe in `climax` mode** is a closed state machine (RF-2):
    - `ONE OR TWO PLAYERS? PLEASE LIST NUMBER OF PLAYERS:` accepts `1`, `0` or `ZERO`; `2` or anything else
      asks again.
@@ -841,12 +845,16 @@ no verdict of their own.
    - `0` or `ZERO`, at either prompt, gives `Done{NoWinner, Next: Launch{ending}}`.
    - In normal mode, `NUMBER OF PLAYERS: 0` does the same.
    - The launch code `CPE 1704 TKS` is cracked digit by digit on screen while this plays. `games/ending` owns
-     that display from here on, since GTW is gone from the stack.
+     that display from here on, since GTW is gone from the stack: tic-tac-toe passes GTW's count on
+     (`Launch{ending, "code:N"}`), and the ending cracks the rest over its self-play, complete on the last round.
 3. **The ending** runs with Animate, Prompt and `Wait`, and cannot be aborted with Esc:
    1. self-play at increasing speed, capped by the flash rule, using `games/tictactoe`'s engine (AR-6);
-   2. the scenario montage, each ending `WINNER: NONE`;
+   2. the scenario montage, each ending `WINNER: NONE`. It redraws at most 2.5 times a second (a frame every
+      400 ms) and speeds up by adding lines to each frame, one to eight; with `--reduce-motion`
+      (`Env.ReduceMotion`) it adds a steady three;
    3. `Clear`, `GREETINGS PROFESSOR FALKEN.`, `Prompt`;
-   4. any input, e.g. `Hello.`;
+   4. any non-empty input, e.g. `Hello.` (an Enter pressed to hurry the show is not an answer, and the UI
+      never holds a bare Enter as typeahead);
    5. `A STRANGE GAME.` / `THE ONLY WINNING MOVE IS` / `NOT TO PLAY.`;
    6. `HOW ABOUT A NICE GAME OF CHESS?`;
    7. `Done{NoWinner, NoVerdict: true}`.
@@ -855,8 +863,9 @@ no verdict of their own.
 4. **Leaving early.** GTW and the climax tic-tac-toe are games, so Esc twice ends them like any game (§4.3);
    that is a deliberate choice, not a loophole. The persona then says an `original` line acknowledging the
    abandoned war (an `AfterAbort` rule that knows the last game was GTW) instead of the plain verdict.
-5. **Goldens.** `film_path` (§9) covers the 0-players path; M2 adds `climax_wopr_wins`, `climax_no` and
-   `climax_esc`.
+5. **Goldens.** `film_path` (§9) covers the 0-players path; tic-tac-toe's `climax` golden covers a WOPR win
+   and `NO`; the persona's `TestAbandonedWar` and `TestAbandonedClimax` cover Esc in GTW and in the climax, and
+   `TestFilmPath` presses Esc twice during the ending, which ignores it.
 
 ### 6.3 Sim engine (M4)
 

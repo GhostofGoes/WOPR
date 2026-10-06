@@ -34,6 +34,7 @@ type Config struct {
 	Seed          uint64
 	Instant       bool
 	Deterministic bool
+	ReduceMotion  bool
 	Resolve       Resolver
 	Area          Area
 }
@@ -325,7 +326,7 @@ func (r *Runner) launchSeed(slug string) uint64 {
 func (r *Runner) env(f *frame, mode string) proto.Env {
 	return proto.Env{
 		Seed: f.seed, Width: f.areaW, Height: f.areaH,
-		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, Mode: mode,
+		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, ReduceMotion: r.cfg.ReduceMotion, Mode: mode,
 	}
 }
 

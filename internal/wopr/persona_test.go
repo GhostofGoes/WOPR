@@ -261,6 +261,21 @@ func TestFilmPath(t *testing.T) {
 	golden.AssertString(t, "film_path", s.Transcript())
 }
 
+// Walking away from the climax's tic-tac-toe is walking away from the war too.
+func TestAbandonedClimax(t *testing.T) {
+	t.Parallel()
+	s := loggedOn(t, catalog.Registry())
+	s.Type("play global thermonuclear war").Type("play global thermonuclear war")
+	s.Type("2").Type("Las Vegas").Type("").Type("").Type("").Type("tic-tac-toe")
+	if !s.Contains("ONE OR TWO PLAYERS?") {
+		t.Fatalf("the climax tic-tac-toe should be running:\n%s", s.Transcript())
+	}
+	s.Esc().Esc()
+	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
+		t.Fatalf("Esc twice at the climax:\n%s", s.Transcript())
+	}
+}
+
 // Walking away from the war gets its own remark.
 func TestAbandonedWar(t *testing.T) {
 	t.Parallel()

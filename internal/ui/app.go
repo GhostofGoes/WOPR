@@ -218,7 +218,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) start() tea.Cmd {
 	m.started = true
 	m.runner = host.New(host.Config{
-		Seed: m.opts.Seed, Instant: m.opts.Instant, Deterministic: m.opts.SeedSet,
+		Seed: m.opts.Seed, Instant: m.opts.Instant, Deterministic: m.opts.SeedSet, ReduceMotion: m.opts.ReduceMotion,
 		Resolve: m.resolve, Area: m.area,
 	})
 	persona := wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})

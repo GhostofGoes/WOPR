@@ -23,6 +23,10 @@ const Climax = "climax"
 // EndingSlug is the program zero players hands off to.
 const EndingSlug = "ending"
 
+// CodeMode prefixes the ending's launch mode with the launch code characters already
+// cracked: "code:7".
+const CodeMode = "code:"
+
 // Script text (docs/PLAN.md Appendix B). Lines lists every block for the provenance test.
 var (
 	linePlayers      = script.Recon("ONE OR TWO PLAYERS?")
@@ -188,7 +192,7 @@ func New() games.Game { return &Game{last: -1} }
 // Start implements proto.Program.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
-	g.climax = env.Mode == Climax
+	g.climax = env.Mode == Climax || strings.HasPrefix(env.Mode, Climax+":")
 	return g.askPlayers()
 }
 
@@ -230,8 +234,14 @@ func zero(input string) bool {
 	return ok && n == 0
 }
 
+// toEnding hands off to the ending. At the climax, GTW's launch mode carries how much of the
+// launch code it cracked ("climax:5"); the ending carries on from there.
 func (g *Game) toEnding() []proto.Output {
-	return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.NoWinner, Next: &proto.Launch{Slug: EndingSlug}}}}
+	next := proto.Launch{Slug: EndingSlug}
+	if _, code, ok := strings.Cut(g.env.Mode, ":"); ok && g.climax {
+		next.Mode = CodeMode + code
+	}
+	return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.NoWinner, Next: &next}}}
 }
 
 func (g *Game) onPlayers(input string) []proto.Output {

@@ -96,9 +96,61 @@ A-SS20-A 932 534     C-SS20-A 319 667
 
                            LAUNCH CODE: CPE 1704 ___
 
+
+
+** GAME ROUTINE RUNNING **
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 0, row 22
+==== climax: LIST GAMES in the console (80x24) ====
+PRESS ENTER TO CONTINUE.
+
+
+** GAME ROUTINE RUNNING **
+List Games
+
+FALKEN'S MAZE
+BLACK JACK
+GIN RUMMY
+HEARTS
+BRIDGE
+CHECKERS
+CHESS
+POKER
+FIGHTER COMBAT
+GUERRILLA ENGAGEMENT
+DESERT WARFARE
+AIR-TO-GROUND ACTIONS
+THEATERWIDE TACTICAL WARFARE
 THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE
 
 GLOBAL THERMONUCLEAR WAR
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 0, row 22
+==== climax: the board again (80x24) ====
+                            GLOBAL THERMONUCLEAR WAR                DEFCON
+   +---------------------------------------------------------+       +---+
+   | _..--''--.++***********************'''''''''''''--.._   |       | 5 |
+   |(      ++++*****++'  )  _********++****               '-.|       | 4 |
+   | '-. X+   **+  '-'   /  /   **X **** +*X             _.' |       | 3 |
+   |    \   X+          |   '-.   X    ***_ ++     __.--'    |       | 2 |
+   |     '.        _.--'       '-.__.-'  *X'-.  .-'          |       | 1 |
+   |       '-.__.-'                           '-'            |       +---+
+   |            '.                                           |
+   +---------------------------------------------------------+
+           UNITED STATES                  SOVIET UNION
+
+TRAJECTORY HEADING   TRAJECTORY HEADING
+------------------   ------------------
+A-SS20-A 932 534     C-SS20-A 319 667
+       B 487 038            B 558 572
+
+                           LAUNCH CODE: CPE 1704 ___
+
+
+** IDENTIFICATION NOT RECOGNISED **
+** ACCESS DENIED **
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 0, row 22

@@ -69,7 +69,9 @@ func (m *model) edit(k tea.KeyPressMsg) tea.Cmd {
 		if m.asking && !m.tw.Busy() {
 			return m.submit()
 		}
-		m.held = true
+		if !m.ed.Empty() {
+			m.held = true // typeahead; a bare Enter is only impatience, never an answer
+		}
 		return nil
 	case "backspace":
 		m.ed.Backspace()

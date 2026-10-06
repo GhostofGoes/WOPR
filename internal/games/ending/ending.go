@@ -6,6 +6,8 @@
 package ending
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
@@ -19,6 +21,8 @@ import (
 const Slug = tictactoe.EndingSlug
 
 // MovieMode is the launch mode movie mode uses: the ending types its own "Hello." (M6).
+// A climax hand-off's mode instead says how much of the launch code GTW cracked
+// (tictactoe.CodeMode).
 const MovieMode = "movie"
 
 // Timing.
@@ -29,10 +33,14 @@ const (
 	firstStep    = 350 * time.Millisecond
 	fastestStep  = 60 * time.Millisecond
 	speedUp      = 0.75 // each round's step is this fraction of the last
-	firstLine    = 600 * time.Millisecond
-	fastestLine  = 100 * time.Millisecond // the montage scrolls at most 10 lines a second
-	lineSpeedUp  = 0.9
 	pauseBetween = 1200 * time.Millisecond
+
+	// The montage moves the whole table, so it redraws under the 3 Hz flash cap
+	// (docs/PLAN.md §4.5) and speeds up by adding lines to each frame instead.
+	montageFrame   = 400 * time.Millisecond
+	framesPerStep  = 3 // frames before each extra line per frame
+	mostPerFrame   = 8
+	steadyPerFrame = 3 // with --reduce-motion: no acceleration
 )
 
 // Script text (docs/PLAN.md Appendix B).
@@ -73,8 +81,9 @@ type Game struct {
 	acc    time.Duration
 	games  int // games finished, for the random streams
 
-	shown    int // montage lines on screen
-	lineStep time.Duration
+	shown  int // montage lines on screen
+	frames int // montage frames so far
+	start  int // launch code characters already cracked when the ending began
 }
 
 // New returns the ending.
@@ -86,7 +95,11 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	for i := range g.boards {
 		g.toMove[i] = 'X'
 	}
-	g.step, g.lineStep = firstStep, firstLine
+	g.step = firstStep
+	g.start = min(len(lineCode[0].Text)-heldBack, len(lineCode[0].Text))
+	if n, err := strconv.Atoi(strings.TrimPrefix(env.Mode, tictactoe.CodeMode)); err == nil && strings.HasPrefix(env.Mode, tictactoe.CodeMode) {
+		g.start = min(max(n, 0), len(lineCode[0].Text))
+	}
 	if env.Instant {
 		g.phase, g.round, g.shown = montage, rounds, len(assets.Scenarios)
 		return g.greet()
@@ -104,7 +117,11 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 	case proto.TickEvent:
 		return g.onTick(ev.Dt)
 	case proto.LineEvent:
-		if g.phase == greeting {
+		switch {
+		case g.phase != greeting:
+		case strings.TrimSpace(ev.Text) == "": // an Enter pressed to hurry the show is not an answer
+			return []proto.Output{proto.Prompt{}}
+		default:
 			return g.conclude()
 		}
 	}
@@ -120,10 +137,10 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 			g.playStep()
 		}
 	case montage:
-		for g.acc >= g.lineStep && g.phase == montage {
-			g.acc -= g.lineStep
-			g.shown++
-			g.lineStep = max(time.Duration(float64(g.lineStep)*lineSpeedUp), fastestLine)
+		for g.acc >= montageFrame && g.phase == montage {
+			g.acc -= montageFrame
+			g.shown = min(g.shown+g.perFrame(), len(assets.Scenarios))
+			g.frames++
 			if g.shown >= len(assets.Scenarios) {
 				return g.greet()
 			}
@@ -162,6 +179,15 @@ func (g *Game) playStep() {
 	}
 }
 
+// perFrame is how many scenario lines the next montage frame adds: one at first, one more
+// every few frames, or a steady few with --reduce-motion.
+func (g *Game) perFrame() int {
+	if g.env.ReduceMotion {
+		return steadyPerFrame
+	}
+	return min(1+g.frames/framesPerStep, mostPerFrame)
+}
+
 // greet ends the show: the screens go back to the console for the film's last exchange.
 func (g *Game) greet() []proto.Output {
 	g.phase = greeting
@@ -191,12 +217,12 @@ func (g *Game) conclude() []proto.Output {
 	}
 }
 
-// cracked is how much of the launch code shows: GTW's part, then one more character every
-// two rounds of self-play.
+// cracked is how much of the launch code shows: what GTW cracked, then the rest spread over
+// the rounds of self-play, complete on the last.
 func (g *Game) cracked() int {
-	n := len(lineCode[0].Text) - heldBack + g.round/2
+	total := len(lineCode[0].Text)
 	if g.phase != selfPlay {
-		n = len(lineCode[0].Text)
+		return total
 	}
-	return min(n, len(lineCode[0].Text))
+	return min(g.start+(total-g.start)*g.round/(rounds-1), total)
 }

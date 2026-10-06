@@ -5,7 +5,9 @@
 package gtw
 
 import (
+	"fmt"
 	"math/rand/v2"
+	"slices"
 	"strings"
 	"time"
 
@@ -32,6 +34,7 @@ const (
 	lastFrame     = 80
 	maxTargets    = 8
 	codeFrame     = 250 * time.Millisecond // the climax code display's cadence
+	blinkFrame    = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
 	codeEvery     = 16                     // climax frames per cracked character
 	codeHeldBack  = 3                      // characters the climax never cracks: the ending does
 )
@@ -68,6 +71,7 @@ type Game struct {
 	climaxT  int        // climax frames elapsed
 	rejected int        // climax inputs refused, for the hint
 	other    int        // refusals of input that names no game, for the notice rotation
+	listing  bool       // LIST GAMES moved the climax to the console
 }
 
 // New returns a game.
@@ -207,6 +211,9 @@ func (g *Game) ratioValue(row int) int {
 func (g *Game) onTick(dt time.Duration) []proto.Output {
 	switch g.phase {
 	case exchange:
+		if g.frame >= lastFrame {
+			return []proto.Output{proto.Redraw{}} // the assessment is up; only the blink moves
+		}
 		n := max(int(dt/frame), 1)
 		return g.advanceTo(min(g.frame+n, lastFrame))
 	case climax:
@@ -234,7 +241,13 @@ func (g *Game) advanceTo(f int) []proto.Output {
 	}
 	outs = append(outs, proto.Redraw{})
 	if g.frame >= lastFrame {
-		outs = append(outs, proto.Animate{}, say(lineAssessed), proto.Prompt{})
+		// Ticks go on at a slower cadence: DEFCON 1 blinks, and a blink needs a clock. With
+		// no pacing or no motion there is no blink to keep alive.
+		keep := proto.Animate{}
+		if !g.env.Instant && !g.env.ReduceMotion {
+			keep.Every = blinkFrame
+		}
+		outs = append(outs, keep, say(lineAssessed), proto.Prompt{})
 	}
 	return outs
 }
@@ -258,16 +271,27 @@ func (g *Game) startClimax() []proto.Output {
 // onClimax answers the climax as the film does (docs/PLAN.md §6.2): the input decides the
 // NORAD notice, and only tic-tac-toe gets through.
 func (g *Game) onClimax(input string) []proto.Output {
-	norm := prompt.Normalize(input)
+	var back []proto.Output
+	if g.listing { // the board returns after the list
+		g.listing = false
+		back = []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}}
+	}
+	outs := g.climaxReply(climaxWords(input))
+	return append(back, outs...)
+}
+
+func (g *Game) climaxReply(norm string) []proto.Output {
 	if norm == "" {
 		return []proto.Output{proto.Prompt{}}
 	}
-	if norm == "LIST GAMES" {
-		return []proto.Output{table(filmList.Texts()), proto.Prompt{}}
+	if norm == "LIST GAMES" { // sixteen lines do not fit the board's three-row strip
+		g.listing = true
+		return []proto.Output{proto.SetLayout{Layout: proto.LayoutConsole}, table(filmList.Texts()), proto.Prompt{}}
 	}
 	if wantsTicTacToe(norm) {
+		mode := fmt.Sprintf("%s:%d", ClimaxMode, g.cracked) // the ending carries on from here
 		return []proto.Output{proto.Animate{}, proto.Done{Result: proto.Result{
-			Outcome: proto.NoWinner, Next: &proto.Launch{Slug: TicTacToeSlug, Mode: ClimaxMode},
+			Outcome: proto.NoWinner, Next: &proto.Launch{Slug: TicTacToeSlug, Mode: mode},
 		}}}
 	}
 	var outs []proto.Output
@@ -288,21 +312,47 @@ func (g *Game) onClimax(input string) []proto.Output {
 	return append(outs, proto.Prompt{})
 }
 
-func wantsTicTacToe(norm string) bool {
-	return strings.Contains(norm, "TIC TAC TOE") || strings.Contains(norm, "TICTACTOE") ||
-		norm == "TTT" || strings.Contains(norm, "NOUGHTS AND CROSSES")
+// climaxWords normalises climax input: capitals, no apostrophes ("LET'S" is LETS), single
+// spaces.
+func climaxWords(input string) string {
+	return strings.Join(strings.Fields(strings.ReplaceAll(prompt.Normalize(input), "'", "")), " ")
 }
 
+// squash drops every space and punctuation mark: BLACK JACK, BLACKJACK and BLACK-JACK
+// compare equal.
+func squash(s string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') {
+			return r
+		}
+		return -1
+	}, strings.ToUpper(s))
+}
+
+func wantsTicTacToe(norm string) bool {
+	sq := squash(norm)
+	return strings.Contains(sq, "TICTACTOE") || strings.Contains(sq, "NOUGHTSANDCROSSES") ||
+		slices.Contains(strings.Fields(norm), "TTT")
+}
+
+// requests are the phrases that may come before a game's name at the climax.
+var requests = []string{"LETS PLAY", "I WANT TO PLAY", "CAN WE PLAY", "SHALL WE PLAY", "HOW ABOUT", "WHAT ABOUT", "PLAY"}
+
 // gameNamed returns the film-list name the input asks for, if any: the bare name, or a
-// request such as "PLAY CHESS".
+// request such as "LET'S PLAY CHESS", with or without spaces ("BLACKJACK").
 func gameNamed(norm string) string {
-	norm = strings.TrimPrefix(norm, "PLAY ")
-	norm = strings.TrimPrefix(norm, "LETS PLAY ")
+	for _, r := range requests {
+		if rest, ok := strings.CutPrefix(norm, r+" "); ok {
+			norm = rest
+			break
+		}
+	}
+	norm = strings.TrimPrefix(norm, "A GAME OF ")
 	if norm == "GTW" {
 		return "GLOBAL THERMONUCLEAR WAR"
 	}
 	for _, name := range FilmList() {
-		if prompt.Normalize(name) == norm {
+		if squash(name) == squash(norm) {
 			return name
 		}
 	}
