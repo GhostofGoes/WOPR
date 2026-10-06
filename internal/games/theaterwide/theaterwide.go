@@ -53,6 +53,7 @@ var Lines = []script.Ls{
 	lineIntro, lineLevels, lineYouEsc, lineWOPREsc, lineExchange, lineFallout, lineHeldFive, lineLostFive,
 	lineHeldMore, lineHeldLess, lineHeldEven, lineTalks, lineRefugees, lineReserves, lineWOPRRes, lineWeather,
 	lineQuiet, lineEscHelp, lineNoEsc, lineLadder, title, regionNames, unitNames, artTitle, artFallout,
+	artRuins,
 }
 
 var (
@@ -63,6 +64,7 @@ var (
 const (
 	turns        = 10
 	regionsToWin = 5
+	tactical     = 2 // the tactical nuclear rung: fallout
 	strategic    = 3 // the top rung
 )
 
@@ -145,6 +147,7 @@ func Scenario() *sim.Scenario {
 		Status:  func(s *sim.State) string { return fill(lineLadder[0].Text, lineLevels[s.Vars["level"]].Text) },
 		AI:      ai,
 		Overlay: overlay,
+		Ground:  ground,
 		Victory: func(s *sim.State, final bool) (proto.Outcome, string, bool) {
 			if s.Vars["level"] >= strategic {
 				return proto.NoWinner, lineExchange[0].Text, true
@@ -199,7 +202,7 @@ func upkeep(s *sim.State) {
 		s.Losses[sim.Player][civilians] += level
 		s.Losses[sim.WOPR][civilians] += level
 	}
-	if level == 2 {
+	if level == tactical {
 		s.Say(lineFallout[0].Text)
 		var all []*sim.Unit
 		for _, u := range s.Units {

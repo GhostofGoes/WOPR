@@ -56,11 +56,11 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	}
 	g.sc.Setup(g.s)
 	g.s.updateControl()
-	outs := []proto.Output{say(g.sc.Intro.Texts()...)}
+	var outs []proto.Output
 	if len(g.sc.Art) > 0 {
 		outs = append(outs, table(g.sc.Art.Texts()...))
 	}
-	outs = append(outs, table(g.mapLines()...))
+	outs = append(outs, say(g.sc.Intro.Texts()...), table(g.mapLines()...))
 	return append(outs, g.beginTurn()...)
 }
 

@@ -28,10 +28,11 @@ func Simple(s *State, u *Unit) string {
 	return "HOLD"
 }
 
-// OpeningRows is how many console rows the opening takes after the intro: the art, the
-// first map and the first prompt. Scenario tests keep it within 23 rows (a 24-row console
-// less the front panel), so the picture and the map are on the screen together.
-func (g *Game) OpeningRows() int { return len(g.sc.Art) + len(g.mapLines()) + 1 }
+// OpeningRows is how many console rows the opening takes after the title art: the intro,
+// the first map and the first prompt. Scenario tests keep it within 23 rows (a 24-row
+// console less the front panel), so the rules the intro gives and the map are on the
+// screen together when the first order is asked for.
+func (g *Game) OpeningRows() int { return len(g.sc.Intro) + len(g.mapLines()) + 1 }
 
 // MapLines is the map as it prints now, for tests that look at it.
 func (g *Game) MapLines() []string { return g.mapLines() }

@@ -29,5 +29,22 @@ var artClouds = script.Orig(
 	`~~~~~~~~~~~`,
 )
 
+// The ground of the regions that are more than their terrain, in the map's picture: the
+// river through the delta and the trees of the forest.
+var (
+	artDelta  = script.Orig(` .  .  .`, `_.-'-._.-'`)
+	artForest = script.Orig(`(@)(@)(@)`, ` |  |  |`)
+	// By region index: RIVER DELTA, FOREST.
+	artGround = map[int]script.Ls{2: artDelta, 4: artForest}
+)
+
+// ground draws the regions' own ground on the map.
+func ground(_ *sim.State, r int) (string, string) {
+	if art, ok := artGround[r]; ok {
+		return art[0].Text, art[1].Text
+	}
+	return "", ""
+}
+
 // overlay draws the contamination on the map.
 func overlay(s *sim.State, r int) string { return artClouds[level(s, r)].Text }

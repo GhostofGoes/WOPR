@@ -21,13 +21,24 @@ var artTitle = script.Orig(
 	`'--[ YOU ]---------------------------------------------------------[ WOPR ]--'`,
 )
 
-// artFallout drifts over every region of the map's picture at the tactical nuclear rung.
+// artFallout drifts over every region of the map's picture from the tactical nuclear rung.
 var artFallout = script.Orig(`* ' * ' *`)
+
+// artRuins is a city after the strategic exchange: broken walls in the rubble.
+var artRuins = script.Orig(`  .  ,`, `_|.:#,|_`)
 
 // overlay draws the fallout on the map.
 func overlay(s *sim.State, _ int) string {
-	if s.Vars["level"] >= 2 {
+	if s.Vars["level"] >= tactical {
 		return artFallout[0].Text
 	}
 	return ""
+}
+
+// ground draws the cities in ruins on the map once the exchange has destroyed them.
+func ground(s *sim.State, r int) (string, string) {
+	if s.Vars["level"] >= strategic && s.Regions[r].Terrain == sim.City {
+		return artRuins[0].Text, artRuins[1].Text
+	}
+	return "", ""
 }

@@ -1,8 +1,3 @@
-THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE.
-CHEMICAL TROOPS RELEASE AN AGENT ON A REGION (TYPE RELEASE IN FULL);
-IT SPREADS WITH THE WIND. DECON CLEANS A LITTLE.
-UNITS AND CIVILIANS IN CONTAMINATED GROUND SUFFER. EIGHT TURNS.
-TYPE HELP FOR ORDERS.
            _.-'''''''-._                ~~ ~ ~~~       /\       ~~~ ~ ~~
          .'             '.                ~~~ ~ ~~    /  \       ~ ~~ ~~~
         /  .---.   .---.  \             ~ ~~ ~~~     / || \     ~~ ~~~ ~
@@ -13,9 +8,14 @@ TYPE HELP FOR ORDERS.
            '-. |:::::| .-'              |       CONTAMINATED AREA       |
               '|:::::|'                 |    MASKS ON.  DO NOT ENTER.   |
                '-----'                  '-------------------------------'
+THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE.
+CHEMICAL TROOPS RELEASE AN AGENT ON A REGION (TYPE RELEASE IN FULL);
+IT SPREADS WITH THE WIND. DECON CLEANS A LITTLE.
+UNITS AND CIVILIANS IN CONTAMINATED GROUND SUFFER. EIGHT TURNS.
+TYPE HELP FOR ORDERS.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 1 OF 8   CONTAMINATED: 0 OF 6 REGIONS
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+    _ [] _       .  .  .     .  .  .       _ [] _      (@)(@)(@)     _ [] _
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)========>>(2)=========>(3)==========(4)<=========(5)<<========(6)=====
  <---------------- YOU ----------------><--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
@@ -49,9 +49,8 @@ THE CONTAMINATION SPREADS.
 INF1 SICKENS IN THE CONTAMINATED GROUND.
 WOPR'S INF1 SICKENS IN THE CONTAMINATED GROUND.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 2 OF 8   CONTAMINATED: 3 OF 6 REGIONS
-                           ~ ~~ ~ ~~ ~  ~ ~~ ~ ~~ ~  ~    ~    ~
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+    _ [] _       .  .  .   ~ ~~ ~ ~~ ~  ~ ~~ ~ ~~ ~  ~    ~    ~     _ [] _
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)=========>(2)========>>(3)==========(4)<<<=======(5)==========(6)=====
  <---------------- YOU ----------------><--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
@@ -79,9 +78,8 @@ CHM1 SICKENS IN THE CONTAMINATED GROUND.
 WOPR'S INF2 SICKENS IN THE CONTAMINATED GROUND.
 WOPR'S CHM1 SICKENS IN THE CONTAMINATED GROUND.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 3 OF 8   CONTAMINATED: 4 OF 6 REGIONS
-              ~ ~~ ~ ~~ ~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+    _ [] _    ~ ~~ ~ ~~ ~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~     _ [] _
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)=========>(2)=========>(3)==========(4)<<========(5)<=========(6)=====
  <---------------- YOU ----------------><--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
@@ -104,9 +102,8 @@ THE CONTAMINATION SPREADS.
 WOPR'S INF1* SICKENS IN THE CONTAMINATED GROUND.
 WOPR'S INF1 IS DESTROYED.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 4 OF 8   CONTAMINATED: 5 OF 6 REGIONS
-              ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~    ~    ~
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+    _ [] _    ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~    ~    ~
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)=========>(2)==========(3)==========(4)<=========(5)<=========(6)=====
  <---------------- YOU ----------------><--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
@@ -123,9 +120,8 @@ WOPR'S CHM1* RELEASED ON FARMLAND.
 RAIN WASHES SOME OF IT INTO THE RIVERS.
 THE CONTAMINATION SPREADS.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 5 OF 8   CONTAMINATED: 4 OF 6 REGIONS
-              ~ ~~ ~ ~~ ~  ~    ~    ~  ~ ~~ ~ ~~ ~  ~    ~    ~
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+    _ [] _    ~ ~~ ~ ~~ ~  ~    ~    ~  ~ ~~ ~ ~~ ~  ~    ~    ~     _ [] _
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)=========>(2)==========(3)==========(4)<<========(5)==========(6)=====
  <---------------- YOU ----------------><--------------- WOPR ---------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
@@ -148,9 +144,8 @@ WOPR'S INF2 IS DESTROYED.
 WOPR'S CHM1* SICKENS IN THE CONTAMINATED GROUND.
 WOPR'S CHM1 IS DESTROYED.
 BIOTOXIC AND CHEMICAL WARFARE   TURN 5 OF 8   CONTAMINATED: 5 OF 6 REGIONS
- ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~    ~    ~
-    _ [] _       .  .  .      .  .  .      _ [] _       /\  /\       _ [] _
-   |#|##|#|     . .  .  .    . .  .  .    |#|##|#|     /  \/  \     |#|##|#|
+ ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~ ~~ ~ ~~ ~  ~~~~~~~~~~~  ~    ~    ~     _ [] _
+   |#|##|#|     . .  .  .   _.-'-._.-'    |#|##|#|      |  |  |     |#|##|#|
  =====(1)==========(2)==========(3)==========(4)==========(5)==========(6)=====
  <--------- YOU ----------><---------------------- WOPR ---------------------->
    REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS

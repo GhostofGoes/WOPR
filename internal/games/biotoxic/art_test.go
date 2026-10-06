@@ -8,11 +8,11 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/sim"
 )
 
-// The pictures are printable ASCII capitals within 80 columns and in Lines, and the
-// opening (art, map, prompt) fits a 23-row console.
+// The pictures are printable ASCII capitals within 80 columns and in Lines, and the intro,
+// the first map and the first prompt fit a 23-row console.
 func TestArt(t *testing.T) {
 	t.Parallel()
-	for _, bad := range sim.ArtProblems(Lines, artTitle, artClouds) {
+	for _, bad := range sim.ArtProblems(Lines, artTitle, artClouds, artDelta, artForest) {
 		t.Error(bad)
 	}
 	if len(artClouds) != maxLevel+1 || artClouds[0].Text != "" {
@@ -25,8 +25,8 @@ func TestArt(t *testing.T) {
 	}
 }
 
-// Each contaminated region has its cloud over it, drawn in full and thicker with the
-// level; clean ground has none, and with nothing contaminated the row is left out.
+// Each contaminated region has its cloud over its ground, in place of the top row, drawn in
+// full and thicker with the level; clean ground has none, and the map keeps its height.
 func TestCloudsOnTheMap(t *testing.T) {
 	t.Parallel()
 	g := New().(*sim.Game)
@@ -37,8 +37,8 @@ func TestCloudsOnTheMap(t *testing.T) {
 		setLevel(s, r, c)
 	}
 	m := g.MapLines()
-	if len(m) != len(clean)+1 {
-		t.Fatalf("the cloud row: %d rows contaminated, %d clean", len(m), len(clean))
+	if len(m) != len(clean) || m[2] != clean[2] {
+		t.Fatalf("the clouds change only the top row of the ground:\n%s\nclean:\n%s", strings.Join(m, "\n"), strings.Join(clean, "\n"))
 	}
 	for c := 1; c <= maxLevel; c++ {
 		want := 1
@@ -47,6 +47,19 @@ func TestCloudsOnTheMap(t *testing.T) {
 		}
 		if got := strings.Count(m[1], artClouds[c].Text); got != want {
 			t.Errorf("level %d clouds: %d, want %d:\n%s", c, got, want, strings.Join(m, "\n"))
+		}
+	}
+}
+
+// The delta has its river and the forest its trees, drawn in full.
+func TestGroundOnTheMap(t *testing.T) {
+	t.Parallel()
+	g := New().(*sim.Game)
+	g.Start(proto.Env{Seed: 1, Instant: true})
+	m := g.MapLines()
+	for _, art := range artGround {
+		if !strings.Contains(m[1], art[0].Text) || !strings.Contains(m[2], art[1].Text) {
+			t.Errorf("%q not drawn in full:\n%s", art.Texts(), strings.Join(m, "\n"))
 		}
 	}
 }

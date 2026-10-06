@@ -28,7 +28,8 @@ func picture(t *testing.T, sc *Scenario) []string {
 
 // The picture of a crowded strip: more units than fit (a +), a hidden cell of yours (~)
 // sharing a region with WOPR's units, WOPR's hidden unit left out, the stretches each side
-// holds with a gap nobody holds, and an overlay over one region.
+// holds with a gap nobody holds, an overlay over one region in place of its rooftops, and
+// a region with ground of the scenario's own.
 func TestDiagram(t *testing.T) {
 	t.Parallel()
 	sc := pictureScenario(7, func(s *State) {
@@ -50,11 +51,16 @@ func TestDiagram(t *testing.T) {
 		}
 		return ""
 	}
+	sc.Ground = func(_ *State, r int) (string, string) {
+		if r == 5 {
+			return "(@)(@)", " |  |"
+		}
+		return "", ""
+	}
 	got := picture(t, sc)
 	want := []string{
-		`                                  ~~~~~~~~~~~`,
-		`   _ [] _     /\  /\     .  .  .    _ [] _     /\  /\     .  .  .    _ [] _`,
-		`  |#|##|#|   /  \/  \   . .  .  .  |#|##|#|   /  \/  \   . .  .  .  |#|##|#|`,
+		`   _ [] _     /\  /\     .  .  .  ~~~~~~~~~~~  /\  /\     (@)(@)     _ [] _`,
+		`  |#|##|#|   /  \/  \   . .  .  .  |#|##|#|   /  \/  \     |  |     |#|##|#|`,
 		` ===>(1)========(2)====+>>>(3)=======~(4)<=======(5)========(6)<<<+====(7)====`,
 		` <------------- YOU ------------->                      <------- WOPR ------->`,
 	}
@@ -88,12 +94,12 @@ func TestArtProblems(t *testing.T) {
 	}
 }
 
-// Every strip the engine allows fits 80 columns, numbers its regions in order on the road
-// and marks the front where the sides' stretches meet.
+// Every strip the engine allows fits 80 columns in four rows, overlay or not, numbers its
+// regions in order on the road and marks the front where the sides' stretches meet.
 func TestDiagramFits(t *testing.T) {
 	t.Parallel()
 	for n := 5; n <= 7; n++ {
-		got := picture(t, pictureScenario(n, func(s *State) {
+		sc := pictureScenario(n, func(s *State) {
 			for r := range n {
 				side := Player
 				if r >= n/2 {
@@ -103,9 +109,11 @@ func TestDiagramFits(t *testing.T) {
 					s.AddUnit(side, testInf, r)
 				}
 			}
-		}))
+		})
+		sc.Overlay = func(*State, int) string { return strings.Repeat(": ", 20) }
+		got := picture(t, sc)
 		if len(got) != 4 {
-			t.Fatalf("%d regions: %d rows, want 4 (no overlay)", n, len(got))
+			t.Fatalf("%d regions: %d rows, want 4", n, len(got))
 		}
 		for _, l := range got {
 			if len(l) > 80 {

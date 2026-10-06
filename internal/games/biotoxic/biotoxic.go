@@ -51,7 +51,7 @@ var (
 var Lines = []script.Ls{
 	lineIntro, lineReleased, lineDecon, lineSpread, lineSick, lineEverywhere, lineNoneLeft, lineTime, lineWindEast,
 	lineWindWest, lineRain, lineStock, lineQuiet, lineWOPRs, lineHelp, lineNoRange, lineClean, lineLevel, levelMarks, title,
-	regionNames, unitNames, artTitle, artClouds,
+	regionNames, unitNames, artTitle, artClouds, artDelta, artForest,
 }
 
 var (
@@ -165,6 +165,7 @@ func Scenario() *sim.Scenario {
 		AI:         ai,
 		RegionNote: Marks,
 		Overlay:    overlay,
+		Ground:     ground,
 		// Nobody wins this one, however it ends.
 		Victory: func(s *sim.State, final bool) (proto.Outcome, string, bool) {
 			everywhere := true

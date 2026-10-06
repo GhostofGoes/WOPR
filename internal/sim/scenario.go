@@ -11,7 +11,8 @@ import (
 type Scenario struct {
 	Title string    // the map's heading
 	Intro script.Ls // printed at the start
-	// Art is the title picture, printed fast after the intro and before the first map: at
+	// Art is the title picture, printed fast before the intro, so that the intro, the first
+	// map and the first prompt are on the screen together and the art scrolls instead: at
 	// most ArtRows rows of printable ASCII capitals, each at most 80 columns. Nil for none.
 	Art       script.Ls
 	Regions   []Region
@@ -32,15 +33,19 @@ type Scenario struct {
 	Status func(s *State) string
 	// RegionNote is shown after a region's name on the map (contamination); nil for none.
 	RegionNote func(s *State, r int) string
-	// Overlay is drawn over a region in the map's picture, above its ground (a gas cloud,
-	// blowing sand), centred and cut to the region's width; "" for clear air. The row is
-	// left out when no region has one. Nil for none.
+	// Overlay is drawn over a region in the map's picture in place of the top row of its
+	// ground (a gas cloud, blowing sand), centred and cut to the region's width; "" for
+	// clear air. Nil for none.
 	Overlay func(s *State, r int) string
+	// Ground is a region's own ground in the map's picture, two rows (a forest, a river, a
+	// city in ruins), at most 11 columns, the width of a region on a strip of seven; both
+	// "" draw the ground of its terrain. Nil for the terrain's ground everywhere.
+	Ground func(s *State, r int) (top, bottom string)
 }
 
 // ArtRows is the most rows a scenario's Art may have, as for any block on the console.
-// Scenario tests also keep the opening (art, first map, first prompt) on one screen; see
-// Game.OpeningRows.
+// Scenario tests also keep the intro, the first map and the first prompt on one screen;
+// see Game.OpeningRows.
 const ArtRows = 12
 
 // Verb is an order a unit can be given.

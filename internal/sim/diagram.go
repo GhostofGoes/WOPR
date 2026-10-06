@@ -12,12 +12,14 @@ import (
 //	 ====(1)========(2)======>>(3)======>>(4)========(5)<<<=====(6)<=======(7)====
 //	 <------------------ YOU -------------------><------------ WOPR ------------->
 //
-// Each region gets a cell of the same width: its ground (and the scenario's overlay, such
-// as a gas cloud, above it when there is one), then the road with the region's number and
-// its units on it, yours before the number (> each, ~ if hidden) and WOPR's after it (<
-// each; its hidden units are not shown), and under the road the stretches each side holds.
-// Where your stretch meets WOPR's (><) is the front. Nothing rests on colour: the console
-// prints the picture as plain text.
+// Each region gets a cell of the same width: two rows of ground, its terrain's or the
+// scenario's own (a forest, a ruined city), with the scenario's overlay (a gas cloud,
+// blowing sand) in place of the top row when there is one; then the road with the
+// region's number and its units on it, yours before the number (> each, ~ if hidden) and
+// WOPR's after it (< each; its hidden units are not shown), and under the road the
+// stretches each side holds. Where your stretch meets WOPR's (><) is the front. The
+// picture is always four rows. Nothing rests on colour: the console prints it as plain
+// text.
 
 const (
 	pictureWidth = 78 // the widest the picture may be, a column clear of each edge
@@ -51,34 +53,37 @@ func (g *Game) diagram() []string {
 	s := g.s
 	n := len(s.Regions)
 	w := cellWidth(n)
-	var over, top, bottom, road strings.Builder
-	overlay := false
-	for r, reg := range s.Regions {
+	var top, bottom, road strings.Builder
+	for r := range s.Regions {
+		up, down := g.ground(r)
+		pad := strings.Repeat(" ", max(w-max(len(up), len(down)), 0)/2)
+		up = fit(pad+up, w)
 		if g.sc.Overlay != nil {
 			if o := g.sc.Overlay(s, r); o != "" {
-				overlay = true
-				over.WriteString(centre(o, w))
-			} else {
-				over.WriteString(strings.Repeat(" ", w))
+				up = centre(o, w)
 			}
 		}
-		ground := engineText[TextGround][2*int(reg.Terrain) : 2*int(reg.Terrain)+2].Texts()
-		wide := max(len(ground[0]), len(ground[1]))
-		pad := strings.Repeat(" ", max(w-wide, 0)/2)
-		top.WriteString(fit(pad+ground[0], w))
-		bottom.WriteString(fit(pad+ground[1], w))
+		top.WriteString(up)
+		bottom.WriteString(fit(pad+down, w))
 		road.WriteString(roadCell(s, r, w))
 	}
 	indent := strings.Repeat(" ", max(80-n*w, 0)/2)
-	var lines []string
-	if overlay {
-		lines = append(lines, over.String())
-	}
-	lines = append(lines, top.String(), bottom.String(), road.String(), spans(s.Control, w))
+	lines := []string{top.String(), bottom.String(), road.String(), spans(s.Control, w)}
 	for i, l := range lines {
 		lines[i] = strings.TrimRight(indent+l, " ")
 	}
 	return lines
+}
+
+// ground is region r's two rows of ground: the scenario's own, or its terrain's.
+func (g *Game) ground(r int) (top, bottom string) {
+	if g.sc.Ground != nil {
+		if top, bottom = g.sc.Ground(g.s, r); top != "" || bottom != "" {
+			return top, bottom
+		}
+	}
+	t := int(g.s.Regions[r].Terrain)
+	return engineText[TextGround][2*t].Text, engineText[TextGround][2*t+1].Text
 }
 
 // roadCell is region r's stretch of road: its number in the middle, your units before it

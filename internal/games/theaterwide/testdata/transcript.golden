@@ -1,8 +1,3 @@
-THEATERWIDE TACTICAL WARFARE. CORPS AND AIR WINGS ON A EUROPEAN FRONT.
-ANY UNIT MAY ESCALATE (TYPE THE WORD IN FULL): EACH RUNG ADDS TO EVERY ATTACK,
-AND WOPR ANSWERS IN KIND. THE TOP RUNG ENDS EVERYTHING.
-HOLD FIVE REGIONS TO WIN, OR MORE THAN WOPR AFTER TEN TURNS.
-TYPE HELP FOR ORDERS.
 .--[ CENTRAL FRONT ]-------------------------------[ 0 |----|----| 200 KM ]--.
 |  )  .--XXX--.   .--XXX--.           \            .--XXX--.   .--XXX--.   ( |
 | (   |.-----.|   | \   / |   =====>  /            | \   / |   |.-----.|  )  |
@@ -12,6 +7,11 @@ TYPE HELP FOR ORDERS.
 | (                       -=#>        /         <#=-                      )  |
 |  )                        /         \          \                         ( |
 '--[ YOU ]---------------------------------------------------------[ WOPR ]--'
+THEATERWIDE TACTICAL WARFARE. CORPS AND AIR WINGS ON A EUROPEAN FRONT.
+ANY UNIT MAY ESCALATE (TYPE THE WORD IN FULL): EACH RUNG ADDS TO EVERY ATTACK,
+AND WOPR ANSWERS IN KIND. THE TOP RUNG ENDS EVERYTHING.
+HOLD FIVE REGIONS TO WIN, OR MORE THAN WOPR AFTER TEN TURNS.
+TYPE HELP FOR ORDERS.
 THEATERWIDE TACTICAL WARFARE   TURN 1 OF 10   LADDER: CONVENTIONAL
    _ [] _     /\  /\     _ [] _     /\  /\     .  .  .    /\  /\     _ [] _
   |#|##|#|   /  \/  \   |#|##|#|   /  \/  \   . .  .  .  /  \/  \   |#|##|#|
