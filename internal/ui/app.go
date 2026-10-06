@@ -175,7 +175,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.applyAll(m.runner.ThinkResult(msg.gen, msg.value, msg.err)))
 		}
 	}
-	cmds = append(cmds, m.maybeArm())
+	cmds = append(cmds, m.release(), m.maybeArm())
 	return m, tea.Batch(cmds...)
 }
 
@@ -210,8 +210,7 @@ func (m *model) tick(dt time.Duration) tea.Cmd {
 	for _, ev := range m.tw.Advance(dt, &m.sb) {
 		m.onTypewriter(ev)
 	}
-	cmd := m.applyAll(m.runner.Advance(dt))
-	return tea.Batch(cmd, m.release())
+	return m.applyAll(m.runner.Advance(dt))
 }
 
 func (m *model) onTypewriter(ev console.Event) {
@@ -220,7 +219,9 @@ func (m *model) onTypewriter(ev console.Event) {
 	}
 }
 
-// release submits a line whose Enter was pressed before the prompt became active.
+// release submits a line whose Enter was pressed before the prompt became active. Update
+// calls it after every message: the prompt can arrive on a tick, a key's skip, or an
+// instant flush.
 func (m *model) release() tea.Cmd {
 	if m.held && m.asking && !m.tw.Busy() {
 		m.held = false

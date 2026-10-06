@@ -142,6 +142,38 @@ func TestTypewriterFlushAndInstant(t *testing.T) {
 	}
 }
 
+// A pause is skippable output, even the last item: it keeps the typewriter busy until it
+// ends or a key flushes it, and a pause right before the prompt counts as revealing.
+func TestTypewriterPauses(t *testing.T) {
+	t.Parallel()
+	var sb Scrollback
+	var tw Typewriter
+	tw.Pause(time.Second)
+	tw.Prompt("> ")
+	tw.Advance(100*time.Millisecond, &sb)
+	if !tw.Busy() || !tw.Revealing() {
+		t.Fatalf("mid-pause before a prompt: busy %v revealing %v", tw.Busy(), tw.Revealing())
+	}
+	if ev := tw.Flush(&sb); len(ev) != 1 || !ev[0].Prompt || tw.Busy() {
+		t.Fatalf("a flush skips the pause and reaches the prompt: %v", ev)
+	}
+	tw.Say([]string{"X"}, 0, proto.PaceInstant)
+	tw.Pause(time.Second)
+	tw.Advance(100*time.Millisecond, &sb)
+	if !tw.Busy() {
+		t.Fatal("a trailing pause keeps the typewriter busy")
+	}
+	tw.Say([]string{"Y"}, 0, proto.PaceInstant)
+	tw.Advance(500*time.Millisecond, &sb)
+	if sb.last().Visible() == "Y" {
+		t.Fatal("output queued after a pause must wait for it")
+	}
+	tw.Advance(500*time.Millisecond, &sb)
+	if sb.last().Visible() != "Y" || tw.Busy() {
+		t.Fatalf("after the pause: %q busy %v", sb.last().Visible(), tw.Busy())
+	}
+}
+
 func TestEditor(t *testing.T) {
 	t.Parallel()
 	var e Editor

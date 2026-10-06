@@ -1,0 +1,78 @@
+==== dial and LOGON (80x24) ====
+CONNECTING...
+CONNECTED.
+
+LOGON:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 7, row 3
+==== greeting (80x24) ====
+GREETINGS PROFESSOR FALKEN.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 0, row 2
+==== small talk (80x24) ====
+GREETINGS PROFESSOR FALKEN.
+
+Hello.
+
+HOW ARE YOU FEELING TODAY?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 0, row 6

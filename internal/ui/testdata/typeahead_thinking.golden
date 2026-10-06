@@ -1,0 +1,52 @@
+==== thinking, with typeahead (80x24) ====
+STUB BOARD
+
+
+
+STUB READY.
+MOVE: THINK
+
+PROCESSING ...
+WIN
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 3, row 8
+==== thought, then the held line (80x24) ====
+STUB READY.
+MOVE: THINK
+
+THOUGHT.
+MOVE: WIN
+
+WINNER: PROFESSOR FALKEN
+MOVES: 1
+
+SHALL WE PLAY ANOTHER GAME?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 0, row 11

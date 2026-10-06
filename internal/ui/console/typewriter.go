@@ -69,12 +69,12 @@ func (t *Typewriter) Prompt(text string) {
 }
 
 // Busy reports whether anything is still being revealed or waited for.
-func (t *Typewriter) Busy() bool { return t.revealing || len(t.queue) > 0 }
+func (t *Typewriter) Busy() bool { return t.revealing || t.waiting > 0 || len(t.queue) > 0 }
 
-// Revealing reports whether text (not a pause) is being shown, which is when a key
-// press counts as "skip".
+// Revealing reports whether output is being revealed or paused over, rather than only
+// the prompt waiting to appear. That is when a key press counts as "skip".
 func (t *Typewriter) Revealing() bool {
-	return t.revealing || (len(t.queue) > 0 && t.queue[0].kind != itemPrompt)
+	return t.revealing || t.waiting > 0 || (len(t.queue) > 0 && t.queue[0].kind != itemPrompt)
 }
 
 // Advance moves the typewriter forward by dt and returns the events reached.
@@ -135,6 +135,9 @@ func (t *Typewriter) Flush(sb *Scrollback) []Event {
 			continue
 		}
 		t.waiting = 0
+		if len(t.queue) == 0 {
+			break
+		}
 		if ev, ok := t.start(sb); ok {
 			events = append(events, ev)
 		}
