@@ -793,7 +793,7 @@ Every game must meet all of these:
 | 3 | Gin Rummy | Panel (hand) | line | 3 | Knock/gin scoring; deadwood-minimising AI. Test: scoring tables; the AI never makes an illegal play. |
 | 4 | Hearts | Panel (trick) | line | 3 | 4 seats, passing, shoot-the-moon; heuristic AI on `cards/trick.go`. Test: legality over 200 seeded deals. |
 | 5 | Bridge | Panel (trick) | line | 3 (last) | Minimal (decision 14). Test: auction and declarer-seat rotation; legality. |
-| 6 | Checkers | Panel | line + keys | 2 | 8×8, forced captures, kings. Search depth limit 6 (deterministic). Test: forced-capture puzzles, legality. |
+| 6 | Checkers | Panel | line | 2 | 8×8 English draughts: forced captures, multi-jumps, crowning ends the move, kings move both ways, draw after 40 moves each without progress. The player is Black and moves first. Search depth 6 (deterministic), or iterative deepening to depth 10 within 1.5 s. Test: rules cases, a double-jump puzzle, legality over seeded self-play. A board cursor (key mode) is optional polish. |
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`; `games/ai` alpha-beta with quiescence. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (measured median 27 ms, p99 150 ms). Test: mate-in-1/2 puzzles; no illegal move in 20 seeded self-play games at depth 2. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up; betting heuristic + bluff probability. Test: hand ranking; pot accounting. |
 | 9–14 | Military sims | Console/Panel | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. |
