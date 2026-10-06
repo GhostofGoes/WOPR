@@ -9,6 +9,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
+	"github.com/GhostofGoes/WOPR/internal/games/poker"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
@@ -47,8 +48,8 @@ func entries() []games.Entry {
 		}, New: chess.New},
 		{Info: games.Info{
 			Number: 8, Listed: true, Name: "POKER", Slug: "poker",
-			Layout: proto.LayoutConsole, Blurb: "Heads-up five-card draw for chips.",
-		}},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Heads-up five-card draw for chips.",
+		}, New: poker.New},
 		{Info: games.Info{
 			Number: 9, Listed: true, Name: "FIGHTER COMBAT", Slug: "fighter-combat", Aliases: []string{"dogfight"},
 			Layout: proto.LayoutConsole, Blurb: "A turn-based dogfight: altitude, energy and aspect.",

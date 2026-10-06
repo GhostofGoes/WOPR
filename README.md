@@ -61,6 +61,8 @@ Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` unti
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump; jumps are compulsory.
 - **Black Jack** (`blackjack`): you sit down with $100. Bet $1 to $25, then `h` hit, `s` stand, `d` double
   down, `p` split a pair. The dealer stands on soft 17; black jack pays 3 to 2. `leave` cashes out.
+- **Poker**: heads-up five-card draw, 100 chips each. `c` checks or calls, `b` bets or raises, `f` folds. At
+  the draw, name up to three cards to throw away by position (`1 3`) or by name (`7h`). WOPR bluffs.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
 ## Command-line flags
