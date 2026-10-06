@@ -3,8 +3,8 @@
 ## Code
 
 The source code of `wopr` is licensed under the MIT License; see [LICENSE](LICENSE). The MIT grant
-covers the code only. It does **not** cover the material listed under "Film text" and "Third-party
-text" below.
+covers the code only. It does **not** cover the material listed under "Film text", "Third-party
+text" and "Third-party art" below.
 
 ## Film text
 
@@ -59,11 +59,21 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 ```
 
+## Third-party art
+
+The big board's world map in Global Thermonuclear War is Matthew Thomas's ASCII world map, from
+<https://asciiart.website/art/3719>, reproduced exactly as he drew it; the board shows its northern
+rows. It is used under the terms its author gave with it:
+
+```text
+Map (C) 1998 Matthew Thomas. Freely usable if this line is included.
+```
+
 ## Map data
 
-The big board's map and the side-choice outlines in Global Thermonuclear War are original ASCII art,
-generated for this project from [Natural Earth](https://www.naturalearthdata.com/) land and country
-polygons (1:110m and 1:50m scale). Natural Earth is in the public domain; this credit is a courtesy.
+The side-choice outlines of the United States and the Soviet Union in Global Thermonuclear War are
+original ASCII art, generated for this project from [Natural Earth](https://www.naturalearthdata.com/)
+country polygons (1:50m scale). Natural Earth is in the public domain; this credit is a courtesy.
 
 ## Earlier drafts
 

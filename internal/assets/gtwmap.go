@@ -16,46 +16,59 @@ const (
 	MapH = 13
 )
 
-// The map's projection: Miller cylindrical, the whole way round the northern hemisphere from
-// the Bering Strait (169W) eastwards, 79N to 10N. Missiles arc over the top, as polar routes
-// do.
+// The map's projection, the one its artist drew: equirectangular, 5 degrees of longitude a
+// column eastwards from 180W, and 7.5 degrees of latitude a row southwards from 82.5N.
+// Missiles arc over the top of the map, as polar routes do.
 const (
-	mapWest  = -169.0
-	mapNorth = 79.0
-	mapSouth = 10.0
+	mapWest  = -180.0
+	mapNorth = 82.5
+	degCol   = 5.0
+	degRow   = 7.5
 )
 
-// Fill is the character that marks land inside Map's coastlines.
-const Fill = ':'
-
-// Map is the big board's map, original line-segment art made for this project (the film's
-// glyphs were custom characters; no fan art is used, L-4). Natural Earth's 110m land
-// polygons (public domain) were filled into a fine grid in the projection above, islands
-// under a cell dropped, and each character chosen by marching squares from the land at its
-// four corners: _ - | / \ ' . for the coast, and Fill for the land inside, which the board
-// draws dim. North America and Greenland are on the left, Europe, Africa's north and the
-// Soviet Union and Asia on the right, Alaska and Chukotka meeting across the Bering Strait at
-// the edges. Every row is at most MapW columns.
-var Map = script.Orig(
-	`               |:/''-\:::::::|     '-'             .___.`,
-	`        .___.  |:\.  '\:::::/'             .. ...__/:::\__. ._.`,
-	`._______/:::\__/:/\_. |::::/'       .____. |\_/\/:::::::::\_/:\______.`,
-	`|::::::::::::::/-'|:| '\:/-'       ./::::\_/::::::::::::::::::::::::/'`,
-	`'\:/-\::::::::/'  |:|  '-'        .//\:::::::::::::::::::::::/--\/--'`,
-	` '-' '-\::::::\___/:\_.         ..|:\/::::::::::::::::::::::/'  ''`,
-	`       '\:::::::::::/-'         |\/:::::::::::::::::::::::::|`,
-	`        |::::::::::/'          ./:/\:::/-\/\:::::::::::::::/'`,
-	`        '\::::::::/'           |:/\/--\\_/\/::::::::::::/--'`,
-	`         '\::::::/'            |:\/\__/:::::::::::::::::\.`,
-	`          '-\:/--'            ./::::::::::::/-\:::::::::/'`,
-	`            '\\_.             |:::::::::::::| '\:/--\:/-'`,
-	`             '--'             |:::::::::::/-'  '\|  '\|`,
+// World is Matthew Thomas's ASCII world map, exactly as he drew it (his initials
+// included), from https://asciiart.website/art/3719, under the terms he gave with it, which
+// are MapCredit. NOTICE.md carries that line, and with it every release archive and the
+// binary's --licenses text.
+var World = script.Tag(script.MatthewThomasMap,
+	"           . _..::__:  ,-\"-\"._        |7       ,     _,.__",
+	"   _.___ _ _<_>`!(._`.`-.    /         _._     `_ ,_/  '  '-._.---.-.__",
+	">.{     \" \" `-==,',._\\{  \\  / {)      / _ \">_,-' `                mt-2_",
+	"  \\_.:--.       `._ )`^-. \"'       , [_/(                       __,/-'",
+	" '\"'     \\         \"    _L        oD_,--'                )     /. (|",
+	"          |           ,'          _)_.\\\\._<> 6              _,' /  '",
+	"          `.         /           [_/_'` `\"(                <'}  )",
+	"           \\\\    .-. )           /   `-'\"..' `:.#          _)  '",
+	"    `        \\  (  `(           /         `:\\  > \\  ,-^.  /' '",
+	"              `._,   \"\"         |           \\`'   \\|   ?_)  {\\",
+	"                 `=.---.        `._._       ,'     \"`  |' ,- '.",
+	"                   |    `-._         |     /          `:`<_|h--._",
+	"                   (        >        .     | ,          `=.__.`-'\\",
+	"                    `.     /         |     |{|              ,-.,\\     .",
+	"                     |   ,'           \\   / `'            ,\"     \\",
+	"                     |  /              |_'                |  __  /",
+	"                     | |                                  '-'  `-'   \\.",
+	"                     |/                                         \"    /",
+	"                     \\.                                             '",
+	"                      ,/            ______._.--._ _..---.---------._",
+	"     ,-----\"-..?----_/ )      __,-'\"             \"                  (",
+	"-.._(                  `-----'                                       `-",
 )
+
+// MapCredit is the line Matthew Thomas asks to be included with his map.
+var MapCredit = script.Tag(script.MatthewThomasMap, "Map (C) 1998 Matthew Thomas. Freely usable if this line is included.")
+
+// Map is the big board's map: World's northern MapH rows, 82.5N to 15S, where the war is
+// fought. North America is on the left, Europe and Africa in the middle, the Soviet Union and
+// Asia on the right. Every row is at most MapW columns.
+var Map = World[:MapH]
 
 // OutlineUS and OutlineUSSR are the side-choice screen's two large outlines, as in the
 // film: the contiguous United States and the Soviet Union, original line-segment art made
-// the same way as Map from Natural Earth's 50m country polygons (public domain; the Soviet
-// Union is the union of its fifteen republics), each in its own Miller window. They have the
+// for this project from Natural Earth's 50m country polygons (public domain; the Soviet Union
+// is the union of its fifteen republics), each in its own Miller window. The polygons were
+// filled into a fine grid and each character chosen by marching squares from the land at its
+// four corners (_ - | / \ ' .). They have the
 // same number of rows; the United States is 36 columns wide at most and the Soviet Union 42,
 // so the two fit side by side in 80 columns.
 var (
@@ -103,24 +116,79 @@ type Place struct {
 	X, Y int
 }
 
-// miller is the Miller cylindrical projection's northing of a latitude, in radians.
-func miller(lat float64) float64 {
-	return 1.25 * math.Log(math.Tan(math.Pi/4+0.4*lat*math.Pi/180))
+// At returns the map cell that holds a latitude and longitude (degrees north and east),
+// clamped to the map.
+func At(lat, lon float64) (x, y int) {
+	x = int(math.Floor((lon - mapWest) / degCol))
+	y = int(math.Floor((mapNorth - lat) / degRow))
+	return min(max(x, 0), MapW-1), min(max(y, 0), MapH-1)
 }
 
-// At returns the map cell that holds a latitude and longitude (degrees north and east).
-func At(lat, lon float64) (x, y int) {
-	if lon < mapWest {
-		lon += 360
+// sea marks the world map's open water: every blank cell reachable from the map's edge, a
+// step at a time across or down, without crossing the art's lines. Blank cells the lines
+// enclose are land. It is worked out over the whole of World, where every continent closes;
+// the board's band alone cuts Africa and South America open.
+var sea = func() [][MapW]bool {
+	s := make([][MapW]bool, len(World))
+	blank := func(x, y int) bool { row := World[y].Text; return x >= len(row) || row[x] == ' ' }
+	var stack [][2]int
+	for x := range MapW {
+		stack = append(stack, [2]int{x, 0}, [2]int{x, len(World) - 1})
 	}
-	x = int((lon - mapWest) * MapW / 360)
-	y = int((miller(mapNorth) - miller(lat)) / (miller(mapNorth) - miller(mapSouth)) * MapH)
+	for y := range len(World) {
+		stack = append(stack, [2]int{0, y}, [2]int{MapW - 1, y})
+	}
+	for len(stack) > 0 {
+		x, y := stack[len(stack)-1][0], stack[len(stack)-1][1]
+		stack = stack[:len(stack)-1]
+		if x < 0 || x >= MapW || y < 0 || y >= len(World) || s[y][x] || !blank(x, y) {
+			continue
+		}
+		s[y][x] = true
+		stack = append(stack, [2]int{x + 1, y}, [2]int{x - 1, y}, [2]int{x, y + 1}, [2]int{x, y - 1})
+	}
+	return s
+}()
+
+// Sea reports whether a map cell is open water.
+func Sea(x, y int) bool { return x >= 0 && x < MapW && y >= 0 && y < MapH && sea[y][x] }
+
+// place puts a named point at its latitude and longitude, on the nearest land if the art
+// draws that coast a little differently (Murmansk lies just east of the art's Kola coast).
+func place(name string, side Side, lat, lon float64) Place {
+	x, y := landNear(At(lat, lon))
+	return Place{Name: name, Side: side, X: x, Y: y}
+}
+
+// landNear is the nearest cell to x, y that is not sea: the fewest steps across and down,
+// then the same row before the one above it, then west before east.
+func landNear(x, y int) (int, int) {
+	for d := range MapW + MapH {
+		for _, dy := range ring(d) {
+			for _, dx := range []int{-(d - abs(dy)), d - abs(dy)} {
+				if nx, ny := x+dx, y+dy; nx >= 0 && nx < MapW && ny >= 0 && ny < MapH && !Sea(nx, ny) {
+					return nx, ny
+				}
+			}
+		}
+	}
 	return x, y
 }
 
-func place(name string, side Side, lat, lon float64) Place {
-	x, y := At(lat, lon)
-	return Place{Name: name, Side: side, X: x, Y: y}
+// ring lists the row offsets at a distance of d steps: 0, -1, 1, -2, 2 and so on.
+func ring(d int) []int {
+	out := []int{0}
+	for i := 1; i <= d; i++ {
+		out = append(out, -i, i)
+	}
+	return out
+}
+
+func abs(v int) int {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Cities are the targets the board knows by name, placed from their real latitude and
@@ -182,5 +250,5 @@ func Locate(name string, side Side) Place {
 	return Place{Name: name, Side: side, X: near.X, Y: near.Y}
 }
 
-// Lines is every script block here, for the provenance test.
-var Lines = []script.Ls{Map, OutlineUS, OutlineUSSR, Scenarios}
+// Lines is every script block here, for the provenance test. Map is part of World.
+var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Scenarios}

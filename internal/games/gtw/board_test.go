@@ -55,9 +55,8 @@ func TestPatrolsAreAtSea(t *testing.T) {
 			t.Fatalf("side %d has no patrol area", side)
 		}
 		for _, p := range areas {
-			row := assets.Map[p.Y].Text
-			if p.X < 0 || p.X >= assets.MapW || (p.X < len(row) && row[p.X] != ' ') {
-				t.Errorf("side %d's patrol at %d,%d is not at sea: %q", side, p.X, p.Y, row)
+			if !assets.Sea(p.X, p.Y) || p.Y >= assets.MapH {
+				t.Errorf("side %d's patrol at %d,%d is not at sea on the board: %q", side, p.X, p.Y, assets.Map[min(p.Y, assets.MapH-1)].Text)
 			}
 		}
 	}

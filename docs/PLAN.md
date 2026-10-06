@@ -116,6 +116,7 @@ scenes.
 | `film` | Confirmed against the film in the M5 viewing pass |
 | `reconstructed` | From transcripts or subtitles; not yet confirmed |
 | `third-party:abs0/wargames@010ed92:wargames.sh` | Film text as transcribed by abs0; credited, BSD-2 notice in `NOTICE.md` |
+| `third-party:https://asciiart.website/art/3719` | Matthew Thomas's ASCII world map, GTW's big board (owner's choice, 2026-10-06). Kept exactly as drawn, so the capitals rule does not apply to it; `NOTICE.md` links the page and carries his line, "Map (C) 1998 Matthew Thomas. Freely usable if this line is included.", which a test checks |
 | `original` | Written for this project |
 | `prompt` | Adapted from the brother's prompt. **Not committed to this public repository at all** until he grants written permission **and** a licence (MIT or CC0); a build tag would not help, because the module zip would still carry it (L-3, L-5, SL-4). |
 
@@ -159,8 +160,8 @@ the M5 viewing pass:
 - **ASCII art** (decision 26): every game opens with an original title piece and draws its world in printable
   ASCII capitals. Card games draw card faces and trick tables; chess, checkers and the maze are framed;
   tic-tac-toe uses large film-style marks; the sims draw their front as a strip; GTW's side choice shows the
-  two nations' outlines and the big board a world map with dim land fill, both generated from Natural Earth
-  (public domain). Every piece fits its layout at 80×24 and is tagged `original`.
+  two nations' outlines, generated from Natural Earth (public domain). Every piece fits its layout at 80×24
+  and is tagged `original`, except the big board's world map, which is Matthew Thomas's (credited above).
 
 The target screens are in **Appendix C**, all at exactly 80×24: the greeting, the GTW side choice, the GTW big
 board, and the chess panel. **As built**, the GTW and chess screens are superseded by the regenerated goldens
@@ -198,7 +199,7 @@ art (L-4).
 | 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
-| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's outlines are generated from Natural Earth (public domain, credited in NOTICE.md). | U |
+| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude). | U |
 
 ---
 

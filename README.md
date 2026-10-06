@@ -53,9 +53,10 @@ Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its 
 
 ## Games
 
-Every game in `LIST GAMES` is playable, and each has its own original ASCII art: title pieces, card faces and
-trick tables, framed boards, a picture of the front in the war games, and Global Thermonuclear War's maps of
-the two nations and the world (drawn from [Natural Earth](https://www.naturalearthdata.com/) data).
+Every game in `LIST GAMES` is playable, and each has its own ASCII art: title pieces, card faces and trick
+tables, framed boards, a picture of the front in the war games, and Global Thermonuclear War's outlines of the
+two nations (drawn from [Natural Earth](https://www.naturalearthdata.com/) data). Its big board uses Matthew
+Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
 
 - **Falken's Maze** (`maze`): find the exit with the arrow keys (or WASD); `q` gives up. WOPR watches which
   way you turn and moves walls you have not seen yet. The exit always stays reachable.

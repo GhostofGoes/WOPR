@@ -77,8 +77,9 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 ## Film text and provenance
 
 Every script line, scene step and asset carries a provenance tag: `film`, `reconstructed`,
-`third-party:<repo>@<commit>:<path>`, `original` or `prompt`. Do not copy text or art from other projects
-without a licence and a `NOTICE.md` entry. Lines tagged `prompt` stay out of builds until the brother's
+`third-party:<repo>@<commit>:<path>` (or `third-party:<https URL>` for art from a web page, which is kept as
+drawn and exempt from the capitals rule), `original` or `prompt`. Do not copy text or art from other projects
+without a licence and a `NOTICE.md` entry that credits the source. Lines tagged `prompt` stay out of builds until the brother's
 licence is recorded.
 
 ## Pull requests
