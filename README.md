@@ -55,6 +55,8 @@ Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its 
 
 Playable now (the rest of `LIST GAMES` answers `GAME ROUTINE NOT AVAILABLE` until its release):
 
+- **Falken's Maze** (`maze`): find the exit with the arrow keys (or WASD); `q` gives up. WOPR watches which
+  way you turn and moves walls you have not seen yet. The exit always stays reachable.
 - **Global Thermonuclear War** (`gtw`): choose a side, list target cities (an empty line ends the list), and
   watch the big board. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.

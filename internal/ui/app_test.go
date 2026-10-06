@@ -279,12 +279,12 @@ func TestEveryGameFitsAt80x24(t *testing.T) {
 	}
 }
 
-// The card games as the player first sees them: the Hearts mockup the plan asks for,
-// kept current by this golden.
+// The card games (and the maze, in key mode with its hint) as the player first sees them:
+// the Hearts mockup the plan asks for, kept current by this golden.
 func TestCardGameScreens(t *testing.T) {
 	t.Parallel()
 	var s snapshots
-	for _, slug := range []string{"hearts", "gin-rummy", "bridge"} {
+	for _, slug := range []string{"hearts", "gin-rummy", "bridge", "falkens-maze"} {
 		opts := instant()
 		opts.Play = slug
 		d := newDriver(t, opts, 80, 24).settle()

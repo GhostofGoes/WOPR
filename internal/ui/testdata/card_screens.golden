@@ -76,3 +76,29 @@ DUMMY (SOUTH) PLAYS:
 
 
 cursor: col 21, row 16
+==== falkens-maze (80x24) ====
+           +--+
+           |@ |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+           +  +
+           |  |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+           +  +
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []
+
+MOVES 0             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
+FIND THE EXIT. WOPR IS WATCHING HOW YOU TURN.
+ARROW KEYS OR WASD TO MOVE. Q GIVES UP.
+
+
+
+
+
+
+
+
+
+
+cursor: hidden

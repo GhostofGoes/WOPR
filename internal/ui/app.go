@@ -130,6 +130,7 @@ type model struct {
 	asking     bool           // the console prompt is active
 	prompt     string         // its text
 	held       bool           // Enter pressed before the prompt was active
+	keyHint    string         // what the keys do, shown in key mode
 	heldThinks []thinkDoneMsg // results that arrived while the TOO SMALL card was up
 
 	// The game that just ended, still on screen until its last words are out.
@@ -316,6 +317,7 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 		case host.AskKeys:
 			m.keyMode = true
 			m.asking = false
+			m.keyHint = e.Hint
 		case host.StartThink:
 			cmds = append(cmds, m.think(e))
 		case host.CancelThink:

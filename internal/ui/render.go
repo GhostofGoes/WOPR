@@ -125,7 +125,10 @@ func (m *model) inputRows(width int) []console.Row {
 		}
 		rows = append(rows, console.Row{Text: "PROCESSING " + strings.Repeat(".", dots), Style: proto.StyleDim})
 	}
-	if m.asking || !m.ed.Empty() {
+	if m.keyMode && m.keyHint != "" { // key mode has no input line: say what the keys do
+		rows = append(rows, console.Row{Text: m.keyHint, Style: proto.StyleDim})
+	}
+	if !m.keyMode && (m.asking || !m.ed.Empty()) {
 		for _, part := range console.HardWrap(m.prompt+m.ed.Value(), width, m.method) {
 			rows = append(rows, console.Row{Text: part, Style: proto.StyleText})
 		}

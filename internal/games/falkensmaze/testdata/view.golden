@@ -1,0 +1,54 @@
+==== start ====
+           +--+--+
+           |@     .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+           +--+--+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []
+
+MOVES 0             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
+
+...........dttdttd
+...........tb.....d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+...........dttdttd
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA
+
+ttttt.t.............dddd.dddddd.d.dddd..d.dddddddd..d.ddddd........ttttt.ttttt.t
+
+==== a few keys later ====
+           +--+--+--+
+           |        |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+           +--+--+  +--+
+            .  . |@    |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+                 +--+  +
+            .  .  .    |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+                    +--+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .
+
+            .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []
+
+MOVES 5             YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT        WALLS MOVED 0
+
+...........dttdttdttd
+...........t........td..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+...........dttdttd..dttd
+............d..d.tb....td..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+.................dttd..d
+............d..d..d....td..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+....................dttd
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d
+
+............d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..d..AA
+
+ttttt.t.............dddd.dddddd.d.dddd..d.dddddddd..d.ddddd........ttttt.ttttt.t
+

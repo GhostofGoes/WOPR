@@ -9,6 +9,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
+	"github.com/GhostofGoes/WOPR/internal/games/falkensmaze"
 	"github.com/GhostofGoes/WOPR/internal/games/ginrummy"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/games/hearts"
@@ -23,8 +24,8 @@ func entries() []games.Entry {
 	return []games.Entry{
 		{Info: games.Info{
 			Number: 1, Listed: true, Name: "FALKEN'S MAZE", Slug: "falkens-maze", Aliases: []string{"maze"},
-			Layout: proto.LayoutPanel, PanelRows: 12, Blurb: "Find the exit while WOPR learns your habits and moves the walls.",
-		}},
+			Layout: proto.LayoutPanel, PanelRows: 12, Status: games.Playable, Blurb: "Find the exit while WOPR learns your habits and moves the walls.",
+		}, New: falkensmaze.New},
 		{Info: games.Info{
 			Number: 2, Listed: true, Name: "BLACK JACK", Slug: "black-jack", Aliases: []string{"blackjack"},
 			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "WOPR deals; get closer to 21 than the dealer without going over.",
