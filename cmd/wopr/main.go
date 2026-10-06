@@ -2,12 +2,16 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	wopr "github.com/GhostofGoes/WOPR"
 	"github.com/GhostofGoes/WOPR/internal/cli"
+	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
 	"github.com/GhostofGoes/WOPR/internal/ui"
 	"github.com/GhostofGoes/WOPR/internal/version"
@@ -54,11 +58,23 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		warn(stderr, "%s%s", msg, windowsHint)
 		return exitUsage
 	}
+	if !cfg.SeedSet {
+		cfg.Seed = sessionSeed() // every session differs unless --seed pins it
+	}
+	lg := openDebugLog(getenv, stderr)
+	defer func() {
+		if lg != nil {
+			_ = lg.Close()
+			warn(stderr, "debug log: %s", lg.Path())
+		}
+	}()
+	lg.Printf("wopr %s, seed %d (pinned: %v)", version.Get(), cfg.Seed, cfg.SeedSet)
 	outcome, err := ui.Run(ui.Options{
-		Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
+		Log: lg, Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
 		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene,
 		NoColor: getenv("NO_COLOR") != "", Panel: panelSetting(getenv), Registry: reg,
 	})
+	lg.Printf("session ended: outcome %d, err %v", outcome, err)
 	switch outcome {
 	case ui.Finished:
 		_ = writeString(stdout, "--CONNECTION TERMINATED--\n")
@@ -75,6 +91,34 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		warn(stderr, "%v", err)
 		return exitError
 	}
+}
+
+// sessionSeed draws the session's seed from the operating system's random source.
+func sessionSeed() uint64 {
+	var b [8]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return uint64(time.Now().UnixNano()) // crypto/rand does not fail on supported systems
+	}
+	return binary.LittleEndian.Uint64(b[:])
+}
+
+// openDebugLog opens the debug log when WOPR_DEBUG is set (docs/PLAN.md §8). Without a cache
+// directory, or on any error, logging stays off and stderr says why.
+func openDebugLog(getenv func(string) string, stderr io.Writer) *debuglog.Log {
+	if !cli.Truthy(getenv("WOPR_DEBUG")) {
+		return nil
+	}
+	dir, err := os.UserCacheDir()
+	if err != nil {
+		warn(stderr, "WOPR_DEBUG: no cache directory (%v); not logging", err)
+		return nil
+	}
+	lg, err := debuglog.Open(dir)
+	if err != nil {
+		warn(stderr, "WOPR_DEBUG: %v; not logging", err)
+		return nil
+	}
+	return lg
 }
 
 // panelSetting reads WOPR_PANEL: unset leaves the theme's default (norad shows the front

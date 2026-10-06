@@ -142,12 +142,18 @@ type session struct {
 
 func start(t *testing.T, w, h int, args ...string) *session {
 	t.Helper()
+	return startEnv(t, w, h, nil, args...)
+}
+
+// startEnv starts wopr with extra environment variables.
+func startEnv(t *testing.T, w, h int, env []string, args ...string) *session {
+	t.Helper()
 	p, err := xpty.NewPty(w, h)
 	if err != nil {
 		t.Fatalf("pty: %v", err)
 	}
 	cmd := exec.Command(binary, args...)
-	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
+	cmd.Env = append(append(os.Environ(), "TERM=xterm-256color"), env...)
 	controllingTerminal(cmd)
 	modes := terminalModes(t, p)
 	if err := p.Start(cmd); err != nil {
@@ -279,5 +285,34 @@ func TestTooSmallThenResize(t *testing.T) {
 	s.send("\x03")
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
+// The debug log records the seed, says where it is, and never holds typed input.
+func TestDebugLog(t *testing.T) {
+	cache := t.TempDir()
+	env := []string{"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
+	s := startEnv(t, 80, 24, env, "--instant")
+	s.waitFor("LOGON:", 10*time.Second)
+	s.send("Joshua\r")
+	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
+	s.send("\x03")
+	s.wait(10 * time.Second)
+	if !strings.Contains(s.screen(), "debug log:") {
+		t.Errorf("the log's path is printed on exit:\n%s", s.screen())
+	}
+	var found string
+	_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
+		if err == nil && d.Name() == "debug.log" {
+			found = path
+		}
+		return nil
+	})
+	data, err := os.ReadFile(found)
+	if err != nil {
+		t.Fatalf("no debug log under %s: %v", cache, err)
+	}
+	if !strings.Contains(string(data), "seed ") || strings.Contains(string(data), "Joshua") {
+		t.Errorf("the log must hold the seed and no typed input:\n%s", data)
 	}
 }

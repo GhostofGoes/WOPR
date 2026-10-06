@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/term"
 
+	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
@@ -42,6 +43,7 @@ type Options struct {
 	NoColor      bool  // NO_COLOR set to any non-empty value (no-color.org)
 	Panel        Panel // the front-panel row
 	Registry     *games.Registry
+	Log          *debuglog.Log // nil: no debug log
 }
 
 // Panel says whether the front-panel row is shown.
@@ -160,6 +162,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.w, m.h = msg.Width, msg.Height
+		m.opts.Log.Printf("terminal %dx%d", m.w, m.h)
 		if !m.tooSmall() {
 			if !m.started {
 				cmds = append(cmds, m.start())
@@ -169,6 +172,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.ColorProfileMsg:
 		m.profile = msg.Profile
+		m.opts.Log.Printf("colour profile %v, theme %s", msg.Profile, m.th.Name)
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.key(msg))
 	case tea.PasteMsg:
@@ -311,10 +315,12 @@ func (m *model) think(t host.StartThink) tea.Cmd {
 		ctx, cancel = context.WithCancel(context.Background())
 	}
 	m.thinks[t.Gen] = cancel
-	fn, gen := t.Fn, t.Gen
+	fn, gen, lg := t.Fn, t.Gen, m.opts.Log
 	return func() tea.Msg {
 		defer cancel()
+		start := time.Now()
 		v, err := fn(ctx)
+		lg.Printf("think %d: %v, deadline hit %v, err %v", gen, time.Since(start).Round(time.Millisecond), ctx.Err() == context.DeadlineExceeded, err)
 		return thinkDoneMsg{gen: gen, value: v, err: err}
 	}
 }

@@ -74,6 +74,8 @@ Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its 
   Windows, use Windows Terminal; mintty without ConPTY is not supported.
 - **"TERMINAL TOO SMALL"**: WOPR needs at least 80×24.
 - **Strange colours**: try `--theme green`, or set `NO_COLOR=1`.
+- **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
+  path when it exits; attach it to the issue, with `--seed` if you used one.
 
 ## Development builds
 

@@ -35,7 +35,8 @@ var testOnly = []string{
 // packages come before the subtrees that contain them.
 var rules = []rule{
 	{".", nil},
-	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/games/catalog", "internal/llm"}},
+	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/debuglog", "internal/games/catalog", "internal/llm"}},
+	{"internal/debuglog", nil},
 	{"internal/version", nil},
 	{"internal/cli", []string{"internal/games", "internal/theme", "internal/movie", "internal/version"}},
 	{"internal/proto", nil},
@@ -44,7 +45,7 @@ var rules = []rule{
 	{"internal/script", nil},
 	{"internal/theme", []string{"internal/proto", "charm.land/lipgloss/v2", "github.com/charmbracelet/colorprofile", "github.com/charmbracelet/x/ansi"}},
 	{"internal/ui/...", []string{
-		"internal/ui/...", "internal/proto", "internal/proto/host", "internal/prompt", "internal/wopr", "internal/games",
+		"internal/ui/...", "internal/proto", "internal/proto/host", "internal/prompt", "internal/wopr", "internal/games", "internal/debuglog",
 		"internal/theme", "internal/assets", "internal/movie",
 		"charm.land/", "github.com/charmbracelet/x/ansi", "github.com/charmbracelet/x/term", "github.com/charmbracelet/colorprofile",
 		"github.com/rivo/uniseg",

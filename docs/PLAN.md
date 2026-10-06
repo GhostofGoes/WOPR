@@ -209,7 +209,8 @@ PR (AR-1, IM-4).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, games/catalog, (llm in M7)
+cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7)
+internal/debuglog    → stdlib                         the opt-in debug log (§8)
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, (movie in M6, for the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
@@ -217,7 +218,7 @@ internal/proto/host  → proto                          Bubble-Tea-free runner (
 internal/prompt      → stdlib                         normalise, clauses, numbers, yes/no
 internal/script      → stdlib                         screen text with provenance tags, and their validator
 internal/theme       → proto, charm.land/lipgloss/v2, github.com/charmbracelet/{colorprofile,x/ansi}
-internal/ui/...      → ui/..., proto, proto/host, prompt, wopr, games, theme, assets, movie,
+internal/ui/...      → ui/..., proto, proto/host, prompt, wopr, games, theme, assets, movie, debuglog,
                        charm.land/*, github.com/charmbracelet/{x/ansi,x/term,colorprofile},
                        github.com/rivo/uniseg
 internal/wopr        → proto, prompt, script, games (types only; the registry is injected)
@@ -973,8 +974,9 @@ mixed case, as on screen (RF-9):
   - Ship unsigned. Document SmartScreen, and verify before running (§13).
 - **Panics**: no custom `recover` around `p.Run()`. Bubble Tea restores the terminal, recovers `Cmd` goroutine
   panics too, and prints the stack to stderr. The model returned on panic is nil and is not used.
-- **Debug log** (S-5; lands with the first need for it, by M2): `WOPR_DEBUG=1` writes
-  `os.UserCacheDir()/wopr/debug.log`.
+- **Debug log** (S-5, `internal/debuglog`): `WOPR_DEBUG=1` writes `os.UserCacheDir()/wopr/debug.log`. It
+  records the version and session seed, the terminal size and colour profile, each `Think`'s duration and
+  whether it hit its deadline, and how the session ended. An e2e test checks that typed text never appears.
   - Directory mode 0700, file mode 0600 (applied on creation; wopr is the only writer of that path).
   - If there is no cache dir, logging is disabled and a note goes to stderr.
   - The path is printed on exit.
