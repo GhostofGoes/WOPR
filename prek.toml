@@ -57,6 +57,11 @@ rev = "fa412071e4f5d44d44f9e365f4676f9df92456a2"  # frozen: v1.30.1
 hooks = [{ id = "zizmor", args = ["--no-progress"], priority = "lint" }]
 
 [[repos]]
+repo = "https://github.com/rhysd/actionlint"
+rev = "914e7df21a07ef503a81201c76d2b11c789d3fca"  # frozen: v1.7.12
+hooks = [{ id = "actionlint", priority = "lint" }]  # workflow syntax; zizmor covers security
+
+[[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
 hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers"], exclude = '^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim

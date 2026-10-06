@@ -149,6 +149,9 @@ func allowed(from string, r rule, imp string, test bool) string {
 		if test && matchesAny(target, testOnly) {
 			return ""
 		}
+		if !test && (target == "internal/games/gamestest" || target == "internal/games/testkit") {
+			return "test-only package: only _test.go files may import it (G-5)"
+		}
 		if matchesAny(target, r.allow) {
 			return ""
 		}
@@ -249,6 +252,15 @@ func TestRulesMatchThemselves(t *testing.T) {
 	}
 	if why := allowed("internal/wopr", rule{pkg: "internal/wopr", allow: []string{"internal/proto"}}, "net/http", false); why == "" {
 		t.Error("net/http must be fenced to internal/llm")
+	}
+	catalog, _ := match("internal/games/catalog")
+	for _, imp := range []string{module + "/internal/games/testkit", module + "/internal/games/gamestest"} {
+		if why := allowed("internal/games/catalog", catalog, imp, false); why == "" {
+			t.Errorf("a non-test file must not import %s, even where internal/games/... is allowed", imp)
+		}
+		if why := allowed("internal/games/catalog", catalog, imp, true); why != "" {
+			t.Errorf("tests may import %s: %s", imp, why)
+		}
 	}
 }
 

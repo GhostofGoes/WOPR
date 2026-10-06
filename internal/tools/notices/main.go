@@ -50,12 +50,13 @@ func main() {
 	got, err := generate(*pattern)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "notices:", err)
-		os.Exit(1)
+		os.Exit(2) // could not check: not the same as out of date
 	}
 	if *check {
 		cur, err := os.ReadFile(output)
-		if err != nil || !bytes.Equal(bytes.ReplaceAll(cur, []byte("\r\n"), []byte("\n")), got) {
-			fmt.Fprintf(os.Stderr, "notices: %s is out of date; run: go run ./internal/tools/notices\n", output)
+		cur = bytes.ReplaceAll(cur, []byte("\r\n"), []byte("\n"))
+		if err != nil || !bytes.Equal(cur, got) {
+			fmt.Fprintf(os.Stderr, "notices: %s is out of date; run: go run ./internal/tools/notices\n%s", output, firstDifference(cur, got))
 			os.Exit(1)
 		}
 		return
@@ -88,11 +89,45 @@ func generate(pattern string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("go env GOROOT: %w", err)
 	}
-	goversion, err := exec.Command("go", "env", "GOVERSION").Output()
+	// The release toolchain, not whichever Go runs this: the file must not depend on the
+	// host (SL-1), and a newer local Go is allowed.
+	goversion, err := toolchain("go.mod")
 	if err != nil {
-		return nil, fmt.Errorf("go env GOVERSION: %w", err)
+		return nil, err
 	}
-	return render(strings.TrimSpace(string(goroot)), strings.TrimSpace(string(goversion)), mods)
+	return render(strings.TrimSpace(string(goroot)), goversion, mods)
+}
+
+// toolchain reads go.mod's toolchain line ("go1.27.1").
+func toolchain(gomod string) (string, error) {
+	data, err := os.ReadFile(gomod)
+	if err != nil {
+		return "", err
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if v, ok := strings.CutPrefix(strings.TrimSpace(line), "toolchain "); ok {
+			return strings.TrimSpace(v), nil
+		}
+	}
+	return "", errors.New("go.mod has no toolchain line")
+}
+
+// firstDifference shows the first line where the file and the generated text part.
+func firstDifference(cur, want []byte) string {
+	a, b := strings.Split(string(cur), "\n"), strings.Split(string(want), "\n")
+	for i := range max(len(a), len(b)) {
+		var x, y string
+		if i < len(a) {
+			x = a[i]
+		}
+		if i < len(b) {
+			y = b[i]
+		}
+		if x != y {
+			return fmt.Sprintf("line %d:\n  file: %q\n  want: %q\n", i+1, x, y)
+		}
+	}
+	return ""
 }
 
 func listModules(pattern, goos, goarch string, mods map[string]module) error {

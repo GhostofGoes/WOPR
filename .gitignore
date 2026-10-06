@@ -33,8 +33,8 @@ go.work.sum
 # .vscode/
 
 # Build output (GoReleaser, local builds)
-dist/
-stage/
+/dist/
+/stage/
 /wopr
 /wopr.exe
 

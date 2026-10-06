@@ -1,0 +1,6 @@
+# actionlint v1.7.12 predates GitHub's self-repository syntax ($/, July 2026), which
+# zizmor's self-repository audit asks for. Ignore only that message, only for $/ calls.
+paths:
+  .github/workflows/*.yml:
+    ignore:
+      - 'reusable workflow call "\$/\.github/workflows/[^"]+" at "uses" is not following the format'

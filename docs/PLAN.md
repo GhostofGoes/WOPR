@@ -1074,6 +1074,9 @@ mixed case, as on screen (RF-9):
     lose updates (T-8). Formatters come next, then read-only linters.
   - golangci-lint's `golangci-lint-full` entry is overridden to drop `--fix`. zizmor runs without `--fix`
     (T-5).
+  - actionlint checks workflow syntax. Same-repository calls use GitHub's `$/` syntax (zizmor's
+    `self-repository` audit asks for it); actionlint 1.7.12 predates it, so `.github/actionlint.yaml` ignores
+    that one message for `$/` calls only.
   - The whitespace and end-of-file fixers skip `.golden` files, whose padding is intentional (TO-2).
 - **Pinning** (T-3, T-10).
   - Every hook rev is a full commit SHA with a `# frozen: vX.Y.Z` comment. A note about a rev goes on its own

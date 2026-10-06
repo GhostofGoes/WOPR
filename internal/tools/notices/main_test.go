@@ -51,3 +51,32 @@ func TestRender(t *testing.T) {
 		t.Errorf("a module without a licence must fail, got %v", err)
 	}
 }
+
+// The header names the release toolchain from go.mod, whatever Go runs the tool.
+func TestToolchainFromGoMod(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	path := filepath.Join(dir, "go.mod")
+	if err := os.WriteFile(path, []byte("module x\n\ngo 1.27\n\ntoolchain go1.27.1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if v, err := toolchain(path); err != nil || v != "go1.27.1" {
+		t.Fatalf("toolchain = %q, %v", v, err)
+	}
+	if err := os.WriteFile(path, []byte("module x\n\ngo 1.27\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := toolchain(path); err == nil {
+		t.Fatal("a go.mod without a toolchain line is an error")
+	}
+}
+
+func TestFirstDifference(t *testing.T) {
+	t.Parallel()
+	if d := firstDifference([]byte("a\nb\nc"), []byte("a\nB\nc")); !strings.Contains(d, "line 2") {
+		t.Errorf("got %q", d)
+	}
+	if d := firstDifference([]byte("a"), []byte("a")); d != "" {
+		t.Errorf("equal: %q", d)
+	}
+}

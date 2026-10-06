@@ -63,7 +63,14 @@ jobs:
             if grep -q 'would update' <<<"${out}"; then found=1; fi
 
             echo "## Third-party notices"
-            go run ./internal/tools/notices -check || found=1
+            # Built, not run with go run, which exits 1 for any failure: the tool exits 1
+            # when the file is out of date and 2 when it could not check.
+            if go build -o "${RUNNER_TEMP}/notices" ./internal/tools/notices; then
+              "${RUNNER_TEMP}/notices" -check
+              case $? in 0) ;; 1) found=1 ;; *) errors=1 ;; esac
+            else
+              errors=1
+            fi
           } > report.md 2>&1
           echo "found=${found}" >> "${GITHUB_OUTPUT}"
           echo "errors=${errors}" >> "${GITHUB_OUTPUT}"
@@ -73,14 +80,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           FOUND: ${{ steps.collect.outputs.found }}
+          ERRORS: ${{ steps.collect.outputs.errors }}
         run: |
           title="Weekly dependency and vulnerability report"
-          number="$(gh issue list --repo "${REPO}" --state open --search "\"${title}\" in:title" --json number --jq '.[0].number // empty')"
+          # Only this workflow's own issue: nobody else's issue with the same title.
+          number="$(gh issue list --repo "${REPO}" --state open --author "app/github-actions" --search "\"${title}\" in:title" --json number --jq '.[0].number // empty')"
           if [[ "${FOUND}" == "1" && -n "${number}" ]]; then
             gh issue comment "${number}" --repo "${REPO}" --body-file report.md
           elif [[ "${FOUND}" == "1" ]]; then
             gh issue create --repo "${REPO}" --title "${title}" --body-file report.md
-          elif [[ -n "${number}" ]]; then
+          elif [[ -n "${number}" && "${ERRORS}" != "1" ]]; then # a check that did not run found nothing either
             gh issue close "${number}" --repo "${REPO}" --comment "This week's checks found nothing to update."
           fi
       - name: Fail if a check could not run
