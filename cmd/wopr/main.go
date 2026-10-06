@@ -46,6 +46,10 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	case cli.RunTUI:
 	}
 
+	if cfg.Movie { // removed when the director lands in M6 (docs/PLAN.md §15)
+		warn(stderr, "movie mode is not available yet: it arrives in v1.1")
+		return exitUsage
+	}
 	if msg := ui.TerminalProblem(getenv); msg != "" {
 		warn(stderr, "%s%s", msg, windowsHint)
 		return exitUsage
@@ -53,7 +57,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	outcome, err := ui.Run(ui.Options{
 		Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
 		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene,
-		NoColor: getenv("NO_COLOR") != "", Panel: panelWanted(getenv), Registry: reg,
+		NoColor: getenv("NO_COLOR") != "", Panel: panelSetting(getenv), Registry: reg,
 	})
 	switch outcome {
 	case ui.Finished:
@@ -73,13 +77,17 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	}
 }
 
-// panelWanted reads WOPR_PANEL; the norad theme shows the front panel by default.
-func panelWanted(getenv func(string) string) bool {
-	switch getenv("WOPR_PANEL") {
-	case "1", "true", "yes", "on":
-		return true
+// panelSetting reads WOPR_PANEL: unset leaves the theme's default (norad shows the front
+// panel), otherwise it turns the panel on or off in any theme.
+func panelSetting(getenv func(string) string) ui.Panel {
+	switch v := getenv("WOPR_PANEL"); {
+	case v == "":
+		return ui.PanelDefault
+	case cli.Truthy(v):
+		return ui.PanelOn
+	default:
+		return ui.PanelOff
 	}
-	return false
 }
 
 func warn(w io.Writer, format string, a ...any) {

@@ -12,13 +12,14 @@ import (
 // Phase is where the conversation is.
 type Phase uint8
 
-// Phases.
+// Phases. There is no game phase: a game is running when the host's stack is deeper than
+// the persona. There is no ending phase either: the persona gets no input while the
+// climax runs, and its GameOver (NoVerdict) returns the persona to Shell with chess offered.
 const (
 	PhaseDialing Phase = iota
 	PhaseLogon
 	PhaseGreeting
 	PhaseShell
-	PhaseEnding
 )
 
 // Exchange is one turn of conversation, for a brain's context.

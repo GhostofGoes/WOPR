@@ -39,10 +39,20 @@ type Options struct {
 	Play         string // game slug to start directly
 	Movie        bool
 	Scene        string
-	NoColor      bool // NO_COLOR set to any non-empty value (no-color.org)
-	Panel        bool // show the front-panel row
+	NoColor      bool  // NO_COLOR set to any non-empty value (no-color.org)
+	Panel        Panel // the front-panel row
 	Registry     *games.Registry
 }
+
+// Panel says whether the front-panel row is shown.
+type Panel uint8
+
+// Panel settings.
+const (
+	PanelDefault Panel = iota // the theme decides: norad shows it
+	PanelOn
+	PanelOff
+)
 
 // Outcome is how a session ended, for the caller's exit code.
 type Outcome int

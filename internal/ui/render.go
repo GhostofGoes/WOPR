@@ -27,7 +27,16 @@ type geometry struct {
 	panel         bool
 }
 
-func (m *model) showPanel() bool { return m.opts.Panel || m.th.Name == "norad" }
+func (m *model) showPanel() bool {
+	switch m.opts.Panel {
+	case PanelOn:
+		return true
+	case PanelOff:
+		return false
+	case PanelDefault:
+	}
+	return m.th.Name == "norad"
+}
 
 func (m *model) geometry(p host.Placement) geometry {
 	g := geometry{width: min(m.w, layoutWidth)}

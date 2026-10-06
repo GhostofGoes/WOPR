@@ -77,8 +77,8 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	if v := getenv("WOPR_THEME"); v != "" {
 		cfg.Theme = v
 	}
-	cfg.Instant = truthy(getenv("WOPR_INSTANT"))
-	cfg.ReduceMotion = truthy(getenv("WOPR_REDUCE_MOTION"))
+	cfg.Instant = Truthy(getenv("WOPR_INSTANT"))
+	cfg.ReduceMotion = Truthy(getenv("WOPR_REDUCE_MOTION"))
 
 	fs := flag.NewFlagSet("wopr", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -193,7 +193,9 @@ func parseInterspersed(fs *flag.FlagSet, args []string) ([]string, error) {
 	}
 }
 
-func truthy(v string) bool {
+// Truthy reads a boolean WOPR_* environment variable: empty, 0, false, no and off are
+// false; anything else is true. A flag on the command line always wins over the variable.
+func Truthy(v string) bool {
 	switch strings.ToLower(strings.TrimSpace(v)) {
 	case "", "0", "false", "no", "off":
 		return false

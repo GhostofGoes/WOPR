@@ -119,6 +119,9 @@ func TestRefusesWithoutTerminal(t *testing.T) {
 	if code != 2 {
 		t.Errorf("usage error exit %d, want 2", code)
 	}
+	if _, errOut, code := run(t, "--movie"); code != 2 || !strings.Contains(errOut, "v1.1") {
+		t.Errorf("--movie before M6: exit %d, stderr %q; want 2 and when it arrives", code, errOut)
+	}
 }
 
 // session is a running wopr in a pseudo-terminal. Its output feeds a terminal emulator, so
@@ -133,6 +136,8 @@ type session struct {
 	mu  sync.Mutex
 	emu *vt.Emulator
 	raw bytes.Buffer
+
+	modes any // the pty's terminal modes before wopr started (Unix)
 }
 
 func start(t *testing.T, w, h int, args ...string) *session {
@@ -144,10 +149,11 @@ func start(t *testing.T, w, h int, args ...string) *session {
 	cmd := exec.Command(binary, args...)
 	cmd.Env = append(os.Environ(), "TERM=xterm-256color")
 	controllingTerminal(cmd)
+	modes := terminalModes(t, p)
 	if err := p.Start(cmd); err != nil {
 		t.Fatalf("start: %v", err)
 	}
-	s := &session{t: t, pty: p, cmd: cmd, emu: vt.NewEmulator(w, h)}
+	s := &session{t: t, pty: p, cmd: cmd, emu: vt.NewEmulator(w, h), modes: modes}
 	go func() {
 		buf := make([]byte, 32*1024)
 		for {
@@ -223,6 +229,7 @@ func (s *session) wait(timeout time.Duration) int {
 	}
 	// Let the reader drain the last writes before the caller looks at the screen.
 	time.Sleep(100 * time.Millisecond)
+	checkModesRestored(s.t, s.pty, s.modes)
 	if s.cmd.ProcessState != nil {
 		return s.cmd.ProcessState.ExitCode()
 	}

@@ -108,8 +108,12 @@ type TickEvent struct{ Dt time.Duration }
 // ResizeEvent reports a change of the program's layout area.
 type ResizeEvent struct{ Width, Height int }
 
-// ThinkDone carries the result of the last Think. Err is context.Canceled only after the
-// user confirmed an abort; a deadline is not an error (Fn returns its best result).
+// ThinkDone carries the result of the program's Think. A program has at most one Think
+// in flight: a new Think replaces the previous one, whose result is dropped. Err is
+// ErrCanceled when the user cancelled the Think with Esc and the program keeps running
+// (a brain reply at the root); a confirmed abort pops the program, so its result is never
+// delivered. For a search, a deadline is not an error (Fn returns its best result); slow
+// I/O such as a brain reply returns an error instead.
 type ThinkDone struct {
 	Value any
 	Err   error

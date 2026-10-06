@@ -53,20 +53,25 @@ var rules = []rule{
 	{"internal/games/catalog", []string{"internal/games", "internal/games/...", "internal/proto"}},
 	{"internal/games/gamestest", []string{"internal/games", "internal/proto"}},
 	{"internal/games/testkit", []string{"internal/games", "internal/proto", "internal/proto/host", "internal/golden"}},
-	{"internal/games/ending", []string{"internal/proto", "internal/prompt", "internal/assets"}},
+	// The climax reuses tic-tac-toe's rules and drawing; games hand off to it by slug
+	// (Result.Next), so no game imports ending.
+	{"internal/games/ending", []string{
+		"internal/proto", "internal/prompt", "internal/games", "internal/games/tictactoe", "internal/games/ai",
+		"internal/games/board", "internal/assets",
+	}},
 	{"internal/games/ai", []string{"internal/proto", "internal/games"}},
 	{"internal/games/cards", []string{"internal/proto", "internal/games", "internal/prompt"}},
 	{"internal/games/board", []string{"internal/proto", "internal/games"}},
 	{"internal/games/...", []string{
 		"internal/proto", "internal/prompt", "internal/games", "internal/games/ai", "internal/games/cards",
-		"internal/games/board", "internal/games/ending", "internal/assets", "internal/sim", "github.com/corentings/chess/v2",
+		"internal/games/board", "internal/assets", "internal/sim", "github.com/corentings/chess/v2",
 	}},
 	{"internal/sim", []string{"internal/proto"}},
 	{"internal/assets", nil},
 	{"internal/movie/...", []string{"internal/movie/...", "internal/proto", "internal/prompt", "internal/assets", "internal/games/gtw", "internal/games/ending"}},
 	{"internal/golden", nil},
 	{"internal/archtest", nil},
-	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty", "github.com/charmbracelet/x/vt"}},
+	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty", "github.com/charmbracelet/x/vt", "github.com/charmbracelet/x/term"}},
 	{"internal/tools/...", nil},
 	{"internal/llm", []string{"internal/proto", "internal/wopr"}},
 }

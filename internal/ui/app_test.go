@@ -171,10 +171,20 @@ func TestFrontPanelAndCentring(t *testing.T) {
 	t.Parallel()
 	var s snapshots
 	opts := instant()
-	opts.Panel = true
+	opts.Panel = PanelOn
 	d := newDriver(t, opts, 100, 30).settle().line("Joshua")
 	s.add("panel, 100 columns", d)
 	golden.AssertString(t, "front_panel", s.String())
+
+	norad := instant()
+	norad.Theme = "norad"
+	if d := newDriver(t, norad, 80, 24).settle(); !strings.Contains(d.screen(), "W.O.P.R.") {
+		t.Error("norad shows the front panel by default")
+	}
+	norad.Panel = PanelOff
+	if d := newDriver(t, norad, 80, 24).settle(); strings.Contains(d.screen(), "W.O.P.R.") {
+		t.Error("WOPR_PANEL=0 hides it, even in norad")
+	}
 }
 
 func TestScrollback(t *testing.T) {

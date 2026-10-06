@@ -35,7 +35,7 @@ jobs:
       - name: Lint rules still fire
         env:
           WOPR_LINT_SELFTEST: "1"
-        run: go test -run 'TestLintRulesFire|TestGolangciLintPinsAgree' ./internal/archtest
+        run: go test -run 'TestLintRulesFire' -v ./internal/archtest
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}
