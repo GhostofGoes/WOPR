@@ -52,21 +52,22 @@ var (
 		"CPU AUTH RY-345-AX3                         SYSCOMP STATUS ALL PORTS ACTIVE",
 	)
 
-	lineWhichGame  = orig("WHICH GAME?")
-	lineNotAvail   = orig("** GAME ROUTINE NOT AVAILABLE **")
-	lineNotYet     = orig("THAT GAME IS NOT AVAILABLE YET, PROFESSOR.")
-	lineNoSuchGame = orig("NO SUCH GAME IN MEMORY, PROFESSOR. TYPE LIST GAMES.")
-	lineCancelled  = orig("** REQUEST CANCELLED **")
-	lineAnother    = orig("SHALL WE PLAY ANOTHER GAME?")
-	lineAborted    = orig("GAME TERMINATED BEFORE COMPLETION.")
-	lineRestate    = orig("PLEASE RESTATE YOUR REQUEST, PROFESSOR.")
-	lineDeclined   = orig("AS YOU WISH, PROFESSOR.")
-	lineIAmWOPR    = orig("I AM THE WOPR. WAR OPERATION PLAN RESPONSE.")
-	lineMyName     = orig("THAT IS MY NAME, PROFESSOR.")
-	lineWinUser    = orig("WINNER: PROFESSOR FALKEN")
-	lineWinWOPR    = orig("WINNER: WOPR")
-	lineWinNone    = recon("WINNER: NONE")
-	lineHelpShell  = orig(
+	lineWhichGame    = orig("WHICH GAME?")
+	lineNotAvail     = orig("** GAME ROUTINE NOT AVAILABLE **")
+	lineNotYet       = orig("THAT GAME IS NOT AVAILABLE YET, PROFESSOR.")
+	lineNoSuchGame   = orig("NO SUCH GAME IN MEMORY, PROFESSOR. TYPE LIST GAMES.")
+	lineCancelled    = orig("** REQUEST CANCELLED **")
+	lineAnother      = orig("SHALL WE PLAY ANOTHER GAME?")
+	lineAborted      = orig("GAME TERMINATED BEFORE COMPLETION.")
+	lineWarAbandoned = orig("THE WAR WAS ABANDONED, PROFESSOR. NO WINNER CAN BE DECLARED.")
+	lineRestate      = orig("PLEASE RESTATE YOUR REQUEST, PROFESSOR.")
+	lineDeclined     = orig("AS YOU WISH, PROFESSOR.")
+	lineIAmWOPR      = orig("I AM THE WOPR. WAR OPERATION PLAN RESPONSE.")
+	lineMyName       = orig("THAT IS MY NAME, PROFESSOR.")
+	lineWinUser      = orig("WINNER: PROFESSOR FALKEN")
+	lineWinWOPR      = orig("WINNER: WOPR")
+	lineWinNone      = recon("WINNER: NONE")
+	lineHelpShell    = orig(
 		"COMMANDS AVAILABLE:",
 		"",
 		"  HELP GAMES     WHAT GAMES ARE",
@@ -84,6 +85,6 @@ var allLines = []Ls{
 	lineNotRecog, lineHelpNA, lineHelpGames, lineLogonHint,
 	lineGreetings, lineHowFeeling, lineExcellent, lineYesTheyDo, linePreferChess, lineFine, lineShallWe,
 	lineNiceChess, lineImproper, lineWhatsDiff, lineProgrammed, lineToWin, lineHeader, lineBurst,
-	lineWhichGame, lineNotAvail, lineNotYet, lineNoSuchGame, lineCancelled, lineAnother, lineAborted,
+	lineWhichGame, lineNotAvail, lineNotYet, lineNoSuchGame, lineCancelled, lineAnother, lineAborted, lineWarAbandoned,
 	lineRestate, lineDeclined, lineIAmWOPR, lineMyName, lineHelpShell, lineWinUser, lineWinWOPR, lineWinNone,
 }

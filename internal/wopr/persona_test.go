@@ -210,3 +210,51 @@ func TestEveryLineHasProvenance(t *testing.T) {
 		t.Error(err)
 	}
 }
+
+// The film path (docs/PLAN.md §14.4): the greeting, GTW past the chess offer, the first
+// strike, the climax notices, tic-tac-toe, zero players, the ending, and the chess offer
+// it leaves armed.
+func TestFilmPath(t *testing.T) {
+	t.Parallel()
+	s := start(t, catalog.Registry(), Options{})
+	s.Type("Joshua").Type("Hello.").Type("I'm fine. How are you?").Type("People sometimes make mistakes.")
+	s.Type("Love to. How about Global Thermonuclear War?").Type("Later. Let's play Global Thermonuclear War.")
+	s.Type("2").Type("Las Vegas").Type("Seattle").Type("")
+	s.Type("").Type("") // the kill ratios, then the climax
+	s.Type("List Games").Type("Chess").Type("Global Thermonuclear War").Type("Stop the war")
+	s.Type("Tic-tac-toe").Type("1")
+	for _, sq := range []string{"5", "1", "9", "3", "7", "4", "6", "2", "8"} {
+		if asking, p := s.Asking(); !asking || p != "YOUR MOVE: " {
+			break
+		}
+		s.Type(sq)
+	}
+	s.Type("ZERO").Type("Hello.")
+	for _, want := range []string{
+		"WOULDN'T YOU PREFER A GOOD GAME OF CHESS?", "FINE.", "WHICH SIDE DO YOU WANT?", "STRIKE ASSESSMENT COMPLETE.",
+		"** IDENTIFICATION NOT RECOGNISED **", "** GAME ROUTINE RUNNING **", "ONE OR TWO PLAYERS?",
+		"GREETINGS PROFESSOR FALKEN.", "A STRANGE GAME.", "NOT TO PLAY.", "HOW ABOUT A NICE GAME OF CHESS?",
+	} {
+		if !s.Contains(want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if s.Runner().Depth() != 1 {
+		t.Fatalf("back in the shell after the ending, depth %d:\n%s", s.Runner().Depth(), s.Transcript())
+	}
+	s.Type("Yes")
+	if s.Runner().Depth() != 2 || !s.Contains("YOU ARE WHITE AND MOVE FIRST.") {
+		t.Errorf("the ending leaves chess on offer:\n%s", s.Transcript())
+	}
+	golden.AssertString(t, "film_path", s.Transcript())
+}
+
+// Walking away from the war gets its own remark.
+func TestAbandonedWar(t *testing.T) {
+	t.Parallel()
+	s := loggedOn(t, catalog.Registry())
+	s.Type("play global thermonuclear war").Type("play global thermonuclear war").Esc().Esc()
+	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
+		t.Errorf("transcript:\n%s", s.Transcript())
+	}
+}

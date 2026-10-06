@@ -36,3 +36,33 @@ func TestNewRegistryValidates(t *testing.T) {
 		t.Fatalf("valid registry rejected: %v", err)
 	}
 }
+
+// An internal program (the ending) is found only by Get: players can never choose it.
+func TestInternalEntries(t *testing.T) {
+	t.Parallel()
+	r, err := NewRegistry(
+		Entry{Info: Info{Number: 1, Listed: true, Name: "CHESS", Slug: "chess", Status: Playable}, New: func() Game { return nil }},
+		Entry{Info: Info{Name: "ENDING", Slug: "ending", Internal: true, Status: Playable}, New: func() Game { return nil }},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := r.Get("ending"); !ok {
+		t.Error("Get must find an internal entry")
+	}
+	if _, err := r.Resolve("ending"); err == nil {
+		t.Error("Resolve must not find an internal entry")
+	}
+	if _, err := r.Resolve("end"); err == nil {
+		t.Error("nor by prefix")
+	}
+	if _, ok := r.Exact("ENDING"); ok {
+		t.Error("Exact must not find an internal entry")
+	}
+	if len(r.All()) != 1 || len(r.Listed()) != 1 {
+		t.Error("All and Listed skip internal entries")
+	}
+	if _, err := NewRegistry(Entry{Info: Info{Number: 1, Listed: true, Name: "X", Slug: "x", Internal: true}}); err == nil {
+		t.Error("an internal entry cannot be listed")
+	}
+}

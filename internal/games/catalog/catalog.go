@@ -6,6 +6,8 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/checkers"
 	"github.com/GhostofGoes/WOPR/internal/games/chess"
+	"github.com/GhostofGoes/WOPR/internal/games/ending"
+	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/games/tictactoe"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
@@ -71,13 +73,17 @@ func entries() []games.Entry {
 			Layout: proto.LayoutConsole, Blurb: "Contamination spreads; nobody wins.",
 		}},
 		{Info: games.Info{
-			Number: 15, Listed: true, Name: "GLOBAL THERMONUCLEAR WAR", Slug: "global-thermonuclear-war", Aliases: []string{"gtw", "thermonuclear"},
-			Layout: proto.LayoutConsole, Blurb: "Choose a side, list your targets, and watch the big board.",
-		}},
+			Number: 15, Listed: true, Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Aliases: []string{"gtw", "thermonuclear"},
+			Layout: proto.LayoutConsole, Status: games.Playable, Blurb: "Choose a side, list your targets, and watch the big board.",
+		}, New: gtw.New},
 		{Info: games.Info{
 			Name: "TIC-TAC-TOE", Slug: "tic-tac-toe", Aliases: []string{"tictactoe", "ttt", "noughts and crosses"},
 			Layout: proto.LayoutPanel, PanelRows: 9, Status: games.Playable, Blurb: "Perfect play from WOPR. Try zero players.",
 		}, New: tictactoe.New},
+		// The climax after zero players: internal, reached only by a hand-off.
+		{Info: games.Info{
+			Name: "ENDING", Slug: ending.Slug, Layout: proto.LayoutFull, Status: games.Playable, Internal: true,
+		}, New: ending.New},
 	}
 }
 

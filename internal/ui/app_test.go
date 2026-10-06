@@ -226,3 +226,20 @@ func TestLayoutsAt80x24(t *testing.T) {
 	}
 	golden.AssertString(t, "layouts_80x24", s.String())
 }
+
+// The real GTW board in the norad theme, front panel shown: the Appendix C screens.
+func TestGTWScreens(t *testing.T) {
+	t.Parallel()
+	var s snapshots
+	opts := instant()
+	opts.Theme, opts.Play = "norad", "global-thermonuclear-war" // cli resolves aliases to slugs
+	d := newDriver(t, opts, 80, 24).settle()
+	s.add("side choice", d)
+	d.line("2").line("Las Vegas").line("Seattle").line("")
+	s.add("big board", d)
+	d.line("")
+	s.add("kill ratios", d)
+	d.line("").line("List Games")
+	s.add("climax", d)
+	golden.AssertString(t, "gtw_screens", s.String())
+}

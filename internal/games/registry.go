@@ -43,6 +43,9 @@ type Info struct {
 	PanelRows int // rows of View for LayoutPanel
 	Status    Status
 	Blurb     string // one line for --games and the README
+	// Internal marks a program that games hand off to and players never choose: the
+	// ending. Only Get finds it; Resolve, Exact, All and Listed skip it.
+	Internal bool
 }
 
 // Entry pairs a game's Info with its constructor (nil while Planned).
@@ -94,6 +97,8 @@ func NewRegistry(entries ...Entry) (*Registry, error) {
 			}
 		}
 		switch {
+		case in.Internal && in.Listed:
+			errs = append(errs, fmt.Errorf("%s: an internal program cannot be listed", in.Slug))
 		case in.Listed && in.Number < 1:
 			errs = append(errs, fmt.Errorf("%s: listed games need a Number from 1", in.Slug))
 		case !in.Listed && in.Number != 0:
@@ -133,8 +138,16 @@ func validSlug(s string) bool {
 	return true
 }
 
-// All returns every entry in registry order.
-func (r *Registry) All() []Entry { return slices.Clone(r.entries) }
+// All returns every game players can choose, in registry order.
+func (r *Registry) All() []Entry {
+	var out []Entry
+	for _, e := range r.entries {
+		if !e.Info.Internal {
+			out = append(out, e)
+		}
+	}
+	return out
+}
 
 // Listed returns the entries shown by LIST GAMES, in Number order.
 func (r *Registry) Listed() []Entry {
@@ -166,7 +179,7 @@ func (r *Registry) Exact(input string) (Entry, bool) {
 	if in == "" {
 		return Entry{}, false
 	}
-	for _, e := range r.entries {
+	for _, e := range r.All() {
 		keys := append([]string{e.Info.Slug, e.Info.Name}, e.Info.Aliases...)
 		for _, k := range keys {
 			if prompt.Normalize(k) == in {
@@ -202,7 +215,7 @@ func (r *Registry) Resolve(input string) (Entry, error) {
 		return Entry{}, ErrNotFound
 	}
 	if n, ok := prompt.Number(input); ok {
-		for _, e := range r.entries {
+		for _, e := range r.All() {
 			if e.Info.Listed && e.Info.Number == n {
 				return e, nil
 			}
@@ -210,7 +223,7 @@ func (r *Registry) Resolve(input string) (Entry, error) {
 		return Entry{}, ErrNotFound
 	}
 	exact := func(key func(Info) []string) (Entry, bool) {
-		for _, e := range r.entries {
+		for _, e := range r.All() {
 			for _, k := range key(e.Info) {
 				if prompt.Normalize(k) == in {
 					return e, true
@@ -229,7 +242,7 @@ func (r *Registry) Resolve(input string) (Entry, error) {
 		}
 	}
 	var matches []Entry
-	for _, e := range r.entries {
+	for _, e := range r.All() {
 		keys := append([]string{e.Info.Slug, e.Info.Name}, e.Info.Aliases...)
 		for _, k := range keys {
 			if strings.HasPrefix(prompt.Normalize(k), in) {

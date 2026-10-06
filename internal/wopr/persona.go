@@ -39,6 +39,7 @@ type Session struct {
 	last      *proto.Result
 	history   []Exchange
 	pending   string // input awaiting a brain reply
+	playing   string // slug of the game launched last
 }
 
 // Options configure the persona.
@@ -275,6 +276,7 @@ func (p *Persona) launch(slug string) []proto.Output {
 	case e.Info.Status != games.Playable:
 		return respond(say(lineNotAvail, lineNotYet))
 	}
+	p.s.playing = slug
 	return []proto.Output{proto.Launch{Slug: slug}}
 }
 
@@ -361,6 +363,10 @@ func (p *Persona) gameOver(res proto.Result) []proto.Output {
 	var outs []proto.Output
 	switch res.Outcome {
 	case proto.Aborted:
+		if p.s.playing == gtwSlug { // Esc twice walked away from the war (docs/PLAN.md §6.2)
+			outs = append(outs, say(lineWarAbandoned))
+			break
+		}
 		outs = append(outs, say(lineAborted))
 	case proto.Win:
 		outs = append(outs, say(lineWinUser))

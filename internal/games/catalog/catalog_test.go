@@ -2,9 +2,12 @@ package catalog
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/ending"
+	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 )
 
 func TestRegistry(t *testing.T) {
@@ -95,4 +98,22 @@ func FuzzResolve(f *testing.F) {
 			t.Fatalf("%q: Exact found %s but Resolve gave %v, %v", in, x.Info.Slug, e.Info.Slug, err)
 		}
 	})
+}
+
+// GTW prints the film's game list at the climax; it must match the registry's.
+func TestGTWListMatchesTheRegistry(t *testing.T) {
+	t.Parallel()
+	var names []string
+	for _, e := range Registry().Listed() {
+		names = append(names, e.Info.Name)
+	}
+	if got := gtw.FilmList(); strings.Join(got, "|") != strings.Join(names, "|") {
+		t.Errorf("GTW's list %v differs from the registry's %v", got, names)
+	}
+	if _, ok := Registry().Get(ending.Slug); !ok {
+		t.Error("the ending must be resolvable by the host")
+	}
+	if _, err := Registry().Resolve("ending"); err == nil {
+		t.Error("but never chosen by a player")
+	}
 }
