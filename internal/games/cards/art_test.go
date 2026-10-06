@@ -110,6 +110,30 @@ func TestDrawings(t *testing.T) {
 	golden.AssertString(t, "drawings", c.String()+"\n"+c.StyleMap())
 }
 
+// A pass on the empty table, to each of the three seats: the cards face down in the middle
+// and an arrow to the seat that gets them, so the direction does not rest on colour. South
+// passes to no one and draws nothing.
+func TestDrawPass(t *testing.T) {
+	t.Parallel()
+	names := [cards.Seats]string{"SOUTH", "WEST", "NORTH", "EAST"}
+	var b strings.Builder
+	for _, to := range []int{cards.West, cards.North, cards.East} {
+		c := proto.NewCanvas(cards.TrickW, cards.TrickH)
+		cards.DrawTrick(c, 0, 0, cards.Trick{}, cards.NoTrump, names, -1)
+		cards.DrawPass(c, 0, 0, to)
+		for _, row := range strings.Split(c.String(), "\n") {
+			plain(t, "pass", row)
+		}
+		b.WriteString("==== to " + names[to] + "\n" + c.String() + "\n" + c.StyleMap() + "\n")
+	}
+	c := proto.NewCanvas(cards.TrickW, cards.TrickH)
+	cards.DrawPass(c, 0, 0, cards.South)
+	if strings.TrimSpace(c.String()) != "" {
+		t.Errorf("a pass to South drew:\n%s", c.String())
+	}
+	golden.AssertString(t, "pass", b.String())
+}
+
 func TestSuitStyle(t *testing.T) {
 	t.Parallel()
 	for s, want := range map[cards.Suit]proto.Style{

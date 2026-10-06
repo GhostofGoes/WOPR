@@ -18,7 +18,8 @@ const (
 )
 
 // View implements proto.Program: the scores; the trick in play around the table, with an
-// empty slot where the next card goes; the trick just taken; and the player's hand as
+// empty slot where the next card goes (or, while the player passes, three cards face down
+// and an arrow to the seat that gets them); the trick just taken; and the player's hand as
 // cards with the position under each.
 //
 //	HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
@@ -49,6 +50,9 @@ func (g *Game) View(c *proto.Canvas) {
 		next = g.trick.Next()
 	}
 	cards.DrawTrick(c, tableX, tableY, g.trick, cards.NoTrump, names, next)
+	if g.phase == passing {
+		cards.DrawPass(c, tableX, tableY, (you+Pass(g.deal-1))%cards.Seats)
+	}
 	if g.lastBy >= 0 {
 		title := panelLast[0].Text
 		if pts := pointsOf(g.last.Cards); pts > 0 {

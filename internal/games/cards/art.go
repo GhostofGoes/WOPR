@@ -202,6 +202,39 @@ func DrawTrick(cv *proto.Canvas, x, y int, t Trick, trump Suit, names [Seats]str
 	}
 }
 
+// DrawPass draws a pass on the empty trick table at x, y (placed as DrawTrick places it):
+// three cards face down in the middle of the table and an arrow from them to the seat to,
+// which gets them. South passes, so to is West, North or East; South draws nothing. A
+// pass to the left:
+//
+//	            NORTH
+//	                   .-.-.---.
+//	WEST <------------ |/|/|/\/|          EAST
+//	              SOUTH'-'-'---'
+func DrawPass(cv *proto.Canvas, x, y, to int) {
+	if to == South {
+		return
+	}
+	south := trickSpots[South]
+	fx, fy := x+south.x, y+trickSpots[West].y // the fan, level with the side seats' cards
+	DrawFan(cv, fx, fy, 3, proto.StyleDim)
+	mid := fy + MiniH/2
+	switch to {
+	case West:
+		from := x + trickSpots[West].x
+		cv.Put(from, mid, "<"+strings.Repeat("-", fx-2-from), proto.StyleAlert, 0)
+	case East:
+		from, end := fx+FanWidth(3)+1, x+trickSpots[East].x+MiniW-1
+		cv.Put(from, mid, strings.Repeat("-", end-from)+">", proto.StyleAlert, 0)
+	case North:
+		nx := x + trickSpots[North].x + MiniW/2
+		cv.Put(nx, y+trickSpots[North].y, "^", proto.StyleAlert, 0)
+		for row := y + trickSpots[North].y + 1; row < fy; row++ {
+			cv.Put(nx, row, "|", proto.StyleAlert, 0)
+		}
+	}
+}
+
 // DrawTaken lists a taken trick at x, y: title, each seat's name and card in play order,
 // then taken (who took it).
 //

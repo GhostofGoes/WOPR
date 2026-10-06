@@ -11,14 +11,14 @@ import (
 // The title card, drawn for this project: an oval table with a royal flush fanned on the
 // felt and the pot stacked beside it.
 var artTitle = script.Orig(
-	`          .-----------------------------------------------------------.`,
+	`         .------------------------------------------------------------.`,
 	`      .-'  .---.---.---.---.-----.                              ___    '-.`,
 	`    .'     |10S|JS |QS |KS |AS   |    P O K E R                (___) ___  '.`,
 	`   |       |   |   |   |   |  S  |    = = = = =            ___ (___)(___)   |`,
 	`   |       |   |   |   |   |    A|    WOPR HAS NO TELLS.  (___)(___)(___)   |`,
 	`    '.     '---'---'---'---'-----'                        (___)(___)(___) .'`,
 	`      '-.                                                              .-'`,
-	`          '-----------------------------------------------------------'`,
+	`         '------------------------------------------------------------'`,
 )
 
 // handRows shows side p's hand: label and the hand's name, the cards, and, for the

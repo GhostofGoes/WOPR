@@ -1,6 +1,7 @@
 package blackjack
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 
@@ -191,8 +192,12 @@ func text(outs []proto.Output) string {
 	return b.String()
 }
 
-// readHands replaces each hand drawn as cards in out with a line that reads it back: its
-// label, the indices of its cards (?? for one face down) and its total, as HAND 1: 8S 3C (11).
+// handLabel finds the labels on a hand block's middle row.
+var handLabel = regexp.MustCompile(`DEALER:|YOU:|HAND \d:`)
+
+// readHands replaces each block of hands drawn as cards in out with a line per hand that
+// reads it back: its label, the indices of its cards (?? for one face down) and its total,
+// as HAND 1: 8S 3C (11). A block's hands are read left to right, then top to bottom.
 func readHands(t *testing.T, out string) string {
 	t.Helper()
 	lines := strings.Split(out, "\n")
@@ -205,20 +210,30 @@ func readHands(t *testing.T, out string) string {
 		if i+cards.FaceH > len(lines) {
 			t.Fatalf("a cut-off hand at line %d:\n%s", i, out)
 		}
-		var idx []string
-		for _, f := range strings.Split(lines[i+1][labelW:], "|") {
-			switch f = strings.TrimSpace(f); {
-			case f == "":
-			case strings.Trim(f, `/\`) == "":
-				idx = append(idx, "??")
-			default:
-				idx = append(idx, f)
-			}
+		idxRow, mid := lines[i+1], lines[i+midRow]
+		at := handLabel.FindAllStringIndex(mid, -1)
+		if len(at) == 0 {
+			t.Fatalf("a hand with no label at line %d:\n%s", i, out)
 		}
-		mid := lines[i+midRow]
-		label := strings.TrimSpace(mid[:labelW])
-		desc := strings.TrimSpace(mid[strings.LastIndex(mid, "|")+1:])
-		b.WriteString(strings.TrimSpace(label+" "+strings.Join(idx, " ")+" "+desc) + "\n")
+		for n, a := range at {
+			end := len(mid)
+			if n+1 < len(at) {
+				end = at[n+1][0]
+			}
+			var idx []string
+			for _, f := range strings.Split(idxRow[a[1]:min(end, len(idxRow))], "|") {
+				switch f = strings.TrimSpace(f); {
+				case f == "":
+				case strings.Trim(f, `/\`) == "":
+					idx = append(idx, "??")
+				default:
+					idx = append(idx, f)
+				}
+			}
+			seg := mid[a[1]:end]
+			desc := strings.TrimSpace(seg[strings.LastIndex(seg, "|")+1:])
+			b.WriteString(strings.TrimSpace(mid[a[0]:a[1]]+" "+strings.Join(idx, " ")+" "+desc) + "\n")
+		}
 		i += cards.FaceH - 1
 	}
 	return b.String()

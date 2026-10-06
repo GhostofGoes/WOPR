@@ -219,7 +219,7 @@ func (g *Game) deal(bet int) []proto.Output {
 	g.dealer = append(g.dealer, g.draw())
 	h.Cards = append(h.Cards, g.draw())
 	g.dealer = append(g.dealer, g.draw())
-	outs = append(outs, table(append(g.dealerRows(true), g.handRows(0)...)...))
+	outs = append(outs, table(g.tableRows()...))
 
 	if Natural(h.Cards) || (Peeks(g.dealer[0]) && Natural(g.dealer)) {
 		return append(outs, g.finish(false)...) // nothing to play: a natural settles at once
@@ -259,7 +259,7 @@ func (g *Game) onAction(input string) []proto.Output {
 	switch norm := prompt.Normalize(input); norm {
 	case "H", "HIT", "HIT ME", "CARD":
 		h.Cards = append(h.Cards, g.draw())
-		return g.after(table(g.handRows(g.cur)...))
+		return g.after(table(g.tableRows()...))
 	case "S", "STAND", "STAY", "STICK", "HOLD":
 		h.Stood = true
 		return g.after()
@@ -273,7 +273,7 @@ func (g *Game) onAction(input string) []proto.Output {
 		h.Bet *= 2
 		h.Doubled = true
 		h.Cards = append(h.Cards, g.draw())
-		return g.after(table(g.handRows(g.cur)...))
+		return g.after(table(g.tableRows()...))
 	case "P", "SPLIT":
 		switch {
 		case !h.CanSplit(len(g.hands)):
@@ -301,7 +301,7 @@ func (g *Game) split() []proto.Output {
 		c := g.draw()
 		g.hands[i].Cards = append(g.hands[i].Cards, c)
 	}
-	return g.after(table(append(g.handRows(0), g.handRows(1)...)...))
+	return g.after(table(g.tableRows()...))
 }
 
 // after moves on once the current hand is done: to the next hand, or to the dealer.
@@ -318,7 +318,7 @@ func (g *Game) after(outs ...proto.Output) []proto.Output {
 // finish turns the hole card, plays the dealer's hand if any of the player's hands still
 // stands, and settles every hand.
 func (g *Game) finish(dealerPlays bool) []proto.Output {
-	outs := []proto.Output{table(g.dealerRows(false)...)}
+	outs := []proto.Output{table(g.dealerRows()...)}
 	if Natural(g.dealer) {
 		outs = append(outs, say(lineDealerBJ[0].Text))
 		dealerPlays = false
@@ -331,7 +331,7 @@ func (g *Game) finish(dealerPlays bool) []proto.Output {
 		for g.rules.DealerHits(g.dealer) {
 			c := g.draw()
 			g.dealer = append(g.dealer, c)
-			outs = append(outs, proto.Wait{D: dealerPause}, say(fill(lineDraws, c.String())), table(g.dealerRows(false)...))
+			outs = append(outs, proto.Wait{D: dealerPause}, say(fill(lineDraws, c.String())), table(g.dealerRows()...))
 		}
 		if total, _ := Value(g.dealer); total > 21 {
 			outs = append(outs, say(lineDealerBst[0].Text))
