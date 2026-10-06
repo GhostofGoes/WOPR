@@ -185,6 +185,9 @@ func (g *Game) resolve() []proto.Output {
 		ai = DefaultAI
 	}
 	all := append(slices.Clone(g.orders), ai(s)...)
+	for _, u := range s.Units {
+		u.Attacked = false
+	}
 	for phase := range 3 {
 		for _, o := range all {
 			if o.Verb.Phase != phase || !o.Unit.Alive() || o.Verb.Apply == nil {
@@ -212,7 +215,7 @@ func (g *Game) resolve() []proto.Output {
 		g.over = true
 		return append(outs, table(g.mapLines()...), say(why), proto.Done{Result: proto.Result{Outcome: outcome, Lines: g.ratioLines()}})
 	}
-	s.Turn++
+	s.Turn++ // the map shows the turn about to be ordered
 	return append(append(outs, table(g.mapLines()...)), g.beginTurn()...)
 }
 

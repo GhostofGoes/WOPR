@@ -51,13 +51,18 @@ type Unit struct {
 	Region int // index into State.Regions
 	Steps  int // 2 full, 1 reduced, 0 destroyed
 	Hidden bool
+	// Attacked is set when the unit attacks, until the next turn's orders resolve.
+	Attacked bool
 }
 
-// Name is the unit as the map shows it: ARM1, or ARM1* when reduced.
+// Name is the unit as the map shows it: ARM1, ARM1* when reduced, GUE1~ when hidden.
 func (u *Unit) Name() string {
 	n := u.Type.Name + string(rune('0'+u.ID))
 	if u.Steps == 1 {
 		n += "*"
+	}
+	if u.Hidden {
+		n += "~"
 	}
 	return n
 }
@@ -164,8 +169,8 @@ func (s *State) updateControl() {
 	}
 }
 
-// CanMove reports whether u can move to region to: within its move, and no enemy unit in
-// the way or at the end.
+// CanMove reports whether u can move to region to: within its move, and no visible enemy
+// unit in the way or at the end (hidden ones do not stop it: that is how they are found).
 func (s *State) CanMove(u *Unit, to int) bool {
 	if to < 0 || to >= len(s.Regions) || to == u.Region || abs(to-u.Region) > u.Type.Move {
 		return false
@@ -175,7 +180,7 @@ func (s *State) CanMove(u *Unit, to int) bool {
 		step = -1
 	}
 	for r := u.Region + step; ; r += step {
-		if len(s.In(r, Enemy(u.Side))) > 0 {
+		if visible(s.In(r, Enemy(u.Side))) {
 			return false
 		}
 		if r == to {
@@ -184,14 +189,18 @@ func (s *State) CanMove(u *Unit, to int) bool {
 	}
 }
 
-// CanAttack reports whether u can attack region at: an enemy there, within range, and (for
-// a range beyond one) nothing friendly needed in between.
+// CanAttack reports whether u can attack region at: a visible enemy there (its own region
+// included), within range.
 func (s *State) CanAttack(u *Unit, at int) bool {
-	if at < 0 || at >= len(s.Regions) || at == u.Region || abs(at-u.Region) > u.Type.Range {
+	if at < 0 || at >= len(s.Regions) || abs(at-u.Region) > u.Type.Range {
 		return false
 	}
-	for _, e := range s.In(at, Enemy(u.Side)) {
-		if !e.Hidden {
+	return visible(s.In(at, Enemy(u.Side)))
+}
+
+func visible(us []*Unit) bool {
+	for _, u := range us {
+		if !u.Hidden {
 			return true
 		}
 	}
@@ -217,6 +226,7 @@ func (s *State) Attack(u *Unit, at int) {
 	if def == nil || !u.Alive() {
 		return
 	}
+	u.Attacked = true
 	res := CRT(s.AttackOf(u), s.DefenceOf(def), s.Regions[at].Terrain, s.rng.IntN(6)+1)
 	s.Say(s.Scenario.text(TextAttack, s.owner(u)+u.Name(), s.owner(def)+def.Name(), s.Regions[at].Name, res.String()))
 	switch res {
