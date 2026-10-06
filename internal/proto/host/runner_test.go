@@ -83,7 +83,7 @@ func TestLineRoutingAndLaunch(t *testing.T) {
 		t.Fatalf("root prompt not asked: %v", eff)
 	}
 	eff := r.Line("7")
-	if r.Depth() != 2 || chess.env.Mode != "x" || chess.env.Seed != 7 || chess.env.Height != 10 {
+	if r.Depth() != 2 || chess.env.Mode != "x" || chess.env.Height != 10 {
 		t.Fatalf("launch: depth %d env %+v", r.Depth(), chess.env)
 	}
 	if !has[Relayout](eff) || !has[Print](eff) || !has[AskLine](eff) {
@@ -228,5 +228,48 @@ func TestInstantDropsWaits(t *testing.T) {
 	eff := r.Start(root, Placement{})
 	if has[Pause](eff) || !has[PageBreak](eff) {
 		t.Fatalf("instant: %#v", eff)
+	}
+}
+
+// Each launch gets its own seed, derived from the session seed, the slug and the play
+// index, so games and replays do not share a random sequence but a session reproduces.
+func TestLaunchSeeds(t *testing.T) {
+	t.Parallel()
+	seeds := func() []uint64 {
+		chess, checkers := &fake{start: []proto.Output{proto.Prompt{}}}, &fake{start: []proto.Output{proto.Prompt{}}}
+		quit := func(proto.Event) []proto.Output {
+			return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.Draw}}}
+		}
+		chess.on, checkers.on = quit, quit
+		root := &fake{start: []proto.Output{proto.Prompt{}}}
+		root.on = func(e proto.Event) []proto.Output {
+			if l, ok := e.(proto.LineEvent); ok {
+				return []proto.Output{proto.Launch{Slug: l.Text}}
+			}
+			return []proto.Output{proto.Prompt{}}
+		}
+		r := newRunner(map[string]*fake{"chess": chess, "checkers": checkers}, true)
+		r.Start(root, Placement{})
+		var got []uint64
+		for _, slug := range []string{"chess", "checkers", "chess"} {
+			r.Line(slug)
+			if slug == "chess" {
+				got = append(got, chess.env.Seed)
+			} else {
+				got = append(got, checkers.env.Seed)
+			}
+			r.Line("over")
+		}
+		return append(got, root.env.Seed)
+	}
+	a, b := seeds(), seeds()
+	if !reflect.DeepEqual(a, b) {
+		t.Fatalf("seeds differ between identical sessions: %v vs %v", a, b)
+	}
+	if a[3] != 7 {
+		t.Errorf("the root keeps the session seed, got %d", a[3])
+	}
+	if a[0] == a[1] || a[0] == a[2] || a[1] == a[2] || a[0] == 7 {
+		t.Errorf("launch seeds must differ per game and per play: %v", a)
 	}
 }

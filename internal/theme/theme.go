@@ -87,7 +87,7 @@ func norad() *Theme {
 	var (
 		text   = Color{"#5AC8FA", 14}
 		bright = Color{"#FFFFFF", 15}
-		dim    = Color{"#2F6FBF", 4}
+		dim    = Color{"#4A86D6", 6} // index 4 (blue) is under 2.3:1 on black in xterm and VGA palettes
 		yellow = Color{"#FFD60A", 11}
 		red    = Color{"#FF3B30", 9}
 		blue   = Color{"#3A7BFF", 12}

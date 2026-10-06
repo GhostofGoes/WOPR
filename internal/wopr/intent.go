@@ -17,7 +17,10 @@ var (
 		"LATER": true, "LOVE": true, "TO": true, "OK": true, "OKAY": true, "YES": true, "SURE": true,
 		"WELL": true, "FINE": true, "THEN": true, "SO": true, "NOW": true,
 	}
-	gameArticles = []string{"A GAME OF", "A ROUND OF", "SOME", "A", "THE"}
+	gameArticles = []string{"A GAME OF", "A ROUND OF", "A NICE GAME OF", "A GOOD GAME OF", "SOME", "A", "THE"}
+	// Words that may follow the game ("LET'S PLAY CHESS NOW"). Anything else after the game
+	// means the line is not a plain request, so it goes to the brain.
+	intentTrailers = []string{"NOW", "INSTEAD", "PLEASE", "THEN", "AGAIN", "TODAY", "WITH ME", "WITH YOU"}
 )
 
 // gameIntent finds an explicit request for a game in input. It returns the first clause
@@ -45,6 +48,7 @@ func gameIntent(input string, reg *games.Registry) (games.Entry, bool) {
 			for _, a := range gameArticles {
 				object = strings.TrimPrefix(object, a+" ")
 			}
+			object = trimTrailers(object)
 			if e, ok := reg.Exact(object); ok {
 				return e, true
 			}
@@ -55,4 +59,17 @@ func gameIntent(input string, reg *games.Registry) (games.Entry, bool) {
 		}
 	}
 	return games.Entry{}, false
+}
+
+// trimTrailers removes intentTrailers from the end of a request's object.
+func trimTrailers(object string) string {
+	for {
+		before := object
+		for _, t := range intentTrailers {
+			object = strings.TrimSuffix(object, " "+t)
+		}
+		if object == before {
+			return object
+		}
+	}
 }

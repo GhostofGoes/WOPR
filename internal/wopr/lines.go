@@ -69,11 +69,12 @@ var (
 		"",
 		"(311) 699-7305",
 	})
-	// The status burst after the header: the film's phrases in our own layout.
+	// The status burst after the header: the film's phrases in our own two-column layout.
+	// Transcriptions disagree on "STATUS:" versus "STATUS"; the M5 viewing pass settles it.
 	lineBurst = recon(
 		"(311) 936-2364",
 		"SYSPROC FUNCT READY                         ALT NET READY",
-		"CPU AUTH RY-345-AX3     SYSCOMP STATUS: ALL PORTS ACTIVE",
+		"CPU AUTH RY-345-AX3                         SYSCOMP STATUS ALL PORTS ACTIVE",
 	)
 
 	lineWhichGame  = orig("WHICH GAME?")
@@ -95,6 +96,7 @@ var (
 		"",
 		"  HELP GAMES     WHAT GAMES ARE",
 		"  LIST GAMES     THE GAMES IN MEMORY",
+		"  <NUMBER>       PICK FROM THE LIST JUST SHOWN",
 		"  PLAY <GAME>    START A GAME",
 		"  LOGOFF         END THIS SESSION",
 	)

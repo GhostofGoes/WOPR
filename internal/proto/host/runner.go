@@ -117,6 +117,7 @@ type frame struct {
 	areaH     int
 	isRoot    bool
 	launchKey proto.Launch
+	seed      uint64 // Env.Seed for this program
 }
 
 // Runner interprets the protocol for a stack of programs.
@@ -126,6 +127,7 @@ type Runner struct {
 	gen      uint64
 	escArmed time.Duration // time left in the Esc window; 0 = not armed
 	exited   bool
+	plays    map[string]uint16 // launches so far, by slug
 }
 
 // New returns a Runner.
@@ -133,7 +135,7 @@ func New(cfg Config) *Runner { return &Runner{cfg: cfg} }
 
 // Start runs the root program (the persona, or the movie director).
 func (r *Runner) Start(root proto.Program, place Placement) []Effect {
-	f := &frame{prog: root, place: place, isRoot: true}
+	f := &frame{prog: root, place: place, isRoot: true, seed: r.cfg.Seed}
 	r.stack = []*frame{f}
 	f.areaW, f.areaH = r.area(place)
 	return r.apply(f, root.Start(r.env(f, "")))
@@ -286,9 +288,21 @@ func (r *Runner) area(p Placement) (int, int) {
 	return r.cfg.Area(p)
 }
 
+// launchSeed derives a launched program's Env.Seed from the session seed, the game and
+// how many times it has been played, so every game and every replay draws its own
+// sequence (docs/PLAN.md §4.6, streams). Programs derive their own streams from it.
+func (r *Runner) launchSeed(slug string) uint64 {
+	if r.plays == nil {
+		r.plays = map[string]uint16{}
+	}
+	n := r.plays[slug]
+	r.plays[slug] = n + 1
+	return proto.NewRand(r.cfg.Seed, proto.GameStream(slug, n)).Uint64()
+}
+
 func (r *Runner) env(f *frame, mode string) proto.Env {
 	return proto.Env{
-		Seed: r.cfg.Seed, Width: f.areaW, Height: f.areaH,
+		Seed: f.seed, Width: f.areaW, Height: f.areaH,
 		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, Mode: mode,
 	}
 }
@@ -370,7 +384,7 @@ func (r *Runner) launch(l proto.Launch) []Effect {
 	if err != nil {
 		return []Effect{Print{Lines: []string{"** GAME ROUTINE NOT AVAILABLE **"}, Pace: proto.PaceSpeech}}
 	}
-	f := &frame{prog: prog, place: place, launchKey: l}
+	f := &frame{prog: prog, place: place, launchKey: l, seed: r.launchSeed(l.Slug)}
 	f.areaW, f.areaH = r.area(place)
 	r.stack = append(r.stack, f)
 	effects := []Effect{Relayout{Placement: place}}
