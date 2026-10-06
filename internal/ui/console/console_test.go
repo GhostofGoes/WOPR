@@ -230,6 +230,43 @@ func FuzzSanitizeInput(f *testing.F) {
 	})
 }
 
+// FuzzEditor runs a byte-coded sequence of edits and checks the editor's invariants: the
+// line stays within MaxInput, holds no control characters, and Submit always empties it.
+func FuzzEditor(f *testing.F) {
+	f.Add([]byte{0, 0, 1, 5, 3, 3, 4}, "Joshua")
+	f.Add([]byte{0, 5, 0, 5, 3, 3, 3, 4, 4, 4, 2}, "\x1b[31m👨‍👩‍👧 é")
+	f.Fuzz(func(t *testing.T, ops []byte, text string) {
+		var e Editor
+		for _, op := range ops {
+			switch op % 6 {
+			case 0:
+				e.Insert(text)
+			case 1:
+				e.Backspace()
+			case 2:
+				e.Clear()
+			case 3:
+				e.HistoryPrev()
+			case 4:
+				e.HistoryNext()
+			case 5:
+				if e.Submit(); !e.Empty() {
+					t.Fatal("Submit must empty the line")
+				}
+			}
+			v := e.Value()
+			if n := len(Graphemes(v)); n > MaxInput {
+				t.Fatalf("line has %d graphemes, over MaxInput", n)
+			}
+			for _, r := range v {
+				if r < 0x20 || r == 0x7f || (r >= 0x80 && r < 0xa0) {
+					t.Fatalf("control %U in the line %q", r, v)
+				}
+			}
+		}
+	})
+}
+
 func TestRenderAtReportsTheInputRow(t *testing.T) {
 	t.Parallel()
 	var sb Scrollback

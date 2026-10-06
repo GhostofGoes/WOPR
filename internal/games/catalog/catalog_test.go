@@ -64,3 +64,35 @@ func TestResolve(t *testing.T) {
 		}
 	}
 }
+
+// FuzzResolve checks Resolve's contract on the real catalog: it never panics, a match
+// resolves back from its own slug, a failure is ErrNotFound or a genuine ambiguity, and an
+// Exact match is what Resolve returns too.
+func FuzzResolve(f *testing.F) {
+	for _, s := range []string{"15", "gtw", "chess", "Global Thermonuclear War", "fal", "b", "-1", "fifteen", "", "  ", "black jack"} {
+		f.Add(s)
+	}
+	r := Registry()
+	f.Fuzz(func(t *testing.T, in string) {
+		e, err := r.Resolve(in)
+		if err == nil {
+			back, err := r.Resolve(e.Info.Slug)
+			if err != nil || back.Info.Slug != e.Info.Slug {
+				t.Fatalf("%q resolved to %s, which does not resolve to itself", in, e.Info.Slug)
+			}
+		} else {
+			var amb *games.AmbiguousError
+			switch {
+			case errors.As(err, &amb):
+				if len(amb.Candidates) < 2 {
+					t.Fatalf("%q: ambiguity with %d candidates", in, len(amb.Candidates))
+				}
+			case !errors.Is(err, games.ErrNotFound):
+				t.Fatalf("%q: unexpected error %v", in, err)
+			}
+		}
+		if x, ok := r.Exact(in); ok && (err != nil || x.Info.Slug != e.Info.Slug) {
+			t.Fatalf("%q: Exact found %s but Resolve gave %v, %v", in, x.Info.Slug, e.Info.Slug, err)
+		}
+	})
+}

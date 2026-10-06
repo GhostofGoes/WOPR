@@ -83,9 +83,24 @@ jobs:
       - name: go test (Windows; the race detector needs a C toolchain)
         if: runner.os == 'Windows'
         run: go test ./...
-      - name: Fuzz smoke
+      - name: Fuzz smoke (every Fuzz target, 10s each)
         if: runner.os == 'Linux'
-        run: go test -run '^$' -fuzz '^FuzzClauses$' -fuzztime=10s ./internal/prompt
+        run: |
+          set -euo pipefail
+          go test -list '^Fuzz' ./... |
+            awk '/^Fuzz/ { t[++n] = $1 } /^ok/ { for (i = 1; i <= n; i++) print t[i], $2; n = 0 }' > fuzz-targets.txt
+          test -s fuzz-targets.txt
+          while read -r target pkg; do
+            go test -run '^$' -fuzz "^${target}\$" -fuzztime=10s "$pkg"
+          done < fuzz-targets.txt
+      - name: Upload crashing fuzz inputs
+        if: failure() && runner.os == 'Linux'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-crashers
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore
+          retention-days: 14
       - name: govulncheck
         if: runner.os == 'Linux'
         run: go tool -modfile=tools/go.mod govulncheck ./...

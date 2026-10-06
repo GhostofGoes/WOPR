@@ -129,6 +129,22 @@ func TestOfferAndListSelection(t *testing.T) {
 	if strings.Count(s.Transcript(), "GAME ROUTINE NOT AVAILABLE") != 1 {
 		t.Error("a number is a choice only right after a list")
 	}
+	golden.AssertString(t, "offer_accept", s.Transcript())
+}
+
+func TestShellHelpAndListGames(t *testing.T) {
+	t.Parallel()
+	s := start(t, catalog.Registry(), Options{})
+	s.Type("Joshua").Type("HELP").Type("Help Games").Type("List Games").Type("15")
+	golden.AssertString(t, "help_list_games", s.Transcript())
+	for _, want := range []string{"COMMANDS AVAILABLE:", "TACTICAL AND STRATEGIC", "FALKEN'S MAZE", "GLOBAL THERMONUCLEAR WAR"} {
+		if !s.Contains(want) {
+			t.Errorf("missing %q", want)
+		}
+	}
+	if !s.Contains("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?") {
+		t.Error("15 after LIST GAMES picks GTW, which first draws the film's counter-offer")
+	}
 }
 
 func TestStubGameThinkWinAndAbort(t *testing.T) {
