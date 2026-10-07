@@ -9,8 +9,8 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
-**Documentation: <https://ghostofgoes.github.io/WOPR/>**: installing and verifying it, every option, how
-to play each game with tips for winning, movie mode, and how to contribute.
+The **[documentation site](https://ghostofgoes.github.io/WOPR/)** covers installing and verifying `wopr`,
+every option, how to play each game with tips for winning, movie mode, and contributing.
 
 > **Status: under construction.** Every game on the list is playable as of v0.1.0, and movie mode
 > (`--movie`) replays the film's terminal scenes. A pass over the film's text against the film is still to
