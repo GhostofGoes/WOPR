@@ -24,8 +24,9 @@ func plain(t *testing.T, what, line string) {
 	}
 }
 
-// Every face is FaceW by FaceH, ASCII, and shows its index (rank and suit letter) at the
-// top left, its suit letter in the middle and its rank at the bottom right.
+// Every face is FaceW by FaceH, ASCII, and shows its index (rank and suit letter) in two
+// corners, as a real card does: left aligned at the top left and right aligned at the
+// bottom right, with its suit letter in the middle.
 func TestFaces(t *testing.T) {
 	t.Parallel()
 	check := func(what string, a cards.Art) {
@@ -39,12 +40,83 @@ func TestFaces(t *testing.T) {
 	for _, c := range cards.Deck() {
 		a := cards.Face(c)
 		check(c.String(), a)
-		if !strings.HasPrefix(a[1], "|"+c.String()) || !strings.Contains(a[2], c.Suit.Letter()) ||
-			!strings.HasSuffix(a[3], c.Rank.String()+"|") {
+		if !strings.HasPrefix(a[1], "|"+c.String()+" ") || !strings.Contains(a[2], c.Suit.Letter()) ||
+			!strings.HasSuffix(a[3], " "+c.String()+"|") {
 			t.Errorf("%s:\n%s", c, strings.Join(a[:], "\n"))
 		}
+		if bad := cards.CornerProblems(a[:]); len(bad) > 0 {
+			t.Errorf("%s: %v", c, bad)
+		}
+	}
+	ten := cards.Face(mustHand(t, "10H")[0])
+	if ten[1] != "|10H  |" || ten[3] != "|  10H|" {
+		t.Errorf("10H:\n%s", strings.Join(ten[:], "\n"))
 	}
 	check("back", cards.Back())
+}
+
+// CornerProblems finds each whole face whose bottom right corner does not repeat its index:
+// apart, fanned (the last card) and sharing a side with the next, as title art draws them.
+// Covered cards in a fan, backs and mini cards have no bottom right index to check.
+func TestCornerProblems(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		rows []string
+		bad  int
+	}{
+		{"good apart", []string{
+			".-----. .-----. .-----.",
+			"|10H  | |/\\/\\/| |QS   |",
+			"|  H  | |\\/\\/\\| |  S  |",
+			"|  10H| |/\\/\\/| |   QS|",
+			"'-----' '-----' '-----'",
+		}, 0},
+		{"good fan", []string{
+			"  .---.---.-----.",
+			"  |AS |7D |4H   |",
+			"  |   |   |  H  |",
+			"  |   |   |   4H|",
+			"  '---'---'-----'",
+		}, 0},
+		{"fan, rank only", []string{
+			"  .---.---.-----.",
+			"  |AS |7D |4H   |",
+			"  |   |   |  H  |",
+			"  |   |   |    4|",
+			"  '---'---'-----'",
+		}, 1},
+		{"rank only", []string{
+			".-----. .-----.",
+			"|10H  | |QS   |",
+			"|  H  | |  S  |",
+			"|   10| |    Q|",
+			"'-----' '-----'",
+		}, 2},
+		{"shared sides", []string{
+			"   .-----.-----.",
+			"   |AS   |JS   |",
+			"   |  S  |  S  |",
+			"   |   AS|    J|",
+			"   '-----'-----'",
+		}, 1},
+		{"left aligned", []string{
+			".-----.",
+			"|7C   |",
+			"|  C  |",
+			"|7C   |",
+			"'-----'",
+		}, 1},
+		{"minis and tops", []string{
+			".---. .---.---.",
+			"|QS | |KS |4D |",
+			"'---' '---'---'",
+		}, 0},
+	} {
+		if bad := cards.CornerProblems(tc.rows); len(bad) != tc.bad {
+			t.Errorf("%s: %d problems, want %d: %q", tc.name, len(bad), tc.bad, bad)
+		}
+	}
 }
 
 // A row of cards stands apart while it fits and fans out when it does not, each covered
@@ -65,7 +137,7 @@ func TestRow(t *testing.T) {
 		".---.---.---.-----.",
 		"|AS |10H|QD |7C   |",
 		"|   |   |   |  C  |",
-		"|   |   |   |    7|",
+		"|   |   |   |   7C|",
 		"'---'---'---'-----'",
 	}
 	if fanned != want {
@@ -76,6 +148,12 @@ func TestRow(t *testing.T) {
 		if len(row[0]) != cards.RowWidth(len(art), w) {
 			t.Errorf("width %d: drawn %d wide, RowWidth says %d", w, len(row[0]), cards.RowWidth(len(art), w))
 		}
+		if bad := cards.CornerProblems(row[:]); len(bad) > 0 {
+			t.Errorf("width %d: %v", w, bad)
+		}
+	}
+	if got := apart[3]; got != "|   AS| |  10H| |   QD| |   7C|" {
+		t.Errorf("apart, bottom right: %q", got)
 	}
 	if cards.RowWidth(0, 80) != 0 || cards.Row(80) != [cards.FaceH]string{} {
 		t.Error("no cards, no row")

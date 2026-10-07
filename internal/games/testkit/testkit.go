@@ -25,6 +25,8 @@ type Session struct {
 	asking bool
 	keys   bool
 	exited bool
+	open   bool // the last line printed was left open (Say.Open): the next print continues it
+	held   bool // a program holds output (Hold)
 }
 
 // Start runs root under a runner configured by cfg. Instant and Deterministic are forced on:
@@ -59,7 +61,7 @@ func (s *Session) Type(line string) *Session {
 		s.t.Fatalf("Type(%q) but nothing is asking for a line; transcript:\n%s", line, s.Transcript())
 	}
 	s.lines = append(s.lines, s.prompt+line, "")
-	s.asking = false
+	s.asking, s.open = false, false
 	s.apply(s.r.Line(line))
 	return s
 }
@@ -88,6 +90,12 @@ func (s *Session) Asking() (bool, string) { return s.asking, s.prompt }
 // Exited reports whether the session ended.
 func (s *Session) Exited() bool { return s.exited }
 
+// Keys reports whether the running program is in key mode.
+func (s *Session) Keys() bool { return s.keys }
+
+// Held reports whether a program holds output (Hold).
+func (s *Session) Held() bool { return s.held }
+
 // Runner exposes the runner, for assertions about the stack.
 func (s *Session) Runner() *host.Runner { return s.r }
 
@@ -108,15 +116,33 @@ func (s *Session) Wide(cols int) []string {
 // Contains reports whether the transcript contains text.
 func (s *Session) Contains(text string) bool { return strings.Contains(s.Transcript(), text) }
 
+// apply records effects in order. Everything is revealed at once here, so a Drain marker is
+// reached as soon as the output before it is recorded; it is answered after the rest of its
+// batch, as the console's typewriter would reach it after the output queued with it. (A Think
+// runs inline here; the runner answers a marker only after a pending Think's ThinkDone, so the
+// order is the console's too.)
 func (s *Session) apply(effects []host.Effect) {
-	for len(effects) > 0 {
+	var drains []uint64
+	for len(effects) > 0 || len(drains) > 0 {
+		if len(effects) == 0 {
+			effects = s.r.Drained(drains[0])
+			drains = drains[1:]
+			continue
+		}
 		e := effects[0]
 		effects = effects[1:]
 		switch e := e.(type) {
 		case host.Print:
-			s.lines = append(s.lines, e.Lines...)
+			lines := e.Lines
+			if s.open && len(lines) > 0 && len(s.lines) > 0 {
+				s.lines[len(s.lines)-1] += lines[0]
+				lines = lines[1:]
+			}
+			s.lines = append(s.lines, lines...)
+			s.open = e.Open && len(e.Lines) > 0
 		case host.PageBreak:
 			s.lines = append(s.lines, "[CLEAR]")
+			s.open = false
 		case host.AskLine:
 			s.asking, s.prompt, s.keys = true, e.Prompt, false
 		case host.AskKeys:
@@ -129,7 +155,11 @@ func (s *Session) apply(effects []host.Effect) {
 			s.exited = true
 		case host.StartThink:
 			effects = append(s.think(e), effects...)
-		case host.Pause, host.CancelThink, host.Relayout, host.Redraw:
+		case host.Drain:
+			drains = append(drains, e.ID)
+		case host.Hold:
+			s.held = e.On
+		case host.Pause, host.CancelThink, host.Relayout, host.Redraw, host.Skip:
 		}
 	}
 }

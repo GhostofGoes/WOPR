@@ -44,7 +44,7 @@ var (
 	lineRanges   = script.Orig("", "CLOSE", "MEDIUM", "LONG")
 	linePos      = script.Orig("ON THE DEFENSIVE", "NEUTRAL", "ON ITS TAIL")
 	lineDamage   = script.Orig(", DAMAGED", "DAMAGED. ")
-	categories   = script.Orig("AIRCRAFT", "MISSILES FIRED")
+	categories   = script.Orig("AIRCRAFT", "MISSILES") // missiles spent count as steps lost
 )
 
 // Lines is every script block, for the provenance test.

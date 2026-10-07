@@ -30,7 +30,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
 | Release build (local dry run) | `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
-| Stage binaries and e2e tests | `go run ./internal/tools/stage` |
+| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
 
 Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
 fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:
@@ -63,7 +63,7 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 - With `Env.Deterministic` (`--seed`, tests, movie mode), searches stop at `Think.Limit`. Wall-clock
   `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never
-  see it.
+  see it, except a root program that captures keys (`AwaitKeys{Capture: true}`, movie mode).
 - Colour is semantic: draw with `proto.Style` values; themes decide the colours. Meaning must not depend on
   colour alone (vary the glyph or use `AttrReverse`).
 
@@ -76,7 +76,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 
 ## Film text and provenance
 
-Every script line, scene step and asset carries a provenance tag: `film`, `reconstructed`,
+Every script line, scene step and asset carries a provenance tag (movie scenes included: `internal/movie/scenes`,
+where the user's typed lines are `script.User` lines that keep their mixed case): `film`, `reconstructed`,
 `third-party:<repo>@<commit>:<path>` (or `third-party:<https URL>` for art from a web page, which is kept as
 drawn and exempt from the capitals rule), `original` or `prompt`. Do not copy text or art from other projects
 without a licence and a `NOTICE.md` entry that credits the source. Lines tagged `prompt` stay out of builds until the brother's

@@ -3,12 +3,14 @@ package cards
 // Card art, drawn for this project in plain ASCII. Every card shows its rank and its suit
 // letter, so that no card rests on colour (docs/PLAN.md §4.5).
 //
-// The console draws faces five rows high, apart when they fit and fanned when they do not:
+// The console draws faces five rows high, apart when they fit and fanned when they do not.
+// A face shows its index in two corners, as a real card does: at the top left, and right
+// aligned at the bottom right. A fanned card covered by the next shows only its top index:
 //
 //	.-----. .-----.       .---.---.---.-----.
 //	|10H  | |/\/\/|       |AS |7D |KC |4H   |
 //	|  H  | |\/\/\|       |   |   |   |  H  |
-//	|   10| |/\/\/|       |   |   |   |    4|
+//	|  10H| |/\/\/|       |   |   |   |   4H|
 //	'-----' '-----'       '---'---'---'-----'
 //
 // Panels draw mini cards three rows high, face up, face down or as an empty slot, and a
@@ -19,6 +21,7 @@ package cards
 //	'---'  '---'  ' - '
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -39,14 +42,15 @@ const (
 type Art [FaceH]string
 
 // Face draws c face up: its index (rank and suit) at the top left, its suit letter in the
-// middle and its rank at the bottom right.
+// middle and its index again at the bottom right, right aligned.
 func Face(c Card) Art {
-	idx, rank := c.String(), c.Rank.String()
+	idx := c.String()
+	pad := strings.Repeat(" ", FaceW-2-len(idx))
 	return Art{
 		".-----.",
-		"|" + idx + strings.Repeat(" ", 5-len(idx)) + "|",
+		"|" + idx + pad + "|",
 		"|  " + c.Suit.Letter() + "  |",
-		"|" + strings.Repeat(" ", 5-len(rank)) + rank + "|",
+		"|" + pad + idx + "|",
 		"'-----'",
 	}
 }
@@ -93,6 +97,39 @@ func Row(width int, cs ...Art) [FaceH]string {
 		out[y] = b.String()
 	}
 	return out
+}
+
+// CornerProblems lists each card face drawn whole in rows (a FaceW by FaceH frame with a
+// card's index at its top left) whose bottom right corner does not repeat that index,
+// right aligned. Faces covered by the next card in a fan, backs and mini cards are not
+// whole faces. Tests check drawn cards and title art with it.
+func CornerProblems(rows []string) []string {
+	at := func(x, y int) byte {
+		if y < 0 || y >= len(rows) || x < 0 || x >= len(rows[y]) {
+			return 0
+		}
+		return rows[y][x]
+	}
+	edge := func(x, y int) bool { // a frame's side, from its top corner to its bottom one
+		return at(x, y-1) == '.' && at(x, y) == '|' && at(x, y+1) == '|' && at(x, y+2) == '|' && at(x, y+3) == '\''
+	}
+	var bad []string
+	for y := 1; y+3 < len(rows); y++ {
+		for x := range len(rows[y]) - FaceW + 1 {
+			right := x + FaceW - 1
+			if !edge(x, y) || !edge(right, y) || rows[y-1][x+1:right] != "-----" || rows[y+3][x+1:right] != "-----" {
+				continue
+			}
+			idx := strings.TrimRight(rows[y][x+1:right], " ")
+			if c, ok := Parse(idx); !ok || c.String() != idx {
+				continue // a back, or not a card
+			}
+			if got, want := rows[y+2][x+1:right], strings.Repeat(" ", FaceW-2-len(idx))+idx; got != want {
+				bad = append(bad, fmt.Sprintf("the %s at row %d, column %d has %q at its bottom right, not %q", idx, y, x, got, want))
+			}
+		}
+	}
+	return bad
 }
 
 // SuitStyle is the style a suit's letters are drawn in: red for hearts and diamonds,

@@ -31,7 +31,10 @@ func Registry(entries ...games.Entry) *games.Registry {
 }
 
 // Stub is a game that exercises every output. Commands: WIN, LOSE, DRAW, THINK, KEYS,
-// FULL, ANIMATE.
+// FULL, ANIMATE, and the movie-mode hooks: CAPTURE (key mode capturing every key, Esc
+// included; honoured only when the stub is the root), DRAIN (a Drained event once its line is
+// out), SKIP (reveal at once) and TYPE (a typed line, Say.Open). Hold is for a capturing root
+// only, which the stub in line mode never is: the host tests it with programs of their own.
 type Stub struct {
 	moves int
 	ticks int
@@ -67,12 +70,22 @@ func (s *Stub) Handle(ev proto.Event) []proto.Output {
 			return []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Prompt{Text: "MOVE: "}}
 		case "ANIMATE":
 			return []proto.Output{proto.Animate{Every: 100 * time.Millisecond}}
+		case "CAPTURE":
+			return []proto.Output{proto.AwaitKeys{Hint: "CAPTURED", Capture: true}}
+		case "DRAIN":
+			return []proto.Output{proto.Say{Lines: []string{"DRAINING."}}, proto.Drain{}}
+		case "SKIP":
+			return []proto.Output{proto.Say{Lines: []string{"SKIPPED AT ONCE."}}, proto.Skip{}, proto.Prompt{Text: "MOVE: "}}
+		case "TYPE":
+			return append(proto.Typed("TYPED: ", "Hello.", nil), proto.Prompt{Text: "MOVE: "})
 		}
 		return []proto.Output{proto.Say{Lines: []string{"** IMPROPER REQUEST **"}}, proto.Prompt{Text: "MOVE: "}}
 	case proto.ThinkDone:
 		return []proto.Output{proto.Say{Lines: []string{"THOUGHT."}}, proto.Prompt{Text: "MOVE: "}}
 	case proto.KeyEvent:
 		return []proto.Output{proto.Say{Lines: []string{"KEY " + ev.Key.String()}}, proto.Prompt{Text: "MOVE: "}}
+	case proto.Drained:
+		return []proto.Output{proto.Say{Lines: []string{"DRAINED."}}, proto.Prompt{Text: "MOVE: "}}
 	case proto.TickEvent:
 		s.ticks++
 		if s.ticks >= 3 {

@@ -8,6 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
 // driver runs the model synchronously, without a terminal or real time (docs/PLAN.md §9).
@@ -37,12 +39,19 @@ const maxSteps = 100_000
 
 func newDriver(t *testing.T, opts Options, w, h int) *driver {
 	t.Helper()
+	return newDriverRoot(t, opts, w, h, nil)
+}
+
+// newDriverRoot is newDriver with root as the root program (nil: the usual one).
+func newDriverRoot(t *testing.T, opts Options, w, h int, root proto.Program) *driver {
+	t.Helper()
 	d := &driver{t: t, now: time.Date(1983, 6, 3, 9, 0, 0, 0, time.UTC)}
 	d.m = newModel(opts, func(dur time.Duration, gen uint64) tea.Cmd {
 		d.pending = append(d.pending, armed{dur, gen})
 		return nil
 	})
 	d.m.now = func() time.Time { return d.now }
+	d.m.testRoot = root
 	d.resize(w, h)
 	return d
 }

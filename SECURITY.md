@@ -15,10 +15,10 @@ Only the latest release receives fixes.
 
 - Release binaries are built by `.github/workflows/release.yml` from a commit on `main` that passed CI,
   rebuilt a second time to check they are reproducible, and published with a build-provenance
-  attestation. Verify an archive before running it:
+  attestation that covers every file in the release. Verify a download before running it:
 
   ```sh
-  gh attestation verify wopr_<version>_<os>_<arch>.tar.gz --repo GhostofGoes/WOPR \
+  gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
     --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
     --source-ref refs/tags/v<version> --deny-self-hosted-runners
   ```

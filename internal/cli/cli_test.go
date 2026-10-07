@@ -43,8 +43,18 @@ func TestParse(t *testing.T) {
 		{args: "-is 1", usage: "flag provided but not defined"},
 		{args: "-s x", usage: "--seed"},
 		{args: "-m", movie: true},
-		{args: "-m 2 -i", movie: true, scene: "2", instant: true},
+		{args: "-m 2 -i", movie: true, scene: "joshua", instant: true},
 		{args: "--movie joshua", movie: true, scene: "joshua"},
+		{args: "-i -m first-c", movie: true, scene: "first-contact", instant: true},
+		{args: "-m first", usage: "could mean: first-contact, first-strike"},
+		{args: "climax -m", movie: true, scene: "climax"},
+		{args: "-m norad terminal", usage: "too many arguments"},
+		{args: "-m nowhere", usage: "no scene matches \"nowhere\". The scenes are:\n 1. first-contact"},
+		{args: "-m 7", usage: "no scene matches"},
+		{args: "-m c", usage: "could mean: call-back, climax"},
+		{args: "-S", action: PrintScenes},
+		{args: "--scenes", action: PrintScenes},
+		{args: "-m --scenes", action: PrintScenes},
 		{args: "-m -p chess", usage: "cannot be combined"},
 		{args: "-v", action: PrintVersion},
 		{args: "--version gtw", action: PrintVersion},
@@ -117,16 +127,20 @@ func TestEveryLongFlagHasAShorthand(t *testing.T) {
 
 func TestRenderGolden(t *testing.T) {
 	t.Parallel()
-	var games, help strings.Builder
+	var games, help, scenes strings.Builder
 	if err := RenderGames(&games, catalog.Registry()); err != nil {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "games", games.String())
+	if err := RenderScenes(&scenes); err != nil {
+		t.Fatal(err)
+	}
+	golden.AssertString(t, "scenes", scenes.String())
 	if err := RenderHelp(&help); err != nil {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "help", help.String())
-	for _, line := range strings.Split(games.String()+help.String(), "\n") {
+	for _, line := range strings.Split(games.String()+help.String()+scenes.String(), "\n") {
 		if len(line) > 80 {
 			t.Errorf("line wider than 80 columns: %q", line)
 		}

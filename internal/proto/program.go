@@ -97,7 +97,8 @@ type Event interface{ isEvent() }
 // LineEvent answers the last Prompt. Text is sanitised and trimmed; "" is an empty Enter.
 type LineEvent struct{ Text string }
 
-// KeyEvent is a key press, delivered only in key mode (after AwaitKeys).
+// KeyEvent is a key press, delivered only in key mode (after AwaitKeys). KeyEsc arrives
+// only at a root program that captures keys.
 type KeyEvent struct {
 	Key  Key
 	Rune rune // set when Key is KeyRune
@@ -123,9 +124,13 @@ type ThinkDone struct {
 // GameOver tells a program that the program it launched has finished.
 type GameOver struct{ Result Result }
 
+// Drained answers a Drain: the output before it has been revealed.
+type Drained struct{}
+
 func (LineEvent) isEvent()   {}
 func (KeyEvent) isEvent()    {}
 func (TickEvent) isEvent()   {}
 func (ResizeEvent) isEvent() {}
 func (ThinkDone) isEvent()   {}
 func (GameOver) isEvent()    {}
+func (Drained) isEvent()     {}

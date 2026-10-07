@@ -20,10 +20,11 @@ import (
 // Slug is the ending's registry slug (an internal entry).
 const Slug = tictactoe.EndingSlug
 
-// MovieMode is the launch mode movie mode uses: the ending types its own "Hello." (M6).
+// MovieMode is the launch mode movie mode uses, alone or with the launch code characters
+// already cracked ("movie:5"): the ending types the film's "Hello." itself (docs/PLAN.md §7).
 // A climax hand-off's mode instead says how much of the launch code GTW cracked
 // (tictactoe.CodeMode).
-const MovieMode = "movie"
+const MovieMode = tictactoe.MovieMode
 
 // Timing.
 const (
@@ -52,10 +53,11 @@ var (
 	lineSelfPlay  = script.Orig("LEARNING...")
 	lineCodeLabel = script.Orig("LAUNCH CODE: ")
 	lineCode      = script.Recon("CPE1704TKS")
+	lineHello     = script.User(script.Reconstructed, "Hello.") // typed by the ending itself in movie mode
 )
 
 // Lines is every script block, for the provenance test.
-var Lines = []script.Ls{lineGreetings, lineStrange, lineChess, lineStrategy, lineSelfPlay, lineCodeLabel, lineCode}
+var Lines = []script.Ls{lineGreetings, lineStrange, lineChess, lineStrategy, lineSelfPlay, lineCodeLabel, lineCode, lineHello}
 
 type phase uint8
 
@@ -73,6 +75,7 @@ const heldBack = 3
 type Game struct {
 	env   proto.Env
 	phase phase
+	movie bool // movie mode: the ending answers its own greeting
 
 	boards [boards]tictactoe.Board
 	toMove [boards]byte
@@ -93,13 +96,16 @@ func New() games.Game { return &Game{} }
 // Start implements proto.Program.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
+	g.movie = env.Mode == MovieMode || strings.HasPrefix(env.Mode, MovieMode+":")
 	for i := range g.boards {
 		g.toMove[i], g.last[i] = 'X', -1
 	}
 	g.step = firstStep
 	g.start = min(len(lineCode[0].Text)-heldBack, len(lineCode[0].Text))
-	if n, err := strconv.Atoi(strings.TrimPrefix(env.Mode, tictactoe.CodeMode)); err == nil && strings.HasPrefix(env.Mode, tictactoe.CodeMode) {
-		g.start = min(max(n, 0), len(lineCode[0].Text))
+	if _, code, ok := strings.Cut(env.Mode, ":"); ok && (g.movie || strings.HasPrefix(env.Mode, tictactoe.CodeMode)) {
+		if n, err := strconv.Atoi(code); err == nil {
+			g.start = min(max(n, 0), len(lineCode[0].Text))
+		}
 	}
 	if env.Instant {
 		g.phase, g.round, g.shown = montage, rounds, len(assets.Scenarios)
@@ -200,7 +206,9 @@ func (g *Game) greet() []proto.Output {
 		proto.Wait{D: pauseBetween},
 		proto.Say{Lines: lineGreetings.Texts(), Pace: proto.PaceSpeech},
 	}
-	if g.env.Mode == MovieMode {
+	if g.movie {
+		outs = append(outs, proto.Say{Lines: []string{""}, Pace: proto.PaceInstant})
+		outs = append(outs, proto.Typed("", lineHello[0].Text, proto.NewRand(g.env.Seed, proto.DomainMovie))...)
 		return append(outs, g.conclude()...)
 	}
 	return append(outs, proto.Prompt{})

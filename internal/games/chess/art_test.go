@@ -89,8 +89,40 @@ func TestPanelFits(t *testing.T) {
 	}
 }
 
-// LAST is the last move whichever side made it, as in checkers: the player's move, bracketed
-// on the board, until WOPR replies, then WOPR's.
+// The board looks square: a terminal cell is about twice as tall as it is wide, so each
+// square is two columns by one row, and the frame holds eight ranks of 16 columns.
+func TestBoardIsSquare(t *testing.T) {
+	t.Parallel()
+	c := proto.NewCanvas(80, info.PanelRows)
+	New().View(c)
+	var rows []string // the board's columns, clear of the title card
+	for r := range strings.SplitSeq(c.String(), "\n") {
+		rows = append(rows, r[min(boardX, len(r)):])
+	}
+	if edge := "." + strings.Repeat("-", 16) + "."; !strings.Contains(rows[1], edge) || strings.Count(rows[1], "-") != 16 {
+		t.Errorf("the frame's top should be %q:\n%s", edge, c.String())
+	}
+	ranks := 0
+	for _, r := range rows {
+		left, right := strings.Index(r, "|"), strings.LastIndex(r, "|")
+		if left < 0 {
+			continue
+		}
+		ranks++
+		if right-left-1 != 16 {
+			t.Errorf("a rank is %d columns wide, not 16: %q", right-left-1, r)
+		}
+	}
+	if ranks != 8 {
+		t.Errorf("%d ranks:\n%s", ranks, c.String())
+	}
+	if !strings.Contains(c.String(), "8 |r n:b q:k b:n r:| 8") || !strings.Contains(c.String(), "1 |R:N B:Q K:B N:R | 1") {
+		t.Errorf("each square is its piece and then its shading:\n%s", c.String())
+	}
+}
+
+// LAST is the last move whichever side made it, as in checkers: the player's move, marked on
+// the board ([] where it left, P< where it landed), until WOPR replies, then WOPR's.
 func TestLastMove(t *testing.T) {
 	t.Parallel()
 	g := New().(*Game)
@@ -101,8 +133,9 @@ func TestLastMove(t *testing.T) {
 		return c.String()
 	}
 	outs := g.Handle(proto.LineEvent{Text: "e2e4"})
-	if v := view(); !strings.Contains(v, "LAST   E2E4") || !strings.Contains(v, "[P]") || !strings.Contains(v, "[ ]") {
-		t.Errorf("after the player's move, LAST shows it, bracketed:\n%s", v)
+	if v := view(); !strings.Contains(v, "LAST   E2E4") || !strings.Contains(v, "|  ::  ::P<::  ::| 4") ||
+		!strings.Contains(v, "|P P:P P:[]P:P P:| 2") {
+		t.Errorf("after the player's move, LAST shows it, marked:\n%s", v)
 	}
 	th, ok := outs[len(outs)-1].(proto.Think)
 	if !ok {

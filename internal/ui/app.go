@@ -17,6 +17,7 @@ import (
 
 	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/movie"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
 	"github.com/GhostofGoes/WOPR/internal/theme"
@@ -38,10 +39,10 @@ type Options struct {
 	SeedSet      bool
 	ReduceMotion bool
 	Play         string // game slug to start directly
-	Movie        bool
-	Scene        string
-	NoColor      bool  // NO_COLOR set to any non-empty value (no-color.org)
-	Panel        Panel // the front-panel row
+	Movie        bool   // movie mode: the director replays the film's scenes instead of the persona
+	Scene        string // with Movie: the scene to play from (a slug); "" opens the scene menu
+	NoColor      bool   // NO_COLOR set to any non-empty value (no-color.org)
+	Panel        Panel  // the front-panel row
 	Registry     *games.Registry
 	Log          *debuglog.Log // nil: no debug log
 }
@@ -140,6 +141,12 @@ type model struct {
 	keyMode   bool
 	notice    string
 
+	frozen   bool     // a program's Hold: nothing advances, as behind the TOO SMALL card
+	drains   []uint64 // Drain markers the typewriter has reached, to report in order
+	draining bool     // drain is running; nested calls leave the work to it
+
+	testRoot proto.Program // tests only: run this as the root program instead
+
 	thinks map[uint64]context.CancelFunc
 	clk    clock
 	phase  time.Duration // animation phase for blink and the thinking indicator
@@ -187,7 +194,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.key(msg))
 	case tea.PasteMsg:
-		if !m.tooSmall() && !m.keyMode {
+		if !m.tooSmall() && !m.keyMode && (m.runner == nil || !m.runner.Shielded()) {
 			m.ed.Insert(msg.Content)
 		}
 	case tea.ModeReportMsg:
@@ -211,19 +218,29 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, m.applyAll(m.runner.ThinkResult(msg.gen, msg.value, msg.err)))
 		}
 	}
-	cmds = append(cmds, m.release(), m.maybeArm())
+	cmds = append(cmds, m.release(), m.drain(), m.maybeArm())
 	return m, tea.Batch(cmds...)
 }
 
-// start runs the root program once the terminal has a usable size.
+// start runs the root program once the terminal has a usable size: the persona, or in movie
+// mode the director, which pins its own seed and plays deterministically (docs/PLAN.md §7).
 func (m *model) start() tea.Cmd {
 	m.started = true
+	seed, deterministic := m.opts.Seed, m.opts.SeedSet
+	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
+	if m.opts.Movie {
+		seed, deterministic = movie.Seed, true
+		root = movie.New(movie.Options{Scene: m.opts.Scene})
+		m.opts.Log.Printf("movie mode from scene %q, seed %d", m.opts.Scene, seed)
+	}
+	if m.testRoot != nil {
+		root = m.testRoot
+	}
 	m.runner = host.New(host.Config{
-		Seed: m.opts.Seed, Instant: m.opts.Instant, Deterministic: m.opts.SeedSet, ReduceMotion: m.opts.ReduceMotion,
+		Seed: seed, Instant: m.opts.Instant, Deterministic: deterministic, ReduceMotion: m.opts.ReduceMotion,
 		Resolve: m.resolve, Area: m.area,
 	})
-	persona := wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
-	return m.applyAll(m.runner.Start(persona, host.Placement{}))
+	return m.applyAll(m.runner.Start(root, host.Placement{}))
 }
 
 func (m *model) resolve(l proto.Launch) (proto.Program, host.Placement, error) {
@@ -234,13 +251,14 @@ func (m *model) resolve(l proto.Launch) (proto.Program, host.Placement, error) {
 	if !ok || e.New == nil {
 		return nil, host.Placement{}, games.ErrNotFound
 	}
-	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal}, nil
+	// In movie mode the director's programs (the climax) play through: Esc cannot end them.
+	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal || m.opts.Movie}, nil
 }
 
 // tick advances the typewriter and the runner.
 func (m *model) tick(dt time.Duration) tea.Cmd {
-	if m.tooSmall() {
-		return nil // paused: nothing advances while the TOO SMALL card is up
+	if m.paused() {
+		return nil // nothing advances behind the TOO SMALL card or while a program holds output
 	}
 	m.phase += dt
 	for _, ev := range m.tw.Advance(dt, &m.sb) {
@@ -256,7 +274,31 @@ func (m *model) onTypewriter(ev console.Event) {
 	if ev.Mark != 0 && ev.Mark == m.markID {
 		m.place, m.last = m.nextPlace, nil
 	}
+	if ev.Drain != 0 {
+		m.drains = append(m.drains, ev.Drain)
+	}
 }
+
+// drain reports the Drain markers the typewriter has reached, in order. A report can queue
+// more output and, under --instant, reach the next marker at once, so it loops; the applyAll
+// calls inside it leave any new markers to this loop.
+func (m *model) drain() tea.Cmd {
+	if m.draining || m.runner == nil {
+		return nil
+	}
+	m.draining = true
+	defer func() { m.draining = false }()
+	var cmds []tea.Cmd
+	for len(m.drains) > 0 {
+		id := m.drains[0]
+		m.drains = m.drains[1:]
+		cmds = append(cmds, m.applyAll(m.runner.Drained(id)))
+	}
+	return tea.Batch(cmds...)
+}
+
+// paused reports whether time stands still: behind the TOO SMALL card, or held by a program.
+func (m *model) paused() bool { return m.tooSmall() || m.frozen }
 
 // relayout applies a placement change. When a game with a board ends, its last View stays
 // up until its final output has been revealed (docs/PLAN.md §4.2): the change waits for a
@@ -284,7 +326,7 @@ func (m *model) release() tea.Cmd {
 
 // busy reports whether the clock must keep running.
 func (m *model) busy() bool {
-	if !m.started || m.tooSmall() {
+	if !m.started || m.paused() {
 		return false
 	}
 	return m.tw.Busy() || m.runner.NeedsTicks() || m.runner.Thinking() || len(m.thinks) > 0
@@ -306,11 +348,19 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 	for _, e := range effects {
 		switch e := e.(type) {
 		case host.Print:
-			m.tw.Say(e.Lines, proto.StyleText, e.Pace)
+			if e.Open {
+				m.tw.SayOpen(e.Lines, proto.StyleText, e.Pace)
+			} else {
+				m.tw.Say(e.Lines, proto.StyleText, e.Pace)
+			}
 		case host.Pause:
 			m.tw.Pause(e.D)
 		case host.PageBreak:
-			m.tw.Page()
+			if m.tw.Busy() {
+				m.tw.Page() // after what is still being revealed
+			} else {
+				m.sb.PageBreak() // now: a launch's new layout must not frame the old page until the next tick
+			}
 		case host.AskLine:
 			m.keyMode = false
 			m.tw.Prompt(e.Prompt)
@@ -339,14 +389,22 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 		case host.Redraw:
 		case host.Exit:
 			cmds = append(cmds, tea.Quit)
+		case host.Hold:
+			m.frozen = e.On
+		case host.Drain:
+			m.tw.Drain(e.ID)
+		case host.Skip:
+			for _, ev := range m.tw.Flush(&m.sb) {
+				m.onTypewriter(ev)
+			}
 		}
 	}
-	if m.opts.Instant {
+	if m.opts.Instant && !m.frozen { // held output stays held, as behind the TOO SMALL card
 		for _, ev := range m.tw.Flush(&m.sb) {
 			m.onTypewriter(ev)
 		}
 	}
-	return tea.Batch(cmds...)
+	return tea.Batch(append(cmds, m.drain())...)
 }
 
 // think runs a program's slow work off the UI goroutine.

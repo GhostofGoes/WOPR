@@ -46,8 +46,8 @@ dddddddd.o...dddddddd.i...dddddd.t
 |>.{     " " `-==,',****  \  / {)      / **">_,-' `+++             mt-2_|  +---+
 |  \_.:--. +     ****)`^-. "'       , [_/(           ++          __,/-' |  | 4 |
 | '"'     ++X   **  "    _L        oD_,--'                )     /. (|   |  +---+
-|         ++++         ,'          _)_.\\._<> 6              _,' /  '   |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|         +++++        ,'          _)_.\\._<> 6              _,' /  '   |  | 3 |
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -66,8 +66,8 @@ d...lllll.l.llllllllllloiiiii.l......iiiiiiii...loooll..l..llllllllllllld..d.5.d
 dlll.....l.l.llllllliiii..l..l.ll......l.iillllll.looo.............llllld..ddddd
 d..lllllll.o.....iiiilllll.ll.......l.llll...........oo..........llllll.d..d444d
 d.lll.....ooo...ii..l....ll........lllllll................l.....ll.ll...d..ddddd
-d.........oooo.........ll..........llllllllll.l..............lll.l..l...d..d.3.d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+d.........ooooo........ll..........llllllllll.l..............lll.l..l...d..d.3.d
+d..........ll.o.......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d.1.d
@@ -85,10 +85,10 @@ dddddddd.o...dddddddd.i...dddddd.t
 |           . _..::__:  ++++********************+     _,.__             |  +---+
 |   _.___ _ _<_>`!(._+++***** /      ***************_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,'+****  \  / {)      /***">**** ******           mt-2_|  +---+
-|  \_.:--. +     ****)`^-. "'       , [_/(**    *X   *X*X        __,/-' |  | 4 |
-| '"'     ++X   **  "    _L        oD_,--' X              )     /. (|   |  +---+
-|         ++++         ,'          _)_.\\._<> 6              _,' /  '   |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|  \_.:--. +     ****)`^-. "'       , [_/**X    *X   *X*X        __,/-' |  | 4 |
+| '"'     ++X   X*  "    _L        oD_,--'X               )     /. (|   |  +---+
+|         +++++        ,'          _)_.\\._<> 6              _,' /  '   |  | 3 |
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -105,10 +105,10 @@ ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
 d...........l.llllllll..ooooiiiiiiiiiiiiiiiiiiiio.....lllll.............d..ddddd
 d...lllll.l.llllllllloooiiiii.l......iiiiiiiiiiiiiiill..l..llllllllllllld..d.5.d
 dlll.....l.l.lllllloiiii..l..l.ll......liiilliiii.iiiiii...........llllld..ddddd
-d..lllllll.o.....iiiilllll.ll.......l.llllii....ii...iiii........llllll.d..d444d
-d.lll.....ooo...ii..l....ll........lllllll.i..............l.....ll.ll...d..ddddd
-d.........oooo.........ll..........llllllllll.l..............lll.l..l...d..d.3.d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+d..lllllll.o.....iiiilllll.ll.......l.llliii....ii...iiii........llllll.d..d444d
+d.lll.....ooo...oi..l....ll........llllllli...............l.....ll.ll...d..ddddd
+d.........ooooo........ll..........llllllllll.l..............lll.l..l...d..d.3.d
+d..........ll.o.......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d.1.d
@@ -126,10 +126,10 @@ ddddddd.ddddddd.dd.dddd.dddd.dddddddd.dddd.ddddd.ddddd.ddddd
 |           . _..::__:  +++++++++++++++++++++++++     _,.__             |  +---+
 |   _.___ _ _<_>`!(._`.+******/      ****._     `+++_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,',*******  / {)      /** ">_,-' `+++             mt-2_|  +---+
-|  \_.:--.       *****`^-. "'       , [_/( X     X   ++ X   **** __,/-' |  | 4 |
-| '"'     \ X   **  "    _L        oD_,--' X              )**  ******   |  +---+
+|  \_.:--.       *****`^-. "'       , [_/( X     X   +X X   **** __,/-' |  | 4 |
+| '"'     \ X   X*  "    _L        oD_,--'X               )**  ******   |  +---+
 |          |           ,'          _)_.\\._<> 6              _,' /  **  |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -146,10 +146,10 @@ ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
 d...........l.llllllll..ooooooooooooooooooooooooo.....lllll.............d..ddddd
 d...lllll.l.llllllllllloiiiiiil......iiiill.....loooll..l..llllllllllllld..d.5.d
 dlll.....l.l.llllllliiiiiii..l.ll......lii.llllll.looo.............llllld..ddddd
-d..lllllll.......iiiiillll.ll.......l.llll.i.....i...oo.i...iiii.llllll.d..d.4.d
-d.lll.....l.o...ii..l....ll........lllllll.i..............lii..iiiiii...d..ddddd
+d..lllllll.......iiiiillll.ll.......l.llll.i.....i...oi.i...iiii.llllll.d..d.4.d
+d.lll.....l.o...oi..l....ll........llllllli...............lii..iiiiii...d..ddddd
 d..........l...........ll..........llllllllll.l..............lll.l..ii..d..d333d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+d..........ll.o.......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d.1.d
@@ -167,10 +167,10 @@ dddddddd.o...dddddddd.i...dddddd.t
 |           . _..::__:  +++++++++++++++++++++++++     _,.__             |  +---+
 |   _.___ _ _<_>`!(._+++*****************._     `+++_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,'+*******  / {) ******** ">_,-' `+++             mt-2_|  +---+
-|  \_.:--.       *****`^-. "'       , [*****     X   ++ X   **** __,/-' |  | 4 |
-| '"'     \ X   **X "    _L        oD_,--' XX            X***  ******   |  +---+
+|  \_.:--.       *****`^-. "'       , [***XX     X   +X X   **** __,/-' |  | 4 |
+| '"'     \ X   X*X "    _L        oD_,--'XXX            X***  ******   |  +---+
 |          |           ,'          _)_.\\._<> 6              _,' /  **  |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -187,10 +187,10 @@ ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
 d...........l.llllllll..ooooooooooooooooooooooooo.....lllll.............d..ddddd
 d...lllll.l.llllllllloooiiiiiiiiiiiiiiiiill.....loooll..l..llllllllllllld..d.5.d
 dlll.....l.l.lllllloiiiiiii..l.ll.iiiiiiii.llllll.looo.............llllld..ddddd
-d..lllllll.......iiiiillll.ll.......l.liiiii.....i...oo.i...iiii.llllll.d..d.4.d
-d.lll.....l.o...iio.l....ll........lllllll.ii............iiii..iiiiii...d..ddddd
+d..lllllll.......iiiiillll.ll.......l.liiiii.....i...oi.i...iiii.llllll.d..d.4.d
+d.lll.....l.o...oio.l....ll........llllllliii............iiii..iiiiii...d..ddddd
 d..........l...........ll..........llllllllll.l..............lll.l..ii..d..d333d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+d..........ll.o.......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d.1.d
@@ -205,13 +205,13 @@ AAAA.AAAAAAA.AA.AAAAAA.A.AAAA.AAAAA.AAAAAAAAAAA
 
 ==== DEFCON 1, frame 20 ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._       ****      ,     _,.__             |  +---+
+|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
 |   _.___ _ _<_>`!(._`.`-.    /      ******     `_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \+ + +)+ +   / _**>+,+'+`+               mt-2_|  +---+
-|  \_.:--.       `._ )`^-. "'  * *  , [_/(X*XX   X + +X X        __,/-' |  | 4 |
-| '"'     \ X   X*X*"* * *L* *     oD_,--' XX            X)     *****   |  +---+
+|>.{     " " `-==,',._\{  \  + +)+ + + + +*X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`^-. "'  * *  , [_/(XXXX   X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* *     oD_,--'XXX            X)     *****   |  +---+
 |          |           ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -225,13 +225,13 @@ A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0   200
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...........l.llllllll..lllllll.......iiii......l.....lllll.............d..ddddd
+d...........l.llllllll..lllllll........ii.......l.....lllll.............d..ddddd
 d...lllll.l.llllllllllllll....l......iiiiii.....ll.lll..l..llllllllllllld..d.5.d
-dlll.....l.l.lllllllllll..lo.o.olo.o...l.liilolololo...............llllld..ddddd
-d..lllllll.......lll.lllll.ll..i.i..l.lllliiii...i.o.oi.i........llllll.d..d.4.d
-d.lll.....l.o...oioili.i.ili.i.....lllllll.ii............il.....iiiii...d..ddddd
+dlll.....l.l.lllllllllll..l..o.olo.o.o.o.oiilolololo...............llllld..ddddd
+d..lllllll.......lll.lllll.ll..i.i..l.lllliiii...i...ii.i........llllll.d..d.4.d
+d.lll.....l.o...oioili.i.ili.i.....llllllliii............il.....iiiii...d..ddddd
 d..........l...........ll..........llllllllll.l...i..........lliil..ii..d..d.3.d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+d..........ll.o.......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d111d
@@ -246,13 +246,13 @@ dddddddd.o...dddddddd.i...dddddd.t
 
 ==== DEFCON 1, assessed ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._       ****      ,     _,.__             |  +---+
+|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
 |   _.___ _ _<_>`!(._`.`-.    /      ******     `_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \+ + +)+ +   / _**>+,+'+`+               mt-2_|  +---+
-|  \_.:--.       `._ )`+-+ "'  * * *,*[*/*XXXX   X + +X X        __,/-' |  | 4 |
-| '"'     \ X   X*X*"* * *L* *     oD_,--' XX            X)     *****   |  +---+
-|          |   + +     ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|>.{     " " `-==,',._\{  \  + +)+ + + + +*X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'  * * *,*[*/*XXXX   X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* *     oD_,--'XXX            X)     *****   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
+|          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -266,13 +266,13 @@ A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...........l.llllllll..lllllll.......iiii......l.....lllll.............d..ddddd
+d...........l.llllllll..lllllll........ii.......l.....lllll.............d..ddddd
 d...lllll.l.llllllllllllll....l......iiiiii.....ll.lll..l..llllllllllllld..d.5.d
-dlll.....l.l.lllllllllll..lo.o.olo.o...l.liilolololo...............llllld..ddddd
-d..lllllll.......lll.llolo.ll..i.i.ilililiiiii...i.o.oi.i........llllll.d..d.4.d
-d.lll.....l.o...oioili.i.ili.i.....lllllll.ii............il.....iiiii...d..ddddd
-d..........l...o.o.....ll..........llllllllll.l...i..........lliil..ii..d..d.3.d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+dlll.....l.l.lllllllllll..l..o.olo.o.o.o.oiilolololo...............llllld..ddddd
+d..lllllll.......lll.llolo.ol..i.i.ilililiiiii...i...ii.i........llllll.d..d.4.d
+d.lll.....l.o...oioili.i.ili.i.....llllllliii............il.....iiiii...d..ddddd
+d..........l.....o.o...ll..........llllllllll.l...i..........lliil..ii..d..d.3.d
+d..........ll.oo......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d111d
@@ -328,13 +328,13 @@ dddddddd.o...dddddddd.i...dddddd.t
 
 ==== climax ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._       ****      ,     _,.__             |  +---+
+|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
 |   _.___ _ _<_>`!(._`.`-.    /      ******     `_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \+ + +)+ +   / _**>+,+'+`+               mt-2_|  +---+
-|  \_.:--.       `._ )`+-+ "'  * * *,*[*/*XXXX   X + +X X        __,/-' |  | 4 |
-| '"'     \ X   X*X*"* * *L* *     oD_,--' XX            X)     *****   |  +---+
-|          |   + +     ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
-|          `.X        /           [_/_'` `"(                <'}  )      |  +---+
+|>.{     " " `-==,',._\{  \  + +)+ + + + +*X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'  * * *,*[*/*XXXX   X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* *     oD_,--'XXX            X)     *****   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
+|          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
 |              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
@@ -348,13 +348,13 @@ A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
                            LAUNCH CODE: CPE 1704 ___
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
-d...........l.llllllll..lllllll.......iiii......l.....lllll.............d..ddddd
+d...........l.llllllll..lllllll........ii.......l.....lllll.............d..ddddd
 d...lllll.l.llllllllllllll....l......iiiiii.....ll.lll..l..llllllllllllld..d.5.d
-dlll.....l.l.lllllllllll..lo.o.olo.o...l.liilolololo...............llllld..ddddd
-d..lllllll.......lll.llolo.ll..i.i.ilililiiiii...i.o.oi.i........llllll.d..d.4.d
-d.lll.....l.o...oioili.i.ili.i.....lllllll.ii............il.....iiiii...d..ddddd
-d..........l...o.o.....ll..........llllllllll.l...i..........lliil..ii..d..d.3.d
-d..........llo........l...........llllll.lll................lll..l......d..ddddd
+dlll.....l.l.lllllllllll..l..o.olo.o.o.o.oiilolololo...............llllld..ddddd
+d..lllllll.......lll.llolo.ol..i.i.ilililiiiii...i...ii.i........llllll.d..d.4.d
+d.lll.....l.o...oioili.i.ili.i.....llllllliii............il.....iiiii...d..ddddd
+d..........l.....o.o...ll..........llllllllll.l...i..........lliil..ii..d..d.3.d
+d..........ll.oo......l...........llllll.lll................lll..l......d..ddddd
 d...........ll....lll.l...........l...lllllll.llll..........ll..l.......d..d.2.d
 d....l........l..l..ll...........l.........lll..l.l..llll..ll.l.........d..ddddd
 d..............llll...ll.........l...........lll...ll...lll..ll.........d..d111d

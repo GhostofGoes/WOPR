@@ -38,18 +38,20 @@ var (
 )
 
 // Panel geometry: the title card at the left, the board in the middle, the two sides and the
-// state of play at the right, each side level with its own end of the board.
+// state of play at the right, each side level with its own end of the board. The board's
+// squares are two columns by one row, which terminal cells show square (board.DrawCompact).
 const (
-	titleX = 3
-	boardX = (80 - board.Width) / 2
-	infoX  = boardX + board.Width + 3
+	titleX = 7 // the card ends seven columns short of the board
+	boardX = (80 - board.CompactWidth) / 2
+	infoX  = boardX + board.CompactWidth + 3
 	valueX = infoX + 7
 	infoW  = 80 - valueX
 )
 
 // View implements proto.Program: the title card, the board (White in capitals, Black in
-// lower case, the last move bracketed), and beside it each side's captures, the move
-// number and the last move, whichever side made it (as in checkers).
+// lower case, the last move marked: [] where it left, P< where it landed), and beside it
+// each side's captures, the move number and the last move, whichever side made it (as in
+// checkers).
 func (g *Game) View(c *proto.Canvas) {
 	x := max((c.W-80)/2, 0)
 	for i, l := range artTitle {
@@ -66,7 +68,7 @@ func (g *Game) View(c *proto.Canvas) {
 func (g *Game) drawBoard(c *proto.Canvas, x int) {
 	pos := g.g.Position()
 	b := pos.Board()
-	board.Draw(c, x+boardX, 0, func(file, rank int) board.Glyph {
+	board.DrawCompact(c, x+boardX, 0, func(file, rank int) board.Glyph {
 		sq := cg.NewSquare(cg.File(file), cg.Rank(rank))
 		gl := board.Glyph{Mark: g.last != cg.NoSquare && (sq == g.last || sq == g.from)}
 		if p := b.Piece(sq); p != cg.NoPiece {

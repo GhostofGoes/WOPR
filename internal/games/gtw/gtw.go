@@ -79,8 +79,8 @@ type Game struct {
 	env      proto.Env
 	rng      *rand.Rand
 	phase    phase
-	side     assets.Side // the player's
-	targets  []string
+	side     assets.Side    // the player's
+	targets  []assets.Place // the enemy's, as listed
 	war      *war
 	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
 	rep      report // the current stage, resolved when it starts
@@ -101,6 +101,7 @@ type Game struct {
 	rejected int        // climax inputs refused, for the hint
 	other    int        // refusals of input that names no game, for the notice rotation
 	listing  bool       // LIST GAMES moved the climax to the console
+	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
 }
 
 // New returns a game.
@@ -113,6 +114,9 @@ func say(ls ...script.Ls) proto.Output {
 	}
 	return proto.Say{Lines: lines, Pace: proto.PaceSpeech}
 }
+
+// speak says lines made from script text: a template filled in, or several put together.
+func speak(lines []string) proto.Output { return proto.Say{Lines: lines, Pace: proto.PaceSpeech} }
 
 // strip prints one of a stage's strip lines at table pace, so the text keeps up with the
 // board: WOPR's launch line, with its DEFCON, shows as the ladder moves, not seconds after.
@@ -202,6 +206,9 @@ func (g *Game) onSide(input string) []proto.Output {
 }
 
 // onTarget collects targets until an empty line. A line may hold several, split on commas.
+// Each must be a place the board knows on the enemy's side (assets.Find): any other name is
+// refused, so a target is only ever struck where it is, and LIST shows what is on file. A
+// target, or a refusal, is not repeated, so "WASHINGTON, D.C." is one target, or one refusal.
 func (g *Game) onTarget(input string) []proto.Output {
 	if strings.TrimSpace(input) == "" {
 		if len(g.targets) == 0 {
@@ -209,15 +216,68 @@ func (g *Game) onTarget(input string) []proto.Output {
 		}
 		return g.openBoard()
 	}
-	for _, t := range strings.Split(input, ",") {
-		if name := strings.ToUpper(strings.Join(strings.Fields(t), " ")); name != "" {
-			if len(g.targets) == maxTargets {
-				return []proto.Output{say(lineTooMany), proto.Prompt{}}
-			}
-			g.targets = append(g.targets, name)
+	switch prompt.Normalize(input) {
+	case "LIST", "LIST TARGETS", "HELP", "": // "" is "?"
+		return []proto.Output{table(g.targetList()), proto.Prompt{}}
+	}
+	var refused []string // what WOPR says back, a line a refusal
+	refuse := func(line string) {
+		if !slices.Contains(refused, line) {
+			refused = append(refused, line)
 		}
 	}
+	for _, t := range strings.Split(input, ",") {
+		name := strings.ToUpper(strings.Join(strings.Fields(t), " "))
+		if name == "" {
+			continue
+		}
+		p, ok := assets.Find(name)
+		switch {
+		case !ok:
+			refuse(fill(lineUnknown[0], name))
+		case p.Side != enemyOf(g.side):
+			refuse(fill(lineOwnSide[0], p.Name))
+		case slices.Contains(g.targets, p):
+		case len(g.targets) == maxTargets:
+			return []proto.Output{speak(append(refused, lineTooMany[0].Text)), proto.Prompt{}}
+		default:
+			g.targets = append(g.targets, p)
+		}
+	}
+	if len(refused) > 0 {
+		return []proto.Output{speak(append(refused, lineListHint[0].Text)), proto.Prompt{}}
+	}
 	return []proto.Output{proto.Prompt{}}
+}
+
+// Target list geometry: LIST prints the enemy's targets in listCols columns of listW.
+const (
+	listCols = 4
+	listW    = 20
+)
+
+// targetList is LIST at the targets prompt: every place on the enemy's side the board knows,
+// in alphabetical order down four columns.
+func (g *Game) targetList() []string {
+	var names []string
+	for _, p := range append(slices.Clone(assets.Cities), assets.Targets...) {
+		if p.Side == enemyOf(g.side) {
+			names = append(names, p.Name)
+		}
+	}
+	slices.Sort(names)
+	rows := ceilDiv(len(names), listCols)
+	lines := []string{fill(lineOnFile[0], g.nation(wopr))}
+	for r := range rows {
+		var b strings.Builder
+		for c := range listCols {
+			if i := c*rows + r; i < len(names) {
+				fmt.Fprintf(&b, "%-*s", listW, names[i])
+			}
+		}
+		lines = append(lines, strings.TrimRight(b.String(), " "))
+	}
+	return lines
 }
 
 func enemyOf(s assets.Side) assets.Side {
@@ -380,7 +440,7 @@ func (g *Game) aim(s int) assets.Place {
 	if s == you {
 		t := g.targets[g.aimYou%len(g.targets)]
 		g.aimYou++
-		return assets.Locate(t, enemyOf(g.side))
+		return t
 	}
 	c := g.cities[g.aimWOPR%len(g.cities)]
 	g.aimWOPR++
@@ -389,7 +449,7 @@ func (g *Game) aim(s int) assets.Place {
 
 func (g *Game) firstAim(s int) assets.Place {
 	if s == you {
-		return assets.Locate(g.targets[0], enemyOf(g.side))
+		return g.targets[0]
 	}
 	return g.cities[0]
 }

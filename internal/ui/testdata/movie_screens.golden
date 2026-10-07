@@ -1,0 +1,156 @@
+==== first-strike: typing a target (80x24) ====
+AWAITING FIRST STRIKE COMMAND
+
+PLEASE LIST PRIMARY TARGETS BY
+CITY AND/OR COUNTY NAME:
+Las V
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 5, row 4
+==== Space: paused (80x24) ====
+AWAITING FIRST STRIKE COMMAND
+
+PLEASE LIST PRIMARY TARGETS BY
+CITY AND/OR COUNTY NAME:
+Las V
+** PAUSED **   SPACE RESUMES. ESC FOR THE MENU.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: hidden
+==== first-strike: the first strike has landed (80x24) ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|           . _..::__:  ++++********************+     _,.__             |  +---+
+|   _.___ _ _<_>`!(._+++***** /      ******  *******_/  '  '-._.---.-.__|  | 5 |
+|>.{     " " `-==,'+****  \  / {)      /****>_,-' ******           mt-2_|  +---+
+|  \_.:--. +     ****)`^-. "'       , [_/(**X        *X*X   **** __,/-' |  | 4 |
+| '"'     ++X   X*  "    _L        oD_,--' X             X***  ******   |  +---+
+|         +++++        ,'          _)_.\\._<> 6              _,' /  **  |  | 3 |
+|          `. X       /           [_/_'` `"(                <'}  )      |  +---+
+|           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
+|    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
+|              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
+|                 `=.---.        `._._       ,'     "`  |' ,- '.        |  +---+
+|                   |    `-._         |     /          `:`<_|h--._      |
+|                   (        >        .     | ,          `=.__.`-'\     |
++--------- UNITED STATES ------------------------ SOVIET UNION ---------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SS20-A 647 281     C-SSN8-A 536 143            USSR      500   450   200     0
+       B 086 996            B 225 668            US        737   562     0   375
+OUTGOING +   INCOMING *   IMPACT X
+FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
+ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
+LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
+STRIKE 2 OF 3 [50 50 100]:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 27, row 22
+==== climax: DEFCON 1, the board again (80x24) ====
++---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
+|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
+|   _.___ _ _<_>`!(._`.`-.    /      ******     `_ ,_/  '  '-._.---.-.__|  | 5 |
+|>.{     " " `-==,',._\{  \  + +)+ + + +***X**,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'* * * *,*[*/*XXX*** X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X* *"* * *L* *     oD_,--'X X  ***       X)     /. (|   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6  *X          _,' /  '   |  | 3 |
+|          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
+|           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
+|    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
+|              `._,   ""         |           \`'   \|   ?_)  {\         |  |   |
+|                 `=.---.        `._._       ,'     "`  |' ,- '.        |  +---+
+|                   |    `-._         |     /          `:`<_|h--._      |
+|                   (        >        .     | ,          `=.__.`-'\     |
++--------- UNITED STATES ------------------------ SOVIET UNION ---------+
+TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
+A-SSN8-A 309 221     C-SSN8-A 804 319            USSR        0     0     0     0
+       B 133 308            B 837 260            US          0     0     0     0
+                           LAUNCH CODE: C__ ____ ___
+CHESS
+
+** IDENTIFICATION NOT RECOGNISED **
+** ACCESS DENIED **
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 19, row 22
+==== climax: tic-tac-toe plays itself (80x24) ====
+                                  TIC-TAC-TOE
+                                 |            |
+                          1      |     2      |     3
+                                 |            |
+                     ------------+------------+------------
+                                 |   //""\\   |
+           YOU  X         4      |  ((    ))  |     6          O  WOPR
+                                 |   \\__//   |
+                     ------------+------------+------------
+                                 |            |  \\    //
+                          7      |     8      |     ><
+                                 |            |  //    \\
+ONE OR TWO PLAYERS?
+PLEASE LIST NUMBER OF PLAYERS: 1
+
+YOU ARE X. WOPR IS O.
+YOUR MOVE: 9
+
+** THE GAME PLAYS TO THE END. CTRL+C QUITS. **
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 46, row 18
+==== call-back: the game clock (80x24) ====
+GAME TIME ELAPSED:           31 HRS 12 MIN 00 SEC
+ESTIMATED TIME REMAINING:    52 HRS 17 MIN 59 SEC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 0, row 2

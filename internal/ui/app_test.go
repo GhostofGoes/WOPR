@@ -433,7 +433,7 @@ func TestFinalBoardStaysUntilItsLastWords(t *testing.T) {
 		screen := d.screen()
 		if strings.Contains(screen, "WOPR: D8H4") && !strings.Contains(screen, "CHECKMATE.") {
 			sawMate = true // the mating move is out, the game's last line still typing
-			if !strings.Contains(screen, "a  b  c  d  e  f  g  h") {
+			if !strings.Contains(screen, "a b c d e f g h") {
 				t.Fatalf("the board vanished before the mating move was shown:\n%s", screen)
 			}
 		}
@@ -445,4 +445,76 @@ func TestFinalBoardStaysUntilItsLastWords(t *testing.T) {
 	if d.m.last != nil || d.m.place.Layout != proto.LayoutConsole || !strings.Contains(d.screen(), "WINNER: WOPR") {
 		t.Fatalf("after the verdict the console layout returns:\n%s", d.screen())
 	}
+}
+
+// consoleText is the console part of the screen: the rows below the running program's
+// View, without the front panel.
+func consoleText(d *driver) string {
+	g := d.m.geometry(d.m.place)
+	rows := strings.Split(d.screen(), "\n")
+	return strings.Join(rows[g.viewRows:g.viewRows+g.consoleRows], "\n")
+}
+
+// The owner's report: after Falken's Maze, GIN RUMMY's board sat on top of the maze's
+// last lines and the WHICH GAME? menu, and so did CHECKERS after gin. A game with its own
+// screen now starts on a new page, so its console strip shows only its own text; earlier
+// pages stay in the scrollback. A game ending keeps its page, so its last lines stay above
+// WOPR's verdict and SHALL WE PLAY ANOTHER GAME?.
+func TestPanelGameStartsOnANewPage(t *testing.T) {
+	t.Parallel()
+	before := []string{
+		"FIND THE EXIT", "RETREAT ACCEPTED", "WINNER: WOPR", "SHALL WE PLAY ANOTHER GAME?",
+		"WHICH GAME?", "BLACK JACK", "GLOBAL THERMONUCLEAR WAR", "yes",
+	}
+	clean := func(d *driver, label string, old []string, want string) {
+		t.Helper()
+		text := consoleText(d)
+		for _, s := range old {
+			if strings.Contains(text, s) {
+				t.Errorf("%s: %q from before the launch is still under the board:\n%s", label, s, d.screen())
+			}
+		}
+		if want != "" && !strings.Contains(text, want) {
+			t.Errorf("%s: no %q in the console:\n%s", label, want, d.screen())
+		}
+	}
+
+	opts := instant()
+	opts.Play = "falkens-maze"
+	d := newDriver(t, opts, 80, 24).settle()
+	d.key(keyRune('q')) // give up: the maze ends and WOPR's console returns
+	if s := d.screen(); !strings.Contains(s, "RETREAT ACCEPTED") || !strings.Contains(s, "SHALL WE PLAY ANOTHER GAME?") {
+		t.Fatalf("the maze's last line and WOPR's question stay on the page:\n%s", s)
+	}
+	d.line("yes").line("gin rummy")
+	if _, place := d.m.runner.Top(); place.Layout != proto.LayoutPanel {
+		t.Fatalf("gin rummy is not running:\n%s", d.screen())
+	}
+	clean(d, "gin after the maze", append(before, "gin rummy"), "STOCK OR DISCARD?")
+
+	d.send(esc).send(esc).settle() // end gin; its page stays with the verdict
+	if s := d.screen(); !strings.Contains(s, "GIN RUMMY TO 100") || !strings.Contains(s, "SHALL WE PLAY ANOTHER GAME?") {
+		t.Fatalf("gin's text and WOPR's question stay on the page:\n%s", s)
+	}
+	d.line("yes").line("checkers")
+	clean(d, "checkers after gin", append(before, "GIN RUMMY TO 100", "STOCK OR DISCARD?", "GAME TERMINATED", "checkers"), "YOUR MOVE:")
+
+	d.key(pgUp) // the earlier pages are still there
+	if !strings.Contains(consoleText(d), "checkers") {
+		t.Errorf("PgUp must reach the page before the launch:\n%s", d.screen())
+	}
+
+	// With pacing on, the very first frame of the new board is already clean, before the
+	// clock ticks.
+	paced := instant()
+	paced.Instant, paced.Play = false, "falkens-maze"
+	d = newDriver(t, paced, 80, 24).settle()
+	d.key(keyRune('q')).line("yes")
+	d.typ("gin rummy").send(enter)
+	if _, place := d.m.runner.Top(); place.Layout != proto.LayoutPanel {
+		t.Fatalf("gin rummy is not running:\n%s", d.screen())
+	}
+	clean(d, "gin's first frame", append(before, "gin rummy"), "")
+	d.settle()
+	clean(d, "gin, paced", append(before, "gin rummy"), "STOCK OR DISCARD?")
 }

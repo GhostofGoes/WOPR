@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/movie"
 	"github.com/GhostofGoes/WOPR/internal/theme"
 )
 
@@ -26,6 +27,7 @@ const (
 	PrintVersion
 	PrintHelp
 	PrintGames
+	PrintScenes
 	PrintLicenses
 )
 
@@ -33,7 +35,7 @@ const (
 type Config struct {
 	Play         string // resolved game slug, "" for none
 	Movie        bool
-	Scene        string // the scene argument as typed, with Movie
+	Scene        string // with Movie: the slug of the scene to play from, "" for the scene menu
 	Theme        string
 	Instant      bool
 	Seed         uint64
@@ -57,9 +59,10 @@ var flagPairs = []flagPair{
 	{"version", "v", "", "print the version and exit", ""},
 	{"help", "h", "", "print this help and exit", ""},
 	{"games", "g", "", "list the games and exit", ""},
+	{"scenes", "S", "", "list the movie's scenes and exit", ""},
 	{"licenses", "L", "", "print licence notices and exit", ""},
 	{"play", "p", "game", "start a game: number, name, alias or prefix", ""},
-	{"movie", "m", "", "replay the film's WOPR scenes [scene]", ""},
+	{"movie", "m", "", "replay the film's WOPR scenes from [scene] on", ""},
 	{"theme", "t", "name", strings.Join(theme.Names(), ", "), "WOPR_THEME"},
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
 	{"seed", "s", "n", "deterministic run with this seed", ""},
@@ -69,9 +72,9 @@ var flagPairs = []flagPair{
 // Parse parses args (without the program name). getenv supplies environment fallbacks.
 func Parse(args []string, reg *games.Registry, getenv func(string) string) (Config, Action, error) {
 	var (
-		cfg                                Config
-		version, help, list, licences, mov bool
-		play, seed                         string
+		cfg                                        Config
+		version, help, list, scenes, licences, mov bool
+		play, seed                                 string
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -98,6 +101,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&version, byName["version"])
 	boolVar(&help, byName["help"])
 	boolVar(&list, byName["games"])
+	boolVar(&scenes, byName["scenes"])
 	boolVar(&licences, byName["licenses"])
 	strVar(&play, byName["play"])
 	boolVar(&mov, byName["movie"])
@@ -120,6 +124,8 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		return cfg, PrintVersion, nil
 	case list:
 		return cfg, PrintGames, nil
+	case scenes:
+		return cfg, PrintScenes, nil
 	case licences:
 		return cfg, PrintLicenses, nil
 	}
@@ -143,7 +149,19 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 			return cfg, RunTUI, usagef("--movie and --play cannot be combined")
 		}
 		if len(positionals) == 1 {
-			cfg.Scene = positionals[0]
+			s, err := movie.Resolve(positionals[0])
+			var amb *movie.AmbiguousError
+			switch {
+			case errors.As(err, &amb):
+				names := make([]string, len(amb.Candidates))
+				for i, c := range amb.Candidates {
+					names[i] = c.Slug
+				}
+				return cfg, RunTUI, usagef("scene %q could mean: %s", positionals[0], strings.Join(names, ", "))
+			case err != nil:
+				return cfg, RunTUI, usagef("no scene matches %q. The scenes are:\n%s", positionals[0], strings.TrimSuffix(sceneList(), "\n"))
+			}
+			cfg.Scene = s.Slug
 		}
 		return cfg, RunTUI, nil
 	}

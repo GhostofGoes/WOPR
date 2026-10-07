@@ -45,15 +45,13 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return printed(stderr, cli.RenderHelp(stdout))
 	case cli.PrintGames:
 		return printed(stderr, cli.RenderGames(stdout, reg))
+	case cli.PrintScenes:
+		return printed(stderr, cli.RenderScenes(stdout))
 	case cli.PrintLicenses:
 		return printed(stderr, writeString(stdout, wopr.License+"\n"+wopr.Notice+"\n"+wopr.ThirdPartyNotices))
 	case cli.RunTUI:
 	}
 
-	if cfg.Movie { // removed when the director lands in M6 (docs/PLAN.md §15)
-		warn(stderr, "movie mode is not available yet: it arrives in v1.1")
-		return exitUsage
-	}
 	if msg := ui.TerminalProblem(getenv); msg != "" {
 		warn(stderr, "%s%s", msg, windowsHint)
 		return exitUsage

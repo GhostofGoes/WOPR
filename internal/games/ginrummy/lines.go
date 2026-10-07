@@ -45,7 +45,7 @@ var (
 	lineWOPRScores   = script.Orig("WOPR SCORES #.")
 	lineScore        = script.Orig("SCORE: YOU #, WOPR #.")
 	lineVoid         = script.Orig("THE STOCK IS DOWN TO TWO CARDS. NO SCORE THIS HAND.")
-	lineLeave        = script.Orig("YOU LEAVE THE TABLE. #")
+	lineLeave        = script.Orig("YOU LEAVE THE TABLE.") // the result line gives the score
 
 	// Panel text.
 	panelTitle    = script.Orig("GIN RUMMY")

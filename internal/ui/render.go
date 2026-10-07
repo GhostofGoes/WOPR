@@ -139,9 +139,12 @@ func (m *model) inputRows(width int) []console.Row {
 func (m *model) thinking() bool { return m.runner != nil && (m.runner.Thinking() || len(m.thinks) > 0) }
 
 // cursor puts the native cursor at the end of the input line, or after the text being
-// revealed. It stops blinking while WOPR is thinking.
+// revealed. It stops blinking while WOPR is thinking. Key mode hides it, except in movie mode
+// (a capturing root, or a program it launched), where it follows the typing unless a key hint
+// is up.
 func (m *model) cursor(g geometry, rows []console.Row, at int) *tea.Cursor {
-	if m.keyMode || len(rows) == 0 {
+	movie := m.runner.Captures() || m.runner.Shielded()
+	if m.keyMode && (!movie || m.keyHint != "") || len(rows) == 0 {
 		return nil
 	}
 	row := -1
@@ -160,7 +163,7 @@ func (m *model) cursor(g geometry, rows []console.Row, at int) *tea.Cursor {
 	}
 	col := min(m.method.StringWidth(rows[row].Text), g.width-1)
 	c := tea.NewCursor(g.margin+col, g.viewRows+row)
-	c.Blink = !m.thinking() && !m.opts.ReduceMotion
+	c.Blink = !m.thinking() && !m.opts.ReduceMotion && !m.frozen
 	return c
 }
 

@@ -43,6 +43,10 @@ type Scrollback struct {
 	lines     []Line
 	pageStart int // index of the first line of the current page
 	offset    int // rows scrolled up from the bottom; 0 follows new output
+	// gen counts the lines ever added and the page breaks: the typewriter continues its open
+	// line only while gen is unchanged, so a line added from outside (the echo of a submitted
+	// line) or a page break, however it was made, closes it.
+	gen uint64
 }
 
 // Append adds a fully revealed line.
@@ -56,6 +60,7 @@ func (s *Scrollback) appendHidden(text string, st proto.Style) {
 }
 
 func (s *Scrollback) add(l Line) {
+	s.gen++
 	s.lines = append(s.lines, l)
 	if over := len(s.lines) - MaxLines; over > 0 {
 		s.lines = append(s.lines[:0], s.lines[over:]...)
@@ -77,6 +82,7 @@ func (s *Scrollback) last() *Line {
 func (s *Scrollback) PageBreak() {
 	s.pageStart = len(s.lines)
 	s.offset = 0
+	s.gen++
 }
 
 // Scroll moves the view by delta rows (positive = back in history). It is clamped when
@@ -130,6 +136,13 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		}
 		return out, pageRows - 1
 	}
+	// A page shown from the top has blank rows below it. Scrolled up, they move with the
+	// text, so the rows just above the page come into view first rather than being skipped.
+	pad := 0
+	if pageComplete && pageRows < h {
+		pad = h - pageRows
+		rev = append(make([]Row, pad), rev...)
+	}
 	for ; i >= 0 && len(rev) < need; i-- { // continue into earlier pages
 		rows := wrapRows(s.lines[i], w, method)
 		for j := len(rows) - 1; j >= 0; j-- {
@@ -145,7 +158,7 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		if src < len(rev) {
 			out[k] = rev[src]
 		}
-		if len(extra) > 0 && src == 0 { // rev[0] is the last extra row
+		if len(extra) > 0 && src == pad { // rev[pad] is the last extra row
 			extraAt = k
 		}
 	}

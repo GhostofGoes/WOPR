@@ -9,29 +9,34 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
-> **Status: under construction.** The first release (v0.1.0) arrives with the film's set pieces:
-> Global Thermonuclear War, tic-tac-toe, chess and checkers. The other games follow in later releases. See
-> [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
+> **Status: under construction.** Every game on the list is playable as of v0.1.0, and movie mode
+> (`--movie`) replays the film's terminal scenes. A pass over the film's text against the film is still to
+> come. See [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
 
 ## Install
 
-Release binaries for Linux, macOS (26 Tahoe) and Windows 11, on amd64 and arm64, will be attached to each
-[GitHub Release](https://github.com/GhostofGoes/WOPR/releases).
+Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds for Linux, macOS (26 Tahoe)
+and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
+`wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
+licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
+`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.)
 
-**Verify before you run.** Every release archive carries a build-provenance attestation. With the
+**Verify before you run.** Every file in a release carries a build-provenance attestation. With the
 [GitHub CLI](https://cli.github.com/):
 
 ```sh
-gh attestation verify wopr_<version>_<os>_<arch>.tar.gz --repo GhostofGoes/WOPR \
+gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
   --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
   --source-ref refs/tags/v<version> --deny-self-hosted-runners
 ```
 
-Then unpack the archive and run `./wopr`.
+Then run it. On Linux and macOS a downloaded binary is not executable yet:
+`chmod +x wopr_<version>_<os>_<arch>`, then `./wopr_<version>_<os>_<arch>` (rename it to `wopr` if you
+like). An archive keeps the executable bit: unpack it and run `./wopr`.
 
 - **macOS:** the binary is not signed, so Gatekeeper quarantines it. After verifying it, run
-  `xattr -d com.apple.quarantine wopr`.
-- **Windows:** SmartScreen may warn about an unrecognised app. After verifying the archive, choose
+  `xattr -d com.apple.quarantine` on it.
+- **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
   *More info → Run anyway*.
 
 With Go installed, you can instead build from source:
@@ -77,13 +82,14 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
   five regions to win.
 - **Theaterwide Biotoxic and Chemical Warfare** (`biotoxic`): `release 4` puts an agent on a region, `decon`
   cleans a little; it spreads with the wind. Nobody wins.
-- **Global Thermonuclear War** (`gtw`): choose a side and list target cities (an empty line ends the list);
-  the first strike flies at once. Then order two more strikes as percentages of your ICBMs, SLBMs and bombers
-  (`50 25 100`, `icbm 50`, `hold`; Enter carries out WOPR's war plan, `auto` hands it the rest) while DEFCON
-  falls to 1. WOPR holds a quarter more of everything. Then try to stop it.
+- **Global Thermonuclear War** (`gtw`): choose a side and list the enemy's cities to target (an empty line
+  ends the list; `list` shows the targets on file); the first strike flies at once. Then order two more
+  strikes as percentages of your ICBMs, SLBMs and bombers (`50 25 100`, `icbm 50`, `hold`; Enter carries out
+  WOPR's war plan, `auto` hands it the rest) while DEFCON falls to 1. WOPR holds a quarter more of
+  everything. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`; `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump twice);
-  jumps are compulsory.
+  the `-` and `x` are optional (`c3d4`, `c3e5g7`). Jumps are compulsory.
 - **Black Jack** (`blackjack`): you sit down with $100. Bet $1 to $25, then `h` hit, `s` stand, `d` double
   down, `p` split a pair. The dealer stands on soft 17; black jack pays 3 to 2. `leave` cashes out.
 - **Poker**: heads-up five-card draw, 100 chips each. `c` checks or calls, `b` bets or raises, `f` folds. At
@@ -96,6 +102,35 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
   both your hand and dummy's (`7h`); WOPR defends. Make the contract to win.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
+## Movie mode
+
+`wopr --movie` replays the film's scenes at WOPR's terminal, typed and paced as on screen, through the same
+console and games you play with. `wopr --scenes` lists them:
+
+```text
+ 1. first-contact    LOGON ATTEMPTS, HELP AND THE LIST OF GAMES
+ 2. joshua           THE BACKDOOR, THE GREETING AND A GAME OF CHOICE
+ 3. first-strike     A SIDE, TWO TARGETS AND THE BIG BOARD
+ 4. call-back        WOPR CALLS BACK TO FINISH THE GAME
+ 5. norad-terminal   JOSHUA AT NORAD: KILL RATIOS AND FALKEN'S ADDRESS
+ 6. climax           DEFCON 1, TIC-TAC-TOE AND A STRANGE GAME
+```
+
+- `wopr -m` opens a menu of the scenes: type a number or a name, or `q` to leave.
+- `wopr -m 3` (or `wopr -m first-strike`, or any unique start of a name) plays from that scene to the end of
+  the list, then exits.
+- While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
+  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays to the end, and any
+  other key only says so.
+- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply.
+  `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
+  can be read.
+
+The only film text in the scenes is what WOPR's terminal shows on screen, David's typing included; there is
+no dialogue that is only spoken. The dial, GTW's strike exchange, tic-tac-toe's prompts and the game clock's
+seconds are this project's own text. Every line carries a provenance tag ([NOTICE.md](NOTICE.md)), and the
+film's lines are still to be checked one by one against the film.
+
 ## Command-line flags
 
 | Flag | Meaning |
@@ -103,9 +138,10 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
 | `-v`, `--version` | print the version and exit |
 | `-h`, `--help` | print help and exit |
 | `-g`, `--games` | list the games and exit |
+| `-S`, `--scenes` | list the movie's scenes and exit |
 | `-L`, `--licenses` | print licence notices and exit |
 | `-p`, `--play <game>` | start a game directly (number, name, alias or unique prefix); `wopr <game>` does the same |
-| `-m`, `--movie [scene]` | replay the film's WOPR scenes (arrives in v1.1) |
+| `-m`, `--movie [scene]` | replay the film's WOPR scenes from that one on, or pick from a menu; see [Movie mode](#movie-mode) |
 | `-t`, `--theme <name>` | `imsai` (white phosphor, the default), `green`, `amber` or `norad`; env `WOPR_THEME` |
 | `-i`, `--instant` | no typewriter pacing; env `WOPR_INSTANT=1` |
 | `-s`, `--seed <n>` | deterministic run |
@@ -127,9 +163,10 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
 Every CI run builds all six targets and keeps one download per platform. Open a
 [CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 and, under **Artifacts**, download the one for your platform, for example
-`wopr_0.0.1-snapshot.1a2b3c4_linux_amd64.tar.gz` or `..._windows_amd64.zip` (about 2.5 MB). It holds the
-binary, already executable on Linux and macOS, with the README, licence and notices. Downloads from `main`
-are kept for 30 days; builds from other branches (7 days) and pull requests (3 days) are for testing only.
+`wopr_0.0.1-snapshot.1a2b3c4_linux_amd64` or `..._windows_amd64.exe` (about 6 MB). It is the bare binary:
+`chmod +x` it on Linux and macOS, and `wopr --licenses` prints its licence and notices. Downloads from
+`main` are kept for 30 days; builds from other branches (7 days) and pull requests (3 days) are for
+testing only.
 
 ## Building and contributing
 

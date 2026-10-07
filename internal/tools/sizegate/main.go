@@ -28,6 +28,9 @@ type artifact struct {
 	Goos   string `json:"goos"`
 	Goarch string `json:"goarch"`
 	Type   string `json:"type"`
+	Extra  struct {
+		Format string `json:"Format"`
+	} `json:"extra"`
 }
 
 type row struct {
@@ -92,7 +95,8 @@ func run(path string, expect int, out, summary *strings.Builder, size func(strin
 	}
 	var rows []row
 	for _, a := range arts {
-		if a.Type != "Binary" {
+		// A binary-format archive lists a built binary again, under its release name.
+		if a.Type != "Binary" || a.Extra.Format == "binary" {
 			continue
 		}
 		n, err := size(a.Path)

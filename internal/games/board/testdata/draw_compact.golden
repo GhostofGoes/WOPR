@@ -1,0 +1,29 @@
+
+     a b c d e f g h
+    .----------------.
+  8 |  ::  ::  ::  ::| 8
+  7 |::  ::  ::  ::  | 7
+  6 |  ::  ::  ::  ::| 6
+  5 |::  ::  p:  ::  | 5
+  4 |  ::  P:  ::  ::| 4
+  3 |::  b:  ::N<::  | 3
+  2 |  ::  ::[]::  ::| 2
+  1 |::  ::  ::  ::  | 1
+    '----------------'
+     a b c d e f g h
+
+
+
+.....d.d.d.d.d.d.d.d
+....dddddddddddddddddd
+..d.d..dd..dd..dd..ddd.d
+..d.ddd..dd..dd..dd..d.d
+..d.d..dd..dd..dd..ddd.d
+..d.ddd..dd..td..dd..d.d
+..d.d..dd..bd..dd..ddd.d
+..d.ddd..td..ddbadd..d.d
+..d.d..dd..ddaadd..ddd.d
+..d.ddd..dd..dd..dd..d.d
+....dddddddddddddddddd
+.....d.d.d.d.d.d.d.d
+

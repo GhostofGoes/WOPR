@@ -328,3 +328,64 @@ func TestHandOffToMissingProgram(t *testing.T) {
 		t.Errorf("want the not-available line and a relayout: %#v", eff)
 	}
 }
+
+// A program with its own screen (Panel or Full) starts on a new console page, right after
+// its relayout and before its first output, whether the persona launched it or a game
+// handed off to it. A console game continues the page, and a game ending keeps its page,
+// so its last lines stay above the verdict.
+func TestLaunchWithAScreenStartsANewPage(t *testing.T) {
+	t.Parallel()
+	place := map[string]Placement{
+		"maze":   {Layout: proto.LayoutPanel, PanelRows: 12},
+		"cards":  {Layout: proto.LayoutConsole},
+		"ttt":    {Layout: proto.LayoutPanel, PanelRows: 12},
+		"ending": {Layout: proto.LayoutFull, NoAbort: true},
+	}
+	progs := map[string]*fake{}
+	for slug := range place {
+		progs[slug] = &fake{start: []proto.Output{proto.Say{Lines: []string{slug}}, proto.Prompt{}}}
+	}
+	over := func(proto.Event) []proto.Output {
+		return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.Win}}}
+	}
+	progs["maze"].on, progs["cards"].on = over, over
+	progs["ttt"].on = func(proto.Event) []proto.Output {
+		return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.NoWinner, Next: &proto.Launch{Slug: "ending"}}}}
+	}
+	root := &fake{start: []proto.Output{proto.Prompt{}}}
+	root.on = func(e proto.Event) []proto.Output {
+		if l, ok := e.(proto.LineEvent); ok {
+			return []proto.Output{proto.Launch{Slug: l.Text}}
+		}
+		return []proto.Output{proto.Say{Lines: []string{"VERDICT"}}, proto.Prompt{}}
+	}
+	r := New(Config{Resolve: func(l proto.Launch) (proto.Program, Placement, error) {
+		return progs[l.Slug], place[l.Slug], nil
+	}})
+	r.Start(root, Placement{})
+	opened := func(slug string) []Effect {
+		return []Effect{
+			Relayout{Placement: place[slug], NewProgram: true},
+			PageBreak{},
+			Print{Lines: []string{slug}},
+			AskLine{},
+		}
+	}
+
+	if eff := r.Line("maze"); !reflect.DeepEqual(eff, opened("maze")) {
+		t.Errorf("a panel launch: %#v", eff)
+	}
+	if eff := r.Line("exit found"); has[PageBreak](eff) || !has[Print](eff) {
+		t.Errorf("a game ending keeps its page for the verdict: %#v", eff)
+	}
+	if eff := r.Line("cards"); has[PageBreak](eff) {
+		t.Errorf("a console game continues the page: %#v", eff)
+	}
+	r.Line("stand")
+	if eff := r.Line("ttt"); !reflect.DeepEqual(eff, opened("ttt")) {
+		t.Errorf("a panel launch after a console game: %#v", eff)
+	}
+	if eff := r.Line("0"); !reflect.DeepEqual(eff, opened("ending")) {
+		t.Errorf("a hand-off to a full-screen program: %#v", eff)
+	}
+}
