@@ -1,11 +1,17 @@
-// Command notices generates THIRD_PARTY_NOTICES.txt: the licence of every module linked
-// into wopr, plus the Go project's own licence.
+// Command notices generates the licence files that ship with wopr:
 //
-//	go run ./internal/tools/notices            # rewrite THIRD_PARTY_NOTICES.txt
-//	go run ./internal/tools/notices -check     # fail if the file is out of date
+//   - THIRD_PARTY_NOTICES.txt: the licence of every module linked into wopr on any release
+//     platform, plus the Go project's own licence, exactly as each ships it. MIT and BSD
+//     licences require their notices to accompany binary redistributions, so the file ships in
+//     every release archive and the .rpm, and is embedded for `wopr --licenses`.
 //
-// MIT and BSD licences require their notices to accompany binary redistributions, so the
-// file ships in every release archive and is embedded for `wopr --licenses`.
+//   - packaging/debian/copyright: the .deb's /usr/share/doc/wopr/copyright, in Debian's
+//     machine-readable format (DEP-5): wopr's own licence, the film text it does not cover, the
+//     third-party text and art (from NOTICE.md and the provenance tags), and every module linked
+//     into the Linux builds (copyright.go).
+//
+//     go run ./internal/tools/notices            # rewrite both files
+//     go run ./internal/tools/notices -check     # fail if either is out of date
 package main
 
 import (
@@ -22,7 +28,10 @@ import (
 	"strings"
 )
 
-const output = "THIRD_PARTY_NOTICES.txt"
+const (
+	output        = "THIRD_PARTY_NOTICES.txt"
+	copyrightFile = "packaging/debian/copyright"
+)
 
 // licenceNames are tried in order in each module's root directory.
 var licenceNames = []string{
@@ -43,32 +52,46 @@ type pkg struct {
 	Module   *module
 }
 
+// file is one generated file and its contents.
+type file struct {
+	path string
+	data []byte
+}
+
 func main() {
-	check := flag.Bool("check", false, "fail if "+output+" is out of date instead of rewriting it")
+	check := flag.Bool("check", false, "fail if a file is out of date instead of rewriting it")
 	pattern := flag.String("pkg", "./cmd/wopr", "package whose dependencies are listed")
 	flag.Parse()
-	got, err := generate(*pattern)
+	files, err := generate(*pattern)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "notices:", err)
 		os.Exit(2) // could not check: not the same as out of date
 	}
 	if *check {
-		cur, err := os.ReadFile(output)
-		cur = bytes.ReplaceAll(cur, []byte("\r\n"), []byte("\n"))
-		if err != nil || !bytes.Equal(cur, got) {
-			fmt.Fprintf(os.Stderr, "notices: %s is out of date; run: go run ./internal/tools/notices\n%s", output, firstDifference(cur, got))
+		stale := false
+		for _, f := range files {
+			cur, err := os.ReadFile(f.path)
+			cur = bytes.ReplaceAll(cur, []byte("\r\n"), []byte("\n"))
+			if err != nil || !bytes.Equal(cur, f.data) {
+				fmt.Fprintf(os.Stderr, "notices: %s is out of date; run: go run ./internal/tools/notices\n%s", f.path, firstDifference(cur, f.data))
+				stale = true
+			}
+		}
+		if stale {
 			os.Exit(1)
 		}
 		return
 	}
-	if err := os.WriteFile(output, got, 0o644); err != nil {
-		fmt.Fprintln(os.Stderr, "notices:", err)
-		os.Exit(1)
+	for _, f := range files {
+		if err := os.WriteFile(f.path, f.data, 0o644); err != nil {
+			fmt.Fprintln(os.Stderr, "notices:", err)
+			os.Exit(1)
+		}
 	}
 }
 
 // targets are the release platforms; dependencies differ per OS, so the notices cover
-// the union of all of them.
+// the union of all of them. The Linux ones are also the packages' (.deb and .rpm).
 var targets = [][2]string{
 	{"linux", "amd64"},
 	{"linux", "arm64"},
@@ -78,24 +101,38 @@ var targets = [][2]string{
 	{"windows", "arm64"},
 }
 
-func generate(pattern string) ([]byte, error) {
-	mods := map[string]module{}
+func generate(pattern string) ([]file, error) {
+	mods, linux := map[string]module{}, map[string]module{}
 	for _, t := range targets {
 		if err := listModules(pattern, t[0], t[1], mods); err != nil {
 			return nil, err
 		}
+		if t[0] == "linux" {
+			if err := listModules(pattern, t[0], t[1], linux); err != nil {
+				return nil, err
+			}
+		}
 	}
-	goroot, err := exec.Command("go", "env", "GOROOT").Output()
+	out, err := exec.Command("go", "env", "GOROOT").Output()
 	if err != nil {
 		return nil, fmt.Errorf("go env GOROOT: %w", err)
 	}
+	goroot := strings.TrimSpace(string(out))
 	// The release toolchain, not whichever Go runs this: the file must not depend on the
 	// host (SL-1), and a newer local Go is allowed.
 	goversion, err := toolchain("go.mod")
 	if err != nil {
 		return nil, err
 	}
-	return render(strings.TrimSpace(string(goroot)), goversion, mods)
+	notices, err := render(goroot, goversion, mods)
+	if err != nil {
+		return nil, err
+	}
+	copyright, err := renderCopyright(".", goroot, goversion, linux)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", copyrightFile, err)
+	}
+	return []file{{output, notices}, {copyrightFile, copyright}}, nil
 }
 
 // toolchain reads go.mod's toolchain line ("go1.27.1").

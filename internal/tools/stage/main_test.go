@@ -106,8 +106,10 @@ func TestAssemble(t *testing.T) {
 	}
 	bin := write("wopr", "binary")
 	arc := write("wopr_1.0.0_linux_amd64.tar.gz", "archive")
+	deb := write("wopr_1.0.0-1_amd64.deb", "package")
 	lines.WriteString(sum("binary") + "  wopr_1.0.0_linux_amd64\n")
 	lines.WriteString(sum("archive") + "  wopr_1.0.0_linux_amd64.tar.gz\n")
+	lines.WriteString(sum("package") + "  wopr_1.0.0-1_amd64.deb\n")
 	sums := write("checksums.txt", lines.String())
 	bare := artifact{Name: "wopr_1.0.0_linux_amd64", Path: bin, Type: "Binary"}
 	bare.Extra.Format = "binary"
@@ -116,6 +118,7 @@ func TestAssemble(t *testing.T) {
 		bare,
 		{Name: "wopr_1.0.0_linux_amd64.tar.gz", Path: arc, Type: "Archive"},
 		{Name: "checksums.txt", Path: sums, Type: "Checksum"},
+		{Name: "wopr_1.0.0-1_amd64.deb", Path: deb, Type: linuxPackage},
 	}
 
 	dir := filepath.Join(root, "release")
@@ -129,8 +132,14 @@ func TestAssemble(t *testing.T) {
 	case runtime.GOOS != "windows" && fi.Mode().Perm()&0o100 == 0: // Windows has no executable bit
 		t.Errorf("bare binary not executable: %v", fi.Mode())
 	}
+	if _, err := os.Stat(filepath.Join(dir, "wopr_1.0.0-1_amd64.deb")); err != nil {
+		t.Errorf("package missing: %v", err)
+	}
 	if err := assemble(arts, dir, root); err != nil {
 		t.Errorf("a second run must replace the first: %v", err)
+	}
+	if err := assemble(arts[:len(arts)-1], dir, root); err == nil || !strings.Contains(err.Error(), "wopr_1.0.0-1_amd64.deb") {
+		t.Errorf("a release without its package accepted: %v", err)
 	}
 
 	// A file that changed after GoReleaser summed it must not be published.

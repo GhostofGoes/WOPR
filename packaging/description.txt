@@ -1,0 +1,10 @@
+Fan-made terminal recreation of the computer from the film WarGames
+wopr brings the WOPR (War Operation Plan Response) computer from the 1983
+film WarGames to the terminal. Find your way past the LOGON: prompt, talk to
+WOPR, and play the games on its list: Falken's Maze, Black Jack, Gin Rummy,
+Hearts, Bridge, checkers, chess, poker, six war games, tic-tac-toe and Global
+Thermonuclear War, which cannot be won. Movie mode replays the film's
+terminal scenes.
+
+It is a single program. It needs no network connection and collects no
+data. It is not affiliated with the makers of the film.

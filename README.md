@@ -19,11 +19,12 @@ Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds f
 and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
 `wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
 licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
-`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) What changed
+`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) Releases after
+v0.2.0 also have Linux packages: a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and RHEL. What changed
 in each version is on its release page and in [CHANGELOG.md](CHANGELOG.md).
 
 **Verify before you run.** Every file in a release carries a build-provenance attestation. With the
-[GitHub CLI](https://cli.github.com/):
+[GitHub CLI](https://cli.github.com/) (use the name of the file you downloaded, such as a package):
 
 ```sh
 gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
@@ -39,6 +40,19 @@ like). An archive keeps the executable bit: unpack it and run `./wopr`.
   `xattr -d com.apple.quarantine` on it.
 - **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
   *More info → Run anyway*.
+
+**Linux packages.** Download the package for your machine (`amd64` or `arm64` for the `.deb`, `x86_64` or
+`aarch64` for the `.rpm`), verify it as above, and install it:
+
+```sh
+sudo apt install ./wopr_<version>-1_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./wopr-<version>-1.x86_64.rpm    # Fedora, RHEL
+```
+
+Then run `wopr`, and read `man wopr`. The package needs nothing else. The `.deb` puts `wopr` in
+`/usr/games`, which Debian and Ubuntu put on every user's `PATH`; the `.rpm` puts it in `/usr/bin`. Each
+package also holds the changelog, the licences and the notices. Remove it with `sudo apt remove wopr` or
+`sudo dnf remove wopr`.
 
 **Manual page.** The Linux and macOS archives also hold `wopr.6`, the manual page: the options, every game
 with how to play it and tips, and movie mode. Read it in place with `man ./wopr.6`, or install it so that

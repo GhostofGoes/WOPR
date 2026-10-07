@@ -101,9 +101,9 @@ jobs:
           WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - name: Size gate
-        run: go run ./internal/tools/sizegate -expect 6
+        run: go run ./internal/tools/sizegate -expect 6 -packages 4
       # dist/release gets every published file, each checked against checksums.txt.
-      - name: Stage binaries, check archive contents, collect the release files
+      - name: Stage binaries, check archive and package contents, collect the release files
         run: go run ./internal/tools/stage -archives -assets dist/release
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -218,7 +218,8 @@ jobs:
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: assets/checksums.txt
-      # Archives, bare binaries, LICENSE, README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt, checksums.txt.
+      # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
+      # THIRD_PARTY_NOTICES.txt, checksums.txt.
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
       - name: Create the release as a draft, upload, then publish
         env:

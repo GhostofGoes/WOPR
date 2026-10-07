@@ -1,12 +1,13 @@
 # Runs each staged binary on its own OS and architecture, with the end-to-end tests that
-# were cross-compiled next to it. Called by ci.yml and release.yml; needs no Go toolchain.
+# were cross-compiled next to it. On Linux it also installs the .deb and the .rpm that were
+# staged beside them. Called by ci.yml and release.yml; needs no Go toolchain.
 name: Smoke
 
 on:
   workflow_call:
     inputs:
       artifact:
-        description: Name of the staged artifact (stage/<os>_<arch>/{wopr,e2e.test})
+        description: Name of the staged artifact (stage/<os>_<arch>/{wopr,e2e.test}, and the .deb and .rpm on Linux)
         required: true
         type: string
 
@@ -51,3 +52,62 @@ jobs:
           # Quoted: pwsh splits -test.v at the dot.
           & "stage/$env:TARGET/e2e.test.exe" '-test.v' '-test.timeout=5m' -binary "stage/$env:TARGET/wopr.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The .deb, installed with apt as a user would. The program must be on the PATH every login
+      # gets (/etc/environment has /usr/games), the manual page must be found, the changelog must
+      # start with this version, and removing the package must leave nothing behind.
+      - name: Install, check and remove the .deb
+        if: runner.os == 'Linux'
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          debs=("stage/${TARGET}"/wopr_*.deb)
+          if [[ ${#debs[@]} -ne 1 || ! -f "${debs[0]}" ]]; then
+            echo "::error::want exactly one .deb in stage/${TARGET}"
+            exit 1
+          fi
+          sudo apt-get install -y --no-install-recommends "./${debs[0]}"
+          dpkg -s wopr
+          login_path="$(sed -n -E 's/^PATH="?([^"]*)"?$/\1/p' /etc/environment)"
+          if [[ ":${login_path}:" != *:/usr/games:* ]]; then
+            echo "::error::/usr/games is not on the login PATH from /etc/environment: ${login_path}"
+            exit 1
+          fi
+          env PATH="${login_path}" sh -c 'command -v wopr && wopr --version'
+          man -w wopr
+          version="$(dpkg-query -W -f='${Version}' wopr)"
+          zcat /usr/share/doc/wopr/changelog.Debian.gz | sed -n 1p | grep -F "wopr (${version}) "
+          test -f /usr/share/doc/wopr/copyright
+          sudo apt-get remove -y --purge wopr
+          for f in /usr/games/wopr /usr/share/man/man6/wopr.6.gz /usr/share/doc/wopr; do
+            if [[ -e "${f}" ]]; then
+              echo "::error::removing wopr left ${f} behind"
+              exit 1
+            fi
+          done
+      # The .rpm, in Fedora (the image pinned by digest; bump it with the action SHAs): its header
+      # and files, then an install with no network (it needs no other package), rpm's own
+      # verification, the changelog, and a clean removal. The image's dnf skips documentation
+      # (tsflags=nodocs), so the install turns that off to install the manual page too.
+      - name: Install, check and remove the .rpm in Fedora
+        if: runner.os == 'Linux'
+        env:
+          TARGET: ${{ matrix.target }}
+          FEDORA: registry.fedoraproject.org/fedora@sha256:ba35579e107f26a4c2c000390fb3ff549f3858a9584a6b5a35f7fa51f54de309 # fedora:44
+        run: |
+          docker run --rm --network none -v "${PWD}/stage/${TARGET}:/pkgs:ro" "${FEDORA}" bash -euxo pipefail -c '
+            pkgs=(/pkgs/wopr-*.rpm)
+            test "${#pkgs[@]}" -eq 1
+            rpm -qip "${pkgs[0]}"
+            rpm -qlvp "${pkgs[0]}"
+            rpm -K --nosignature "${pkgs[0]}"
+            dnf install -y --setopt=tsflags= --disablerepo="*" "${pkgs[0]}"
+            test "$(command -v wopr)" = /usr/bin/wopr
+            wopr --version
+            rpm -V wopr
+            test -f /usr/share/man/man6/wopr.6.gz
+            rpm -q --changelog wopr | sed -n 1p | grep -F -- " - $(rpm -q --qf "%{VERSION}-%{RELEASE}" wopr)"
+            dnf remove -y wopr
+            test ! -e /usr/bin/wopr
+            test ! -e /usr/share/doc/wopr
+            test ! -e /usr/share/licenses/wopr
+          '

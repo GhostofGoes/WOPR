@@ -244,8 +244,9 @@ func TestReleaseFromBatchedNotes(t *testing.T) {
 		t.Errorf("CHANGELOG.md differs from the merged one:\n%s", files[changelogFile])
 	}
 	e := entries(t, files["changelog.yml"])
-	if len(e) != 2 || e[0].Semver != "0.2.0" || e[0].Date != "2026-10-05T00:00:00Z" || e[0].Deb.Urgency != "high" ||
-		e[0].Changes[1].Note != "Updated Go: it fixes a problem go had." || e[1].Semver != "0.1.0" || e[1].Deb.Urgency != "medium" {
+	if len(e) != 2 || e[0].Semver != "0.2.0-1" || e[0].Date != "2026-10-05T12:00:00Z" || e[0].Deb.Urgency != "high" ||
+		e[0].Changes[1].Note != "Updated Go: it fixes a problem go had." ||
+		e[1].Semver != "0.1.0-1" || e[1].Date != "2026-10-01T11:00:00Z" || e[1].Deb.Urgency != "medium" {
 		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
 	}
 	r.clean()
@@ -269,7 +270,7 @@ func TestReleaseBatchesOnTheFly(t *testing.T) {
 	if !strings.Contains(files[changelogFile], "## v0.2.0 - 2026-10-10\n\n### Added\n\n- `WOPR_SEED` sets the seed.\n\n## v0.1.0 - 2026-10-01\n") {
 		t.Errorf("CHANGELOG.md =\n%s", files[changelogFile])
 	}
-	if e := entries(t, files["changelog.yml"]); len(e) != 2 || e[0].Date != "2026-10-10T00:00:00Z" {
+	if e := entries(t, files["changelog.yml"]); len(e) != 2 || e[0].Date != "2026-10-10T04:30:00Z" {
 		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
 	}
 	again := r.release("0.2.0", false, "")
@@ -298,7 +299,8 @@ func TestSnapshot(t *testing.T) {
 	if strings.Contains(r.log.String(), "warning") {
 		t.Errorf("a snapshot must not warn:\n%s", r.log.String())
 	}
-	if e := entries(t, files["changelog.yml"]); e[0].Semver != "0.1.1-snapshot."+short || e[0].Changes[0].Note != "Fixed a crash in some cases." {
+	if e := entries(t, files["changelog.yml"]); e[0].Semver != "0.1.1~snapshot."+short+"-1" || e[0].Date != "2026-10-02T10:00:00Z" ||
+		e[0].Changes[0].Note != "Fixed a crash in some cases." {
 		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
 	}
 	if !strings.HasSuffix(files["notes.md"], "/compare/v0.1.0..."+short+"\n") {

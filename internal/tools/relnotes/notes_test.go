@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestSemver(t *testing.T) {
@@ -104,8 +107,9 @@ func TestReleaseNotes(t *testing.T) {
 	}
 }
 
-// The package changelogs: every version, newest first, dates at midnight UTC, the packager on each,
-// urgency high for a security fix, Markdown code marks dropped, and a line for an empty version.
+// The package changelogs: every version, newest first, under its package version; dated by its
+// commit's time where there is one and at midnight UTC otherwise; the packager on each; urgency
+// high for a security fix; Markdown code marks dropped; and a line for an empty version.
 func TestChglog(t *testing.T) {
 	t.Parallel()
 	var sections []section
@@ -120,15 +124,19 @@ func TestChglog(t *testing.T) {
 		}
 		sections = append(sections, s)
 	}
-	got, err := chglog(sections, "Packager <https://example.invalid>")
+	times := map[semver]time.Time{
+		{0, 2, 0, ""}: time.Date(2026, 10, 7, 10, 4, 5, 0, time.FixedZone("CDT", -5*3600)),
+		{9, 9, 9, ""}: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC), // no such section
+	}
+	got, err := chglog(sections, "Packager <packager@example.invalid>", times)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := `[
   {
-    "semver": "0.2.0",
-    "date": "2026-10-07T00:00:00Z",
-    "packager": "Packager <https://example.invalid>",
+    "semver": "0.2.0-1",
+    "date": "2026-10-07T15:04:05Z",
+    "packager": "Packager <packager@example.invalid>",
     "deb": {
       "urgency": "high",
       "distributions": [
@@ -145,9 +153,9 @@ func TestChglog(t *testing.T) {
     ]
   },
   {
-    "semver": "0.1.1",
+    "semver": "0.1.1-1",
     "date": "2026-10-02T00:00:00Z",
-    "packager": "Packager <https://example.invalid>",
+    "packager": "Packager <packager@example.invalid>",
     "deb": {
       "urgency": "medium",
       "distributions": [
@@ -161,9 +169,9 @@ func TestChglog(t *testing.T) {
     ]
   },
   {
-    "semver": "0.1.0",
+    "semver": "0.1.0-1",
     "date": "2026-10-01T00:00:00Z",
-    "packager": "Packager <https://example.invalid>",
+    "packager": "Packager <packager@example.invalid>",
     "deb": {
       "urgency": "medium",
       "distributions": [
@@ -184,6 +192,47 @@ func TestChglog(t *testing.T) {
 	var back []chglogEntry
 	if err := json.Unmarshal(got, &back); err != nil || len(back) != 3 {
 		t.Errorf("does not read back: %v", err)
+	}
+}
+
+// Versions as the packages spell them: dpkg and rpm sort a tilde before anything, so a snapshot
+// comes before its release.
+func TestPackageVersion(t *testing.T) {
+	t.Parallel()
+	for in, want := range map[string]string{
+		"0.2.0":                  "0.2.0-1",
+		"v1.10.3":                "1.10.3-1",
+		"0.2.1-snapshot.b95a117": "0.2.1~snapshot.b95a117-1",
+	} {
+		v, err := parseSemver(in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got := packageVersion(v); got != want {
+			t.Errorf("packageVersion(%s) = %s, want %s", in, got, want)
+		}
+	}
+}
+
+// The .deb and the .rpm that .goreleaser.yaml builds must match their changelogs: the same
+// maintainer as the changelogs' packager, and the same package release as their versions.
+func TestPackagingConfig(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile(filepath.Join(moduleRoot(t), ".goreleaser.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]string{"maintainer": defaultPackager, "release": packageRelease} {
+		re := regexp.MustCompile(`(?m)^[ \t]+` + key + `:[ \t]*"?([^"#\n]*?)"?[ \t]*(?:#.*)?$`)
+		found := re.FindAllStringSubmatch(string(data), -1)
+		if len(found) != 2 {
+			t.Errorf(".goreleaser.yaml sets %s %d times, want 2 (the .deb's and the .rpm's)", key, len(found))
+		}
+		for _, m := range found {
+			if m[1] != want {
+				t.Errorf(".goreleaser.yaml sets %s %q, want %q as relnotes writes it", key, m[1], want)
+			}
+		}
 	}
 }
 
