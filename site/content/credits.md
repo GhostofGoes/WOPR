@@ -17,3 +17,9 @@ screenshots on this site show some of that material.
 This site's look, stylesheet and scripts come from the Hextra theme, used under its MIT licence:
 
 {{< license-text "licenses/hextra.txt" >}}
+
+## PhotoSwipe's licence
+
+The viewer that shows a screenshot full size is PhotoSwipe, used under its MIT licence:
+
+{{< license-text "photoswipe" >}}

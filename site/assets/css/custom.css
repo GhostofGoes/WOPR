@@ -27,3 +27,27 @@
 .content td code {
   white-space: nowrap;
 }
+
+/* A screenshot opens in the lightbox when clicked. Its caption carries the class that the lightbox
+   copies its caption from, and that class would lay it over the image, so it is put back below. */
+.wopr-shot a {
+  display: block;
+  cursor: zoom-in;
+}
+
+.wopr-shot .hextra-gallery__caption {
+  position: static;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  pointer-events: auto;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* The lightbox's backdrop is opaque: at PhotoSwipe's default 80%, the page's own text shows through
+   behind the caption. */
+.pswp__bg {
+  opacity: 1 !important;
+}

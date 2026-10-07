@@ -121,8 +121,9 @@ go run ./cmd/wopr
 ## Change notes
 
 Every change a player could notice gets a short note, kept with [changie](https://changie.dev) in the
-`.changes/unreleased/` folder. A release collects the notes into the [Changelog](/changelog), the GitHub
-Release and the Linux packages' changelogs. Add one with changie's `new` command, pinned as a Go tool;
+`.changes/unreleased/` folder. A release collects the notes into the [Changelog](/changelog) and the
+GitHub Release, and into the Linux packages' changelogs when it builds packages. Add one with changie's
+`new` command, pinned as a Go tool;
 [AGENTS.md's Change notes](https://github.com/GhostofGoes/WOPR/blob/main/AGENTS.md#change-notes) gives
 the exact command.
 

@@ -1698,8 +1698,13 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     never cancelling a deployment in progress; no build cache. Pages must be set to deploy from GitHub
     Actions (AGENTS.md, repository settings).
   - **Third-party files at build time.** Hextra's search fetches FlexSearch (Apache-2.0) from jsDelivr at
-    the version Hextra pins; the theme's own stylesheet and scripts come from the module. Nothing else is
-    fetched, and no page loads anything from another site.
+    the version Hextra pins, and its lightbox, which shows a screenshot full size, fetches PhotoSwipe (MIT)
+    at the exact version `site/hugo.yaml` pins (`params.gallery.base`; Hextra's default is the newest 5.x).
+    The credits page fetches PhotoSwipe's licence from the same version. The theme's own stylesheet and
+    scripts come from the module. Nothing else is fetched, and no page loads anything from another site.
+  - **Game pages' layout.** The summary, how to start the game and the other names it answers to, the
+    screenshots (one set in the lightbox), how to play, the controls, every tip, and a link back to the
+    games index, which lists the games in `LIST GAMES` order with tic-tac-toe last.
 - **Game pages** (`site/data/games/<slug>.json`, one per game, named by the slug `wopr --games` shows):
   summary, how to play, controls, tips and captioned screenshots (`site/static/img/games/`), written from
   the code. The docs site's game pages and the manual page are generated from them; nothing else repeats

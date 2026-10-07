@@ -30,7 +30,9 @@ The latest release is **v{{< version >}}**.
 have? Run `uname -m` on Linux or macOS (`x86_64` is amd64; `aarch64` or `arm64` is arm64), or
 `$env:PROCESSOR_ARCHITECTURE` in PowerShell.
 
-<!-- LINUX PACKAGES: the .deb and .rpm section goes here, when the release builds them. -->
+<!-- LINUX PACKAGES: when releases include .deb and .rpm packages, add their rows to the table above and
+a "Linux packages" section here (install with apt or dnf, verify first), and a tab or line under Install.
+The page reads complete without them. -->
 
 ## Verify before you run
 

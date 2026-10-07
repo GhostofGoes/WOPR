@@ -103,6 +103,11 @@ params:
     copy:
       enable: true
       display: hover
+  # Clicking a screenshot opens it in Hextra's lightbox, PhotoSwipe (MIT; credited in NOTICE.md, and
+  # its licence is on the credits page). Hugo fetches it at build time from this exact version and
+  # the site serves its own copy; Hextra's default would take the newest 5.x on each build.
+  gallery:
+    base: https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist
   # Repository links used by the pages and shortcodes.
   repo: https://github.com/GhostofGoes/WOPR
   repoBlob: https://github.com/GhostofGoes/WOPR/blob/main

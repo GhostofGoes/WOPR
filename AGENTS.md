@@ -178,9 +178,12 @@ missing screenshot fails the build.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
   Commands and Pull requests sections are mounted and rendered by the `repo-file` shortcode; the README's
   screenshots and the manual page are mounted too (`site/hugo.yaml`).
-- A screenshot goes in with the `screenshot` shortcode and a caption that says what the screen shows. PNGs
-  are 960×564, made smaller with `optipng -o2`. One that shows the big board's map gets the map's credit
-  line.
+- A screenshot goes in with the `screenshot` shortcode and a caption that says what the screen shows; the
+  caption is also its alt text and shows in the lightbox. PNGs are 960×564, made smaller with
+  `optipng -o2`. One that shows the big board's map gets the map's credit line. Wrap several in the
+  `screenshots` shortcode to open them as one set, as each game's page does.
+- The lightbox is Hextra's, PhotoSwipe, fetched at build time from the exact version in `site/hugo.yaml`
+  (`params.gallery.base`); the credits page shows its licence from the same version.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 
@@ -249,8 +252,9 @@ At every milestone boundary:
 
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
    `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
-   docs theme with `go -C site get github.com/imfing/hextra@latest`. Build the docs site: a new Hugo can
-   deprecate a setting, which `--panicOnWarning` turns into an error.
+   docs theme with `go -C site get github.com/imfing/hextra@latest`; set PhotoSwipe in `site/hugo.yaml`
+   (`params.gallery.base`) to its newest 5.x release, the major version Hextra's script is written for.
+   Build the docs site: a new Hugo can deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
 3. Bump action SHAs from their release tags.
 4. Regenerate the notices.

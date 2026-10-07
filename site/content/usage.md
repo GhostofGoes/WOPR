@@ -12,6 +12,10 @@ wopr --movie [--only] [scene]
 With no game, `wopr` dials in and waits at `LOGON:`. With a game, it starts that game at once, without the
 dial, the logon and the greeting: `wopr chess`, `wopr 7` and `wopr --play chess` all do the same.
 
+`wopr --help` prints a short summary of the options. On Linux and macOS, `man wopr` shows the manual
+page: every option, every game with how to play it and tips, and movie mode.
+[Installation](/install#the-manual-page) says how to install it.
+
 ## Options
 
 Every option has a one-letter form, and options can come before or after the game.

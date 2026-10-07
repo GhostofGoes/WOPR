@@ -1,9 +1,35 @@
 {{- /*
-  A licence's text, as a plain text block, from a file under assets/ (a theme's LICENSE is
-  mounted at licenses/; see hugo.yaml): {{< license-text "licenses/hextra.txt" >}}
+  A licence's text, as a plain text block:
+
+    {{< license-text "licenses/hextra.txt" >}}   a file under assets/ (a theme's LICENSE is
+                                                  mounted at licenses/; see hugo.yaml)
+    {{< license-text "photoswipe" >}}             the lightbox's LICENSE, fetched at build time
+                                                  from the version that hugo.yaml pins
+                                                  (params.gallery.base), so the two always match
 */ -}}
-{{- with resources.Get (.Get 0) -}}
-  {{- highlight (trim .Content "\n") "text" "" -}}
+{{- $name := .Get 0 -}}
+{{- $text := "" -}}
+{{- if eq $name "photoswipe" -}}
+  {{- $base := site.Params.gallery.base | default "" -}}
+  {{- if not (and (hasPrefix $base "https://") (hasSuffix $base "/dist")) -}}
+    {{- errorf "%s: license-text: params.gallery.base in hugo.yaml must be PhotoSwipe's https://.../dist folder, not %q" .Page.String $base -}}
+  {{- end -}}
+  {{- $url := printf "%s/LICENSE" (strings.TrimSuffix "/dist" $base) -}}
+  {{- with try (resources.GetRemote $url) -}}
+    {{- with .Err -}}
+      {{- errorf "%s: license-text: could not fetch %s: %s" $.Page.String $url . -}}
+    {{- else with .Value -}}
+      {{- $text = .Content -}}
+    {{- end -}}
+  {{- end -}}
 {{- else -}}
-  {{- errorf "%s: license-text: no file %q under assets/" .Page.String (.Get 0) -}}
+  {{- with resources.Get $name -}}
+    {{- $text = .Content -}}
+  {{- else -}}
+    {{- errorf "%s: license-text: no file %q under assets/" .Page.String $name -}}
+  {{- end -}}
 {{- end -}}
+{{- if not (strings.Contains $text "Copyright") -}}
+  {{- errorf "%s: license-text: %q gave no licence text" .Page.String $name -}}
+{{- end -}}
+{{- highlight (trim $text "\n") "text" "" -}}

@@ -111,4 +111,6 @@ include:
   Copyright (c) Tailwind Labs, Inc., also under the MIT License. The site's credits page reproduces
   Hextra's licence;
 - [FlexSearch](https://github.com/nextapps-de/flexsearch), Copyright Thomas Wilkerling, under the Apache
-  License 2.0, for the search box. Its file carries its own notice.
+  License 2.0, for the search box. Its file carries its own notice;
+- [PhotoSwipe](https://photoswipe.com/), Copyright (c) 2014-2022 Dmitry Semenov, under the MIT License,
+  which shows a screenshot full size. The site's credits page reproduces its licence.
