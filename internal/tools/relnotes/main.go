@@ -8,7 +8,7 @@
 //	go run ./internal/tools/relnotes -catch-up                # commit notes a release batched on the fly
 //
 // For a version it writes three files into DIR, which must not be a tracked part of the git tree
-// (GoReleaser refuses a dirty tree; use $RUNNER_TEMP, or the ignored build/):
+// (GoReleaser refuses a dirty tree). The workflows use build/notes, which .gitignore covers:
 //
 //   - notes.md, the GitHub Release body: that version's notes and a footer;
 //   - CHANGELOG.md, the whole changelog, that version included;

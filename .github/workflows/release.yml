@@ -1,7 +1,8 @@
 # Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish.
 # workflow_dispatch runs everything but verify and publish as a dry run, and never publishes.
 # The release notes come from .changes/ (AGENTS.md, "Releasing"): build and rebuild both write them
-# with internal/tools/relnotes, outside the checkout, and GoReleaser reads them from WOPR_NOTES_DIR.
+# with internal/tools/relnotes into build/notes (WOPR_NOTES_DIR), which .gitignore keeps out of the
+# tree that GoReleaser needs clean. It is a fixed path because nfpms.changelog takes no template.
 name: Release
 
 on:
@@ -82,10 +83,10 @@ jobs:
           cache: false # never restore a cache into a release build
       # notes.md (the release body), CHANGELOG.md, and changelog.yml (the .deb and .rpm changelogs),
       # from .changes/vX.Y.Z.md, or batched here from .changes/unreleased, with a warning, when the
-      # release pull request did not. Outside the checkout, which GoReleaser needs clean.
+      # release pull request did not.
       - name: Release notes
         env:
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
           TAG: ${{ github.ref_name }}
         run: |
@@ -97,7 +98,7 @@ jobs:
       - name: GoReleaser (no publish)
         env:
           SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6
@@ -119,7 +120,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-notes
-          path: ${{ runner.temp }}/notes/
+          path: build/notes/
           retention-days: 7
           if-no-files-found: error
 
@@ -153,7 +154,7 @@ jobs:
       # The same notes as build's, so that the packages that carry them come out byte-identical.
       - name: Release notes
         env:
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
           TAG: ${{ github.ref_name }}
         run: |
@@ -165,7 +166,7 @@ jobs:
       - name: Rebuild
         env:
           SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

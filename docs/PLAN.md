@@ -1499,8 +1499,10 @@ its run tests exactly the tree the squash merge produces.
    result fails at once. (v0.2.0's first release run failed on exactly that race.)
 2. **`build`** (`contents: read`, no OIDC). First the release notes: `internal/tools/relnotes -version vX.Y.Z`
    writes `notes.md` (the release body), `CHANGELOG.md` and `changelog.yml` (nFPM's chglog format, for the
-   `.deb` and `.rpm` changelogs) into `$RUNNER_TEMP/notes`, outside the checkout, which GoReleaser needs
-   clean; GoReleaser finds them through `WOPR_NOTES_DIR`, and `notes.md` is uploaded for `publish`. They
+   `.deb` and `.rpm` changelogs) into `build/notes`, which `.gitignore` keeps out of the tree GoReleaser
+   needs clean. GoReleaser's templates find it through `WOPR_NOTES_DIR`; `nfpms.changelog` takes no
+   template (GoReleaser v2.18.2), so it names `build/notes/changelog.yml`. `notes.md` is uploaded for
+   `publish`. They
    come from the release pull request's `.changes/vX.Y.Z.md`, or, if it did not batch the notes, from
    `.changes/unreleased` batched in a temporary copy, dated by the tagged commit, with a warning; relnotes
    refuses when an earlier tag has no `.changes/vX.Y.Z.md`, whose notes would repeat (AGENTS.md,

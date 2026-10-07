@@ -170,13 +170,13 @@ jobs:
       # job summary shows them.
       - name: Release notes (snapshot)
         env:
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
         run: |
           go run ./internal/tools/relnotes -snapshot -out "${WOPR_NOTES_DIR}"
           { echo "## Release notes for this snapshot"; echo; cat "${WOPR_NOTES_DIR}/notes.md"; } >> "${GITHUB_STEP_SUMMARY}"
       - name: GoReleaser snapshot (all six targets)
         env:
-          WOPR_NOTES_DIR: ${{ runner.temp }}/notes
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6
