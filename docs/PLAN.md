@@ -1426,10 +1426,13 @@ states its condition explicitly (`!cancelled()` and the results of its needs); o
 
 ### 11.4 Runner labels
 
-The labels as of 2026-10-06 are `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`,
-`windows-2025` and `windows-11-arm`, all free on public repositories. `ubuntu-22.04` is deprecated and
-`macos-14` is unsupported from 2026-11-02, so neither is used. The labels are checked at every milestone
-boundary (AGENTS.md checklist) (B-5).
+The labels as of 2026-10-07 (the M5 checklist) are `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`,
+`macos-26-intel`, `windows-2025` and `windows-11-arm`, all free on public repositories and none announced for
+removal. Ubuntu 26.04 has been generally available since 2026-09-17, and `ubuntu-latest` moves to it between
+2026-10-19 and 2026-11-19; the pinned `ubuntu-24.04` labels do not move. `windows-2025` and `windows-11-arm` now
+run the images with Visual Studio 2026 (the Arm label moved in September 2026). `ubuntu-22.04` is deprecated and
+unsupported from 2027-04-17, and `macos-14` is unsupported from 2026-11-02, so neither is used. The labels are
+checked at every milestone boundary (AGENTS.md checklist) (B-5).
 
 ### 11.5 Dependency updates without Dependabot (R13)
 
@@ -1589,7 +1592,7 @@ boundary (AGENTS.md checklist) (B-5).
 | 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
-| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass; dependency and runner checklist. | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; checklist done. | **v1.0.0** |
+| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass; dependency and runner checklist (**done** 2026-10-07: only indirect modules moved, `ultraviolet` to its 2026-10-01 commit, `go-runewidth` v0.0.30, `xo/terminfo` v1.2.0, `x/sync` v0.23.0 and `x/sys` v0.48.0, with goldens byte-identical and linux/amd64 6,119,584 → 6,140,064 bytes stripped; Go 1.27.1, the direct modules, the four tools, the prek hooks, the action SHAs and the runner labels (§11.4) were already current; `scheduled.yml` is active). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; checklist done. | **v1.0.0** |
 | 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
