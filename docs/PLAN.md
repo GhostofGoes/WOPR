@@ -396,6 +396,12 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
   final output has been revealed (a typewriter mark), then the layout changes as WOPR's verdict starts.
   Chess and checkers also hand the final position to the persona in `Result.Lines`, like tic-tac-toe, so it
   survives `--instant` and stays in the scrollback.
+- **A game with its own screen starts on a new page.** When the host launches a program whose layout is
+  Panel or Full (from the persona's menu or by a hand-off such as GTW → tic-tac-toe → the ending), it starts
+  a new console page, so the strip under the board shows only that game's text, not the last game's lines
+  and the menu that chose this one. The earlier pages stay in the scrollback. A game ending does not start
+  a page: its last lines stay above WOPR's verdict and `SHALL WE PLAY ANOTHER GAME?`. Console games carry on
+  the conversation's page.
 - **Esc machine** (host-owned; games never see Esc).
   - During a reveal, Esc skips.
   - In a game, the first Esc shows `** PRESS ESC AGAIN TO END GAME **` for 3 s. A pending `Think` keeps
@@ -421,7 +427,9 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
 - **Width** (U-6). The line editor and the wrapper measure with the same method as the renderer: `wcwidth` by
   default, and grapheme widths once the terminal confirms mode 2027.
 - **Scrollback.** Logical lines are wrapped at render time and cached per width, capped at 2000. New output
-  auto-follows. `Clear` starts a new page, and history stays above it. `Render(w, h)` emits exactly `h` rows.
+  auto-follows. `Clear` starts a new page, and history stays above it. A short page starts at the top of
+  the screen; scrolled up, its blank rows move with the text, so the lines just above the page come into
+  view first. `Render(w, h)` emits exactly `h` rows.
 - **Layout geometry** (AR-11, IM-8). Let `H'` be the terminal height minus one when the front panel is shown.
   - The layout width is `min(cols, 80)`, centred; the theme background is painted across the full width.
   - **Console**: `H'` rows. The input row follows the last line of text (with `PROCESSING` or a host notice

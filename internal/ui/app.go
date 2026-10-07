@@ -310,7 +310,11 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 		case host.Pause:
 			m.tw.Pause(e.D)
 		case host.PageBreak:
-			m.tw.Page()
+			if m.tw.Busy() {
+				m.tw.Page() // after what is still being revealed
+			} else {
+				m.sb.PageBreak() // now: a launch's new layout must not frame the old page until the next tick
+			}
 		case host.AskLine:
 			m.keyMode = false
 			m.tw.Prompt(e.Prompt)

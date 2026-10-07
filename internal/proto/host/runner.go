@@ -415,6 +415,11 @@ func (r *Runner) launch(l proto.Launch) []Effect {
 	f.areaW, f.areaH = r.area(place)
 	r.stack = append(r.stack, f)
 	effects := []Effect{Relayout{Placement: place, NewProgram: true}}
+	if place.Layout != proto.LayoutConsole {
+		// A program with its own screen starts on a new page, so its console strip shows
+		// only its own text, not the end of the last game and the menu that chose this one.
+		effects = append(effects, PageBreak{})
+	}
 	return append(effects, r.apply(f, prog.Start(r.env(f, l.Mode)))...)
 }
 

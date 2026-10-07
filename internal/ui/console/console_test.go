@@ -98,6 +98,37 @@ func TestScrollbackPagesAndExactHeight(t *testing.T) {
 	}
 }
 
+// A short page sits at the top with blank rows below. Scrolling up moves the whole view
+// down, blank rows included, so the lines just above the page break come into view first;
+// none of them are skipped (a game launched on a new page leaves its menu right there).
+func TestScrollUpFromAShortPage(t *testing.T) {
+	t.Parallel()
+	var sb Scrollback
+	for i := range 8 {
+		sb.Append("A"+strings.Repeat("I", i+1), 0)
+	}
+	sb.PageBreak()
+	sb.Append("B", 0)
+	prompt := Row{Text: "MOVE: "}
+	rows, at := sb.RenderAt(80, 5, ansi.WcWidth, prompt)
+	if got := text(rows); got != "B\nMOVE: \n\n\n\n" || at != 1 {
+		t.Fatalf("the page starts at the top (cursor row %d):\n%s", at, got)
+	}
+	sb.Scroll(4) // PgUp: the console's height less one
+	rows, at = sb.RenderAt(80, 5, ansi.WcWidth, prompt)
+	if got := text(rows); got != "AIIIII\nAIIIIII\nAIIIIIII\nAIIIIIIII\nB\n" || at != -1 {
+		t.Fatalf("PgUp must show the rows just above the page (cursor row %d):\n%s", at, got)
+	}
+	sb.Scroll(-4)
+	if rows, at = sb.RenderAt(80, 5, ansi.WcWidth, prompt); text(rows) != "B\nMOVE: \n\n\n\n" || at != 1 {
+		t.Fatalf("PgDn must return to the page at the top (cursor row %d):\n%s", at, text(rows))
+	}
+	sb.Scroll(100)
+	if rows = sb.Render(80, 5, ansi.WcWidth, prompt); rows[0].Text != "AI" || rows[4].Text != "AIIIII" {
+		t.Fatalf("scrolling far up stops at the oldest line:\n%s", text(rows))
+	}
+}
+
 func TestTypewriterSequencing(t *testing.T) {
 	t.Parallel()
 	var sb Scrollback

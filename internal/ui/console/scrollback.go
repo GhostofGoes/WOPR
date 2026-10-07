@@ -130,6 +130,13 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		}
 		return out, pageRows - 1
 	}
+	// A page shown from the top has blank rows below it. Scrolled up, they move with the
+	// text, so the rows just above the page come into view first rather than being skipped.
+	pad := 0
+	if pageComplete && pageRows < h {
+		pad = h - pageRows
+		rev = append(make([]Row, pad), rev...)
+	}
 	for ; i >= 0 && len(rev) < need; i-- { // continue into earlier pages
 		rows := wrapRows(s.lines[i], w, method)
 		for j := len(rows) - 1; j >= 0; j-- {
@@ -145,7 +152,7 @@ func (s *Scrollback) RenderAt(w, h int, method ansi.Method, extra ...Row) ([]Row
 		if src < len(rev) {
 			out[k] = rev[src]
 		}
-		if len(extra) > 0 && src == 0 { // rev[0] is the last extra row
+		if len(extra) > 0 && src == pad { // rev[pad] is the last extra row
 			extraAt = k
 		}
 	}

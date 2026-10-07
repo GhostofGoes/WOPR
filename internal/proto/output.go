@@ -32,7 +32,8 @@ type Animate struct{ Every time.Duration }
 // Wait pauses output for D. Any key skips it; it is zero under Env.Instant.
 type Wait struct{ D time.Duration }
 
-// Clear starts a new page. Scrollback keeps what was above it.
+// Clear starts a new page. Scrollback keeps what was above it. The host starts one by
+// itself when it launches a program whose layout is not LayoutConsole (see Launch).
 type Clear struct{}
 
 // SetLayout changes where the program's View goes.
@@ -56,7 +57,10 @@ type Think struct {
 	Budget time.Duration
 }
 
-// Launch pushes another program on top of this one.
+// Launch pushes another program on top of this one. A program with its own screen (any
+// layout but LayoutConsole) starts on a new page, whether it was launched or handed off
+// to, so its console strip shows only its own text. Ending a program does not start one:
+// its last lines stay above the verdict.
 type Launch struct{ Slug, Mode string }
 
 // Done pops this program; the one below receives GameOver.
