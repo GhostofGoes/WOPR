@@ -241,3 +241,216 @@ func TestGameExplains(t *testing.T) {
 		t.Errorf("win: %q", out)
 	}
 }
+
+// Every way of typing a move: separated by '-', 'x', ':' or spaces, or run together, in
+// either case. A pair of squares is a step or a jump by its distance, not its separator.
+func TestParseMoveForms(t *testing.T) {
+	t.Parallel()
+	opening := NewGame()
+	single := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "h8": whiteMan})
+	double := setup(Black, map[string]int8{"c3": blackMan, "a1": blackMan, "d4": whiteMan, "f6": whiteMan, "h8": whiteMan})
+	for _, tc := range []struct {
+		pos  Position
+		in   string
+		want string
+	}{
+		{opening, "a3b4", "a3-b4"},
+		{opening, "A3B4", "a3-b4"},
+		{opening, "a3-b4", "a3-b4"},
+		{opening, "A3-B4", "a3-b4"},
+		{opening, "a3 b4", "a3-b4"},
+		{opening, "  a3   b4  ", "a3-b4"},
+		{opening, "a3\tb4", "a3-b4"},
+		{opening, "a3:b4", "a3-b4"},
+		{opening, "a3xb4", "a3-b4"}, // the squares say it is a step
+		{single, "c3e5", "c3xe5"},   // the squares say it is a jump
+		{single, "C3E5", "c3xe5"},
+		{single, "c3xe5", "c3xe5"},
+		{single, "C3XE5", "c3xe5"},
+		{single, "c3-e5", "c3xe5"},
+		{single, "c3 e5", "c3xe5"},
+		{double, "c3e5g7", "c3xe5xg7"},
+		{double, "C3E5G7", "c3xe5xg7"},
+		{double, "c3xe5xg7", "c3xe5xg7"},
+		{double, "C3XE5XG7", "c3xe5xg7"},
+		{double, "c3 e5 g7", "c3xe5xg7"},
+		{double, "c3e5 g7", "c3xe5xg7"},
+		{double, "c3e5", "c3xe5xg7"}, // the first hop, when only one jump continues it
+		{double, "c3g7", "c3xe5xg7"}, // the start and the end
+	} {
+		m, ok := tc.pos.ParseMove(tc.in)
+		if !ok || m.String() != tc.want {
+			t.Errorf("ParseMove(%q) = %v, %v; want %s", tc.in, m, ok, tc.want)
+		}
+	}
+}
+
+func TestParseMoveRejects(t *testing.T) {
+	t.Parallel()
+	opening := NewGame()
+	single := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "h8": whiteMan})
+	for _, tc := range []struct {
+		pos      Position
+		in       string
+		readable bool // it names squares, so the game calls it illegal rather than unreadable
+	}{
+		{opening, "", false},
+		{opening, "a3", false},                         // one square
+		{opening, "a3b", false},                        // half a square
+		{opening, "a3b4c", false},                      // half a square at the end
+		{opening, "a3bb4", false},                      // a stray letter
+		{opening, "a3b45", false},                      // a stray digit
+		{opening, "i3j4", false},                       // off the board
+		{opening, "a0b1", false},                       // off the board
+		{opening, "a3,b4", false},                      // not a separator
+		{opening, "a3–b4", false},                      // an en dash is not a hyphen
+		{opening, "a3 to b4", false},                   // words
+		{opening, "a3a3a3a3a3a3a3a3a3a3a3a3a3", false}, // more squares than any move visits
+		{opening, "a3a3a3a3a3a3a3", true},              // squares, but no move
+		{opening, "c3c4", true},                        // not diagonal
+		{opening, "a3b4c5", true},                      // a step goes one square
+		{opening, "b4a5", true},                        // no man on b4
+		{opening, "c3e5", true},                        // nothing to jump
+		{opening, "c3 e5", true},
+		{single, "c3d4", true},   // d4 is taken
+		{single, "c3b4", true},   // a jump is compulsory
+		{single, "c3e5g7", true}, // the jump ends at e5
+	} {
+		if m, ok := tc.pos.ParseMove(tc.in); ok {
+			t.Errorf("ParseMove(%q) accepted %v", tc.in, m)
+		}
+		if got := readable(tc.in); got != tc.readable {
+			t.Errorf("readable(%q) = %v, want %v", tc.in, got, tc.readable)
+		}
+	}
+}
+
+// Every legal move, as WOPR writes it, run together, spaced, or in capitals, reads back as
+// that same move, over the positions of a seeded self-play game.
+func TestEveryMoveParsesInEveryForm(t *testing.T) {
+	t.Parallel()
+	compact := strings.NewReplacer("-", "", "x", "")
+	spaced := strings.NewReplacer("-", " ", "x", " ")
+	p := NewGame()
+	for ply := range 200 {
+		if _, over := p.Result(); over {
+			break
+		}
+		for _, m := range p.Legal() {
+			s := m.String()
+			for _, in := range []string{s, strings.ToUpper(s), compact.Replace(s), strings.ToUpper(compact.Replace(s)), spaced.Replace(s)} {
+				if got, ok := p.ParseMove(in); !ok || got != m {
+					t.Fatalf("ply %d: ParseMove(%q) = %v, %v; want %v", ply, in, got, ok, m)
+				}
+			}
+		}
+		res, ok := ai.Search[Move](context.Background(), node{p}, ai.Limits{MaxDepth: 2}, proto.NewRand(7, uint64(ply)))
+		if !ok {
+			t.Fatalf("ply %d: no move", ply)
+		}
+		p = p.Play(res.Move)
+	}
+}
+
+// When a jump forks, its first hop run together is not a move by itself either: the game
+// names the ways it goes on.
+func TestCompactFirstHopOfAFork(t *testing.T) {
+	t.Parallel()
+	fork := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "d6": whiteMan, "f6": whiteMan})
+	if _, ok := fork.ParseMove("c3e5"); ok {
+		t.Error("c3e5 goes on two ways here: not a move by itself")
+	}
+	if c := moveStrings(fork.Continuations("C3E5")); len(c) != 2 || c[0] != "c3xe5xc7" || c[1] != "c3xe5xg7" {
+		t.Errorf("continuations: %v", c)
+	}
+	for _, in := range []string{"c3e5c7", "C3E5G7"} {
+		if _, ok := fork.ParseMove(in); !ok {
+			t.Errorf("%q is a whole move", in)
+		}
+		if c := fork.Continuations(in); c != nil {
+			t.Errorf("%q: a whole move has no continuations: %v", in, c)
+		}
+	}
+}
+
+// The game answers each kind of mistake in its own words: input that is not squares gets
+// the format, squares that are not a move are illegal, a step when a jump is due says so,
+// and a jump that forks names the ways on. None of them moves a piece.
+func TestGameExplainsMistakes(t *testing.T) {
+	t.Parallel()
+	single := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "h8": whiteMan})
+	fork := setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "d6": whiteMan, "f6": whiteMan})
+	for _, tc := range []struct {
+		pos  Position
+		in   string
+		want string
+	}{
+		{NewGame(), "hello", lineFormat[0].Text},
+		{NewGame(), "a3b", lineFormat[0].Text},
+		{NewGame(), "c3", lineFormat[0].Text},
+		{NewGame(), "c3c4", lineIllegal[0].Text},
+		{single, "c3b4", lineMustJmp[0].Text},
+		{single, "c3 b4", lineMustJmp[0].Text},
+		{fork, "c3e5", "THE JUMP GOES ON: C3XE5X"},
+	} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 1, Deterministic: true, Instant: true})
+		g.pos = tc.pos
+		if got := sayText(g.Handle(proto.LineEvent{Text: tc.in})); !strings.Contains(got, tc.want) {
+			t.Errorf("%q: said %q, want %q", tc.in, got, tc.want)
+		}
+		if g.thinking || g.pos != tc.pos {
+			t.Errorf("%q: a mistake must not move a piece", tc.in)
+		}
+	}
+	// A move run together is played like any other.
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 1, Deterministic: true, Instant: true})
+	g.Handle(proto.LineEvent{Text: "A3B4"})
+	if g.last.String() != "a3-b4" || !g.thinking {
+		t.Errorf("A3B4 was not played: last %v, thinking %v", g.last, g.thinking)
+	}
+}
+
+// No input panics; whatever ParseMove accepts is legal and reads as squares; every
+// continuation offered is a legal jump; and a single continuation is accepted as the move.
+func FuzzParseMove(f *testing.F) {
+	for _, s := range []string{
+		"", "a3b4", "A3B4", "c3-d4", "c3 d4", "c3:d4", "c3xe5", "C3XE5XG7", "c3e5g7", "c3e5", "c3g7",
+		"a3b", "i3j4", "a3–b4", "xx", "resign", "c3c3c3c3c3c3c3c3c3c3c3c3c3", "\tc3\nd4 ",
+	} {
+		f.Add(s)
+	}
+	positions := []Position{
+		NewGame(),
+		setup(Black, map[string]int8{"c3": blackMan, "a1": blackMan, "d4": whiteMan, "f6": whiteMan, "h8": whiteMan}),
+		setup(Black, map[string]int8{"c3": blackMan, "d4": whiteMan, "d6": whiteMan, "f6": whiteMan}),
+		setup(Black, map[string]int8{"d4": blackKing, "c5": whiteMan, "e5": whiteMan, "c3": whiteMan, "e3": whiteMan}),
+	}
+	f.Fuzz(func(t *testing.T, in string) {
+		for _, p := range positions {
+			legal := p.Legal()
+			isLegal := func(m Move) bool {
+				for _, l := range legal {
+					if l == m {
+						return true
+					}
+				}
+				return false
+			}
+			m, ok := p.ParseMove(in)
+			if ok && (!isLegal(m) || !readable(in)) {
+				t.Fatalf("ParseMove(%q) accepted %v", in, m)
+			}
+			more := p.Continuations(in)
+			for _, c := range more {
+				if !isLegal(c) || !c.jump() {
+					t.Fatalf("Continuations(%q) offered %v", in, c)
+				}
+			}
+			if !ok && len(more) == 1 {
+				t.Fatalf("%q: the only continuation %v was not accepted", in, more[0])
+			}
+		}
+	})
+}

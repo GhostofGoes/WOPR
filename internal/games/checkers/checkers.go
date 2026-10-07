@@ -25,9 +25,10 @@ const (
 
 // Script text, all original.
 var (
-	lineRules   = script.Orig("YOU ARE BLACK (B) AND MOVE FIRST. WOPR IS WHITE (W).", "TYPE A MOVE AS C3-D4, OR C3XE5 TO JUMP (C3XE5XG7 TO JUMP TWICE).", "KINGS ARE CAPITALS.")
+	lineRules   = script.Orig("YOU ARE BLACK (B) AND MOVE FIRST. WOPR IS WHITE (W).", "TYPE A MOVE AS C3-D4 OR C3D4, A JUMP AS C3XE5 (C3XE5XG7 TO JUMP TWICE).", "KINGS ARE CAPITALS.")
 	promptMove  = script.Orig("YOUR MOVE: ")
 	lineIllegal = script.Orig("ILLEGAL MOVE.")
+	lineFormat  = script.Orig("TYPE A MOVE AS ITS SQUARES: C3-D4 OR C3D4, C3XE5 OR C3E5 TO JUMP.")
 	lineMustJmp = script.Orig("A JUMP IS AVAILABLE. YOU MUST TAKE IT.")
 	lineWOPR    = script.Orig("WOPR: ") // followed by WOPR's move
 	lineResign  = script.Orig("RESIGNATION ACCEPTED.")
@@ -38,7 +39,7 @@ var (
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
-	lineRules, promptMove, lineIllegal, lineMustJmp, lineWOPR, lineResign, lineGoesOn, lineNoMoves, lineNoProg,
+	lineRules, promptMove, lineIllegal, lineFormat, lineMustJmp, lineWOPR, lineResign, lineGoesOn, lineNoMoves, lineNoProg,
 	artTitle, panelWOPR, panelYou, panelSides, panelMen, panelKings, panelLast, panelMove, panelMore,
 }
 
@@ -91,7 +92,10 @@ func (g *Game) onLine(input string) []proto.Output {
 	}
 	if !ok {
 		line := lineIllegal
-		if g.pos.MustJump() {
+		switch {
+		case !readable(input):
+			line = lineFormat // not squares at all: show how to type them
+		case g.pos.MustJump():
 			line = lineMustJmp
 		}
 		return []proto.Output{say(line), proto.Prompt{Text: promptMove[0].Text}}

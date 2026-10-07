@@ -2,6 +2,7 @@ package checkers
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/GhostofGoes/WOPR/internal/games/ai"
 	"github.com/GhostofGoes/WOPR/internal/games/board"
@@ -226,8 +227,9 @@ func (p Position) Result() (winner int8, over bool) {
 }
 
 // ParseMove matches what the player typed against the legal moves: "c3-d4", "c3 d4",
-// "c3xe5xg7", just the start and end of a multi-jump ("c3xg7"), or its first hops
-// ("c3xe5") when only one jump continues them.
+// "c3xe5xg7", the same run together ("c3d4", "c3e5g7"), just the start and end of a
+// multi-jump ("c3xg7"), or its first hops ("c3xe5") when only one jump continues them.
+// Whether a pair of squares is a step or a jump comes from the squares, not the separator.
 func (p Position) ParseMove(input string) (Move, bool) {
 	squares, ok := typedSquares(input)
 	if !ok {
@@ -255,20 +257,36 @@ func (p Position) Continuations(input string) []Move {
 	return p.continuations(squares)
 }
 
+// typedSquares reads the squares the player typed, in any case: separated by '-', 'x', ':'
+// or spaces, or run together ("c3d4", "c3e5g7"), or a mix. It needs at least two squares
+// and no more than a move can visit; anything else in the input is not a move.
 func typedSquares(input string) ([]int, bool) {
-	f := strings.FieldsFunc(strings.ToLower(input), func(r rune) bool { return r == '-' || r == 'x' || r == ' ' || r == ':' })
-	if len(f) < 2 {
-		return nil, false
-	}
-	squares := make([]int, len(f))
-	for i, s := range f {
-		file, rank, ok := board.ParseSquare(s)
-		if !ok {
+	f := strings.FieldsFunc(strings.ToLower(input), func(r rune) bool {
+		return r == '-' || r == 'x' || r == ':' || unicode.IsSpace(r)
+	})
+	var squares []int
+	for _, s := range f {
+		if len(s)%2 != 0 {
 			return nil, false
 		}
-		squares[i] = at(file, rank)
+		for i := 0; i < len(s); i += 2 {
+			file, rank, ok := board.ParseSquare(s[i : i+2])
+			if !ok || len(squares) == len(Move{}.path) {
+				return nil, false
+			}
+			squares = append(squares, at(file, rank))
+		}
+	}
+	if len(squares) < 2 {
+		return nil, false
 	}
 	return squares, true
+}
+
+// readable reports whether the input reads as a move's squares at all, legal or not.
+func readable(input string) bool {
+	_, ok := typedSquares(input)
+	return ok
 }
 
 func (p Position) continuations(squares []int) []Move {
