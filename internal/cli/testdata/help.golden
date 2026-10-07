@@ -23,7 +23,7 @@ Type LOGOFF to leave. Ctrl+C quits at any time.
 Movie mode plays the film's scenes from the one named to the end, then exits;
 without one, it opens a menu of scenes. Space pauses, n or Right skips a scene,
 p or Left goes back, and Esc opens the menu, except during the climax's games,
-which play to the end.
+which play to the end. With -i the text appears at once, but scenes still pause.
 
 Examples:
   wopr                 dial in and log on

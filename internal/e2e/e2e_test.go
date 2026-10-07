@@ -290,15 +290,46 @@ func TestLogonConversationLogoff(t *testing.T) {
 	}
 }
 
-// Movie mode (M6): a scene played with --instant runs on to the end of the list and exits 0
-// without a key.
+// Movie mode (M6): the last scene, played with --instant, shows its text at once but keeps
+// its pauses, draws the board, plays tic-tac-toe and the ending, and exits 0 without a key.
 func TestMoviePlaysToTheEnd(t *testing.T) {
-	s := start(t, 80, 24, "--movie", "first-contact", "--instant")
-	if code := s.wait(60 * time.Second); code != 0 {
+	s := start(t, 80, 24, "--movie", "climax", "--instant")
+	s.waitFor("** GAME ROUTINE RUNNING **", 10*time.Second)
+	if !strings.Contains(s.screen(), "LAUNCH CODE:") {
+		t.Errorf("the climax opens on the big board:\n%s", s.screen())
+	}
+	s.waitFor("** ACCESS DENIED **", 30*time.Second)
+	s.waitFor("NOT TO PLAY.", 30*time.Second) // the scene's last pause holds the film's last words
+	if code := s.wait(30 * time.Second); code != 0 {
 		t.Errorf("exit %d at the end of the movie, want 0", code)
 	}
 	if !strings.Contains(s.screen(), "--CONNECTION TERMINATED--") {
 		t.Errorf("no exit line on the screen:\n%s", s.screen())
+	}
+}
+
+// Movie mode's keys from a real terminal, paced: Space pauses (nothing moves), Right skips to
+// the next scene, a lone Esc opens the menu, and Ctrl+C exits 130.
+func TestMovieKeys(t *testing.T) {
+	s := start(t, 80, 24, "-m", "2")
+	s.waitFor("LOGON:", 15*time.Second)
+	s.send(" ")
+	s.waitFor("** PAUSED **", 5*time.Second)
+	paused := s.screen()
+	time.Sleep(time.Second)
+	if s.screen() != paused {
+		t.Errorf("the screen moved while paused:\n%s\nthen:\n%s", paused, s.screen())
+	}
+	s.send("\x1b[C") // Right
+	s.waitFor("WHICH SIDE DO YOU WANT?", 15*time.Second)
+	if strings.Contains(s.screen(), "LOGON:") || strings.Contains(s.screen(), "** PAUSED **") {
+		t.Errorf("the next scene starts unpaused on a new page:\n%s", s.screen())
+	}
+	s.send("\x1b") // Esc
+	s.waitFor("SCENE:", 10*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
 }
 

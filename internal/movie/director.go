@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games/ending"
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
@@ -22,6 +23,10 @@ type Options struct {
 	Single bool
 	// Scenes replaces the film's scenes (tests); nil plays scenes.All().
 	Scenes []scenes.Scene
+
+	// noPauses skips the scenes' pauses under Env.Instant instead of waiting them out: the
+	// package's transcript tests, which run under testkit with no clock.
+	noPauses bool
 }
 
 type phase uint8
@@ -30,9 +35,13 @@ const (
 	inMenu    phase = iota // the scene menu waits for a line
 	playing                // a step is out; the next one follows on Drained
 	animating              // a Board step's war plays out on ticks
+	waiting                // a pause timed by the director's own ticks (under --instant)
 	running                // a Run step's program is on top
 	ended
 )
+
+// tickEvery is the director's tick while it times something itself: the board's frame.
+const tickEvery = gtw.FilmFrame
 
 // Director plays the film's scenes as the root program (docs/PLAN.md §7). It emits one step at
 // a time and waits for the host's Drained before the next, so a pause or a skip to another
@@ -52,6 +61,7 @@ type Director struct {
 	film   *gtw.Film  // the scene's war, from its first Board step
 	board  bool       // the board is on screen (the Full layout)
 	target gtw.FilmStage
+	left   time.Duration // what is left of a pause the director times itself (waiting)
 }
 
 // New returns a director.
@@ -85,7 +95,13 @@ func (d *Director) View(c *proto.Canvas) {
 func (d *Director) Handle(ev proto.Event) []proto.Output {
 	switch ev := ev.(type) {
 	case proto.Drained:
-		if d.phase != playing {
+		switch d.phase {
+		case playing:
+		case running:
+			// The marker sent with a Run step's Launch reached the director itself: the program
+			// could not be built (the host has said so), so the scene goes on without it.
+			d.phase = playing
+		default:
 			return nil
 		}
 		d.step++
@@ -140,6 +156,9 @@ func (d *Director) emit() []proto.Output {
 	case scenes.Clear:
 		return []proto.Output{proto.Clear{}, proto.Drain{}}
 	case scenes.Wait:
+		if d.env.Instant {
+			return d.wait(s.D)
+		}
 		return []proto.Output{proto.Wait{D: s.D}, proto.Drain{}}
 	case scenes.Board:
 		return d.showBoard(s)
@@ -191,29 +210,48 @@ func (d *Director) showBoard(s scenes.Board) []proto.Output {
 	return append(outs, proto.Redraw{}, d.animate(), proto.Drain{})
 }
 
-// tick moves the board on: a playing Board step's war, or the climax's code search.
+// wait times a scene's pause on the director's own ticks. Under --instant the host drops Wait,
+// which would leave each page on screen for no time at all: text appears at once, but the
+// viewer still gets the scene's pauses to read it. The package's tests skip them (noPauses).
+func (d *Director) wait(dur time.Duration) []proto.Output {
+	if d.opts.noPauses {
+		return []proto.Output{proto.Drain{}}
+	}
+	d.phase, d.left = waiting, dur
+	return []proto.Output{proto.Animate{Every: tickEvery}}
+}
+
+// tick moves the board on (a playing Board step's war, or the climax's code search) and times
+// the director's own pauses.
 func (d *Director) tick(ev proto.TickEvent) []proto.Output {
-	if d.film == nil || !d.board {
-		return nil
+	var outs []proto.Output
+	if d.film != nil && d.board {
+		to := d.target
+		if to == 0 {
+			to = d.film.Stage()
+		}
+		lines, done := d.film.Advance(ev.Dt, to)
+		outs = append(strip(lines), proto.Redraw{})
+		if d.phase == animating && done {
+			d.phase, d.target = playing, 0
+			outs = append(outs, d.animate(), proto.Drain{})
+		}
 	}
-	to := d.target
-	if to == 0 {
-		to = d.film.Stage()
-	}
-	lines, done := d.film.Advance(ev.Dt, to)
-	outs := append(strip(lines), proto.Redraw{})
-	if d.phase == animating && done {
-		d.phase, d.target = playing, 0
-		outs = append(outs, d.animate(), proto.Drain{})
+	if d.phase == waiting {
+		if d.left -= ev.Dt; d.left <= 0 {
+			d.phase, d.left = playing, 0
+			d.step++
+			outs = append(append(outs, d.animate()), d.emit()...)
+		}
 	}
 	return outs
 }
 
-// animate keeps the clock running while the board moves by itself: at the climax, WOPR
-// searches for the launch code.
+// animate keeps the clock running while the board moves by itself (at the climax, WOPR
+// searches for the launch code) or while the director times a pause.
 func (d *Director) animate() proto.Output {
-	if d.board && d.film.Stage() == gtw.FilmClimax && !d.env.Instant {
-		return proto.Animate{Every: gtw.FilmFrame}
+	if d.phase == waiting || d.board && d.film.Stage() == gtw.FilmClimax && !d.env.Instant {
+		return proto.Animate{Every: tickEvery}
 	}
 	return proto.Animate{}
 }
@@ -235,7 +273,10 @@ func strip(lines []string) []proto.Output {
 }
 
 // run launches a Run step's program. The board makes way for it; an ending launched from the
-// climax board carries on cracking the launch code from where the board left it.
+// climax board carries on cracking the launch code from where the board left it. A Drain
+// follows the Launch: if the program runs, its marker is dropped (the runner answers only the
+// running program), and when it ends GameOver brings a new one; if the program cannot be built,
+// the director is still running and hears it, and the scene goes on.
 func (d *Director) run(s scenes.Run) []proto.Output {
 	mode := s.Mode
 	if mode == ending.MovieMode && d.film != nil && d.film.Stage() == gtw.FilmClimax {
@@ -243,12 +284,15 @@ func (d *Director) run(s scenes.Run) []proto.Output {
 	}
 	outs := d.hideBoard()
 	d.phase = running
-	return append(outs, proto.Launch{Slug: s.Slug, Mode: mode})
+	return append(outs, proto.Launch{Slug: s.Slug, Mode: mode}, proto.Drain{})
 }
 
-// key is the controls table (docs/PLAN.md §7). Ctrl+C is the host's.
+// key is the controls table (docs/PLAN.md §7). Ctrl+C is the host's. The keys work in every
+// phase of a scene: while a Run step's program runs, the host gives keys to that program, not
+// to the director (and drops them, since the director captures keys), so the director hears
+// keys while running only when the program never started.
 func (d *Director) key(ev proto.KeyEvent) []proto.Output {
-	if d.phase != playing && d.phase != animating {
+	if d.phase == inMenu || d.phase == ended {
 		return nil
 	}
 	r := ev.Rune

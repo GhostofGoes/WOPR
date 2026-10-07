@@ -1090,7 +1090,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
   (1983) as the session seed and runs `Deterministic`, whatever `--seed` says, so every replay is identical
   (RF-5): the typing jitter comes from `NewRand(Seed, DomainMovie|scene)` and the launched programs' seeds from
   the pinned session seed. It emits one step, then `Drain`, and the next step on `Drained`; a `Run` step waits
-  for `GameOver`, then drains the program's last words.
+  for `GameOver`, then drains the program's last words. A `Drain` sent with the `Launch` reaches the director
+  only if the program could not be built (the runner answers only the running program), and then the scene
+  goes on after the host's `** GAME ROUTINE NOT AVAILABLE **`; the controls also work while a `Run` step
+  is out, so a bad slug in the scene data cannot leave the show stuck.
 - **Host hooks.** Key capture, `Hold`, `Drain` and `Skip`, plus `Say.Open` for typed lines (§4.4). While the
   climax runs on top of the director, keys do nothing but Ctrl+C (and PgUp/PgDn), and any other key shows
   `** THE GAME PLAYS TO THE END. CTRL+C QUITS. **` for three seconds; the menu and `--help` say so too. In
@@ -1107,8 +1110,12 @@ before the classified address it leads to; v2.1's provisional table had it in th
   | Ctrl+C | Exit 130 |
 
   Every jump ends a pause, stops the board and reveals what is queued at once (`Skip`), so the next scene
-  starts on a clean page straight away. `--instant` plays with no pacing, which tests use. `--theme` and
-  `--reduce-motion` apply.
+  starts on a clean page straight away. `--theme` and `--reduce-motion` apply.
+- **`--instant`** (or `WOPR_INSTANT=1`) drops the typing and the typewriter's pacing, but not the scenes'
+  pauses: the host drops `Wait` under `Instant`, so the director waits each pause out itself on `Animate`
+  ticks, and every page stays up to be read. The board jumps to each stage, and tic-tac-toe and the ending
+  play at once. The package's transcript tests skip the pauses with an unexported option, since `testkit`
+  has no clock; the UI tests and e2e play them on the fake and the real clock.
 - **The scene menu.** `wopr -m` opens it: the scenes, numbered, the keys, and `SCENE:`, which takes a number, a
   slug, a title or a unique prefix. `q` (or `LOGOFF`, `EXIT`, `QUIT`) exits 0; an empty line asks again; an
   unknown name gets `NO SUCH SCENE.` and an ambiguous one lists its scenes. Esc during playback returns to it,
@@ -1231,9 +1238,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
     - M1: start → `LOGON:` → Ctrl+C → exit 130 with the alternate screen left; `Joshua` → `GREETINGS
       PROFESSOR FALKEN.` → `Hello.` → `HOW ARE YOU FEELING TODAY?` → `LOGOFF` → exit 0; start at 60×20 →
       `TERMINAL TOO SMALL` → resize to 80×24 → `LOGON:`;
-    - M6: `--movie first-contact --instant` plays every scene and exits 0 at the end of the list, without a
-      key; `-m` → the scene menu → `q` → exit 0; `--scenes` lists the scenes, and `-m nowhere` exits 2 listing
-      them.
+    - M6: `--movie climax --instant` shows the board, `** ACCESS DENIED **` and the film's last words, each
+      held by the scene's pauses, and exits 0 at the end of the list without a key; paced, `-m 2` → `LOGON:` →
+      Space → `** PAUSED **` and a still screen → Right → the next scene → Esc → `SCENE:` → Ctrl+C → exit
+      130; `-m` → the scene menu → `q` → exit 0; `--scenes` lists the scenes, and `-m nowhere` exits 2
+      listing them.
   - On Unix every TUI case also asserts that the terminal modes (termios) are restored. Under ConPTY the
     assertion is weaker (exit code and final screen), because conhost owns the console modes.
   - The `build` job cross-compiles the test per target (`internal/tools/stage`) and ships it next to each
@@ -1548,7 +1557,8 @@ boundary (AGENTS.md checklist) (B-5).
 7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
 8. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
-   the end of the list and exits 0; `wopr --scenes` lists them. The movie consistency tests are green.
+   the end of the list, pausing between pages, and exits 0; `wopr --scenes` lists them. The movie
+   consistency tests are green.
 
 ---
 

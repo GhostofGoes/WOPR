@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
 	"github.com/GhostofGoes/WOPR/internal/golden"
@@ -44,14 +45,27 @@ func TestMovieMenu(t *testing.T) {
 	golden.AssertString(t, "movie_menu", s.String())
 }
 
-// wopr -m <scene> -i plays to the end of the list and exits 0 by itself.
+// wopr -m <scene> -i: text appears at once, but the scenes' pauses still hold each page up to
+// be read; the list plays to the end and exits 0 by itself.
 func TestMovieInstantPlaysThrough(t *testing.T) {
 	t.Parallel()
 	opts := movieMode("first-contact")
 	opts.Instant = true
-	d := newDriver(t, opts, 80, 24).settle()
+	d := newDriver(t, opts, 80, 24)
+	if s := d.screen(); !strings.Contains(s, "CONNECTING...") || strings.Contains(s, "CONNECTED.") || d.ended != "" {
+		t.Fatalf("the dial's pause holds its first line:\n%s", s)
+	}
+	begun := d.now
+	d.until("the refused logon", shows("--CONNECTION TERMINATED--"))
+	if d.ended != "" || d.now.Sub(begun) < time.Second {
+		t.Fatalf("the first page took %v (ended %q):\n%s", d.now.Sub(begun), d.ended, d.screen())
+	}
+	d.settle()
 	if d.ended != "quit" || !strings.Contains(strings.Join(transcript(d), "\n"), "NOT TO PLAY.") {
 		t.Fatalf("ended %q:\n%s", d.ended, d.screen())
+	}
+	if played := d.now.Sub(begun); played < 40*time.Second {
+		t.Errorf("the film took %v: its pauses were skipped", played)
 	}
 }
 

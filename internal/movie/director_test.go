@@ -19,9 +19,10 @@ import (
 )
 
 // play runs a director under the host, as movie mode does: the pinned seed, programs from the
-// catalog, and none of them abortable.
+// catalog, and none of them abortable. testkit has no clock, so the scenes' pauses are skipped.
 func play(t *testing.T, opts Options) *testkit.Session {
 	t.Helper()
+	opts.noPauses = true
 	reg := catalog.Registry()
 	cfg := host.Config{
 		Seed: Seed,
@@ -219,13 +220,79 @@ func TestBoardAndRun(t *testing.T) {
 		t.Fatalf("the first strike plays out: phase %d, lines %q", d.phase, lines)
 	}
 	d.Handle(proto.Drained{}) // the climax: the board keeps the clock running for the code search
-	if outs := d.Handle(proto.Drained{}); !hasOut[proto.Launch](outs) || d.phase != running {
+	outs = d.Handle(proto.Drained{})
+	if !hasOut[proto.Launch](outs) || d.phase != running {
 		t.Fatalf("Run launches: %#v", outs)
-	} else if l := outs[len(outs)-1].(proto.Launch); l.Mode != "movie:0" {
-		t.Errorf("the ending carries on from the board's code: %+v", l)
 	}
-	if outs := d.Handle(proto.KeyEvent{Key: proto.KeyEsc}); outs != nil {
-		t.Error("controls do nothing while the program runs")
+	for _, o := range outs {
+		if l, ok := o.(proto.Launch); ok && l.Mode != "movie:0" {
+			t.Errorf("the ending carries on from the board's code: %+v", l)
+		}
+	}
+}
+
+// A Run step whose program cannot be built does not stop the show: the host says so, and the
+// scene goes on. The controls work while a Run step is out, so nothing can leave the director
+// deaf to them (the host gives keys to a program that does run, not to the director).
+func TestRunThatCannotStart(t *testing.T) {
+	t.Parallel()
+	scene := []scenes.Scene{{Slug: "broken", Steps: []scenes.Step{
+		scenes.Say{Lines: script.Orig("BEFORE."), Pace: proto.PaceSpeech},
+		scenes.Run{Slug: "no-such-program", Prov: script.Original},
+		scenes.Say{Lines: script.Orig("AFTER."), Pace: proto.PaceSpeech},
+	}}}
+	s := play(t, Options{Scene: "broken", Scenes: scene})
+	if want := "[CLEAR]\nBEFORE.\n** GAME ROUTINE NOT AVAILABLE **\nAFTER.\n"; s.Transcript() != want || !s.Exited() {
+		t.Errorf("exited %v, transcript:\n%s\nwant:\n%s", s.Exited(), s.Transcript(), want)
+	}
+
+	d := New(Options{Scene: "broken", Scenes: scene})
+	d.Start(proto.Env{})
+	if outs := d.Handle(proto.Drained{}); !hasOut[proto.Launch](outs) || !hasOut[proto.Drain](outs) || d.phase != running {
+		t.Fatalf("Run launches, then asks to hear back: %#v", outs)
+	}
+	if outs := d.Handle(proto.KeyEvent{Key: proto.KeyEsc}); d.phase != inMenu || !hasOut[proto.Prompt](outs) {
+		t.Errorf("Esc reaches the menu from a Run step: %#v", outs)
+	}
+}
+
+// Under --instant text appears at once, but the director still waits out a scene's pauses on
+// its own ticks (the host drops Wait), so every page stays up to be read; a pause freezes them.
+func TestInstantKeepsThePauses(t *testing.T) {
+	t.Parallel()
+	d := New(Options{Scene: "first", Scenes: twoScenes})
+	d.Start(proto.Env{Instant: true})
+	d.Handle(proto.Drained{}) // LOGON: is out; NAME: Joshua is typed
+	outs := d.Handle(proto.Drained{})
+	if d.phase != waiting || hasOut[proto.Drain](outs) || !hasOut[proto.Animate](outs) {
+		t.Fatalf("the pause is timed on ticks: phase %d %#v", d.phase, outs)
+	}
+	tick := func() []proto.Output { return d.Handle(proto.TickEvent{Dt: tickEvery}) }
+	for range 9 {
+		if outs := tick(); hasOut[proto.Say](outs) {
+			t.Fatalf("too early: %#v", outs)
+		}
+	}
+	d.Handle(proto.KeyEvent{Key: proto.KeyRune, Rune: ' '}) // pause: the host stops the ticks
+	d.Handle(proto.KeyEvent{Key: proto.KeyRune, Rune: ' '})
+	outs = tick()
+	if d.phase != playing || !hasOut[proto.Say](outs) || !hasOut[proto.Drain](outs) {
+		t.Fatalf("after a second, GREETINGS.: %#v", outs)
+	}
+	if a, ok := outs[0].(proto.Animate); !ok || a.Every != 0 {
+		t.Errorf("the clock stops with the pause: %#v", outs)
+	}
+
+	// Next scene during a pause: the wait is dropped with the rest of the scene.
+	d = New(Options{Scene: "first", Scenes: twoScenes})
+	d.Start(proto.Env{Instant: true})
+	d.Handle(proto.Drained{})
+	d.Handle(proto.Drained{})
+	if d.Handle(proto.KeyEvent{Key: proto.KeyRight}); d.scene != 1 || d.phase != playing {
+		t.Fatalf("Right leaves the pause for the next scene: scene %d phase %d", d.scene, d.phase)
+	}
+	if outs := tick(); outs != nil {
+		t.Errorf("a stray tick does nothing: %#v", outs)
 	}
 }
 

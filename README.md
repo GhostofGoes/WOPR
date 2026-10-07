@@ -122,8 +122,9 @@ console and games you play with. `wopr --scenes` lists them:
 - While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
   and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays to the end, and any
   other key only says so.
-- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply, and
-  `--instant` plays the whole film at once.
+- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply.
+  `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
+  can be read.
 
 The scenes show only what appears on WOPR's terminal in the film, David's typing included, and every line
 carries a provenance tag ([NOTICE.md](NOTICE.md)). They are still to be checked line by line against the film.
