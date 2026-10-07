@@ -81,7 +81,10 @@ type Quit struct{}
 
 // Hold freezes output while On: the typewriter, Wait, Animate and Blink stop where they are,
 // as they do behind the TERMINAL TOO SMALL card, until a Hold with On false (movie mode's
-// pause). Keys still arrive. A hold ends with the program that set it.
+// pause). Keys still arrive, but none reveals held output, and neither does Env.Instant. Only
+// a root program that captures keys (AwaitKeys.Capture) can hold output, since it alone is
+// sure to get the key that releases it; the host ignores Hold from any other program. A hold
+// ends when its program launches another or ends.
 type Hold struct{ On bool }
 
 // Drain asks for a Drained event once everything output before it has been revealed and its
@@ -90,7 +93,7 @@ type Hold struct{ On bool }
 type Drain struct{}
 
 // Skip reveals at once everything output before it, as a key press skips the typewriter
-// (movie mode's next and previous scene).
+// (movie mode's next and previous scene). It reveals held output too.
 type Skip struct{}
 
 func (Say) isOutput()       {}

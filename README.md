@@ -120,7 +120,8 @@ console and games you play with. `wopr --scenes` lists them:
 - `wopr -m 3` (or `wopr -m first-strike`, or any unique start of a name) plays from that scene to the end of
   the list, then exits.
 - While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
-  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays through.
+  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays to the end, and any
+  other key only says so.
 - Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply, and
   `--instant` plays the whole film at once.
 

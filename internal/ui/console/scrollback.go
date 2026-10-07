@@ -41,9 +41,12 @@ type Row struct {
 // Scrollback is the console's history, split into pages by Clear.
 type Scrollback struct {
 	lines     []Line
-	pageStart int    // index of the first line of the current page
-	offset    int    // rows scrolled up from the bottom; 0 follows new output
-	added     uint64 // lines ever added, so the typewriter knows its open line is still the newest
+	pageStart int // index of the first line of the current page
+	offset    int // rows scrolled up from the bottom; 0 follows new output
+	// gen counts the lines ever added and the page breaks: the typewriter continues its open
+	// line only while gen is unchanged, so a line added from outside (the echo of a submitted
+	// line) or a page break, however it was made, closes it.
+	gen uint64
 }
 
 // Append adds a fully revealed line.
@@ -57,7 +60,7 @@ func (s *Scrollback) appendHidden(text string, st proto.Style) {
 }
 
 func (s *Scrollback) add(l Line) {
-	s.added++
+	s.gen++
 	s.lines = append(s.lines, l)
 	if over := len(s.lines) - MaxLines; over > 0 {
 		s.lines = append(s.lines[:0], s.lines[over:]...)
@@ -79,6 +82,7 @@ func (s *Scrollback) last() *Line {
 func (s *Scrollback) PageBreak() {
 	s.pageStart = len(s.lines)
 	s.offset = 0
+	s.gen++
 }
 
 // Scroll moves the view by delta rows (positive = back in history). It is clamped when

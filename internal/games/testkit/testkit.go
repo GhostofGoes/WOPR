@@ -118,7 +118,9 @@ func (s *Session) Contains(text string) bool { return strings.Contains(s.Transcr
 
 // apply records effects in order. Everything is revealed at once here, so a Drain marker is
 // reached as soon as the output before it is recorded; it is answered after the rest of its
-// batch, as the console's typewriter would reach it after the output queued with it.
+// batch, as the console's typewriter would reach it after the output queued with it. (A Think
+// runs inline here; the runner answers a marker only after a pending Think's ThinkDone, so the
+// order is the console's too.)
 func (s *Session) apply(effects []host.Effect) {
 	var drains []uint64
 	for len(effects) > 0 || len(drains) > 0 {

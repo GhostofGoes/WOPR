@@ -33,7 +33,8 @@ func (m *model) key(k tea.KeyPressMsg) tea.Cmd {
 	}
 
 	// A root that captures keys (the movie director) gets every key, Esc included, and no
-	// key skips its output; while a program it launched runs, keys do nothing.
+	// key skips its output; while a program it launched runs, keys do nothing but bring up a
+	// notice saying so.
 	if m.runner.Captures() {
 		if key, r, ok := protoKey(k); ok {
 			return tea.Batch(disarm, m.applyAll(m.runner.Key(key, r)))
@@ -41,11 +42,11 @@ func (m *model) key(k tea.KeyPressMsg) tea.Cmd {
 		return disarm
 	}
 	if m.runner.Shielded() {
-		return disarm
+		return tea.Batch(disarm, m.applyAll(m.runner.Refused())) // say why the key did nothing
 	}
 
-	// While text is being revealed, the first key skips it.
-	if m.tw.Revealing() {
+	// While text is being revealed, the first key skips it, unless a program holds it.
+	if m.tw.Revealing() && !m.frozen {
 		for _, ev := range m.tw.Flush(&m.sb) {
 			m.onTypewriter(ev)
 		}

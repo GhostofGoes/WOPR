@@ -48,7 +48,7 @@ type Typewriter struct {
 	waiting   time.Duration
 	instant   bool
 	open      bool   // the newest line was left open (SayOpen); the next line continues it
-	openAt    uint64 // the scrollback's line count when it was opened
+	openAt    uint64 // the scrollback's gen when it was opened
 
 	currentPace proto.Pace
 }
@@ -189,7 +189,7 @@ func (t *Typewriter) start(sb *Scrollback) (Event, bool) {
 	t.queue = t.queue[1:]
 	switch it.kind {
 	case itemLine:
-		if l := sb.last(); t.open && l != nil && sb.added == t.openAt { // continue the open line
+		if l := sb.last(); t.open && l != nil && sb.gen == t.openAt { // continue the open line
 			t.shown = len(Graphemes(l.Text))
 			l.Text += it.text
 			l.shown = t.shown
@@ -197,7 +197,7 @@ func (t *Typewriter) start(sb *Scrollback) (Event, bool) {
 			sb.appendHidden(it.text, it.style)
 			t.shown = 0
 		}
-		t.open, t.openAt = it.open, sb.added
+		t.open, t.openAt = it.open, sb.gen
 		t.revealing = true
 		t.total = len(Graphemes(sb.last().Text))
 		t.currentPace = it.pace

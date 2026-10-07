@@ -87,7 +87,7 @@ cursor: col 27, row 22
 |          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
-|              `._,   ""         |           \`'   \|   ?_)  {\         |  | 1 |
+|              `._,   ""         |           \`'   \|   ?_)  {\         |  |   |
 |                 `=.---.        `._._       ,'     "`  |' ,- '.        |  +---+
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
@@ -121,10 +121,10 @@ PLEASE LIST NUMBER OF PLAYERS: 1
 YOU ARE X. WOPR IS O.
 YOUR MOVE: 9
 
-
+** THE GAME PLAYS TO THE END. CTRL+C QUITS. **
 
 
 
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 12, row 16
+cursor: col 46, row 18

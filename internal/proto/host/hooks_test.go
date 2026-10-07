@@ -1,6 +1,8 @@
 package host
 
 import (
+	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -47,6 +49,40 @@ func TestCaptureIsForTheRootOnly(t *testing.T) {
 	}
 }
 
+// A key dropped while shielded brings up a notice saying why, which clears after the Esc
+// window or when the game ends.
+func TestRefusedKeyNotice(t *testing.T) {
+	t.Parallel()
+	game := &fake{start: []proto.Output{proto.Prompt{}}}
+	game.on = func(e proto.Event) []proto.Output {
+		if _, ok := e.(proto.LineEvent); ok {
+			return []proto.Output{proto.Done{}}
+		}
+		return nil
+	}
+	root := &fake{start: []proto.Output{proto.AwaitKeys{Capture: true}}}
+	r := newRunner(map[string]*fake{"g": game}, false)
+	r.Start(root, Placement{})
+	if eff := r.Refused(); eff != nil {
+		t.Fatalf("nothing is refused unshielded: %#v", eff)
+	}
+	root.on = func(proto.Event) []proto.Output { return []proto.Output{proto.Launch{Slug: "g"}} }
+	r.Key(proto.KeyRune, 'g')
+	if eff := r.Refused(); len(eff) != 1 || eff[0] != (Notice{Text: ShieldedNotice}) || !r.NeedsTicks() {
+		t.Fatalf("a refused key: %#v", eff)
+	}
+	if eff := r.Advance(EscWindow - time.Millisecond); has[Notice](eff) {
+		t.Fatal("the notice stays for the Esc window")
+	}
+	if eff := r.Advance(time.Millisecond); !has[Notice](eff) || r.NeedsTicks() {
+		t.Fatalf("then it clears: %#v", eff)
+	}
+	r.Refused()
+	if eff := r.Line("done"); !has[Notice](eff) || r.NeedsTicks() {
+		t.Fatalf("the notice ends with the game: %#v", eff)
+	}
+}
+
 // A Prompt ends the capture.
 func TestPromptEndsCapture(t *testing.T) {
 	t.Parallel()
@@ -70,24 +106,29 @@ func TestPromptEndsCapture(t *testing.T) {
 }
 
 // Hold freezes Animate (and so the Esc window) until released, reports only changes, and
-// never outlives the program that set it.
+// comes only from a root that captures keys. It never outlives its program's turn at the top:
+// launching another program ends it.
 func TestHoldFreezesTime(t *testing.T) {
 	t.Parallel()
-	game := &fake{start: []proto.Output{proto.Animate{Every: 100 * time.Millisecond}, proto.Hold{On: true}, proto.Prompt{}}}
-	game.on = func(e proto.Event) []proto.Output {
-		if l, ok := e.(proto.LineEvent); ok {
-			switch l.Text {
-			case "release":
-				return []proto.Output{proto.Hold{}, proto.Prompt{}}
-			case "hold":
-				return []proto.Output{proto.Hold{On: true}, proto.Hold{On: true}, proto.Prompt{}}
-			case "end":
-				return []proto.Output{proto.Done{}}
-			}
+	game := &fake{start: []proto.Output{proto.Hold{On: true}, proto.Prompt{}}}
+	root := &fake{start: []proto.Output{
+		proto.AwaitKeys{Capture: true}, proto.Animate{Every: 100 * time.Millisecond}, proto.Hold{On: true},
+	}}
+	root.on = func(e proto.Event) []proto.Output {
+		k, ok := e.(proto.KeyEvent)
+		if !ok {
+			return nil
+		}
+		switch k.Rune {
+		case 'r':
+			return []proto.Output{proto.Hold{}}
+		case 'h':
+			return []proto.Output{proto.Hold{On: true}, proto.Hold{On: true}}
+		case 'g':
+			return []proto.Output{proto.Launch{Slug: "g"}}
 		}
 		return nil
 	}
-	root := &fake{start: []proto.Output{proto.Launch{Slug: "g"}}}
 	r := newRunner(map[string]*fake{"g": game}, false)
 	if eff := r.Start(root, Placement{}); !has[Hold](eff) || !r.Held() {
 		t.Fatalf("Hold must be reported: %#v", eff)
@@ -96,27 +137,48 @@ func TestHoldFreezesTime(t *testing.T) {
 		t.Error("nothing needs ticks while held")
 	}
 	r.Advance(time.Second)
-	if len(game.events) != 0 {
-		t.Fatalf("no tick while held: %v", game.events)
+	if len(root.events) != 0 {
+		t.Fatalf("no tick while held: %v", root.events)
 	}
-	if eff := r.Line("release"); !has[Hold](eff) || r.Held() {
+	if eff := r.Key(proto.KeyRune, 'r'); !has[Hold](eff) || r.Held() {
 		t.Fatalf("release: %#v", eff)
 	}
 	r.Advance(150 * time.Millisecond)
-	if _, ok := last(game.events).(proto.TickEvent); !ok {
-		t.Fatalf("ticks resume: %v", game.events)
+	if _, ok := last(root.events).(proto.TickEvent); !ok {
+		t.Fatalf("ticks resume: %v", root.events)
 	}
 	holds := 0
-	for _, e := range r.Line("hold") {
+	for _, e := range r.Key(proto.KeyRune, 'h') {
 		if _, ok := e.(Hold); ok {
 			holds++
 		}
 	}
-	if holds != 1 {
+	if holds != 1 || !r.Held() {
 		t.Errorf("only a change of hold is reported, got %d", holds)
 	}
-	if eff := r.Line("end"); !has[Hold](eff) || r.Held() {
-		t.Fatalf("the hold ends with its program: %#v", eff)
+	eff := r.Key(proto.KeyRune, 'g')
+	if !has[Hold](eff) || r.Held() || r.Depth() != 2 {
+		t.Fatalf("launching ends the hold, and the launched game cannot hold: %#v", eff)
+	}
+	if eff[0] != (Hold{}) {
+		t.Errorf("the hold ends before the launch: %#v", eff)
+	}
+}
+
+// Hold from anything but a capturing root is ignored: nobody could be sure to release it.
+func TestHoldIsForACapturingRoot(t *testing.T) {
+	t.Parallel()
+	for name, root := range map[string]*fake{
+		"a root in line mode":       {start: []proto.Output{proto.Hold{On: true}, proto.Prompt{}}},
+		"a root in plain key mode":  {start: []proto.Output{proto.AwaitKeys{}, proto.Hold{On: true}}},
+		"a game a root launched":    {start: []proto.Output{proto.AwaitKeys{Capture: true}, proto.Launch{Slug: "g"}}},
+		"a capture ended by Prompt": {start: []proto.Output{proto.AwaitKeys{Capture: true}, proto.Prompt{}, proto.Hold{On: true}}},
+	} {
+		game := &fake{start: []proto.Output{proto.AwaitKeys{Capture: true}, proto.Hold{On: true}, proto.Prompt{}}}
+		r := newRunner(map[string]*fake{"g": game}, false)
+		if eff := r.Start(root, Placement{}); has[Hold](eff) || r.Held() {
+			t.Errorf("%s: %#v", name, eff)
+		}
 	}
 }
 
@@ -151,6 +213,94 @@ func TestDrainAnswersTheLatestMarker(t *testing.T) {
 	r = newRunner(map[string]*fake{"g": game}, false)
 	if id := drainID(t, r.Start(launcher, Placement{})); r.Drained(id) != nil || len(launcher.events) != 0 {
 		t.Error("a marker reached while another program runs is dropped")
+	}
+}
+
+// A Drain marker reached while the program has a Think pending is answered after its
+// ThinkDone, so the two arrive in the same order however fast the typewriter was: testkit runs
+// a Think inline, --instant reveals before it ends, pacing may reveal after.
+func TestDrainedFollowsThinkDone(t *testing.T) {
+	t.Parallel()
+	think := proto.Think{Fn: func(context.Context) (any, error) { return nil, nil }}
+	// prog's first ThinkDone also outputs onThought.
+	prog := func(onThought []proto.Output) *fake {
+		f := &fake{start: []proto.Output{proto.Say{Lines: []string{"A"}}, proto.Drain{}, think}}
+		f.on = func(e proto.Event) []proto.Output {
+			switch e.(type) {
+			case proto.Drained:
+				return []proto.Output{proto.Say{Lines: []string{"DRAINED"}}}
+			case proto.ThinkDone:
+				outs := append([]proto.Output{proto.Say{Lines: []string{"THOUGHT"}}}, onThought...)
+				onThought = nil
+				return outs
+			}
+			return nil
+		}
+		return f
+	}
+	said := func(eff []Effect) []string {
+		var out []string
+		for _, e := range eff {
+			if p, ok := e.(Print); ok {
+				out = append(out, p.Lines...)
+			}
+		}
+		return out
+	}
+	gen := func(eff []Effect) uint64 {
+		for _, e := range eff {
+			if st, ok := e.(StartThink); ok {
+				return st.Gen
+			}
+		}
+		t.Fatalf("no Think in %#v", eff)
+		return 0
+	}
+
+	// The marker is reached first (instant), then the Think ends.
+	r := newRunner(nil, false)
+	eff := r.Start(prog(nil), Placement{})
+	if r.Drained(drainID(t, eff)) != nil {
+		t.Fatal("Drained must wait for the pending Think")
+	}
+	if got := said(r.ThinkResult(gen(eff), nil, nil)); strings.Join(got, "|") != "THOUGHT|DRAINED" {
+		t.Errorf("after the Think: %q", got)
+	}
+
+	// The Think ends first (paced), then the marker is reached.
+	r = newRunner(nil, false)
+	eff = r.Start(prog(nil), Placement{})
+	if got := said(r.ThinkResult(gen(eff), nil, nil)); strings.Join(got, "|") != "THOUGHT" {
+		t.Errorf("the Think's answer: %q", got)
+	}
+	if got := said(r.Drained(drainID(t, eff))); strings.Join(got, "|") != "DRAINED" {
+		t.Errorf("then the marker: %q", got)
+	}
+
+	// A newer Drain sent with ThinkDone replaces the reached one; another Think defers it again.
+	r = newRunner(nil, false)
+	eff = r.Start(prog([]proto.Output{proto.Drain{}}), Placement{})
+	r.Drained(drainID(t, eff))
+	if got := said(r.ThinkResult(gen(eff), nil, nil)); strings.Join(got, "|") != "THOUGHT" {
+		t.Errorf("a replaced marker is dropped: %q", got)
+	}
+	r = newRunner(nil, false)
+	eff = r.Start(prog([]proto.Output{think}), Placement{})
+	r.Drained(drainID(t, eff))
+	next := r.ThinkResult(gen(eff), nil, nil)
+	if got := said(next); strings.Join(got, "|") != "THOUGHT" {
+		t.Errorf("another Think defers the answer: %q", got)
+	}
+	if got := said(r.ThinkResult(gen(next), nil, nil)); strings.Join(got, "|") != "THOUGHT|DRAINED" {
+		t.Errorf("after the second Think: %q", got)
+	}
+
+	// Esc cancelling a root's Think also delivers the marker after its ThinkDone.
+	r = newRunner(nil, false)
+	eff = r.Start(prog(nil), Placement{})
+	r.Drained(drainID(t, eff))
+	if got := said(r.Esc()); strings.Join(got, "|") != "THOUGHT|DRAINED" {
+		t.Errorf("after a cancelled Think: %q", got)
 	}
 }
 

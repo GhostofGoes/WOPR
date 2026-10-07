@@ -547,22 +547,31 @@ type Resolver func(proto.Launch) (proto.Program, Placement, error)
 
 Rules:
 
-- **Movie-mode hooks** (M6, AR-7, RF-1, IM-11; the `gamestest` stub has a case for each). They are additive:
-  no other program uses them, and the goldens did not move when they landed.
+- **Movie-mode hooks** (M6, AR-7, RF-1, IM-11; the `gamestest` stub has a case for each but `Hold`, which a
+  game cannot send). They are additive: no other program uses them, and the goldens did not move when they
+  landed.
   - **Key capture.** A *root* program sends `AwaitKeys{Capture: true}` and then receives every key as a
     `KeyEvent`, Esc as `KeyEsc`, with none of the host's side effects: no key skips output, and the Esc
     machine is idle. A `Prompt` ends the capture. The host ignores `Capture` from a launched program, so Esc
     stays the host's in every game. While a capturing root's launched program runs, keys other than Ctrl+C
-    (and PgUp/PgDn) do nothing.
+    (and PgUp/PgDn) do nothing, and each brings up `** THE GAME PLAYS TO THE END. CTRL+C QUITS. **` for the
+    Esc window (`Runner.Refused`), so the key is not met with silence.
   - **`Hold{On}`** freezes the typewriter, `Wait`, `Animate`, Blink and the front panel, reusing the TOO
-    SMALL pause; keys still arrive. Only a change is reported, and a hold ends with the program that set it.
+    SMALL pause. Keys still arrive, but none reveals held output, and neither does `--instant`. Only a root
+    that captures keys can hold, since only it is sure to get the key that releases it; the host ignores
+    `Hold` from anything else. Only a change is reported, and a hold ends when its program launches another
+    or ends, so a launched program never starts frozen.
   - **`Drain`** queues a marker after the program's output; when the typewriter reaches it, the running
     program receives `Drained`. A newer `Drain` replaces a pending one, and a marker reached while another
-    program runs is dropped. `testkit` answers it after the rest of its batch, where the console would.
-  - **`Skip`** reveals what is queued at once (next and previous scene).
+    program runs is dropped. A marker reached while the program has a `Think` pending is answered after its
+    `ThinkDone`, so the two arrive in the same order under `testkit` (which answers a marker after the rest
+    of its batch, where the console would), `--instant` and pacing.
+  - **`Skip`** reveals what is queued at once (next and previous scene), held output included.
   - **`Say.Open`** leaves the last line open, so the next `Say` continues it on the same row:
     `proto.Typed(prompt, text, rng)` uses it to type a user's line a few seeded keystrokes at a time after
-    its prompt, followed by the blank line the console leaves after an answer.
+    its prompt, followed by the blank line the console leaves after an answer. Any line added from outside
+    (the echo of a submitted line) or any page break closes it, including one the UI applies at once when a
+    game with its own screen launches.
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
   between them as it needs (checkers: type `b6-a5`, or move a cursor). While a `Prompt` is active, an empty
   Enter is delivered as `LineEvent{""}`; GTW ends its target list that way.
@@ -1083,8 +1092,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   the pinned session seed. It emits one step, then `Drain`, and the next step on `Drained`; a `Run` step waits
   for `GameOver`, then drains the program's last words.
 - **Host hooks.** Key capture, `Hold`, `Drain` and `Skip`, plus `Say.Open` for typed lines (§4.4). While the
-  climax runs on top of the director, keys do nothing but Ctrl+C (and PgUp/PgDn); in movie mode the resolver
-  marks every launched program `NoAbort`.
+  climax runs on top of the director, keys do nothing but Ctrl+C (and PgUp/PgDn), and any other key shows
+  `** THE GAME PLAYS TO THE END. CTRL+C QUITS. **` for three seconds; the menu and `--help` say so too. In
+  movie mode the resolver marks every launched program `NoAbort`.
 - **Controls**:
 
   | Key | Action |

@@ -399,7 +399,7 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 			}
 		}
 	}
-	if m.opts.Instant {
+	if m.opts.Instant && !m.frozen { // held output stays held, as behind the TOO SMALL card
 		for _, ev := range m.tw.Flush(&m.sb) {
 			m.onTypewriter(ev)
 		}

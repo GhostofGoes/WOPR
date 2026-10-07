@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 // hookRoot is a root program that uses the movie-mode hooks (docs/PLAN.md §7): it captures
 // keys; Space holds and releases output, d asks for a Drained event, s skips, g launches the
-// stub game, and Esc arrives as a key.
+// stub game, m asks for a line (which ends the capture), and Esc arrives as a key.
 type hookRoot struct{ held bool }
 
 const hookLine = "A LINE THAT TAKES A WHILE TO TYPE OUT."
@@ -37,6 +38,8 @@ func (h *hookRoot) Handle(ev proto.Event) []proto.Output {
 			return append(say("SKIPPED STRAIGHT TO THE END OF THIS LINE."), proto.Skip{})
 		case ev.Rune == 'g':
 			return []proto.Output{proto.Launch{Slug: "stub"}}
+		case ev.Rune == 'm':
+			return []proto.Output{proto.Prompt{Text: "MENU: "}}
 		}
 	case proto.Drained:
 		return say("DRAINED.")
@@ -118,6 +121,12 @@ func TestShieldedLaunch(t *testing.T) {
 	if d.m.runner.Depth() != 2 || d.m.ed.Value() != "" || strings.Contains(d.screen(), "PRESS ESC AGAIN") {
 		t.Fatalf("keys must do nothing while shielded:\n%s", d.screen())
 	}
+	if d.send(esc); !strings.Contains(d.screen(), "** THE GAME PLAYS TO THE END. CTRL+C QUITS. **") {
+		t.Fatalf("a dropped key says why:\n%s", d.screen())
+	}
+	if d.settle(); strings.Contains(d.screen(), "PLAYS TO THE END") {
+		t.Fatalf("the notice clears after the Esc window:\n%s", d.screen())
+	}
 	if d.send(ctrlC); d.ended != "interrupt" {
 		t.Error("Ctrl+C still quits")
 	}
@@ -140,8 +149,61 @@ func TestStubHooks(t *testing.T) {
 	if !strings.Contains(visible(d), "SKIPPED AT ONCE.") {
 		t.Errorf("skip: %q", visible(d))
 	}
-	d.press("HOLD").send(enter).steps(10)
-	if !d.m.frozen || strings.Contains(visible(d), "HELD.") {
-		t.Errorf("held before HELD. is revealed: frozen %v", d.m.frozen)
+}
+
+// Held output stays held: no key reveals it, not even once the holder has asked for a line
+// and keys reach the line editor, and neither does --instant.
+func TestHoldIsNotSkipped(t *testing.T) {
+	t.Parallel()
+	d := hookDriver(t).steps(5)
+	before := visible(d)
+	d.send(space).send(keyRune('m')).send(keyRune('x')).send(enter).steps(10)
+	if !d.m.frozen || visible(d) != before || d.m.runner.Captures() {
+		t.Fatalf("a key while held must not reveal (frozen %v): %q, was %q", d.m.frozen, visible(d), before)
+	}
+
+	opts := Options{Registry: gamestest.Registry(), Instant: true}
+	d = newDriverRoot(t, opts, 80, 24, &hookRoot{}).settle()
+	d.send(space).send(keyRune('d'))
+	if !d.m.frozen || strings.Contains(visible(d), "DRAINING.") {
+		t.Fatalf("--instant must not reveal held output: %q", visible(d))
+	}
+	d.send(space)
+	if d.m.frozen || !strings.HasSuffix(visible(d), "DRAINING.\nDRAINED.") {
+		t.Fatalf("released, the held output comes out and its marker is answered: %q", visible(d))
+	}
+}
+
+// thinker prints A, asks for Drained and starts a Think at once.
+type thinker struct{}
+
+func (thinker) Start(proto.Env) []proto.Output {
+	return []proto.Output{
+		proto.Say{Lines: []string{"A"}},
+		proto.Drain{},
+		proto.Think{Fn: func(context.Context) (any, error) { return nil, nil }},
+	}
+}
+
+func (thinker) Handle(ev proto.Event) []proto.Output {
+	switch ev.(type) {
+	case proto.Drained:
+		return []proto.Output{proto.Say{Lines: []string{"DRAINED"}}}
+	case proto.ThinkDone:
+		return []proto.Output{proto.Say{Lines: []string{"THOUGHT"}}}
+	}
+	return nil
+}
+
+func (thinker) View(*proto.Canvas) {}
+
+// Drained comes after ThinkDone in the UI, paced or instant, as it does under testkit.
+func TestDrainedAfterThinkDone(t *testing.T) {
+	t.Parallel()
+	for _, instant := range []bool{false, true} {
+		d := newDriverRoot(t, Options{Instant: instant}, 80, 24, thinker{}).settle()
+		if got := visible(d); got != "A\nTHOUGHT\nDRAINED" {
+			t.Errorf("instant %v: %q", instant, got)
+		}
 	}
 }

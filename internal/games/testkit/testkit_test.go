@@ -19,12 +19,14 @@ func TestTypedLinesJoin(t *testing.T) {
 	}
 }
 
-// drainer prints A, asks for Drained, prints B; Drained prints C. The console reveals A and B
-// before it reaches the marker, so C comes last.
+// drainer, a root that captures keys, prints A, asks for Drained, prints B; Drained prints C
+// and holds output. The console reveals A and B before it reaches the marker, so C comes last.
 type drainer struct{}
 
 func (drainer) Start(proto.Env) []proto.Output {
-	return []proto.Output{proto.Say{Lines: []string{"A"}}, proto.Drain{}, proto.Say{Lines: []string{"B"}}}
+	return []proto.Output{
+		proto.AwaitKeys{Capture: true}, proto.Say{Lines: []string{"A"}}, proto.Drain{}, proto.Say{Lines: []string{"B"}},
+	}
 }
 
 func (drainer) Handle(ev proto.Event) []proto.Output {

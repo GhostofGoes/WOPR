@@ -47,6 +47,33 @@ func TestTypewriterOpenLines(t *testing.T) {
 	}
 }
 
+// A page break made on the scrollback directly (the UI does so when the typewriter is idle and
+// a game with its own screen launches) closes an open line too: the next line starts its own
+// row on the new page instead of continuing the old page's last line.
+func TestOpenLineEndsAtADirectPageBreak(t *testing.T) {
+	t.Parallel()
+	var sb Scrollback
+	var tw Typewriter
+	tw.SayOpen([]string{"OPEN LINE "}, 0, proto.PaceInstant)
+	tw.Flush(&sb)
+	if tw.Busy() {
+		t.Fatal("the typewriter is idle")
+	}
+	sb.PageBreak()
+	tw.Say([]string{"STUB READY."}, 0, proto.PaceInstant)
+	tw.Flush(&sb)
+	var got []string
+	for _, l := range sb.Lines() {
+		got = append(got, l.Text)
+	}
+	if want := []string{"OPEN LINE ", "STUB READY."}; !equal(got, want) {
+		t.Fatalf("lines %q, want %q", got, want)
+	}
+	if rows := sb.Render(80, 3, 0); rows[0].Text != "STUB READY." {
+		t.Errorf("the new page starts with the new line: %+v", rows)
+	}
+}
+
 // A drain marker is reported once everything before it is out, and does not count as output
 // being revealed.
 func TestTypewriterDrain(t *testing.T) {
