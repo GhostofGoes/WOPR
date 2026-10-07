@@ -168,27 +168,19 @@ film's lines are still to be checked one by one against the film.
 
 ## Accessibility
 
-- **Colour is never the only signal.** With `NO_COLOR`, or on a monochrome terminal, every theme falls back to
-  bold, faint, underline and reverse, and what colour adds is in the characters too: outgoing tracks on the
-  big board are `+` and incoming `*`, the current DEFCON level is pointed at with `>`, every card shows its
-  suit letter, the card winning a trick is edged `.===.`, Gin Rummy names your melds by position, and chess
-  and checkers mark the last move with brackets.
-- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking (the cursor's and DEFCON 1's),
-  keeps the front panel's lights and the `PROCESSING` dots still, and plays the ending at a steady pace
-  instead of speeding up. It does not stop the animations: the typing, the big board's missile tracks and
-  the ending's self-play and scrolling scenarios still play. Add `--instant` to skip them. With or without
-  either, nothing flashes more than three times a second.
-- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out, draws each
-  strike on the big board at once, and skips the ending's self-play and scrolling scenarios. Without it,
-  any key shows the rest of what is being typed, and what you type is kept.
-- **Text.** Everything on screen is plain ASCII. Every prompt with words ends in a question or a colon, and
-  the cursor sits at the end of the line you are typing. WOPR's conversation, as in the film, has no prompt
-  text: what WOPR said last usually asks, but after a list (`HELP`, `LIST GAMES`) the list's last line comes
-  just before the empty prompt. WOPR's moves are written out in the console as well as drawn on the boards,
-  and in Hearts and Bridge the console says the cards already in the trick before you play
-  (`WEST LEADS 7H. NORTH PLAYS KH.`).
-- **Contrast.** In every theme's full colours, text meets WCAG AA contrast (4.5:1) against the background,
-  and the deliberately faint text 3:1. In 16-colour mode every style keeps at least 3:1 on xterm's palette.
+- **Meaning in characters, not just colour.** Outgoing missiles are `+` and incoming `*`, `>` marks the
+  current DEFCON level, every card shows its suit letter, an edged card (`.===.`) is winning the trick,
+  Gin Rummy names your melds, and chess and checkers bracket the last move. Set `NO_COLOR` to turn colour
+  off.
+- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking, holds the front-panel lights
+  still and keeps the ending at a steady pace. Nothing ever flashes more than three times a second.
+- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows text and board moves at once instead of typing them
+  out. Any key also finishes the line being typed.
+- **Plain text.** Everything on screen is plain ASCII. Prompts end with a question or a colon, the cursor
+  sits where you type, WOPR's moves are written out in words, and Hearts and Bridge say which cards are
+  already in the trick before you play.
+- **Contrast.** Text meets WCAG AA contrast (4.5:1) in every theme, dim text 3:1, and every style keeps at
+  least 3:1 in 16-colour terminals.
 
 The full-screen interface has not yet been tried with a screen reader. Reports are welcome.
 
