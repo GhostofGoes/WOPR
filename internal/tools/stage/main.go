@@ -6,7 +6,9 @@
 //	go run ./internal/tools/stage [-archives] [-assets dir] [-dist dist] [-out stage]
 //
 // With -archives it also checks that every release archive contains the files the
-// licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md.
+// licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md, and that
+// the Linux and macOS archives (tar.gz) carry the manual page, wopr.6, which the Windows
+// ones (zip) leave out.
 //
 // With -assets it also collects every file a release publishes into one flat directory:
 // the archives, the bare binaries under their release names, those four files and
@@ -47,8 +49,13 @@ type artifact struct {
 // release name. Its Path is the built binary's.
 func (a artifact) bare() bool { return a.Type == "Binary" && a.Extra.Format == "binary" }
 
-// requiredInArchives are the files every release archive must contain.
+// requiredInArchives are the files every release archive must contain. The release also
+// publishes each of them on its own.
 var requiredInArchives = []string{"LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt"}
+
+// manPage is the manual page (docs/man/wopr.6), at the root of every Linux and macOS
+// archive (tar.gz) and of no Windows one (zip): Windows has no man.
+const manPage = "wopr.6"
 
 func main() {
 	dist := flag.String("dist", "dist", "GoReleaser output directory")
@@ -288,8 +295,14 @@ func checkArchive(path string) error {
 	default:
 		return fmt.Errorf("unknown archive type")
 	}
+	required := requiredInArchives
+	if strings.HasSuffix(path, ".tar.gz") {
+		required = append(slices.Clone(required), manPage)
+	} else if slices.Contains(names, manPage) {
+		return fmt.Errorf("has %s, which only the Linux and macOS archives carry (has %v)", manPage, names)
+	}
 	var missing []string
-	for _, req := range requiredInArchives {
+	for _, req := range required {
 		if !slices.Contains(names, req) {
 			missing = append(missing, req)
 		}

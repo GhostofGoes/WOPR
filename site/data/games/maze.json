@@ -1,0 +1,33 @@
+{
+  "slug": "maze",
+  "number": 1,
+  "name": "Falken's Maze",
+  "launch": "wopr maze",
+  "aliases": ["1", "falkens-maze"],
+  "summary": "A maze hidden in fog: you see only the cells you have stood on and where their passages lead. Every six moves WOPR moves a wall you have not seen yet, to make your way out longer.",
+  "howToPlay": [
+    "Walk the @ from START at the top left to the [] EXIT at the bottom right. The maze is 19 cells wide and 5 cells high.",
+    "Each key press moves one cell. A wall stops you, and bumping into one does not count as a move.",
+    "Cells you have not seen show as a dim dot. Walls you have seen never change, and the exit can always be reached.",
+    "Every 6 moves WOPR moves a wall you have not seen, at most 12 times a game. The bottom of the frame counts your MOVES, YOUR TURNS at junctions (LEFT, STRAIGHT, RIGHT) and WALLS MOVED.",
+    "Press Q to give up. WOPR tells you how many moves away the exit was."
+  ],
+  "controls": [
+    {"input": "Arrow keys", "does": "move one cell up, down, left or right"},
+    {"input": "W A S D", "does": "move up, left, down or right (either case)"},
+    {"input": "h j k l", "does": "move left, down, up or right (lower case only)"},
+    {"input": "Q", "does": "give up; WOPR says how far away the exit was"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Keep one hand on the wall: always take the left-most way (or always the right-most). The maze never has loops, even after WOPR moves a wall, so following one wall always gets you out.",
+    "Walls only move where you have not looked. Every cell you have seen keeps its walls, so a dead end you have found stays a dead end, and only the fog needs searching.",
+    "WOPR moves at most 12 walls, one every 6 moves. After 72 moves the maze stops changing, so a slow, careful search still finds the exit.",
+    "WOPR closes passages where the way on is your favourite turn at a junction. Mix up your left and right turns."
+  ],
+  "screenshots": [
+    {"file": "maze-1.png", "caption": "The start: everything is fog except your first cell. The @ stands at START and the [] marks the EXIT at the bottom right."},
+    {"file": "maze-2.png", "caption": "Move 50: WOPR has moved 8 walls and says YOU FAVOUR RIGHT TURNS, PROFESSOR. SO NOTED."},
+    {"file": "maze-3.png", "caption": "Out: ESCAPED, drawn in the maze's own walls, then YOU FOUND THE EXIT IN 52 MOVES. WOPR MOVED 8 WALLS."}
+  ]
+}

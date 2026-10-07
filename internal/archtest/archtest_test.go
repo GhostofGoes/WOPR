@@ -80,6 +80,8 @@ var rules = []rule{
 	{"internal/golden", nil},
 	{"internal/archtest", nil},
 	{"internal/e2e", []string{"github.com/charmbracelet/x/xpty", "github.com/charmbracelet/x/vt", "github.com/charmbracelet/x/term"}},
+	// The manual page is generated from the flag table, the catalog and the scenes themselves.
+	{"internal/tools/manpage", []string{"internal/cli", "internal/games", "internal/games/catalog", "internal/movie", "internal/theme"}},
 	{"internal/tools/...", nil},
 	{"internal/llm", []string{"internal/proto", "internal/wopr"}},
 }

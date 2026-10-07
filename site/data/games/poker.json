@@ -1,0 +1,38 @@
+{
+  "slug": "poker",
+  "number": 8,
+  "name": "Poker",
+  "launch": "wopr poker",
+  "aliases": ["8"],
+  "summary": "Heads-up five-card draw against WOPR, with 100 chips each and fixed bets. WOPR judges its own hand, bluffs now and then, and sometimes stands pat on nothing.",
+  "howToPlay": [
+    "Each hand costs an ante of 1 chip. The deal changes hands each time, WOPR dealing first, and the player who is not dealing acts first.",
+    "Bets are 5 before the draw and 10 after it, with at most a bet and three raises a round. Answer CHECK OR BET? or CALL n, RAISE OR FOLD?.",
+    "At DISCARD (1-5, OR NONE): throw away up to three cards by position (1 3 5 or 135) or by name (7H KD). NONE, or an empty line, keeps all five.",
+    "A second round of betting follows the draw, then the showdown: the better hand takes the pot, and equal hands split it.",
+    "At ANOTHER HAND? press Enter to deal, or type LEAVE to cash out. The game ends when either side cannot pay the ante."
+  ],
+  "controls": [
+    {"input": "C or CALL", "does": "call the bet, or check when there is nothing to call"},
+    {"input": "X, K or CHECK", "does": "check"},
+    {"input": "B or BET, R or RAISE", "does": "bet or raise the fixed amount"},
+    {"input": "F or FOLD", "does": "give up the hand"},
+    {"input": "1 3 5", "does": "at the draw, throw away the cards at those positions (up to three)"},
+    {"input": "7H KD", "does": "at the draw, throw away those cards"},
+    {"input": "NONE", "does": "at the draw, keep all five (stand pat)"},
+    {"input": "Enter", "does": "at ANOTHER HAND?, deal the next hand"},
+    {"input": "LEAVE", "does": "at ANOTHER HAND?, cash out and end the game"},
+    {"input": "Esc, Esc", "does": "leave the table and go back to WOPR"}
+  ],
+  "tips": [
+    "Bet before the draw when you have a good hand. WOPR folds most hands weaker than a pair of sevens to a bet, unless it is bluffing or holds four cards of one suit.",
+    "Draw the way the odds say: keep a pair and draw three; draw one to four cards of a flush or of a straight open at both ends; otherwise keep your two highest cards.",
+    "WOPR plays its hand as weaker after the draw when you drew no cards, so standing pat can make it fold. But it always calls a bet that is a quarter of the pot or less, so a bluff only works in a small pot.",
+    "WOPR bluffs about one hand in eight, and a bluffing WOPR sometimes stands pat on nothing. A raise from a WOPR that stood pat is not always a strong hand."
+  ],
+  "screenshots": [
+    {"file": "poker-1.png", "caption": "The opening deal: a pair of aces, with the positions 1 to 5 under the cards for the draw."},
+    {"file": "poker-2.png", "caption": "After discarding 1 2 3, the draw makes four aces, and WOPR stands pat."},
+    {"file": "poker-3.png", "caption": "The showdown: WOPR's jack-high flush against four aces, and you win the pot of 102."}
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "slug": "guerrilla",
+  "number": 10,
+  "name": "Guerrilla Engagement",
+  "launch": "wopr guerrilla",
+  "aliases": ["10", "guerrilla-engagement"],
+  "summary": "A twelve-turn insurgency on a strip of six regions. Your guerrilla cells start hidden in the hills, WOPR's patrols hunt them, and its garrisons hold the towns.",
+  "howToPlay": [
+    "You win when SUPPORT reaches 10, when your cells hold the CAPITAL (region 6), or when any cell is still alive after turn 12. You lose when your last cell is gone.",
+    "Each turn WOPR asks for one order per cell (GUE1~ IN BORDER CAMPS:). Then all orders take effect together: every move first, then every attack, then HIDE and RECRUIT, then an event card and the new map.",
+    "Orders are MOVE, ATTACK, HOLD, HIDE and RECRUIT. Name a region by its number on the map or its name (ATTACK 2, MOVE HIGHLANDS). HELP lists the orders, STATUS shows the map, and END holds every cell not yet ordered.",
+    "A ~ after a cell (GUE2~) means it is hidden: it cannot be attacked, and its ambush strikes twice as hard. Attacking gives it away, and a patrol nearby may find it.",
+    "Every step WOPR loses raises SUPPORT by one, and every step you lose lowers it. RECRUIT spends 3 SUPPORT on a new hidden cell where WOPR does not hold the ground.",
+    "Combat results: NE no effect, AE the attacker loses a step, EX both do, DR the defender falls back (or loses a step), DE the defender loses a step. A * marks a unit that has lost one of its two steps."
+  ],
+  "controls": [
+    {"input": "MOVE 3 or MOVE HIGHLANDS", "does": "move up to two regions, not through a visible enemy"},
+    {"input": "ATTACK 2", "does": "attack a visible enemy in this region or the next"},
+    {"input": "HIDE", "does": "go to ground: no move and no attack this turn"},
+    {"input": "RECRUIT", "does": "spend 3 SUPPORT on a new hidden cell here"},
+    {"input": "HOLD (or an empty line)", "does": "stay put"},
+    {"input": "END (or DONE)", "does": "hold every cell not yet ordered and play the turn"},
+    {"input": "STATUS (or MAP)", "does": "show the map again"},
+    {"input": "HELP", "does": "list the orders and the combat results"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Surviving is a win. If the odds are bad, keep your cells hidden and spread out, and wait for turn 12.",
+    "Ambush from hiding: a hidden cell attacks at 6 against a patrol's defence of 3. Ambush in the open RIVER VALLEY when you can; in the hills and the jungle the ground shifts the odds one column toward the patrol.",
+    "A cell that attacks loses its ~. HIDE it the next turn, and keep hidden cells out of a patrol's region where you can: a patrol finds a hidden cell in its own region half the time, and next door one time in six.",
+    "Your attacks come before WOPR's each turn, so a patrol your ambush destroys never makes its own attack."
+  ],
+  "screenshots": [
+    {"file": "guerrilla-1.png", "caption": "HELP lists the orders and the combat results above the map, where ~ marks your three hidden cells in the border camps and the jungle."},
+    {"file": "guerrilla-2.png", "caption": "Turn 2: RECRUIT has formed GUE4 at the border camps, and WOPR's patrols have moved into the jungle and found GUE2, which has lost its ~."},
+    {"file": "guerrilla-3.png", "caption": "Three ambushes from hiding destroy both patrols, and SUPPORT rises from 0 to 2. The cells that attacked have lost their ~."}
+  ]
+}

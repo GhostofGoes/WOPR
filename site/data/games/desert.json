@@ -1,0 +1,36 @@
+{
+  "slug": "desert",
+  "number": 11,
+  "name": "Desert Warfare",
+  "launch": "wopr desert",
+  "aliases": ["11", "desert-warfare"],
+  "summary": "Armour against armour along a coast road of seven regions, from your depot at Alexandria to WOPR's at Benghazi, over ten turns. Units cut off from their depot attack at half strength.",
+  "howToPlay": [
+    "Take BENGHAZI (region 7) to win; you lose if WOPR takes ALEXANDRIA (region 1). After ten turns, whoever holds more of the road wins, and an even split is a draw.",
+    "Each turn WOPR asks for one order per unit (ARM1 IN EL ALAMEIN:). Then both sides' orders take effect together: every move first, then every attack, then an event card and the new map.",
+    "Orders are MOVE, ATTACK and HOLD. Name a region by its number (MOVE 4), its name, or the start of a word in it (MOVE SOLLUM, MOVE MERSA). HELP lists the orders, STATUS shows the map, and END holds every unit not yet ordered.",
+    "Your units: ARM armour (attack 6, defence 4, moves 2), INF infantry (attack 3, defence 5, moves 1) and ART artillery (attack 5, defence 2, moves 1, attacks up to two regions away). A unit has two steps; a * marks one that has lost a step and fights at half.",
+    "A unit is cut off when WOPR holds any region between it and Alexandria, and then it attacks at half. The map's heading counts them: SUPPLY: 0 OF YOUR UNITS CUT OFF.",
+    "An attack hits the strongest enemy unit in the region. ROUGH ground shifts the odds one column toward the defender, and a CITY two."
+  ],
+  "controls": [
+    {"input": "MOVE 4 or MOVE SIDI", "does": "move as far as the unit can, not through a region with an enemy"},
+    {"input": "ATTACK 5", "does": "attack the enemy there: next door for armour and infantry, up to two regions away for artillery"},
+    {"input": "HOLD (or an empty line)", "does": "stay put"},
+    {"input": "END (or DONE)", "does": "hold every unit not yet ordered and play the turn"},
+    {"input": "STATUS (or MAP)", "does": "show the map again"},
+    {"input": "HELP", "does": "list the orders and the combat results"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Keep infantry with your armour. WOPR attacks only at 2 to 1 or better (its artillery at any odds), and an attack always hits the strongest unit in a region, so infantry on the rough ground at EL ALAMEIN is very hard to attack.",
+    "Attack in the open. MERSA MATRUH and SIDI BARRANI are open ground, but SOLLUM is rough and TOBRUK and BENGHAZI are cities, which shift the odds one or two columns toward the defender.",
+    "Watch your supply. A region stays WOPR's until one of your units takes it, and every unit beyond it attacks at half, so do not run ahead of a region WOPR still holds.",
+    "Every move happens before any attack, so attack a region WOPR's units will still be in. If they leave it, the order fails with NO ENEMY THERE IN RANGE."
+  ],
+  "screenshots": [
+    {"file": "desert-1.png", "caption": "The opening: the tank on the coast road, the rules, and the map from ALEXANDRIA (1) to BENGHAZI (7), with your armour and infantry at EL ALAMEIN and WOPR's at TOBRUK."},
+    {"file": "desert-2.png", "caption": "Turn 2: your armour has reached MERSA MATRUH, a minefield has cost WOPR's ARM2 a step (ARM2*), and WOPR's armour waits at SIDI BARRANI."},
+    {"file": "desert-3.png", "caption": "Three attacks on SIDI BARRANI destroy WOPR's INF1. The sandstorm that follows blows sand across the top of the map."}
+  ]
+}

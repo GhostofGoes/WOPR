@@ -138,6 +138,9 @@ jobs:
       - name: Third-party notices are current
         if: runner.os == 'Linux'
         run: go run ./internal/tools/notices -check
+      - name: Manual page is current
+        if: runner.os == 'Linux'
+        run: go run ./internal/tools/manpage -check
 
   build:
     name: build

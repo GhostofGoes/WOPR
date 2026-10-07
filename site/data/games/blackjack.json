@@ -1,0 +1,37 @@
+{
+  "slug": "blackjack",
+  "number": 2,
+  "name": "Black Jack",
+  "launch": "wopr blackjack",
+  "aliases": ["2", "black-jack"],
+  "summary": "Black Jack from one deck against WOPR's dealer. You sit down with $100 and bet $1 to $25 a hand.",
+  "howToPlay": [
+    "Get closer to 21 than the dealer without going over. Number cards count their number, faces count 10, and an ace counts 1 or 11. An ace and a ten-count card as your first two cards is a black jack, which pays 3 to 2.",
+    "At YOUR BET: type a whole number of dollars from 1 to 25. Press Enter on an empty line to bet the same as last time.",
+    "Then type H to hit (take a card) or S to stand. The prompt also offers D to double down and P to split when your hand and your money allow them.",
+    "Doubling down doubles your bet and gives you exactly one more card. Splitting turns a pair of the same rank into two hands, once a round; split aces get one card each.",
+    "The dealer checks for black jack when it shows an ace or a ten-count card, draws to 17, and stands on soft 17.",
+    "Type LEAVE at YOUR BET: to cash out. The game also ends when you have less than $1."
+  ],
+  "controls": [
+    {"input": "10", "does": "at YOUR BET:, bet $10 (whole dollars, 1 to 25)"},
+    {"input": "Enter", "does": "at YOUR BET:, bet the same as last time"},
+    {"input": "H or HIT", "does": "take another card"},
+    {"input": "S or STAND", "does": "keep your hand as it is"},
+    {"input": "D or DOUBLE", "does": "double your bet and take one last card (first two cards only)"},
+    {"input": "P or SPLIT", "does": "split a pair into two hands (once a round)"},
+    {"input": "LEAVE", "does": "at YOUR BET:, cash out and end the game"},
+    {"input": "Esc, Esc", "does": "leave the table and go back to WOPR"}
+  ],
+  "tips": [
+    "Stand on 13 to 16 when the dealer shows a 2 to 6, and hit them when it shows 7 or higher. The dealer must draw to 17, so a low card showing often means it busts.",
+    "Double down on 11, and on 10 unless the dealer shows a ten-count card or an ace.",
+    "Always split aces and eights. Never split tens or fives.",
+    "The deck is not shuffled every hand: WOPR deals from one deck until fewer than 15 cards are left, then says WOPR SHUFFLES THE DECK. When many tens and aces are still to come, bet more."
+  ],
+  "screenshots": [
+    {"file": "blackjack-1.png", "caption": "The first hand is a black jack: an ace and a king win $15 on a $10 bet."},
+    {"file": "blackjack-2.png", "caption": "A pair of eights split into two hands against the dealer's 6. WOPR asks about HAND 1 first."},
+    {"file": "blackjack-3.png", "caption": "The dealer draws the QC and busts. The doubled first hand wins $50 and the second $25, for $200."}
+  ]
+}
