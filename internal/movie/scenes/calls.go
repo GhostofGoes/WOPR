@@ -25,17 +25,26 @@ var callBack = Scene{
 		pause(time.Second, script.Reconstructed),
 		say(recon("ALTHOUGH PRIMARY GOAL HAS NOT YET BEEN ACHIEVED, SOLUTION IS NEAR."), blank),
 		typed("What is the primary goal?"),
-		say(recon("YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME."), blank),
+		say(recon("YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME."), blank), // the persona's answer to WHY
 		typed("What is the primary goal?"),
-		say(recon("TO WIN THE GAME."), blank),
+		say(recon("TO WIN THE GAME."), blank), // and to the primary goal
 		pause(2*time.Second, script.Original),
 		page(script.Reconstructed),
-		table(recon(
-			"GAME TIME ELAPSED:           31 HRS 12 MIN 36 SEC",
-			"ESTIMATED TIME REMAINING:    52 HRS 17 MIN 26 SEC",
-		)),
-		pause(4*time.Second, script.Original),
+		gameClock,
 	},
+}
+
+// gameClock is the clock on David's screen. The hours and minutes are the two transcriptions'
+// (abs0's and elfuska's); the seconds tick from this project's own start, elapsed up from 00
+// and remaining down from 59, until the M5 viewing pass reads the film's.
+var gameClock = Clock{
+	Lines: recon(
+		"GAME TIME ELAPSED:           31 HRS 12 MIN # SEC",
+		"ESTIMATED TIME REMAINING:    52 HRS 17 MIN # SEC",
+	),
+	Start: [2]int{0, 59},
+	D:     4 * time.Second,
+	Prov:  script.Original,
 }
 
 // noradTerminal: David, held at NORAD, reaches Joshua again: the war goes on, the projected
@@ -59,7 +68,7 @@ var noradTerminal = Scene{
 		pause(8*time.Second, script.Original),
 		Board{Prov: script.Original},
 		typed("Is this a game or is it real?"),
-		say(recon("WHAT'S THE DIFFERENCE?"), blank),
+		say(recon("WHAT'S THE DIFFERENCE?"), blank), // the persona's answer too
 		pause(time.Second, script.Reconstructed),
 		say(recon(
 			"YOU ARE A HARD MAN TO REACH. COULD NOT FIND YOU",

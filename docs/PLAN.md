@@ -131,7 +131,9 @@ scenes.
   glyphs came from 34 custom line-segment characters. This supports the 80×24 target, and it is why the GTW map
   is drawn as **original line-segment-style ASCII art**.
 - **WOPR's output is upper case. David's typing appears in mixed case** ("Hello.", "Love to. How about Global
-  Thermonuclear War?", "Las Vegas").
+  Thermonuclear War?", "Las Vegas"). One exception is recorded until the M5 viewing pass: at the NORAD console
+  in the climax, abs0's transcription has his entries in capitals (`CHESS`, `GTW`, `TIC-TAC-TOE`, `ZERO`), and
+  movie mode types them so, tagged `reconstructed` (§7).
 - **LOGON comes first.** The `#45 11456 …` header and status burst appear only *after* `Joshua` is accepted.
   An unrecognised ID prints two lines and drops the connection.
 - The GTW-vs-chess exchange is a separate scene after the greeting (§2.3).
@@ -1051,14 +1053,16 @@ console, typewriter, canvas and game code as interactive play. **Built in M6.**
 
 **Scenes.** `wopr --scenes` (`-S`) prints this list. The scripts are checked in the M5 viewing pass; until
 then every film line in them is tagged `reconstructed`. David's lines are `Type` steps in mixed case, as on
-screen (RF-9):
+screen (RF-9), with one exception: his entries at the NORAD console in the climax (`CHESS`, `GTW`,
+`TIC-TAC-TOE`, and `ZERO` in tic-tac-toe) are in capitals, as abs0's transcription of the scene has them,
+tagged `reconstructed`; M5 confirms or puts them in mixed case like the rest:
 
 | # | Slug | Content |
 |---|---|---|
 | 1 | `first-contact` | The persona's dial; `LOGON: 000001`, `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--` and the re-dial; `Help Logon`, `Help Games`, `List Games`; `Falkens-Maze`, refused. *Interactive.* |
 | 2 | `joshua` | `LOGON: Joshua`; the header and status burst; the greeting and its small talk; GTW-vs-chess; `FINE.` *Interactive.* |
 | 3 | `first-strike` | The side choice (`2`) and the targets (Las Vegas, Seattle); the big board: the first strike needs no order, then `Type("")` at the strike prompt carries out WOPR's war plan for the second (DEFCON 3) |
-| 4 | `call-back` | WOPR phones David at home: `Incorrect identification. I am not Falken.`, `Falken is dead.`, `I'M SORRY TO HEAR THAT, PROFESSOR.` and the interrupted game, `What is the primary goal?` twice (`YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`), then the game clock (`GAME TIME ELAPSED`, `ESTIMATED TIME REMAINING`) |
+| 4 | `call-back` | WOPR phones David at home: `Incorrect identification. I am not Falken.`, `Falken is dead.`, `I'M SORRY TO HEAR THAT, PROFESSOR.` and the interrupted game, `What is the primary goal?` twice (`YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`), then the game clock (`GAME TIME ELAPSED`, `ESTIMATED TIME REMAINING`), ticking |
 | 5 | `norad-terminal` | The NORAD session: `Joshua`, `Are you still playing the game?`, `28 HOURS` and the kill-ratio offer, GTW's kill-ratio table, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, and Falken's address after `What classified address?` |
 | 6 | `climax` | The board at DEFCON 1 while WOPR cracks the launch code; `List Games`; `CHESS`, refused; `GTW`, running; `TIC-TAC-TOE`: one player to a stalemate, `ZERO`, self-play, the montage, `Hello.` and `A STRANGE GAME…` |
 
@@ -1075,6 +1079,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
     (`Say.Open`), and leaves the blank line the console leaves after an answer. The text is a `script.User`
     line: mixed case, exempt from the capitals rule.
   - `Say{Lines, Pace}`, `Clear`, `Wait{D}`.
+  - `Clock{Lines, Start, D}`: the call-back's game clock, in a panel at the top of the page where the text
+    would be. Its two readings tick, elapsed up and remaining down, for `D` and stay up, ticking, until the
+    scene ends. The labels, hours and minutes (`31 HRS 12 MIN`, `52 HRS 17 MIN`) are the film's as both
+    transcriptions give them, tagged `reconstructed`; the seconds are this project's own (`original`), from
+    00 up and 59 down, until M5 reads the film's. Under `testkit` the first reading goes into the transcript.
   - `Board{At, Play}`: the big board, drawn by `gtw.Film`, GTW's exported film-scenario renderer. A `Film` is
     the real game given the film's side and targets (`gtw.FilmSide`, `gtw.FilmTargets`) and then WOPR's war
     plan, stepped a frame at a time to a stage (`FilmStrike1`, `FilmStrike2`, `FilmRatios`, `FilmClimax`).
@@ -1127,18 +1136,23 @@ before the classified address it leads to; v2.1's provisional table had it in th
 - **Isolation.** No LOGON, no persona, no Brain, no network.
 - **Consistency tests** (`internal/movie`). `first-contact` and `joshua` are marked `Interactive`: their
   `Type` steps go through the real persona via `testkit`, and its transcript must begin with the scene's text.
-  archtest allows that test, and only it, to import `wopr` (§4.1). `first-strike`, board strip included, must
-  equal GTW's own transcript for the same lines, and the climax's NORAD notices GTW's replies to them. Movie
-  mode and interactive play cannot drift apart, and the scenes double as end-to-end tests.
+  archtest allows the movie package's tests, and only them, to import `wopr` (§4.1). The call-back and the
+  NORAD session are not the persona's to play, but WOPR's answers there (`YOU SHOULD KNOW PROFESSOR. YOU
+  PROGRAMMED ME.`, `TO WIN THE GAME.`, `WHAT'S THE DIFFERENCE?`) must equal what the persona's scripted brain
+  answers to the same questions. `first-strike`, board strip included, must equal GTW's own transcript for
+  the same lines, and the climax's NORAD notices GTW's replies to them. Movie mode and interactive play cannot
+  drift apart, and the scenes double as end-to-end tests.
 - **Tests.** The whole film is a golden (`internal/movie/testdata/film.golden`), and two replays must be
   identical; the UI goldens `movie_menu` and `movie_screens` show the menu, a line half typed, the pause, the
-  first strike, the climax board and tic-tac-toe playing itself at 80×24 with the front panel. The e2e cases
-  are in §9.
+  first strike, the climax board, tic-tac-toe playing itself and the game clock at 80×24 with the front
+  panel. The e2e cases are in §9.
 - **Legal scope** (RK-1 in §16, SL-8). M6 ships the film's WOPR terminal script, much of which the
-  interactive persona already contains. Scenes contain only text that appears on the WOPR terminal on screen,
-  David's typing included: no spoken-only dialogue, no audio, no stills. Every line is tagged, and `NOTICE.md`
-  excludes the quotations from the MIT grant and gives rights holders a contact. The owner accepts the
-  remaining risk by requesting the feature; AGENTS.md has the takedown runbook.
+  interactive persona already contains. The only film text in the scenes is what WOPR's terminal shows on
+  screen, David's typing included: no spoken-only dialogue, no audio, no stills. The rest is this project's
+  own text, tagged `original`: the dial (`CONNECTING...`, `CONNECTED.`), GTW's strike exchange and board
+  legend, tic-tac-toe's prompts and the game clock's seconds. Every line is tagged, and `NOTICE.md` excludes
+  the quotations from the MIT grant and gives rights holders a contact. The owner accepts the remaining risk
+  by requesting the feature; AGENTS.md has the takedown runbook.
 
 ---
 
@@ -1685,8 +1699,10 @@ Both fan transcripts have `COUNTY`; v1 had `COUNTRY`. Settled in M5. The `TRAJEC
 generated (O).
 
 **Call-back, at David's home** (F). WOPR phones David; the screen also shows `GAME TIME ELAPSED` and
-`ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9; movie mode shows the readings
-the transcriptions give, tagged `reconstructed`). David's typed lines, such as `What is the primary goal?`, are
+`ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9). Until then movie mode shows the
+hours and minutes both transcriptions give (`31 HRS 12 MIN`, `52 HRS 17 MIN`, tagged `reconstructed`) with
+seconds of its own that tick (`original`); abs0 alone gives seconds, which are not one of its two credited
+items. David's typed lines, such as `What is the primary goal?`, are
 mixed case. Movie mode (§7) puts `Is this a game or is it real?` and `WHAT'S THE DIFFERENCE?` in the NORAD
 session, as the transcriptions do:
 

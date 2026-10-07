@@ -101,6 +101,7 @@ type Game struct {
 	rejected int        // climax inputs refused, for the hint
 	other    int        // refusals of input that names no game, for the notice rotation
 	listing  bool       // LIST GAMES moved the climax to the console
+	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
 }
 
 // New returns a game.

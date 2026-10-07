@@ -1,6 +1,7 @@
 package movie
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -29,7 +30,7 @@ func sceneText(t *testing.T, s scenes.Scene) string {
 		case scenes.Clear:
 			lines = append(lines, "[CLEAR]")
 		case scenes.Wait:
-		case scenes.Board, scenes.Run:
+		case scenes.Board, scenes.Clock, scenes.Run:
 			t.Fatalf("%s: not a console scene", s.Slug)
 		}
 	}
@@ -70,6 +71,58 @@ func TestInteractiveScenesMatchThePersona(t *testing.T) {
 	if n < 2 {
 		t.Errorf("%d interactive scenes; first-contact and joshua are the persona's", n)
 	}
+}
+
+// The call-back and the NORAD session are not the persona's to play, but WOPR's answers there
+// are the persona's own lines: its scripted brain gives them for the same questions. Each must
+// be what the scene shows after David's question, so that correcting one in internal/wopr (the
+// authoritative file) cannot leave movie mode behind.
+func TestScenesShareThePersonasAnswers(t *testing.T) {
+	t.Parallel()
+	brain := wopr.NewScripted()
+	for _, c := range []struct {
+		scene, after string // the scene, and David's line its answer follows
+		nth          int    // which time he types it (1-based)
+		ask          string // what the persona answers with the same line
+	}{
+		{"call-back", "What is the primary goal?", 1, "Why?"}, // the film's first answer is the persona's to WHY
+		{"call-back", "What is the primary goal?", 2, "What is the primary goal?"},
+		{"norad-terminal", "Is this a game or is it real?", 1, "Is this a game or is it real?"},
+	} {
+		reply, err := brain.Reply(context.Background(), wopr.Snapshot{}, c.ask)
+		if err != nil || len(reply.Lines) == 0 {
+			t.Fatalf("%q: no reply (%v)", c.ask, err)
+		}
+		shown := answerAfter(t, scene(t, c.scene), c.after, c.nth)
+		if got, want := strings.Join(shown, "\n"), strings.Join(reply.Lines, "\n"); got != want {
+			t.Errorf("%s, after %q: the scene shows %q, the persona answers %q", c.scene, c.after, got, want)
+		}
+	}
+}
+
+// answerAfter is WOPR's first Say after the nth time the scene types line, without its blank.
+func answerAfter(t *testing.T, s scenes.Scene, line string, nth int) []string {
+	t.Helper()
+	seen := 0
+	for i, st := range s.Steps {
+		if ty, ok := st.(scenes.Type); !ok || ty.Text.Text != line {
+			continue
+		}
+		if seen++; seen < nth {
+			continue
+		}
+		for _, next := range s.Steps[i+1:] {
+			if say, ok := next.(scenes.Say); ok {
+				lines := say.Lines.Texts()
+				for len(lines) > 0 && lines[len(lines)-1] == "" {
+					lines = lines[:len(lines)-1]
+				}
+				return lines
+			}
+		}
+	}
+	t.Fatalf("%s: no answer after %q (%d)", s.Slug, line, nth)
+	return nil
 }
 
 // scene returns a scene by slug.

@@ -70,7 +70,8 @@ func TestMovieInstantPlaysThrough(t *testing.T) {
 }
 
 // Paced playback, as a viewer sees it: a target being typed, a pause, the first strike on the
-// board, Esc to the menu, the climax at DEFCON 1 and its tic-tac-toe, which no key interrupts.
+// board, Esc to the menu, the climax at DEFCON 1 and its tic-tac-toe, which no key interrupts,
+// and the call-back's game clock.
 func TestMovieScreens(t *testing.T) {
 	t.Parallel()
 	var s snapshots
@@ -112,6 +113,15 @@ func TestMovieScreens(t *testing.T) {
 	}
 	if !strings.Contains(strings.Join(transcript(d), "\n"), "HOW ABOUT A NICE GAME OF CHESS?") {
 		t.Error("the climax played to the end")
+	}
+
+	// The call-back's game clock: a panel where the text would be, its seconds ticking.
+	d = newDriver(t, movieMode("call-back"), 80, 24)
+	d.until("the game clock", shows("GAME TIME ELAPSED"))
+	s.add("call-back: the game clock", d)
+	d.until("a second later", shows("31 HRS 12 MIN 01 SEC"))
+	if !strings.Contains(d.screen(), "52 HRS 17 MIN 58 SEC") {
+		t.Errorf("the time remaining counts down:\n%s", d.screen())
 	}
 	golden.AssertString(t, "movie_screens", s.String())
 }

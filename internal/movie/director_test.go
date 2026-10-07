@@ -296,6 +296,55 @@ func TestInstantKeepsThePauses(t *testing.T) {
 	}
 }
 
+// The game clock ticks in a panel at the top of the page for its D, then the scene goes on
+// with the clock still up and ticking; testkit, with no clock, prints its first reading.
+func TestGameClock(t *testing.T) {
+	t.Parallel()
+	clock := scenes.Clock{
+		Lines: script.Recon("ELAPSED 1 MIN # SEC", "REMAINING 2 MIN # SEC"), Start: [2]int{0, 59},
+		D: 2 * time.Second, Prov: script.Original,
+	}
+	scene := []scenes.Scene{{Slug: "clock", Steps: []scenes.Step{
+		clock, scenes.Say{Lines: script.Orig("AFTER."), Pace: proto.PaceSpeech},
+	}}, twoScenes[1]}
+	if s := play(t, Options{Scene: "clock", Single: true, Scenes: scene}); s.Transcript() != "[CLEAR]\nELAPSED 1 MIN 00 SEC\nREMAINING 2 MIN 59 SEC\nAFTER.\n" {
+		t.Errorf("transcript:\n%s", s.Transcript())
+	}
+
+	d := New(Options{Scene: "clock", Scenes: scene})
+	outs := d.Start(proto.Env{Width: 80, Height: 2})
+	if !hasOut[proto.SetLayout](outs) || hasOut[proto.Say](outs) || d.phase != waiting {
+		t.Fatalf("the clock goes up in a panel: %#v", outs)
+	}
+	view := func() string {
+		c := proto.NewCanvas(80, 2)
+		d.View(c)
+		return c.String()
+	}
+	if v := view(); !strings.Contains(v, "ELAPSED 1 MIN 00 SEC") || !strings.Contains(v, "REMAINING 2 MIN 59 SEC") {
+		t.Fatalf("the first reading:\n%s", v)
+	}
+	for range 10 {
+		outs = d.Handle(proto.TickEvent{Dt: tickEvery})
+	}
+	if v := view(); !strings.Contains(v, "ELAPSED 1 MIN 01 SEC") || !strings.Contains(v, "REMAINING 2 MIN 58 SEC") || !hasOut[proto.Redraw](outs) {
+		t.Fatalf("a second later:\n%s", v)
+	}
+	for range 10 {
+		outs = d.Handle(proto.TickEvent{Dt: tickEvery})
+	}
+	if !hasOut[proto.Say](outs) || d.phase != playing {
+		t.Fatalf("after D the scene goes on: %#v", outs)
+	}
+	if a, ok := outs[1].(proto.Animate); !ok || a.Every == 0 {
+		t.Errorf("the clock keeps ticking while it is up: %#v", outs)
+	}
+	outs = d.Handle(proto.Drained{})
+	if v := view(); strings.Contains(v, "ELAPSED") || d.clock != nil || !hasOut[proto.SetLayout](outs) {
+		t.Errorf("the next scene puts the clock away:\n%s", v)
+	}
+}
+
 // The director's text is tagged and fits 80 columns.
 func TestDirectorText(t *testing.T) {
 	t.Parallel()

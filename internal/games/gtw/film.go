@@ -46,7 +46,10 @@ type Film struct {
 // first strike leaving. reduceMotion stops the DEFCON 1 blink, as --reduce-motion does.
 func NewFilm(seed uint64, reduceMotion bool) *Film {
 	g := New().(*Game)
-	g.Start(proto.Env{Seed: seed, Width: 80, Height: 19, ReduceMotion: reduceMotion}) // paced: Film steps frames itself
+	g.film = true // the legend, not the orders hint: nobody gives orders
+
+	// Paced: Film steps the frames itself.
+	g.Start(proto.Env{Seed: seed, Width: 80, Height: 19, ReduceMotion: reduceMotion})
 	g.Handle(proto.LineEvent{Text: FilmSide})
 	for _, t := range FilmTargets {
 		g.Handle(proto.LineEvent{Text: t})

@@ -24,11 +24,11 @@ var firstStrike = Scene{
 		say(recon("AWAITING FIRST STRIKE COMMAND", "", "PLEASE LIST PRIMARY TARGETS BY", "CITY AND/OR COUNTY NAME:")),
 		typed("Las Vegas"),
 		typed("Seattle"),
-		typed(""),
+		typedAs(script.Original, nil, ""), // the Enter that ends GTW's own target list
 		page(script.Reconstructed),
 		Board{At: gtw.FilmStrike1, Play: true, Prov: script.Reconstructed},
 		pause(1500*time.Millisecond, script.Original),
-		typedAt(orig("STRIKE 2 OF 3 [50 50 100]: "), ""), // GTW's own prompt
+		typedAs(script.Original, orig("STRIKE 2 OF 3 [50 50 100]: "), ""), // Enter at GTW's own prompt
 		Board{At: gtw.FilmStrike2, Play: true, Prov: script.Original},
 		pause(4*time.Second, script.Original),
 	},
@@ -38,7 +38,8 @@ var firstStrike = Scene{
 // will not switch to, the war it is running, then tic-tac-toe: one player and a stalemate,
 // then zero players, self-play, the montage, and the film's last words. The NORAD notices are
 // GTW's own replies to the same lines (the consistency test); tic-tac-toe and the ending are
-// the real programs, in movie mode.
+// the real programs, in movie mode. The game names David enters are in capitals, as abs0's
+// transcription of the scene has them (tic-tac-toe's ZERO too); the M5 viewing pass confirms.
 var climax = Scene{
 	Slug:  "climax",
 	Title: "CLIMAX",

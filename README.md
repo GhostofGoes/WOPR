@@ -9,9 +9,9 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
-> **Status: under construction.** Every game on the list is playable as of v0.1.0. Movie mode
-> (`--movie`) and a pass over the film's text against the film are still to come. See
-> [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
+> **Status: under construction.** Every game on the list is playable as of v0.1.0, and movie mode
+> (`--movie`) replays the film's terminal scenes. A pass over the film's text against the film is still to
+> come. See [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
 
 ## Install
 
@@ -126,8 +126,10 @@ console and games you play with. `wopr --scenes` lists them:
   `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
   can be read.
 
-The scenes show only what appears on WOPR's terminal in the film, David's typing included, and every line
-carries a provenance tag ([NOTICE.md](NOTICE.md)). They are still to be checked line by line against the film.
+The only film text in the scenes is what WOPR's terminal shows on screen, David's typing included; there is
+no dialogue that is only spoken. The dial, GTW's strike exchange, tic-tac-toe's prompts and the game clock's
+seconds are this project's own text. Every line carries a provenance tag ([NOTICE.md](NOTICE.md)), and the
+film's lines are still to be checked one by one against the film.
 
 ## Command-line flags
 

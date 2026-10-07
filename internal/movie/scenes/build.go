@@ -26,9 +26,13 @@ func join(ls []script.Ls) script.Ls {
 // typed is a line the user types with no prompt before it.
 func typed(text string) Type { return Type{Text: script.User(script.Reconstructed, text)[0]} }
 
-// typedAt is a line the user types at prompt.
-func typedAt(prompt script.Ls, text string) Type {
-	return Type{Prompt: prompt, Text: script.User(script.Reconstructed, text)[0]}
+// typedAt is a line the user types at prompt, as the film shows it.
+func typedAt(prompt script.Ls, text string) Type { return typedAs(script.Reconstructed, prompt, text) }
+
+// typedAs is a line the user types at prompt, tagged p: the film's, or ours (Enter at a prompt
+// of this project's own).
+func typedAs(p script.Prov, prompt script.Ls, text string) Type {
+	return Type{Prompt: prompt, Text: script.User(p, text)[0]}
 }
 
 // pause is a pause in the film's pacing (reconstructed) or in ours (original).
@@ -53,7 +57,9 @@ var (
 )
 
 // Text more than one scene shows. The persona prints the same lines (internal/wopr/lines.go),
-// which this package may not import: the consistency test keeps the two equal.
+// which this package may not import, and the consistency tests in internal/movie keep the two
+// equal: first-contact and joshua play them through the persona, the call-back's and the NORAD
+// session's answers come from its scripted brain, and the climax's notices from GTW.
 var (
 	logon         = script.Recon("LOGON: ")
 	notRecognized = script.Recon("IDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--")

@@ -69,7 +69,7 @@ cursor: hidden
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
 A-SS20-A 647 281     C-SSN8-A 536 143            USSR      500   450   200     0
        B 086 996            B 225 668            US        737   562     0   375
-ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
+OUTGOING +   INCOMING *   IMPACT X
 FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
 ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
 LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
@@ -128,3 +128,29 @@ YOUR MOVE: 9
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 46, row 18
+==== call-back: the game clock (80x24) ====
+GAME TIME ELAPSED:           31 HRS 12 MIN 00 SEC
+ESTIMATED TIME REMAINING:    52 HRS 17 MIN 59 SEC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 0, row 2

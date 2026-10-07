@@ -12,7 +12,8 @@ text" and "Third-party art" below.
 the film shows on the WOPR computer's terminal: the game list, log-on and greeting lines, NORAD notices
 and similar screen text. Those quotations remain the property of their copyright holders. They are
 not licensed under the MIT License, and they are listed with a provenance tag in
-`internal/wopr/lines.go`, `internal/assets/` and `internal/movie/scenes/`. Movie mode (`wopr --movie`)
+`internal/wopr/lines.go`, `internal/assets/`, `internal/movie/scenes/` and the games' packages under
+`internal/games/` (Global Thermonuclear War, tic-tac-toe and the ending). Movie mode (`wopr --movie`)
 replays the film's terminal scenes with that text, including the lines typed at the terminal; it contains no
 dialogue that is only spoken, no audio and no stills.
 

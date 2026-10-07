@@ -2,12 +2,17 @@
 // terminal scenes, step by step, with a provenance tag on every step. The director in
 // internal/movie plays them.
 //
-// Scenes contain only text that appears on the WOPR terminal on screen: no spoken-only
-// dialogue. David's lines are Type steps in mixed case, as on screen (RF-9). Lines not yet
-// confirmed against the film in the M5 viewing pass are tagged reconstructed.
+// The only film text in the scenes is what WOPR's terminal shows on screen, David's typing
+// included; there is no spoken-only dialogue. The dial, GTW's strike exchange, tic-tac-toe's
+// prompts and the game clock's seconds are this project's own text and are tagged original.
+// David's lines are Type steps in mixed case, as on screen (RF-9), except his entries at the
+// NORAD console in the climax, which are in capitals as the transcription has them. Film lines
+// not yet confirmed against the film in the M5 viewing pass are tagged reconstructed.
 package scenes
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
@@ -50,6 +55,33 @@ type Board struct {
 	Prov script.Prov
 }
 
+// Clock is the game clock WOPR shows on David's screen: two readings that tick, elapsed up and
+// remaining down, for D, and stay up until the scene ends. Lines are the readings with # where
+// the seconds go; Start is the seconds they start at. The labels, hours and minutes are the
+// film's; the seconds are this project's own until the M5 viewing pass reads them off the film.
+type Clock struct {
+	Lines script.Ls
+	Start [2]int        // the seconds of each reading at the start
+	D     time.Duration // how long the clock runs before the scene goes on
+	Prov  script.Prov   // of Start and D
+}
+
+// Reading is the clock's lines after it has run for t: the first reading's seconds count up from
+// its start, the second's down, and neither passes a minute (the package's tests check that D
+// keeps them within it).
+func (c Clock) Reading(t time.Duration) []string {
+	n := int(t / time.Second)
+	secs := [2]int{min(c.Start[0]+n, 59), max(c.Start[1]-n, 0)}
+	out := make([]string, len(c.Lines))
+	for i, l := range c.Lines {
+		out[i] = l.Text
+		if i < len(secs) {
+			out[i] = strings.Replace(l.Text, "#", fmt.Sprintf("%02d", secs[i]), 1)
+		}
+	}
+	return out
+}
+
 // Run launches a real program over the director, as proto.Launch{Slug, Mode} does; the scene
 // goes on once it ends. The board makes way for it. In movie mode the program supplies its own
 // scripted input (the climax's tic-tac-toe and the ending).
@@ -63,6 +95,7 @@ func (Say) isStep()   {}
 func (Clear) isStep() {}
 func (Wait) isStep()  {}
 func (Board) isStep() {}
+func (Clock) isStep() {}
 func (Run) isStep()   {}
 
 // Scene is one of the film's terminal scenes.
@@ -92,6 +125,8 @@ func (s Scene) Lines() []script.Ls {
 			out = append(out, script.Ls{{Prov: st.Prov}})
 		case Board:
 			out = append(out, script.Ls{{Prov: st.Prov}})
+		case Clock:
+			out = append(out, st.Lines, script.Ls{{Prov: st.Prov}})
 		case Run:
 			out = append(out, script.Ls{{Prov: st.Prov}})
 		}

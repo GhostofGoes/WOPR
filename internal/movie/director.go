@@ -62,6 +62,8 @@ type Director struct {
 	board  bool       // the board is on screen (the Full layout)
 	target gtw.FilmStage
 	left   time.Duration // what is left of a pause the director times itself (waiting)
+	clock  *scenes.Clock // the game clock on screen (a panel), nil = none
+	ticked time.Duration // how long the clock has run
 }
 
 // New returns a director.
@@ -84,10 +86,15 @@ func (d *Director) Start(env proto.Env) []proto.Output {
 	return d.menu()
 }
 
-// View implements proto.Program: the big board, when a scene shows it.
+// View implements proto.Program: the big board or the game clock, when a scene shows it.
 func (d *Director) View(c *proto.Canvas) {
-	if d.board && d.film != nil {
+	switch {
+	case d.board && d.film != nil:
 		d.film.View(c)
+	case d.clock != nil:
+		for y, l := range d.clock.Reading(d.ticked) {
+			c.Put(0, y, l, proto.StyleText, 0)
+		}
 	}
 }
 
@@ -128,7 +135,7 @@ func (d *Director) Handle(ev proto.Event) []proto.Output {
 func (d *Director) begin(i int) []proto.Output {
 	d.phase, d.scene, d.step = playing, i, 0
 	d.rng = proto.NewRand(Seed, proto.DomainMovie|uint64(i+1))
-	d.film, d.target, d.board = nil, 0, false
+	d.film, d.target, d.board, d.clock = nil, 0, false, nil
 	outs := []proto.Output{
 		proto.AwaitKeys{Capture: true},
 		proto.Animate{},
@@ -162,6 +169,8 @@ func (d *Director) emit() []proto.Output {
 		return []proto.Output{proto.Wait{D: s.D}, proto.Drain{}}
 	case scenes.Board:
 		return d.showBoard(s)
+	case scenes.Clock:
+		return d.showClock(s)
 	case scenes.Run:
 		return d.run(s)
 	}
@@ -188,14 +197,14 @@ func (d *Director) end() []proto.Output {
 // showBoard plays a Board step.
 func (d *Director) showBoard(s scenes.Board) []proto.Output {
 	if s.At == 0 {
-		return append(d.hideBoard(), proto.Drain{})
+		return append(d.hideView(), proto.Drain{})
 	}
 	var outs []proto.Output
 	if d.film == nil {
 		d.film = gtw.NewFilm(proto.NewRand(Seed, proto.DomainMovie|1<<32|uint64(d.scene)).Uint64(), d.env.ReduceMotion)
 	}
 	if !d.board {
-		d.board = true
+		d.board, d.clock = true, nil
 		outs = append(outs, proto.SetLayout{Layout: proto.LayoutFull})
 	}
 	switch {
@@ -208,6 +217,21 @@ func (d *Director) showBoard(s scenes.Board) []proto.Output {
 		return append(outs, proto.Redraw{}, proto.Animate{Every: gtw.FilmFrame})
 	}
 	return append(outs, proto.Redraw{}, d.animate(), proto.Drain{})
+}
+
+// showClock puts the game clock up in a panel at the top of the page, where the console's text
+// would be, and runs it for the step's D on the director's ticks; it stays up, still ticking,
+// until the scene ends. testkit has no clock: there the readings go into the transcript as they
+// start.
+func (d *Director) showClock(s scenes.Clock) []proto.Output {
+	if d.env.Instant && d.opts.noPauses {
+		return []proto.Output{proto.Say{Lines: s.Reading(0), Pace: proto.PaceTable}, proto.Drain{}}
+	}
+	d.board, d.clock, d.ticked = false, &s, 0
+	d.phase, d.left = waiting, s.D
+	return []proto.Output{
+		proto.SetLayout{Layout: proto.LayoutPanel, PanelRows: len(s.Lines)}, proto.Redraw{}, d.animate(),
+	}
 }
 
 // wait times a scene's pause on the director's own ticks. Under --instant the host drops Wait,
@@ -237,6 +261,10 @@ func (d *Director) tick(ev proto.TickEvent) []proto.Output {
 			outs = append(outs, d.animate(), proto.Drain{})
 		}
 	}
+	if d.clock != nil {
+		d.ticked += ev.Dt
+		outs = append(outs, proto.Redraw{})
+	}
 	if d.phase == waiting {
 		if d.left -= ev.Dt; d.left <= 0 {
 			d.phase, d.left = playing, 0
@@ -248,19 +276,21 @@ func (d *Director) tick(ev proto.TickEvent) []proto.Output {
 }
 
 // animate keeps the clock running while the board moves by itself (at the climax, WOPR
-// searches for the launch code) or while the director times a pause.
+// searches for the launch code), while the game clock is up, or while the director times a
+// pause.
 func (d *Director) animate() proto.Output {
-	if d.phase == waiting || d.board && d.film.Stage() == gtw.FilmClimax && !d.env.Instant {
+	if d.phase == waiting || d.clock != nil || d.board && d.film.Stage() == gtw.FilmClimax && !d.env.Instant {
 		return proto.Animate{Every: tickEvery}
 	}
 	return proto.Animate{}
 }
 
-func (d *Director) hideBoard() []proto.Output {
-	if !d.board {
+// hideView puts the board or the game clock away: the console layout again.
+func (d *Director) hideView() []proto.Output {
+	if !d.board && d.clock == nil {
 		return nil
 	}
-	d.board = false
+	d.board, d.clock = false, nil
 	return []proto.Output{proto.Animate{}, proto.SetLayout{Layout: proto.LayoutConsole}}
 }
 
@@ -282,7 +312,7 @@ func (d *Director) run(s scenes.Run) []proto.Output {
 	if mode == ending.MovieMode && d.film != nil && d.film.Stage() == gtw.FilmClimax {
 		mode += ":" + strconv.Itoa(d.film.Cracked())
 	}
-	outs := d.hideBoard()
+	outs := d.hideView()
 	d.phase = running
 	return append(outs, proto.Launch{Slug: s.Slug, Mode: mode}, proto.Drain{})
 }
@@ -339,7 +369,7 @@ func (d *Director) cut(then []proto.Output) []proto.Output {
 func (d *Director) menu() []proto.Output {
 	d.phase, d.menued = inMenu, true
 	d.film, d.target = nil, 0
-	outs := d.hideBoard()
+	outs := d.hideView()
 	outs = append(outs, proto.Animate{}, proto.SetLayout{Layout: proto.LayoutConsole}, proto.Clear{})
 	lines := lineMenuTitle.Texts()
 	for _, s := range infos(d.scenes) {

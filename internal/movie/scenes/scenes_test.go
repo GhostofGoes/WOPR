@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
@@ -65,8 +66,47 @@ func TestEveryStepHasProvenance(t *testing.T) {
 				if s.Interactive {
 					t.Errorf("%s: an interactive scene is console text the persona prints", s.Slug)
 				}
+			case Clock:
+				checkClock(t, st)
+				if s.Interactive {
+					t.Errorf("%s: an interactive scene is console text the persona prints", s.Slug)
+				}
 			case Clear, Wait:
 			}
+		}
+	}
+}
+
+// checkClock: a game clock has two readings, each with one # for its seconds, which stay within
+// their minute for as long as the clock runs, and fits 80 columns.
+func checkClock(t *testing.T, c Clock) {
+	t.Helper()
+	runs := int(c.D / time.Second)
+	if len(c.Lines) != 2 || c.Start[0] < 0 || c.Start[0]+runs > 59 || c.Start[1] > 59 || c.Start[1]-runs < 0 {
+		t.Errorf("a clock of %d readings from %v for %v passes a minute", len(c.Lines), c.Start, c.D)
+	}
+	for _, l := range c.Lines {
+		if strings.Count(l.Text, "#") != 1 || len(l.Text)+1 > 80 {
+			t.Errorf("reading %q: one # for the seconds, within 80 columns", l.Text)
+		}
+	}
+}
+
+// The clock's readings tick, the first up and the second down, a second at a time.
+func TestClockReading(t *testing.T) {
+	t.Parallel()
+	c := Clock{Lines: script.Recon("UP # SEC", "DOWN # SEC"), Start: [2]int{0, 59}, D: 4 * time.Second}
+	for _, tc := range []struct {
+		t    time.Duration
+		want string
+	}{
+		{0, "UP 00 SEC|DOWN 59 SEC"},
+		{999 * time.Millisecond, "UP 00 SEC|DOWN 59 SEC"},
+		{time.Second, "UP 01 SEC|DOWN 58 SEC"},
+		{75 * time.Second, "UP 59 SEC|DOWN 00 SEC"},
+	} {
+		if got := strings.Join(c.Reading(tc.t), "|"); got != tc.want {
+			t.Errorf("after %v: %q, want %q", tc.t, got, tc.want)
 		}
 	}
 }

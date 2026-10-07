@@ -62,6 +62,21 @@ func TestFilmAdvancesByFrames(t *testing.T) {
 	}
 }
 
+// The film's board asks nobody for orders: at the strike prompts its foot row is the legend,
+// where the game shows the orders hint and the last-orders warning.
+func TestFilmBoardShowsTheLegend(t *testing.T) {
+	t.Parallel()
+	f := gtw.NewFilm(1, false)
+	for _, stage := range []gtw.FilmStage{gtw.FilmStrike1, gtw.FilmStrike2} {
+		f.Run(stage)
+		c := proto.NewCanvas(80, 19)
+		f.View(c)
+		if s := c.String(); !strings.Contains(s, "OUTGOING +   INCOMING *   IMPACT X") || strings.Contains(s, "ORDERS") {
+			t.Errorf("stage %d:\n%s", stage, s)
+		}
+	}
+}
+
 // Skipping ahead prints nothing; the climax board then cracks the code as time passes, and
 // never all of it: the ending cracks the rest.
 func TestFilmClimax(t *testing.T) {

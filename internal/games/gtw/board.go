@@ -87,7 +87,8 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 // drawFoot fills the row under the tables with one thing, by state: the orders hint at a
 // strike prompt (the last-orders warning at the last one), the launch code at the climax, and
 // otherwise the legend: + and * in their tracks' colours, and X reversed in the neutral text
-// colour, since both sides' impacts show.
+// colour, since both sides' impacts show. The film's board (movie mode) has nobody to give
+// orders, so it shows the legend at the strike prompts too.
 func (g *Game) drawFoot(c *proto.Canvas) {
 	switch {
 	case g.phase == climax:
@@ -95,17 +96,23 @@ func (g *Game) drawFoot(c *proto.Canvas) {
 		shown := code[:g.cracked] + strings.Repeat("_", len(code)-g.cracked)
 		line := lineCodeLabel[0].Text + shown[:3] + " " + shown[3:7] + " " + shown[7:]
 		c.Put((c.W-len(line))/2, footRow, line, proto.StyleAlert, proto.AttrBold)
+	case g.phase == orders && g.film:
+		g.drawLegend(c)
 	case g.phase == orders && g.stage == strikes-1:
 		c.Put(0, footRow, lineLastOrders[0].Text, proto.StyleAlert, proto.AttrBold)
 	case g.phase == orders:
 		c.Put(0, footRow, lineOrdersHint[0].Text, proto.StyleDim, 0)
 	default:
-		legend := lineLegend[0].Text
-		c.Put(0, footRow, legend, proto.StyleDim, 0)
-		c.Put(strings.Index(legend, "+"), footRow, "+", proto.StyleOutgoing, 0)
-		c.Put(strings.Index(legend, "*"), footRow, "*", proto.StyleIncoming, 0)
-		c.Put(strings.LastIndex(legend, "X"), footRow, "X", proto.StyleText, proto.AttrReverse)
+		g.drawLegend(c)
 	}
+}
+
+func (g *Game) drawLegend(c *proto.Canvas) {
+	legend := lineLegend[0].Text
+	c.Put(0, footRow, legend, proto.StyleDim, 0)
+	c.Put(strings.Index(legend, "+"), footRow, "+", proto.StyleOutgoing, 0)
+	c.Put(strings.Index(legend, "*"), footRow, "*", proto.StyleIncoming, 0)
+	c.Put(strings.LastIndex(legend, "X"), footRow, "X", proto.StyleText, proto.AttrReverse)
 }
 
 func trackStyle(m missile) proto.Style {
