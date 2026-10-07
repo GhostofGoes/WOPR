@@ -1391,8 +1391,10 @@ its run tests exactly the tree the squash merge produces.
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
 
 1. **`verify`** (`contents: read`, `checks: read`). The tag is semver; the tagged commit is an ancestor of
-   `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (one still
-   running reads as pending, and a check of the same name from another app is ignored).
+   `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (a check
+   of the same name from another app is ignored). A tag pushed right after its merge arrives before `main`'s
+   CI run has finished, so a missing or pending `ci-ok` is waited out, for up to 45 minutes; any other
+   result fails at once. (v0.2.0's first release run failed on exactly that race.)
 2. **`build`** (`contents: read`, no OIDC). `goreleaser release --clean --skip=publish`, then the size gate,
    then `stage -archives -assets dist/release`, which checks that every archive contains `LICENSE`,
    `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), and collects every file the release
