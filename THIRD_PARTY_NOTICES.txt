@@ -114,7 +114,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-github.com/charmbracelet/ultraviolet v0.0.0-20260811164956-006e29f97886
+github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd
 ===============================================================================
 
 MIT License
@@ -334,7 +334,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ===============================================================================
-github.com/mattn/go-runewidth v0.0.24
+github.com/mattn/go-runewidth v0.0.30
 ===============================================================================
 
 The MIT License (MIT)
@@ -412,7 +412,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e
+github.com/xo/terminfo v1.2.0
 ===============================================================================
 
 The MIT License (MIT)
@@ -438,7 +438,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ===============================================================================
-golang.org/x/sync v0.22.0
+golang.org/x/sync v0.23.0
 ===============================================================================
 
 Copyright 2009 The Go Authors.
@@ -470,7 +470,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ===============================================================================
-golang.org/x/sys v0.47.0
+golang.org/x/sys v0.48.0
 ===============================================================================
 
 Copyright 2009 The Go Authors.
