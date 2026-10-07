@@ -248,6 +248,7 @@ internal/games/...                    → proto, prompt, script, games, games/{a
 internal/sim         → proto, prompt, script          the war-game engine (M4)
 internal/assets      → script                         embedded art, scenario names (with provenance)
 internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, games/ending      (M6)
+                       tests also: wopr (the consistency test, §7)
 internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
 internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
@@ -268,8 +269,8 @@ internal/llm         → proto, wopr                    plus net/http (M7)
   Every `Playable` registry entry having a constructor is checked by `games.NewRegistry` itself. archtest also
   checks that the running Go is at least `go.mod`'s `toolchain` line, and exactly that line in CI, where a
   mismatch means `setup-go` fell back (D-6, AR-2). A newer local Go is fine.
-- **The M6 consistency test** (§7) lives in `internal/movie`'s tests. In M6, archtest gains a per-row test-only
-  allowance so those tests may import `wopr` (AR-1).
+- **The M6 consistency test** (§7) lives in `internal/movie`'s tests. archtest's per-row test-only allowance
+  (`testAllow`) lets those tests, and only them, import `wopr` (AR-1).
 - **Editor feedback**: `depguard` in `.golangci.yml` reports Bubble Tea imports outside `ui`. `archtest` is
   authoritative.
 

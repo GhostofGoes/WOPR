@@ -28,6 +28,7 @@ const (
 type L struct {
 	Text string
 	Prov Prov
+	User bool // typed by the user, in mixed case as on screen (movie mode, RF-9): exempt from the capitals rule
 }
 
 // Ls is a block of lines.
@@ -48,6 +49,16 @@ func Recon(texts ...string) Ls { return Tag(Reconstructed, texts...) }
 // Orig tags lines as written for this project.
 func Orig(texts ...string) Ls { return Tag(Original, texts...) }
 
+// User tags lines the user types on screen (David's lines in movie mode) with p. They keep
+// their mixed case.
+func User(p Prov, texts ...string) Ls {
+	out := Tag(p, texts...)
+	for i := range out {
+		out[i].User = true
+	}
+	return out
+}
+
 // Tag tags lines with p.
 func Tag(p Prov, texts ...string) Ls {
 	out := make(Ls, len(texts))
@@ -59,8 +70,9 @@ func Tag(p Prov, texts ...string) Ls {
 
 // Validate checks every line: its tag must be one of the provenance values, a third-party
 // tag must name a source that notice (the text of NOTICE.md) credits, and the text must be
-// in capitals, as WOPR's screen is. Third-party art from a web page is the exception to the
-// capitals: it is reproduced exactly as its author drew it, signature included.
+// in capitals, as WOPR's screen is. Two kinds of line are exempt from the capitals: what the
+// user types (User), which the film shows in mixed case, and third-party art from a web
+// page, reproduced exactly as its author drew it, signature included.
 func Validate(blocks []Ls, notice string) []error {
 	var errs []error
 	for _, block := range blocks {
@@ -74,7 +86,7 @@ func Validate(blocks []Ls, notice string) []error {
 			default:
 				errs = append(errs, fmt.Errorf("%q has no valid provenance (%q)", l.Text, l.Prov))
 			}
-			if l.Text != strings.ToUpper(l.Text) && !isWebArt(l.Prov) {
+			if l.Text != strings.ToUpper(l.Text) && !isWebArt(l.Prov) && !l.User {
 				errs = append(errs, fmt.Errorf("screen text is in capitals: %q", l.Text))
 			}
 		}

@@ -39,6 +39,16 @@ func TestMovieModeTypesItsOwnHello(t *testing.T) {
 	if res, over := g.Result(); !over || !res.NoVerdict || !g.Contains("NOT TO PLAY.") {
 		t.Fatalf("movie mode runs to the end unaided: %+v\n%s", res, g.Transcript())
 	}
+	if !strings.Contains(g.Transcript(), "GREETINGS PROFESSOR FALKEN.\n\nHello.\n\nA STRANGE GAME.") {
+		t.Errorf("the film's answer is typed as the player's would be:\n%s", g.Transcript())
+	}
+	for _, mode := range []string{"movie:2", MovieMode + ":9"} {
+		e := New().(*Game)
+		e.Start(proto.Env{Seed: 1, Mode: mode})
+		if want := int(mode[len(mode)-1] - '0'); e.cracked() != want || !e.movie {
+			t.Errorf("%q: the code starts at %d, want %d", mode, e.cracked(), want)
+		}
+	}
 }
 
 // With pacing on, the show runs self-play, then the montage, then the greeting; every

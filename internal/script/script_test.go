@@ -5,7 +5,7 @@ import "testing"
 func TestValidate(t *testing.T) {
 	t.Parallel()
 	notice := "taken from the `abs0/wargames` project"
-	good := []Ls{Recon("HELLO."), Orig("WHICH GAME?"), Tag(ABS0, "#45"), {{Text: "OK", Prov: Film}}}
+	good := []Ls{Recon("HELLO."), Orig("WHICH GAME?"), Tag(ABS0, "#45"), {{Text: "OK", Prov: Film}}, User(Reconstructed, "Hello.")}
 	if errs := Validate(good, notice); len(errs) != 0 {
 		t.Errorf("valid lines rejected: %v", errs)
 	}
@@ -33,6 +33,7 @@ func TestValidate(t *testing.T) {
 		Tag("third-party:abs0/wargames@010ed92", "NO PATH"),
 		Tag("third-party:wargames@010ed92:wargames.sh", "NO OWNER"),
 		Tag(ABS0, "repository text is still in capitals"), // the exemption is for web art only
+		User("", "Typed lines need a tag too"),
 	}
 	if errs := Validate(bad, notice); len(errs) != len(bad) {
 		t.Errorf("want %d errors, got %d: %v", len(bad), len(errs), errs)

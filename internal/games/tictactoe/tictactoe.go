@@ -1,7 +1,7 @@
 // Package tictactoe is the game that ends the film: perfect minimax, so nobody can win
 // against WOPR. In the "climax" launch mode it is the closed state machine of
 // docs/PLAN.md §6.2; zero players hands off to the ending, which reuses Best and Draw for
-// WOPR's self-play.
+// WOPR's self-play. In the "movie" mode the climax plays itself (docs/PLAN.md §7).
 package tictactoe
 
 import (
@@ -27,6 +27,12 @@ const EndingSlug = "ending"
 // cracked: "code:7".
 const CodeMode = "code:"
 
+// MovieMode is movie mode's launch mode, alone or with the launch code characters the board
+// cracked ("movie:5"). The game plays the film's climax by itself: it types the film's
+// answers (one player, a move for X, then zero players) and reads each once it is on screen,
+// then hands off to the ending in the same mode, which types the film's last line.
+const MovieMode = "movie"
+
 // Script text (docs/PLAN.md Appendix B). Lines lists every block for the provenance test.
 var (
 	linePlayers      = script.Recon("ONE OR TWO PLAYERS?")
@@ -41,12 +47,16 @@ var (
 	lineWOPRMove     = script.Orig("WOPR: ") // followed by the square WOPR took
 	lineYourMarkIsX  = script.Orig("YOU ARE X. WOPR IS O.")
 	lineHotseatRules = script.Orig("X MOVES FIRST.")
+
+	// What the user types in the film's climax (movie mode); X's moves are the game's own.
+	filmPlayers = script.User(script.Reconstructed, "1")
+	filmZero    = script.User(script.Reconstructed, "ZERO")
 )
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	linePlayers, promptPlayers, lineStalemate, lineImproper, lineWOPRWins, linePickSquare, promptMove,
-	promptMoveX, promptMoveO, lineWOPRMove, lineYourMarkIsX, lineHotseatRules,
+	promptMoveX, promptMoveO, lineWOPRMove, lineYourMarkIsX, lineHotseatRules, filmPlayers, filmZero,
 	artTitle, artBigX, artBigO, artMidX, artMidO, artSmallX, artSmallO, panelTitle, panelYou, panelWOPR,
 }
 
@@ -160,6 +170,9 @@ const (
 type Game struct {
 	env      proto.Env
 	climax   bool
+	movie    bool   // movie mode: the game types the film's answers itself
+	typing   string // the answer being typed, read when it is on screen (Drained)
+	typed    uint64 // answers typed, for their keystroke streams
 	state    state
 	players  int
 	b        Board
@@ -175,7 +188,8 @@ func New() games.Game { return &Game{last: -1} }
 // Start implements proto.Program.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
-	g.climax = env.Mode == Climax || strings.HasPrefix(env.Mode, Climax+":")
+	g.movie = env.Mode == MovieMode || strings.HasPrefix(env.Mode, MovieMode+":")
+	g.climax = g.movie || env.Mode == Climax || strings.HasPrefix(env.Mode, Climax+":")
 	return g.askPlayers()
 }
 
@@ -187,11 +201,35 @@ func say(ls ...script.Ls) proto.Output {
 	return proto.Say{Lines: lines, Pace: proto.PaceSpeech}
 }
 
-func ask(p script.Ls) proto.Output { return proto.Prompt{Text: p[0].Text} }
+// ask prompts for a line. In movie mode the game types the film's answer itself, and reads it
+// once it is on screen.
+func (g *Game) ask(prompt string) []proto.Output {
+	if !g.movie {
+		return []proto.Output{proto.Prompt{Text: prompt}}
+	}
+	g.typing = g.answer()
+	g.typed++
+	outs := proto.Typed(prompt, g.typing, proto.NewRand(g.env.Seed, proto.DomainMovie|g.typed))
+	return append(outs, proto.Drain{})
+}
+
+// answer is the film's next line: one player, then X's moves, perfect so that the game ends
+// in stalemate, then zero players.
+func (g *Game) answer() string {
+	switch g.state {
+	case askPlayers:
+		return filmPlayers[0].Text
+	case playing:
+		r := proto.NewRand(g.env.Seed, proto.DomainMovie|1<<32|g.typed)
+		return fmt.Sprint(Best(g.b, g.toMove, r) + 1)
+	case askAgain:
+	}
+	return filmZero[0].Text
+}
 
 func (g *Game) askPlayers() []proto.Output {
 	g.state = askPlayers
-	return []proto.Output{say(linePlayers), ask(promptPlayers)}
+	return append([]proto.Output{say(linePlayers)}, g.ask(promptPlayers[0].Text)...)
 }
 
 // Handle implements proto.Program.
@@ -208,6 +246,11 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 		}
 	case proto.ThinkDone:
 		return g.onWOPRMove(ev)
+	case proto.Drained:
+		if line := g.typing; g.movie && line != "" {
+			g.typing = ""
+			return g.Handle(proto.LineEvent{Text: line})
+		}
 	}
 	return nil
 }
@@ -221,7 +264,11 @@ func zero(input string) bool {
 // launch code it cracked ("climax:5"); the ending carries on from there.
 func (g *Game) toEnding() []proto.Output {
 	next := proto.Launch{Slug: EndingSlug}
-	if _, code, ok := strings.Cut(g.env.Mode, ":"); ok && g.climax {
+	_, code, ok := strings.Cut(g.env.Mode, ":")
+	switch {
+	case g.movie:
+		next.Mode = g.env.Mode // the ending plays the film's last line itself
+	case ok && g.climax:
 		next.Mode = CodeMode + code
 	}
 	return []proto.Output{proto.Done{Result: proto.Result{Outcome: proto.NoWinner, Next: &next}}}
@@ -244,17 +291,17 @@ func (g *Game) onPlayers(input string) []proto.Output {
 
 func (g *Game) newGame() []proto.Output {
 	g.state, g.b, g.toMove, g.last = playing, Board{}, 'X', -1
-	return []proto.Output{proto.Redraw{}, g.movePrompt()}
+	return append([]proto.Output{proto.Redraw{}}, g.movePrompt()...)
 }
 
-func (g *Game) movePrompt() proto.Output {
+func (g *Game) movePrompt() []proto.Output {
 	switch {
 	case g.players == 1:
-		return ask(promptMove)
+		return g.ask(promptMove[0].Text)
 	case g.toMove == 'X':
-		return ask(promptMoveX)
+		return g.ask(promptMoveX[0].Text)
 	default:
-		return ask(promptMoveO)
+		return g.ask(promptMoveO[0].Text)
 	}
 }
 
@@ -276,14 +323,14 @@ func (g *Game) onMove(input string) []proto.Output {
 	}
 	sq, ok := parseSquare(input)
 	if !ok || g.b[sq] != 0 {
-		return []proto.Output{say(linePickSquare), g.movePrompt()}
+		return append([]proto.Output{say(linePickSquare)}, g.movePrompt()...)
 	}
 	g.play(sq)
 	if g.b.Over() {
 		return g.gameOver()
 	}
 	if g.players == 2 {
-		return []proto.Output{proto.Redraw{}, g.movePrompt()}
+		return append([]proto.Output{proto.Redraw{}}, g.movePrompt()...)
 	}
 	return g.think()
 }
@@ -324,7 +371,7 @@ func (g *Game) onWOPRMove(done proto.ThinkDone) []proto.Output {
 	if g.b.Over() {
 		return append(outs, g.gameOver()...)
 	}
-	return append(outs, g.movePrompt())
+	return append(outs, g.movePrompt()...)
 }
 
 // gameOver ends a game. Normal mode reports to the persona with the final board; the
@@ -344,9 +391,9 @@ func (g *Game) gameOver() []proto.Output {
 	}
 	g.state = askAgain
 	if w == 'O' {
-		return []proto.Output{say(lineWOPRWins), proto.Prompt{}}
+		return append([]proto.Output{say(lineWOPRWins)}, g.ask("")...)
 	}
-	return []proto.Output{say(lineStalemate), proto.Prompt{}}
+	return append([]proto.Output{say(lineStalemate)}, g.ask("")...)
 }
 
 func (g *Game) onAgain(input string) []proto.Output {
@@ -360,5 +407,5 @@ func (g *Game) onAgain(input string) []proto.Output {
 		return g.askPlayers()
 	case prompt.Unclear:
 	}
-	return []proto.Output{say(lineImproper), proto.Prompt{}}
+	return append([]proto.Output{say(lineImproper)}, g.ask("")...)
 }

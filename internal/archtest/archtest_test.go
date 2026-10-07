@@ -31,6 +31,12 @@ var testOnly = []string{
 	"internal/proto/host", // tests configure testkit's runner
 }
 
+// testAllow adds test-only imports to one rule, keyed by the rule's pkg: movie mode's
+// consistency test feeds its scenes through the real persona (docs/PLAN.md §7, AR-1).
+var testAllow = map[string][]string{
+	"internal/movie/...": {"internal/wopr"},
+}
+
 // rules is the import DAG. Order matters: the first matching rule applies, so specific
 // packages come before the subtrees that contain them.
 var rules = []rule{
@@ -146,7 +152,7 @@ func allowed(from string, r rule, imp string, test bool) string {
 		if target == from || strings.HasPrefix(target, from+"/") && strings.HasSuffix(r.pkg, "/...") {
 			return ""
 		}
-		if test && matchesAny(target, testOnly) {
+		if test && (matchesAny(target, testOnly) || matchesAny(target, testAllow[r.pkg])) {
 			return ""
 		}
 		if !test && (target == "internal/games/gamestest" || target == "internal/games/testkit") {
@@ -252,6 +258,13 @@ func TestRulesMatchThemselves(t *testing.T) {
 	}
 	if why := allowed("internal/wopr", rule{pkg: "internal/wopr", allow: []string{"internal/proto"}}, "net/http", false); why == "" {
 		t.Error("net/http must be fenced to internal/llm")
+	}
+	movie, _ := match("internal/movie")
+	if why := allowed("internal/movie", movie, module+"/internal/wopr", true); why != "" {
+		t.Errorf("the movie's tests may import the persona: %s", why)
+	}
+	if why := allowed("internal/movie", movie, module+"/internal/wopr", false); why == "" {
+		t.Error("the movie itself must not import the persona")
 	}
 	catalog, _ := match("internal/games/catalog")
 	for _, imp := range []string{module + "/internal/games/testkit", module + "/internal/games/gamestest"} {
