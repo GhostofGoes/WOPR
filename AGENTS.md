@@ -119,7 +119,8 @@ recognises (not a GitHub-supported token pattern, which push protection blocks),
 If a rights holder asks for material to be removed:
 
 1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
-   `internal/assets/`, `internal/movie/scenes/`, and the games' film text).
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text), and the README's screenshots
+   in `docs/screenshots/`, which show some of it.
 2. Remove or replace it in one pull request, and release a patch version.
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).

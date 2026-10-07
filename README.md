@@ -56,6 +56,20 @@ Wait for `LOGON:`. If you have seen the film, you know what to type. If not, `wo
 Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its place in the list. Type
 `LOGOFF` to leave; Ctrl+C always quits.
 
+## Screenshots
+
+Recorded from the program itself in an 80×24 terminal with the default white-phosphor theme.
+
+| Logon and the film's conversation | Global Thermonuclear War's big board |
+|---|---|
+| ![LOGON: Joshua, GREETINGS PROFESSOR FALKEN. and the conversation that follows](docs/screenshots/logon.png) | ![The world map with missile tracks, impacts and the DEFCON ladder at 4](docs/screenshots/global-thermonuclear-war.png) |
+| **The climax: zero players** | **Chess** |
+| ![WOPR playing tic-tac-toe against itself while the launch code cracks](docs/screenshots/climax.png) | ![The chess board in check, with the last move marked](docs/screenshots/chess.png) |
+| **Black Jack** | **Falken's Maze** |
+| ![A split pair of eights paid out after the dealer busts](docs/screenshots/black-jack.png) | ![The maze half explored, WOPR noting that you favour right turns](docs/screenshots/falkens-maze.png) |
+
+The big board's map: Map (C) 1998 Matthew Thomas. Freely usable if this line is included.
+
 ## Games
 
 Every game in `LIST GAMES` is playable, and each has its own ASCII art: title pieces, card faces and trick
