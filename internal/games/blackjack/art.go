@@ -16,7 +16,7 @@ var artTitle = script.Orig(
 	`  \  = = = = = = = = = =        .-----.-----.                              /`,
 	`   \                            |AS   |JS   |                             /`,
 	`    '.                          |  S  |  S  |                           .'`,
-	`      '-.                       |    A|    J|                        .-'`,
+	`      '-.                       |   AS|   JS|                        .-'`,
 	`         '--.   ( )     ( )     '-----'-----'      ( )     ( )   .--'`,
 	`             '--------------------------------------------------'`,
 )
@@ -60,7 +60,7 @@ func (h handArt) fits(w, lw int) bool {
 //	         .-----. .-----.
 //	         |JH   | |8S   |
 //	YOU:     |  H  | |  S  |   (18)
-//	         |    J| |    8|
+//	         |   JH| |   8S|
 //	         '-----' '-----'
 func (h handArt) draw(w, lw int, against bool) []string {
 	out := make([]string, cards.FaceH)
@@ -120,12 +120,12 @@ func (g *Game) dealerRows() []string { return g.dealerArt(false).draw(width, lab
 //	         .-----. .-----.          .-----. .-----.
 //	         |6H   | |/\/\/|          |8C   | |3D   |
 //	DEALER:  |  H  | |\/\/\|  HAND 1: |  C  | |  D  |   (11)
-//	         |    6| |/\/\/|          |    8| |    3|
+//	         |   6H| |/\/\/|          |   8C| |   3D|
 //	         '-----' '-----'          '-----' '-----'
 //	                                  .-----. .-----.
 //	                                  |8D   | |KS   |
 //	                         HAND 2:  |  D  | |  S  |   (18)
-//	                                  |    8| |    K|
+//	                                  |   8D| |   KS|
 //	                                  '-----' '-----'
 //
 // A hand too long to sit beside the dealer (eight to ten cards, by its total) puts every

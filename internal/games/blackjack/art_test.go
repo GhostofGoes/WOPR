@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GhostofGoes/WOPR/internal/games/cards"
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
@@ -40,6 +41,9 @@ func checkArt(t *testing.T, art script.Ls, lines []script.Ls) {
 func TestTitleArt(t *testing.T) {
 	t.Parallel()
 	checkArt(t, artTitle, Lines)
+	for _, bad := range cards.CornerProblems(artTitle.Texts()) { // every whole card shows its index twice
+		t.Error(bad)
+	}
 	for _, block := range Lines {
 		for _, l := range block {
 			if strings.ContainsFunc(l.Text, func(r rune) bool { return r < 0x20 || r > 0x7e }) {

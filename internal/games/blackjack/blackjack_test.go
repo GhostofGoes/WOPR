@@ -8,6 +8,7 @@ import (
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/blackjack"
+	"github.com/GhostofGoes/WOPR/internal/games/cards"
 	"github.com/GhostofGoes/WOPR/internal/games/testkit"
 	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -53,6 +54,9 @@ func TestTranscript(t *testing.T) {
 	}
 	if wide := g.Wide(80); len(wide) > 0 {
 		t.Errorf("wider than 80 columns: %q", wide)
+	}
+	for _, bad := range cards.CornerProblems(strings.Split(g.Transcript(), "\n")) {
+		t.Error(bad) // every card dealt face up shows its index in both corners
 	}
 	golden.AssertString(t, "transcript", g.Transcript())
 }

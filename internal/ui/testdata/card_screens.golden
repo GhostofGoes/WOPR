@@ -12,7 +12,7 @@ HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
       /     \ /     \         .-----.
      |       V       |        |QS   |       H E A R T S
       \             /         |  S  |       = = = = = =
-       '.         .'          |    Q|       TAKE NONE, OR TAKE THEM ALL.
+       '.         .'          |   QS|       TAKE NONE, OR TAKE THEM ALL.
          '.     .'            '-----'
            '. .'
              V
@@ -39,7 +39,7 @@ WOPR   |/|/|/|/|/|/|/|/|/|/\/| 10 CARDS   STOCK |/\/| 31          DISCARD |10C|
    .---.---.---.-----.    .---.---.-----.    \     /        = = = = = = = = =
    |4H |5H |6H |7H   |    |9C |9D |9S   |     \   /
    |   |   |   |  H  |    |   |   |  S  |      \ /          WOPR TAKES ITS GIN
-   |   |   |   |    7|    |   |   |    9|       |           STRAIGHT.
+   |   |   |   |   7H|    |   |   |   9S|       |           STRAIGHT.
    '---'---'---'-----'    '---'---'-----'     __|__
 GIN RUMMY TO 100. TEN CARDS EACH; ACES ARE LOW.
 DRAW FROM THE STOCK OR TAKE THE DISCARD, THEN DISCARD. KNOCK WITH 10 OR LESS

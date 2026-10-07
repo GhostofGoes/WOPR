@@ -8,7 +8,7 @@ var artTitle = script.Orig(
 	`      /     \ /     \         .-----.`,
 	`     |       V       |        |QS   |       H E A R T S`,
 	`      \             /         |  S  |       = = = = = =`,
-	`       '.         .'          |    Q|       TAKE NONE, OR TAKE THEM ALL.`,
+	`       '.         .'          |   QS|       TAKE NONE, OR TAKE THEM ALL.`,
 	`         '.     .'            '-----'`,
 	`           '. .'`,
 	`             V`,
