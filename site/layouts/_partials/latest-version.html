@@ -1,0 +1,15 @@
+{{- /*
+  The latest release's version without its "v" (0.2.0), from the first version heading in
+  CHANGELOG.md. The version and if-packages shortcodes use it.
+*/ -}}
+{{- $v := "" -}}
+{{- with resources.Get "repo/CHANGELOG.md" -}}
+  {{- with findRESubmatch `(?m)^## v(\d+\.\d+\.\d+)\b` .Content 1 -}}
+    {{- $v = index (index . 0) 1 -}}
+  {{- else -}}
+    {{- errorf "latest-version: CHANGELOG.md has no version heading" -}}
+  {{- end -}}
+{{- else -}}
+  {{- errorf "latest-version: CHANGELOG.md is not mounted (see hugo.yaml)" -}}
+{{- end -}}
+{{- return $v -}}

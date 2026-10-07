@@ -29,10 +29,17 @@ The latest release is **v{{< version >}}**.
 `<os>` is `linux`, `darwin` (macOS) or `windows`, and `<arch>` is `amd64` or `arm64`. Not sure which you
 have? Run `uname -m` on Linux or macOS (`x86_64` is amd64; `aarch64` or `arm64` is arm64), or
 `$env:PROCESSOR_ARCHITECTURE` in PowerShell.
+{{% if-packages %}}
 
-<!-- LINUX PACKAGES: when releases include .deb and .rpm packages, add their rows to the table above and
-a "Linux packages" section here (install with apt or dnf, verify first), and a tab or line under Install.
-The page reads complete without them. -->
+Linux also has [packages](#linux-packages): `wopr_<version>-1_<arch>.deb` for Debian, Ubuntu and their
+relatives (`<arch>` is `amd64` or `arm64`), and `wopr-<version>-1.<arch>.rpm` for Fedora, RHEL and their
+relatives (`<arch>` is `x86_64` or `aarch64`).
+{{% /if-packages %}}
+{{% if-packages "not" %}}
+
+The next release adds Linux packages: a `.deb` for Debian and Ubuntu, and an `.rpm` for Fedora and
+RHEL.
+{{% /if-packages %}}
 
 ## Verify before you run
 
@@ -53,6 +60,12 @@ run it.
 {{< screenshot src="img/install-verify.png" caption="`gh attestation verify` on a Linux archive: the repository, the workflow and the tag all match." >}}
 
 ## Install
+
+{{% if-packages %}}
+
+On Debian, Ubuntu, Fedora or RHEL, the [Linux packages](#linux-packages) are easier, and they install
+the manual page too.
+{{% /if-packages %}}
 
 {{< tabs >}}
 
@@ -131,6 +144,55 @@ also be cleared with `Unblock-File "$env:LOCALAPPDATA\Programs\wopr\wopr.exe"`.
 {{< /tab >}}
 
 {{< /tabs >}}
+{{% if-packages %}}
+
+## Linux packages
+
+Each release has a package for Debian, Ubuntu and their relatives (`.deb`), and one for Fedora, RHEL
+and their relatives (`.rpm`), for amd64 and arm64 computers. A package puts `wopr` on your `PATH` and
+installs the manual page, so `man wopr` works. It needs no other package, and removing it removes every
+file it added. It also holds the changelog, the licences and the notices.
+
+### Debian and Ubuntu
+
+Download, verify, and install the `.deb` with `apt`:
+
+```sh
+VERSION={{< version >}}
+ARCH=$(dpkg --print-architecture)   # amd64 or arm64
+curl -LO "https://github.com/GhostofGoes/WOPR/releases/download/v${VERSION}/wopr_${VERSION}-1_${ARCH}.deb"
+gh attestation verify "wopr_${VERSION}-1_${ARCH}.deb" --repo GhostofGoes/WOPR \
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+  --source-ref "refs/tags/v${VERSION}" --deny-self-hosted-runners
+sudo apt install "./wopr_${VERSION}-1_${ARCH}.deb"
+wopr --version
+```
+
+The program goes in `/usr/games`, where Debian keeps its games, and Debian and Ubuntu put that folder on
+each user's `PATH` when they log in. If your shell cannot find `wopr` (as root, or in a small
+container), run `/usr/games/wopr`. To remove it: `sudo apt remove wopr`.
+
+### Fedora and RHEL
+
+Download, verify, and install the `.rpm` with `dnf`:
+
+```sh
+VERSION={{< version >}}
+ARCH=$(uname -m)   # x86_64 or aarch64
+curl -LO "https://github.com/GhostofGoes/WOPR/releases/download/v${VERSION}/wopr-${VERSION}-1.${ARCH}.rpm"
+gh attestation verify "wopr-${VERSION}-1.${ARCH}.rpm" --repo GhostofGoes/WOPR \
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+  --source-ref "refs/tags/v${VERSION}" --deny-self-hosted-runners
+sudo dnf install "./wopr-${VERSION}-1.${ARCH}.rpm"
+wopr --version
+```
+
+The program goes in `/usr/bin`. To remove it: `sudo dnf remove wopr`. On openSUSE, use `zypper` in
+place of `dnf`.
+
+The packages carry no GPG signature. Check them with `gh attestation verify`, as above, like every other
+file in a release.
+{{% /if-packages %}}
 
 ## From source
 
@@ -148,8 +210,9 @@ found. [Contributing](/contributing) explains how to build from a clone of the r
 ## The manual page
 
 On Linux and macOS, `man wopr` can show every option, every game with how to play it and tips, and
-movie mode. The archives hold the page as `wopr.6`; you can also download {{< man-page >}} on its own.
-Read it in place with `man ./wopr.6`, or install it so that `man wopr` finds it:
+movie mode.{{% if-packages %}} The [Linux packages](#linux-packages) install it for you.{{% /if-packages %}}
+The archives hold the page as `wopr.6`; you can also download {{< man-page >}} on its own. Read it in
+place with `man ./wopr.6`, or install it so that `man wopr` finds it:
 
 ```sh
 # for everyone
@@ -173,6 +236,8 @@ macOS. Development builds are for testing; they carry no attestation.
 ## Uninstall
 
 Delete the program (`~/.local/bin/wopr`, `/usr/local/bin/wopr`, or the `wopr` folder under
-`%LOCALAPPDATA%\Programs` on Windows) and the manual page if you installed it. `wopr` keeps no settings.
+`%LOCALAPPDATA%\Programs` on Windows) and the manual page if you installed it.{{% if-packages %}} If you
+installed a Linux package, remove it with `sudo apt remove wopr` or `sudo dnf remove wopr` instead.{{% /if-packages %}}
+`wopr` keeps no settings.
 If you ever ran it with `WOPR_DEBUG`, also delete its debug log; [Usage](/usage#debug-log) says where it
 is.

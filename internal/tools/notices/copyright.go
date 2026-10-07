@@ -38,8 +38,9 @@ var (
 var filmOutsideCode = []string{
 	"docs/man/wopr.6",
 	"docs/screenshots/*",
+	"site/content/*",
 	"site/data/games/*",
-	"site/static/img/games/*",
+	"site/static/img/*",
 }
 
 const disclaimer = `wopr is a fan-made homage to the 1983 film WarGames. It quotes short
@@ -61,10 +62,10 @@ prints those licences exactly as each module ships them.`
 const filmComment = `Besides code, these files quote the film's screen text, which the Expat
 licence does not cover (see the Disclaimer).`
 
-const docsComment = `The manual page, screenshots of the program and the game pages of the
-documentation site. They quote or show the film's screen text (see the
-Disclaimer), and the pictures of Global Thermonuclear War's big board show
-Matthew Thomas's map (see internal/assets/gtwmap.go).`
+const docsComment = `The manual page, screenshots of the program, and the pages and
+screenshots of the documentation site. They quote or show the film's screen
+text (see the Disclaimer), and the pictures of Global Thermonuclear War's big
+board show Matthew Thomas's map (see internal/assets/gtwmap.go).`
 
 const abs0Comment = `These files quote the film's screen text (the backdoor connection
 header, the closing montage's scenario names) as the abs0/wargames project

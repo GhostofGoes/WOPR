@@ -14,7 +14,8 @@ go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
 ```
 
 [Installation](/install) has the details for Linux, macOS and Windows, including how to check that the
-download is genuine before you run it.
+download is genuine before you run it.{{% if-packages %}} On Debian, Ubuntu, Fedora or RHEL, you can
+install a [Linux package](/install#linux-packages) instead.{{% /if-packages %}}
 
 ## 2. Dial in
 

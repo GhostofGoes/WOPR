@@ -39,8 +39,9 @@ prek run --all-files   # run everything on demand
 ## Making a change
 
 1. Branch from `main`. `main` only accepts pull requests, and every PR needs the `ci-ok` check to pass.
-   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets, and
-   runs each binary natively.
+   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets and the
+   Linux packages, runs each binary natively (and installs the packages on Linux), and builds the docs
+   site.
 2. Keep each change focused. Add or update tests with the change. Regenerate golden files with
    `WOPR_UPDATE_GOLDEN=1 go test ./...`, and review the resulting diff.
 3. If players will notice the change, add a change note with

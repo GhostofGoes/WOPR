@@ -1,0 +1,17 @@
+{{- /*
+  Shows its content only when the latest release (see the version shortcode) has the Linux
+  packages, a .deb and an .rpm, as every release after v0.2.0 does; with "not", only when it has
+  none. So no page names a package file that does not exist yet. Call it with % delimiters, so
+  that its Markdown joins the page:
+
+    {{% if-packages %}}Install the .deb or the .rpm.{{% /if-packages %}}
+    {{% if-packages "not" %}}The next release adds them.{{% /if-packages %}}
+*/ -}}
+{{- $arg := .Get 0 | default "" -}}
+{{- if not (in (slice "" "not") $arg) -}}
+  {{- errorf "%s: if-packages: unknown argument %q (give none, or \"not\")" .Page.String $arg -}}
+{{- end -}}
+{{- $has := not (in (slice "0.1.0" "0.2.0") (partial "latest-version.html" .)) -}}
+{{- if eq $has (eq $arg "") -}}
+  {{- .Inner -}}
+{{- end -}}

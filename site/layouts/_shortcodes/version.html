@@ -2,12 +2,4 @@
   The latest release's version without its "v" (0.2.0), from the first version heading in
   CHANGELOG.md, so that download commands name real files. Usable inside code blocks.
 */ -}}
-{{- with resources.Get "repo/CHANGELOG.md" -}}
-  {{- with findRESubmatch `(?m)^## v(\d+\.\d+\.\d+)\b` .Content 1 -}}
-    {{- index (index . 0) 1 -}}
-  {{- else -}}
-    {{- errorf "version: CHANGELOG.md has no version heading" -}}
-  {{- end -}}
-{{- else -}}
-  {{- errorf "version: CHANGELOG.md is not mounted (see hugo.yaml)" -}}
-{{- end -}}
+{{- partial "latest-version.html" . -}}

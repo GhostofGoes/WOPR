@@ -153,17 +153,18 @@ The owner merges the release pull request, then pushes the tag. Everything else 
 request or done by `release.yml`.
 
 1. **The release pull request**, titled `vX.Y.Z` (the version from `docs/PLAN.md` §15), batches the notes
-   and rebuilds the changelog:
+   and rebuilds the changelog and the manual page:
 
    ```sh
    go tool -modfile=tools/release/go.mod changie batch vX.Y.Z
    go tool -modfile=tools/release/go.mod changie merge
+   go run ./internal/tools/manpage
    ```
 
-   The notes move from `.changes/unreleased/` into `.changes/vX.Y.Z.md`, and `CHANGELOG.md` gains the
-   version. Read them once more as a player would; to change one, edit `.changes/vX.Y.Z.md` and run
-   `changie merge` again. Every CI run's `build` job shows the notes the next release would get, in its
-   summary.
+   The notes move from `.changes/unreleased/` into `.changes/vX.Y.Z.md`, `CHANGELOG.md` gains the
+   version, and the manual page's header names it (CI fails until it does). Read the notes once more as
+   a player would; to change one, edit `.changes/vX.Y.Z.md` and run `changie merge` again. Every CI
+   run's `build` job shows the notes the next release would get, in its summary.
 2. **The owner merges it**, then tags the merge commit and pushes the tag:
    `git fetch origin && git tag vX.Y.Z origin/main && git push origin vX.Y.Z`.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
@@ -174,7 +175,8 @@ If the pull request did not batch the notes, the release still gets them: the wo
 `.changes/unreleased/` itself, dated by the tagged commit, and warns. `main` then lags behind the release,
 so CI fails on every branch until one pull request runs `go run ./internal/tools/relnotes -catch-up`. It
 writes the missing `.changes/vX.Y.Z.md` from the tag, removes those notes from `.changes/unreleased/`,
-and merges `CHANGELOG.md`; commit the result.
+and merges `CHANGELOG.md`; run `go run ./internal/tools/manpage` too, and commit the result. That
+release's manual page still names the version before it.
 
 ## Docs site
 
@@ -195,6 +197,10 @@ missing screenshot fails the build.
   `screenshots` shortcode to open them as one set, as each game's page does.
 - The lightbox is Hextra's, PhotoSwipe, fetched at build time from the exact version in `site/hugo.yaml`
   (`params.gallery.base`); the credits page shows its licence from the same version.
+- Download commands use the `version` shortcode, the latest release in `CHANGELOG.md`. Text about the
+  `.deb` and `.rpm` goes inside `{{% if-packages %}}`, which shows it only once the latest release has
+  them (every release after v0.2.0), so no page names a package that does not exist yet. Its content is
+  Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 

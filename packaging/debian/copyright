@@ -35,14 +35,15 @@ Comment: Besides code, these files quote the film's screen text, which the Expat
 
 Files: docs/man/wopr.6
  docs/screenshots/*
+ site/content/*
  site/data/games/*
- site/static/img/games/*
+ site/static/img/*
 Copyright: 2026 GhostofGoes
 License: Expat
-Comment: The manual page, screenshots of the program and the game pages of the
- documentation site. They quote or show the film's screen text (see the
- Disclaimer), and the pictures of Global Thermonuclear War's big board show
- Matthew Thomas's map (see internal/assets/gtwmap.go).
+Comment: The manual page, screenshots of the program, and the pages and
+ screenshots of the documentation site. They quote or show the film's screen
+ text (see the Disclaimer), and the pictures of Global Thermonuclear War's big
+ board show Matthew Thomas's map (see internal/assets/gtwmap.go).
 
 Files: internal/assets/scenarios.go
  internal/movie/scenes/logon.go
