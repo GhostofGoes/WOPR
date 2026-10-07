@@ -1,15 +1,26 @@
 {{- /*
-  The latest release's version without its "v" (0.2.0), from the first version heading in
-  CHANGELOG.md. The version and if-packages shortcodes use it.
+  The latest release's version without its "v" (0.2.0). The version and if-packages shortcodes use
+  it. docs.yml names the latest published release in HUGO_PARAMS_LATESTRELEASE (v0.2.0), because
+  a release pull request adds its version to CHANGELOG.md before the release exists, and the
+  published site must never name a download that is not there yet. Without it (CI's builds, a
+  preview), it is the first version heading in CHANGELOG.md.
 */ -}}
 {{- $v := "" -}}
-{{- with resources.Get "repo/CHANGELOG.md" -}}
-  {{- with findRESubmatch `(?m)^## v(\d+\.\d+\.\d+)\b` .Content 1 -}}
+{{- with site.Params.latestRelease -}}
+  {{- with findRESubmatch `^v(\d+\.\d+\.\d+)$` . 1 -}}
     {{- $v = index (index . 0) 1 -}}
   {{- else -}}
-    {{- errorf "latest-version: CHANGELOG.md has no version heading" -}}
+    {{- errorf "latest-version: HUGO_PARAMS_LATESTRELEASE is %q, not a release tag such as v0.2.0" . -}}
   {{- end -}}
 {{- else -}}
-  {{- errorf "latest-version: CHANGELOG.md is not mounted (see hugo.yaml)" -}}
+  {{- with resources.Get "repo/CHANGELOG.md" -}}
+    {{- with findRESubmatch `(?m)^## v(\d+\.\d+\.\d+)\b` .Content 1 -}}
+      {{- $v = index (index . 0) 1 -}}
+    {{- else -}}
+      {{- errorf "latest-version: CHANGELOG.md has no version heading" -}}
+    {{- end -}}
+  {{- else -}}
+    {{- errorf "latest-version: CHANGELOG.md is not mounted (see hugo.yaml)" -}}
+  {{- end -}}
 {{- end -}}
 {{- return $v -}}

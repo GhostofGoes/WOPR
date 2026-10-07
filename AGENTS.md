@@ -177,7 +177,7 @@ request or done by `release.yml`.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
    `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
    (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes. Then it
-   republishes the docs site from the new tag (`docs.yml`).
+   publishes the docs site again (`docs.yml`), so that its download commands name the new release.
 
 `relnotes` refuses a tag that does not name the batched version, and nothing is published: delete that
 tag and push the right one. It warns when the tagged commit has notes the release does not list. The `.deb` and `.rpm`
@@ -198,11 +198,12 @@ version, as every build's does, but keeps the previous release's date. Only `vX.
 ## Docs site
 
 `site/` is the documentation site: Hugo with the Hextra theme, published to
-<https://ghostofgoes.github.io/WOPR/> by `docs.yml` from the latest release's tag, so that it describes a
-version people can download. `release.yml` starts `docs.yml` after it publishes a release; to publish
-again without a release (after changing the Pages settings, say), run `docs.yml` on `main` by hand. A
-change to the site therefore goes live with the next release. CI's `docs` job builds `main`'s copy on
-every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a missing
+<https://ghostofgoes.github.io/WOPR/> by `docs.yml` on every push to `main`, so a change to the site goes
+live when its pull request merges. Its download commands and package instructions name the latest
+published release, which `docs.yml` looks up (a release pull request puts its version in `CHANGELOG.md`
+before the release exists); `release.yml` starts `docs.yml` again after it publishes a release. To publish
+again by hand (after changing the Pages settings, say), run `docs.yml` on `main`. CI's `docs` job builds the
+site on every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a missing
 screenshot fails the build.
 
 - Pages are Markdown in `site/content/`, written for players in plain, direct prose.
@@ -258,8 +259,8 @@ If a rights holder asks for material to be removed:
    `site/static/img/games/`) show some of it, and the docs site's pages (`site/content/`,
    `site/data/games/`) quote some, which the manual page (`docs/man/wopr.6`) repeats. The `.deb`'s
    copyright file (`packaging/debian/copyright`) names the files; regenerate it afterwards.
-2. Remove or replace it in one pull request, and release a patch version. Releasing it also republishes
-   the docs site from the new tag (`docs.yml`).
+2. Remove or replace it in one pull request, and release a patch version. Merging it republishes the
+   docs site (`docs.yml`).
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).
 4. Reply to the requester saying what was done. Copies remain in git history and in the Go module mirror,
@@ -284,8 +285,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   vulnerabilities.
 - **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. `docs.yml` then
   deploys the docs site to <https://ghostofgoes.github.io/WOPR/> through the `github-pages` environment,
-  which GitHub creates and limits to deployments from `main`; it runs on `main` and builds from a release
-  tag. The first deployment comes with the first release after v0.2.0, the first with a docs site.
+  which GitHub creates and limits to deployments from `main`. The first deployment comes with the first
+  push to `main` after this setting.
 
 ## Milestone checklist
 

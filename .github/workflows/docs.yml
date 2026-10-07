@@ -1,20 +1,16 @@
 # Publishes the documentation site (site/: Hugo with the Hextra theme) to GitHub Pages, at
-# https://ghostofgoes.github.io/WOPR/, from a release tag, so that the site always describes a
-# release that exists: its version and downloads, its options and its manual page. release.yml
-# starts it on main with the tag it has just published. Run it by hand to publish again: with no
-# tag, it takes the latest release. ci.yml's docs job builds main's copy of the site on every push,
-# so this workflow only builds a release's and deploys it. It needs the repository's Pages source
-# set to GitHub Actions (AGENTS.md, "Repository settings").
+# https://ghostofgoes.github.io/WOPR/, from every push to main. Its download commands and package
+# instructions name the latest published release, which this workflow looks up: a release pull
+# request puts its version in CHANGELOG.md before the release exists. release.yml starts it again
+# once a release is published, so that the site names the new one. Run it by hand on main to publish
+# again (after changing the Pages settings, say). It needs the repository's Pages source set to
+# GitHub Actions (AGENTS.md, "Repository settings").
 name: Docs
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Release tag to publish the site from, such as v0.3.0; empty for the latest release
-        type: string
-        required: false
-        default: ""
 
 permissions: {}
 
@@ -29,36 +25,27 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      contents: read
+      contents: read # the checkout, and the latest release
       pages: read # configure-pages reads the site's address
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-          fetch-depth: 0 # the tags, to find the release
-      # The site, Hugo and the theme all come from the release tag, not from the branch this
-      # workflow runs on. A release is vMAJOR.MINOR.PATCH, as release.yml publishes it.
-      - name: Check out the release
+      # GitHub's latest release: published, not a draft or a prerelease. A release is
+      # vMAJOR.MINOR.PATCH, as release.yml publishes it.
+      - name: Find the latest release
+        id: release
         env:
-          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
-          if [[ -z "${TAG}" ]]; then
-            TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD)"
-          fi
-          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::the tag input must be a release tag such as v0.3.0"
+          tag="$(gh api "repos/${REPO}/releases/latest" --jq .tag_name)"
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::the latest release is ${tag:-missing}, not a tag such as v0.3.0"
             exit 1
           fi
-          if ! git rev-parse --quiet --verify "refs/tags/${TAG}^{commit}" > /dev/null; then
-            echo "::error::there is no tag ${TAG}"
-            exit 1
-          fi
-          git checkout --quiet --detach "refs/tags/${TAG}"
-          if [[ ! -f site/hugo.yaml ]]; then
-            echo "::error::${TAG} has no docs site; the first release with one is the one after v0.2.0"
-            exit 1
-          fi
-          echo "The docs site from ${TAG}." >> "${GITHUB_STEP_SUMMARY}"
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "The docs site from ${GITHUB_SHA}, naming the release ${tag}." >> "${GITHUB_STEP_SUMMARY}"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -66,10 +53,12 @@ jobs:
       - id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       # Hugo is built from tools/docs/go.mod, and the theme comes from site/go.mod. The address
-      # comes from Pages, so that a custom domain needs no change here.
+      # comes from Pages, so that a custom domain needs no change here. The release goes to the
+      # latest-version partial, which otherwise reads CHANGELOG.md.
       - name: Build the site
         env:
           BASE_URL: ${{ steps.pages.outputs.base_url }}
+          HUGO_PARAMS_LATESTRELEASE: ${{ steps.release.outputs.tag }}
         run: |
           go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
             --minify --baseURL "${BASE_URL%/}/" --destination "${RUNNER_TEMP}/site"

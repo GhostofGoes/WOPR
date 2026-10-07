@@ -235,10 +235,10 @@ jobs:
           gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag "${notes[@]}" assets/*
           gh release edit "${TAG}" --repo "${REPO}" --draft=false
 
-  # The docs site describes the latest release, so it is published from this tag once the release
-  # exists, and not before: docs.yml runs on main, whose github-pages environment allows the
-  # deployment, and builds the site from the tag. A run started with GITHUB_TOKEN through
-  # workflow_dispatch is the one kind such a token may start.
+  # docs.yml publishes the docs site from main, naming the latest published release in its download
+  # commands; it ran when the release pull request merged, before this release existed, so it runs
+  # again now. A run started with GITHUB_TOKEN through workflow_dispatch is the one kind such a token
+  # may start.
   docs:
     name: docs
     needs: publish
@@ -248,9 +248,8 @@ jobs:
     permissions:
       actions: write # gh workflow run starts docs.yml
     steps:
-      - name: Publish the docs site from this release
+      - name: Publish the docs site again
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
-        run: gh workflow run docs.yml --repo "${REPO}" --ref main -f tag="${TAG}"
+        run: gh workflow run docs.yml --repo "${REPO}" --ref main

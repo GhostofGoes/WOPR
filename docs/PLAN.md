@@ -1609,9 +1609,9 @@ its run tests exactly the tree the squash merge produces.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
 6. **`docs`** (`actions: write` only), after a successful `publish`, runs
-   `gh workflow run docs.yml --ref main -f tag=vX.Y.Z`, which publishes the docs site from the new tag
-   (§13). A run that `GITHUB_TOKEN` starts through `workflow_dispatch` is the one kind such a token may
-   start.
+   `gh workflow run docs.yml --ref main`, which publishes the docs site again so that its download commands
+   name the new release (§13). A run that `GITHUB_TOKEN` starts through `workflow_dispatch` is the one kind
+   such a token may start.
 
 **Dry run** (CR-1, IM-2). `workflow_dispatch` runs steps 2–4 with `--snapshot`: GoReleaser in release mode
 refuses an untagged commit, and there is no tag before v0.1.0. `verify` is then skipped, so every later job
@@ -1763,25 +1763,25 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
     requests sections are mounted and rendered, not copied; so are `docs/screenshots/` and the manual page.
-    The download commands name the latest version from `CHANGELOG.md`, and the `.deb` and `.rpm`
-    instructions appear once that version has packages (any release after v0.2.0; the `if-packages`
-    shortcode, which matters for CI's builds of `main`). Tests in `internal/cli` check that the usage page
-    lists every option and environment variable and the movie page every scene.
+    The download commands name the latest release (below), and the `.deb` and `.rpm` instructions appear once
+    that release has packages (any release after v0.2.0; the `if-packages` shortcode). Tests in `internal/cli`
+    check that the usage page lists every option and environment variable and the movie page every scene.
   - **Strict build.** `--panicOnWarning` (deprecations included) and `--printPathWarnings`; an internal link
     to no page or file, a missing screenshot or a game file without its required fields is an error. CI's
     `docs` job builds it on every push (§11.2).
-  - **Deploy from the latest release** (review of 2026-10-07: a site built from `main` documented options
-    and a manual page that the latest release does not have, and its download commands named a release
-    minutes before it existed). `docs.yml` runs on `main`, only through `workflow_dispatch`: `release.yml`
-    starts it with the tag it has just published (§11.3), and a run by hand without a tag takes the latest
-    `vX.Y.Z` tag. It checks out that tag and builds the site, Hugo and the theme from it, then deploys to
-    GitHub Pages (`actions/configure-pages`, `actions/upload-pages-artifact`, `actions/deploy-pages`). A
-    change to the site goes live with the next release; the first deployment is the first release after
-    v0.2.0, which has none. The build job has `contents: read` and `pages: read`, the deploy job
-    `pages: write` and `id-token: write`, in the `github-pages` environment; the deploy job alone is in
-    concurrency group `pages`, never cancelling a deployment in progress, so a run on another branch
-    cannot replace one from `main` that is waiting; no build cache. Pages must be set to deploy from
-    GitHub Actions (AGENTS.md, repository settings).
+  - **Deploy from `main`** (owner decision 2026-10-07). `docs.yml` runs on every push to `main` and by hand
+    (`workflow_dispatch`), and `release.yml` starts it after publishing a release (§11.3). It builds the site
+    from `main` and deploys it to GitHub Pages (`actions/configure-pages`, `actions/upload-pages-artifact`,
+    `actions/deploy-pages`), so a change to the site goes live when its pull request merges. The download
+    commands name the latest *published* release, which `docs.yml` looks up with the GitHub API and passes to
+    Hugo as `HUGO_PARAMS_LATESTRELEASE` (review of 2026-10-07: a release pull request puts its version in
+    `CHANGELOG.md` minutes before the release exists, so a site that read the version from there named a
+    download that was not there yet); without it, as in CI's builds and a preview, the version comes from
+    `CHANGELOG.md`. The site can describe an option before a release has it, as most projects' docs do. The
+    build job has `contents: read` and `pages: read`, the deploy job `pages: write` and `id-token: write`, in
+    the `github-pages` environment; the deploy job alone is in concurrency group `pages`, never cancelling a
+    deployment in progress, so a run on another branch cannot replace one from `main` that is waiting; no
+    build cache. Pages must be set to deploy from GitHub Actions (AGENTS.md, repository settings).
   - **Third-party files, vendored** (review of 2026-10-07: fetching them from jsDelivr at build time made
     `ci-ok`, and so every release, depend on a CDN, and nothing pinned the bytes it served). Hextra's
     search runs on FlexSearch 0.8.143 (Apache-2.0) and its lightbox, which shows a screenshot full size, on

@@ -156,9 +156,8 @@ theme, both pinned in the repository. Its pages are in `site/content/`; each gam
 go tool -modfile=tools/docs/go.mod hugo server --source site
 ```
 
-Every page has an "Edit this page" link that opens its source on GitHub. The site is published from
-each release, so that it always describes a version you can download: a change to it goes live with
-the next release.
+Every page has an "Edit this page" link that opens its source on GitHub. A change to the site goes
+live when its pull request merges into `main`.
 
 ## Licence
 
