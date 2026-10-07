@@ -17,6 +17,7 @@ import (
 
 	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/movie"
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
 	"github.com/GhostofGoes/WOPR/internal/theme"
@@ -38,10 +39,10 @@ type Options struct {
 	SeedSet      bool
 	ReduceMotion bool
 	Play         string // game slug to start directly
-	Movie        bool
-	Scene        string
-	NoColor      bool  // NO_COLOR set to any non-empty value (no-color.org)
-	Panel        Panel // the front-panel row
+	Movie        bool   // movie mode: the director replays the film's scenes instead of the persona
+	Scene        string // with Movie: the scene to play from (a slug); "" opens the scene menu
+	NoColor      bool   // NO_COLOR set to any non-empty value (no-color.org)
+	Panel        Panel  // the front-panel row
 	Registry     *games.Registry
 	Log          *debuglog.Log // nil: no debug log
 }
@@ -221,17 +222,24 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// start runs the root program once the terminal has a usable size.
+// start runs the root program once the terminal has a usable size: the persona, or in movie
+// mode the director, which pins its own seed and plays deterministically (docs/PLAN.md §7).
 func (m *model) start() tea.Cmd {
 	m.started = true
-	m.runner = host.New(host.Config{
-		Seed: m.opts.Seed, Instant: m.opts.Instant, Deterministic: m.opts.SeedSet, ReduceMotion: m.opts.ReduceMotion,
-		Resolve: m.resolve, Area: m.area,
-	})
+	seed, deterministic := m.opts.Seed, m.opts.SeedSet
 	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
+	if m.opts.Movie {
+		seed, deterministic = movie.Seed, true
+		root = movie.New(movie.Options{Scene: m.opts.Scene})
+		m.opts.Log.Printf("movie mode from scene %q, seed %d", m.opts.Scene, seed)
+	}
 	if m.testRoot != nil {
 		root = m.testRoot
 	}
+	m.runner = host.New(host.Config{
+		Seed: seed, Instant: m.opts.Instant, Deterministic: deterministic, ReduceMotion: m.opts.ReduceMotion,
+		Resolve: m.resolve, Area: m.area,
+	})
 	return m.applyAll(m.runner.Start(root, host.Placement{}))
 }
 
@@ -243,7 +251,8 @@ func (m *model) resolve(l proto.Launch) (proto.Program, host.Placement, error) {
 	if !ok || e.New == nil {
 		return nil, host.Placement{}, games.ErrNotFound
 	}
-	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal}, nil
+	// In movie mode the director's programs (the climax) play through: Esc cannot end them.
+	return e.New(), host.Placement{Layout: e.Info.Layout, PanelRows: e.Info.PanelRows, NoAbort: e.Info.Internal || m.opts.Movie}, nil
 }
 
 // tick advances the typewriter and the runner.

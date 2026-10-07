@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/movie"
 )
 
 // RenderGames writes the plain-text game list for --games: the film's LIST GAMES order
@@ -46,6 +47,21 @@ func RenderGames(w io.Writer, reg *games.Registry) error {
 	return err
 }
 
+// RenderScenes writes the plain-text scene list for --scenes: number, slug and what happens,
+// in the film's order.
+func RenderScenes(w io.Writer) error {
+	_, err := io.WriteString(w, sceneList()+"\nPlay from one with wopr -m <number or name>; wopr -m alone opens a menu.\n")
+	return err
+}
+
+func sceneList() string {
+	var b strings.Builder
+	for _, s := range movie.Scenes() {
+		fmt.Fprintf(&b, "%2d. %-16s %s\n", s.Number, s.Slug, s.Blurb)
+	}
+	return b.String()
+}
+
 // Handle is the shortest name a game answers to: its slug or its shortest alias.
 func Handle(in games.Info) string {
 	h := in.Slug
@@ -77,10 +93,15 @@ func RenderHelp(w io.Writer) error {
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
 
+Movie mode plays the film's scenes from the one named to the end, then exits;
+without one, it opens a menu of scenes. Space pauses, n or Right skips a scene,
+p or Left goes back, and Esc opens the menu.
+
 Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
   wopr --games         list the games
+  wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
 `)
 	_, err := io.WriteString(w, b.String())
 	return err

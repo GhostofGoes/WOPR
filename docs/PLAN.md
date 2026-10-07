@@ -109,7 +109,8 @@ in our own layout, tagged `reconstructed` (SL-5).
 
 **Provenance tags.** Every script line, scene step and asset carries one. The tag is one of the values below,
 and a `third-party:` tag must name a source credited in `NOTICE.md`; a test enforces both for `lines.go` now and
-for `internal/assets/` and `internal/movie/scenes/` when they land (SL-4). The types and the check live in
+for `internal/assets/` and `internal/movie/scenes/` (SL-4). The user's typed lines in movie mode are
+`script.User` lines, which keep their mixed case. The types and the check live in
 `internal/script` (`script.L`, `script.Validate`), shared by the persona, every game, the assets and the movie
 scenes.
 
@@ -304,7 +305,7 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
 
 ### 4.2 Runtime flow and state ownership
 
-1. **`main`** parses flags. Print-and-exit actions (`--version`, `--help`, `--games`, `--licenses`) write
+1. **`main`** parses flags. Print-and-exit actions (`--version`, `--help`, `--games`, `--scenes`, `--licenses`) write
    plain, unstyled text in one buffered write. They ignore `SIGPIPE`, and they treat `EPIPE` (Unix) or
    `ERROR_NO_DATA`/`ERROR_BROKEN_PIPE` (Windows) as success (C-3, U-11).
 2. **TTY check.** `ui.TerminalProblem` reports a stdout that is not a terminal (checked with
@@ -769,7 +770,8 @@ wopr -h | --help              usage, including LOGON: Joshua, LOGOFF and the mov
 wopr -g | --games             numbered list in film order (+ slugs); tic-tac-toe under "ALSO AVAILABLE"
 wopr -p | --play <game>       launch a game (number 1-15, slug, alias, name, or unique prefix)
 wopr <game> [flags]           same as --play; flags may come before or after
-wopr -m | --movie [scene]     movie mode (§7); without a scene, a scene menu. Until M6: exit 2, "arrives in v1.1"
+wopr -m | --movie [scene]     movie mode (§7): from that scene to the end of the list; without one, a scene menu
+wopr -S | --scenes            list the movie's scenes (number, slug, what happens) and exit
 wopr -t | --theme <name>      imsai | green | amber | norad          (env WOPR_THEME)
 wopr -i | --instant           no pacing                              (env WOPR_INSTANT)
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)
@@ -797,14 +799,17 @@ wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
     | `-t -- gtw` | exit 2: unknown theme `--` |
     | `gtw chess`, `-p chess gtw` | exit 2 |
     | `theaterwide` | exit 2: could mean two games |
-    | `-m 2 -i` | movie, scene `2`, instant (until M6: exit 2) |
+    | `-m 2 -i` | movie from scene 2 (`joshua`), instant |
+    | `-m nowhere`, `-m 7` | exit 2, listing the scenes |
+    | `-m c` | exit 2: could mean `call-back` or `climax` |
     | `-m -p chess` | exit 2: cannot be combined |
     | `--version gtw` | print the version; actions win over a positional |
 
 - **Accepted forms** (C-2). `-games`, `--games`, `-p chess`, `-p=chess`, `-i=false`. Rejected: `-pchess`,
   `-is 1`. A test pins both lists, and the help text shows the accepted ones.
 - **Letters.** `-v` means version, deliberately. A future verbose flag gets another letter (not `-V`, which
-  conventionally means version) (C-4). `-l` is reserved for `--llm` (M7). `--licenses` uses `-L`.
+  conventionally means version) (C-4). `-l` is reserved for `--llm` (M7). `--licenses` uses `-L`, and
+  `--scenes` uses `-S` because `-s` is the seed.
 - **`games.Resolve`**: number (1–15) → slug → alias → exact normalised name → unique prefix.
   - Unlisted entries are never matched by number. Tic-tac-toe has `Listed: false`, which is explicit rather
     than relying on a zero `Number` (G-4). A registry test checks that 1..15 each appear exactly once.
@@ -1033,68 +1038,90 @@ last escort outnumbered them. GTW stays separate: moving it would not remove cod
 ## 7. Movie mode (M6)
 
 `wopr --movie [scene]` replays the film's **WOPR terminal scenes** as a self-running show, through the same
-console, typewriter, canvas and game code as interactive play.
+console, typewriter, canvas and game code as interactive play. **Built in M6.**
 
-**Scenes** (provisional list; the scripts are fixed in the M5 viewing pass). David's lines are `Type` steps in
-mixed case, as on screen (RF-9):
+**Scenes.** `wopr --scenes` (`-S`) prints this list. The scripts are checked in the M5 viewing pass; until
+then every film line in them is tagged `reconstructed`. David's lines are `Type` steps in mixed case, as on
+screen (RF-9):
 
 | # | Slug | Content |
 |---|---|---|
-| 1 | `first-contact` | Dial; LOGON attempts and `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--`; `HELP LOGON`, `HELP GAMES`, `LIST GAMES` |
-| 2 | `joshua` | `LOGON: Joshua`; header and status burst; greeting; GTW-vs-chess; `FINE.` |
-| 3 | `first-strike` | Side choice; targets (Las Vegas, Seattle); big board, trajectories, DEFCON. The first strike needs no order; a longer scene continues with `Type("")`, which replays WOPR's war plan |
-| 4 | `call-back` | WOPR phones David at home: `GAME TIME ELAPSED` / `ESTIMATED TIME REMAINING`, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, `TO WIN THE GAME` |
-| 5 | `norad-terminal` | The NORAD session: `Joshua`, `Are you still playing the game?`, the kill-ratio offer, Falken's address |
-| 6 | `climax` | The climax notices and `LIST GAMES` (§6.2), tic-tac-toe with one player, then 0, self-play, montage, `A STRANGE GAME…` |
+| 1 | `first-contact` | The persona's dial; `LOGON: 000001`, `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--` and the re-dial; `Help Logon`, `Help Games`, `List Games`; `Falkens-Maze`, refused. *Interactive.* |
+| 2 | `joshua` | `LOGON: Joshua`; the header and status burst; the greeting and its small talk; GTW-vs-chess; `FINE.` *Interactive.* |
+| 3 | `first-strike` | The side choice (`2`) and the targets (Las Vegas, Seattle); the big board: the first strike needs no order, then `Type("")` at the strike prompt carries out WOPR's war plan for the second (DEFCON 3) |
+| 4 | `call-back` | WOPR phones David at home: `Incorrect identification. I am not Falken.`, `Falken is dead.`, `I'M SORRY TO HEAR THAT, PROFESSOR.` and the interrupted game, `What is the primary goal?` twice (`YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`), then the game clock (`GAME TIME ELAPSED`, `ESTIMATED TIME REMAINING`) |
+| 5 | `norad-terminal` | The NORAD session: `Joshua`, `Are you still playing the game?`, `28 HOURS` and the kill-ratio offer, GTW's kill-ratio table, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, and Falken's address after `What classified address?` |
+| 6 | `climax` | The board at DEFCON 1 while WOPR cracks the launch code; `List Games`; `CHESS`, refused; `GTW`, running; `TIC-TAC-TOE`: one player to a stalemate, `ZERO`, self-play, the montage, `Hello.` and `A STRANGE GAME…` |
 
-**Design.**
+As built, `Is this a game or is it real?` is in the NORAD session, where the fan transcriptions put it, just
+before the classified address it leads to; v2.1's provisional table had it in the call-back. M5 settles it.
 
-- **Data.** A scene is data in `internal/movie/scenes/` with a provenance tag on every step. A step is one of:
-  - `Type{Text}`: the user's line, typed with `Say{Pace: PaceTyping}` (about 8 chars/s) and seeded jitter;
-  - `Say{Lines, Pace}`;
-  - `Clear`;
-  - `Wait{D}`;
-  - `Board{…}`: a GTW film-scenario frame drawn by `games/gtw`'s exported film renderer;
-  - `Run{…}`: the real ending, started as `Launch{ending, Mode: "movie"}`; in that mode the ending supplies its
-    own scripted input (`Hello.`).
-- **Director.** `movie.Director` is the root `proto.Program`. It pins a constant `Env.Seed` (ignoring
-  `--seed`) and runs `Deterministic`, so every replay is identical (RF-5).
-- **Host hooks for M6** (AR-7, RF-1, IM-11). The director needs three things the M1 host does not offer. They are
-  additive, so they land in M6, and the `gamestest` stub gains a case for each:
-  - **Esc capture.** A root program that is not the persona may opt in (an `AwaitKeys` flag) to receive Esc,
-    Space, ←/→ and `n`/`p`/`q` as `KeyEvent`s, without the skip side effects. `proto.Key` gains `KeyEsc`.
-  - **`Hold{On bool}`**, an Output that freezes the typewriter, `Wait`, `Animate` and Blink, reusing the
-    too-small pause.
-  - **A drained signal**: an event when the program's queued output has finished revealing, so the director
-    emits one step at a time and can drop the rest of a scene on next or previous.
-  While the ending runs on top of the director, the control keys are inactive except Ctrl+C; the climax plays
-  through.
+**Design** (as built).
+
+- **Data.** Scenes are data in `internal/movie/scenes`, every step tagged (`scenes.Scene.Lines` feeds
+  `script.Validate`). A `Scene` has a slug, a menu title, a one-line blurb, an `Interactive` mark and its
+  steps:
+  - `Type{Prompt, Text}`: the user's line. `proto.Typed` shows the prompt at once, hesitates, then types the
+    text in bursts of one to four keystrokes at `PaceTyping` (8 chars/s) with seeded pauses, on one row
+    (`Say.Open`), and leaves the blank line the console leaves after an answer. The text is a `script.User`
+    line: mixed case, exempt from the capitals rule.
+  - `Say{Lines, Pace}`, `Clear`, `Wait{D}`.
+  - `Board{At, Play}`: the big board, drawn by `gtw.Film`, GTW's exported film-scenario renderer. A `Film` is
+    the real game given the film's side and targets (`gtw.FilmSide`, `gtw.FilmTargets`) and then WOPR's war
+    plan, stepped a frame at a time to a stage (`FilmStrike1`, `FilmStrike2`, `FilmRatios`, `FilmClimax`).
+    With `Play` the war plays out on ticks and prints the game's own strip lines; without, the board jumps
+    there silently. `At` 0 puts the board away: at the climax, `LIST GAMES` goes to the console, as GTW's
+    does. While the board is at the climax it keeps cracking the launch code.
+  - `Run{Slug, Mode}`: a real program launched over the director; the scene goes on when it ends. The board
+    makes way for it. The climax runs `Launch{tic-tac-toe, "movie:N"}`: tic-tac-toe's movie mode types the
+    film's answers itself (`1`; perfect moves for X, so every seed ends in a stalemate; `ZERO`) and reads each
+    once it is on screen (`Drain`), then hands off to the ending in the same mode. The ending types `Hello.`
+    itself and carries on cracking the code from N, the board's count.
+- **Director.** `movie.Director` is the root `proto.Program` in place of the persona. It pins `movie.Seed`
+  (1983) as the session seed and runs `Deterministic`, whatever `--seed` says, so every replay is identical
+  (RF-5): the typing jitter comes from `NewRand(Seed, DomainMovie|scene)` and the launched programs' seeds from
+  the pinned session seed. It emits one step, then `Drain`, and the next step on `Drained`; a `Run` step waits
+  for `GameOver`, then drains the program's last words.
+- **Host hooks.** Key capture, `Hold`, `Drain` and `Skip`, plus `Say.Open` for typed lines (§4.4). While the
+  climax runs on top of the director, keys do nothing but Ctrl+C (and PgUp/PgDn); in movie mode the resolver
+  marks every launched program `NoAbort`.
 - **Controls**:
 
   | Key | Action |
   |---|---|
-  | Space | Pause / resume |
-  | → or `n` | Next scene |
-  | ← or `p` | Previous scene |
+  | Space | Pause / resume (`Hold`; `** PAUSED **` shows under the text) |
+  | → or `n` | Next scene; after the last, the end of the list |
+  | ← or `p` | Previous scene; on the first, it starts again |
   | Esc | Scene menu |
   | `LOGOFF` or `q` (in the menu) | Exit 0 |
   | Ctrl+C | Exit 130 |
 
-  `--instant` plays with no pacing, which tests use. `--theme` and `--reduce-motion` apply.
-- **Which scenes play.** `wopr -m` opens the scene menu. `wopr -m <scene>` plays from that scene to the end of
-  the list, then exits 0 (RF-5). The e2e case asserts that exit without sending a key; a separate case opens the
-  menu and sends `q`.
+  Every jump ends a pause, stops the board and reveals what is queued at once (`Skip`), so the next scene
+  starts on a clean page straight away. `--instant` plays with no pacing, which tests use. `--theme` and
+  `--reduce-motion` apply.
+- **The scene menu.** `wopr -m` opens it: the scenes, numbered, the keys, and `SCENE:`, which takes a number, a
+  slug, a title or a unique prefix. `q` (or `LOGOFF`, `EXIT`, `QUIT`) exits 0; an empty line asks again; an
+  unknown name gets `NO SUCH SCENE.` and an ambiguous one lists its scenes. Esc during playback returns to it,
+  and a scene picked there plays to the end of the list, then the menu returns.
+- **Which scenes play.** `wopr -m <scene>` (number, slug, title or unique prefix, resolved by `movie.Resolve`)
+  plays from that scene to the end of the list, then exits 0 (RF-5). An unknown scene exits 2 and prints the
+  list; an ambiguous one exits 2 naming its scenes. `wopr --scenes` prints the number, slug and blurb of each
+  scene and exits 0.
 - **Isolation.** No LOGON, no persona, no Brain, no network.
-- **Consistency test.** Scenes whose WOPR lines the interactive persona also produces are marked `Interactive`
-  (`joshua`, parts of `first-contact`). A test in `internal/movie` feeds their `Type` steps through the real
-  persona via `testkit` and asserts that the persona's lines equal the scene's `Say` lines; archtest allows that
-  test to import `wopr` (§4.1). Movie mode and interactive play cannot drift apart, and the scenes double as
-  end-to-end persona tests.
-- **Legal scope** (RK-1 in §16, SL-8). M6 ships the film's complete WOPR terminal script, much of which the
-  interactive persona already contains. Scenes contain only text that appears on the WOPR terminal on screen:
-  no spoken-only dialogue, no audio, no stills. Every line is tagged, and `NOTICE.md` excludes the quotations
-  from the MIT grant and gives rights holders a contact. The owner accepts the remaining risk by requesting the
-  feature; AGENTS.md has the takedown runbook.
+- **Consistency tests** (`internal/movie`). `first-contact` and `joshua` are marked `Interactive`: their
+  `Type` steps go through the real persona via `testkit`, and its transcript must begin with the scene's text.
+  archtest allows that test, and only it, to import `wopr` (§4.1). `first-strike`, board strip included, must
+  equal GTW's own transcript for the same lines, and the climax's NORAD notices GTW's replies to them. Movie
+  mode and interactive play cannot drift apart, and the scenes double as end-to-end tests.
+- **Tests.** The whole film is a golden (`internal/movie/testdata/film.golden`), and two replays must be
+  identical; the UI goldens `movie_menu` and `movie_screens` show the menu, a line half typed, the pause, the
+  first strike, the climax board and tic-tac-toe playing itself at 80×24 with the front panel. The e2e cases
+  are in §9.
+- **Legal scope** (RK-1 in §16, SL-8). M6 ships the film's WOPR terminal script, much of which the
+  interactive persona already contains. Scenes contain only text that appears on the WOPR terminal on screen,
+  David's typing included: no spoken-only dialogue, no audio, no stills. Every line is tagged, and `NOTICE.md`
+  excludes the quotations from the MIT grant and gives rights holders a contact. The owner accepts the
+  remaining risk by requesting the feature; AGENTS.md has the takedown runbook.
 
 ---
 
@@ -1189,12 +1216,14 @@ mixed case, as on screen (RF-9):
   - On Unix the child gets the pty as its controlling terminal (`Setsid`, `Setctty`); xpty leaves that to the
     caller, and without it a resize never arrives as SIGWINCH.
   - **Cases**, by milestone (IM-3):
-    - M0: `--version`, `--games`, `--licenses`, a closed pipe exits 0, refusal without a terminal, `--movie`
-      before M6 exits 2;
+    - M0: `--version`, `--games`, `--licenses`, a closed pipe exits 0, refusal without a terminal (`--movie`
+      too);
     - M1: start → `LOGON:` → Ctrl+C → exit 130 with the alternate screen left; `Joshua` → `GREETINGS
       PROFESSOR FALKEN.` → `Hello.` → `HOW ARE YOU FEELING TODAY?` → `LOGOFF` → exit 0; start at 60×20 →
       `TERMINAL TOO SMALL` → resize to 80×24 → `LOGON:`;
-    - M6: `--movie joshua --instant` → `FINE.` → exit 0 at the end of the list; the scene menu → `q` → exit 0.
+    - M6: `--movie first-contact --instant` plays every scene and exits 0 at the end of the list, without a
+      key; `-m` → the scene menu → `q` → exit 0; `--scenes` lists the scenes, and `-m nowhere` exits 2 listing
+      them.
   - On Unix every TUI case also asserts that the terminal modes (termios) are restored. Under ConPTY the
     assertion is weaker (exit code and final screen), because conhost owns the console modes.
   - The `build` job cross-compiles the test per target (`internal/tools/stage`) and ships it next to each
@@ -1508,8 +1537,8 @@ boundary (AGENTS.md checklist) (B-5).
    cursor, resize, Ctrl+C restore and SmartScreen.
 7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
-8. From M6: `wopr --movie` plays every scene, and `wopr -m 2 -i` plays from scene 2 to the end of the list
-   and exits 0. The movie consistency test is green. Before M6, `wopr -m` exits 2 saying it arrives in v1.1.
+8. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
+   the end of the list and exits 0; `wopr --scenes` lists them. The movie consistency tests are green.
 
 ---
 
@@ -1524,7 +1553,7 @@ boundary (AGENTS.md checklist) (B-5).
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
 | 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass; dependency and runner checklist. | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; checklist done. | **v1.0.0** |
-| 6 | **Movie mode** (§7): `-m/--movie`, the three host hooks, director, scenes, scene menu, consistency test, e2e cases. | All scenes play; consistency test green; size re-checked. | v1.1.0 |
+| 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,886,112 bytes before M6, 6,070,432 after). | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
 Effort is not estimated per game (P-3). Each milestone's PR description records time spent, which informs the
@@ -1636,8 +1665,10 @@ Both fan transcripts have `COUNTY`; v1 had `COUNTRY`. Settled in M5. The `TRAJEC
 generated (O).
 
 **Call-back, at David's home** (F). WOPR phones David; the screen also shows `GAME TIME ELAPSED` and
-`ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9). David's typed lines, such as
-`Is this a game or is it real?`, are mixed case:
+`ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9; movie mode shows the readings
+the transcriptions give, tagged `reconstructed`). David's typed lines, such as `What is the primary goal?`, are
+mixed case. Movie mode (§7) puts `Is this a game or is it real?` and `WHAT'S THE DIFFERENCE?` in the NORAD
+session, as the transcriptions do:
 
 ```text
 I'M SORRY TO HEAR THAT, PROFESSOR.
@@ -1650,7 +1681,7 @@ WHAT'S THE DIFFERENCE?
 
 **The NORAD terminal session** (F), later, after `Joshua` and `Are you still playing the game?`. `28 HOURS`
 follows the subtitles and the film's timeline; abs0 has `61` (§2.3). The split of lines between the two scenes is
-provisional until M5:
+provisional until M5; movie mode's scenes record the current one:
 
 ```text
 OF COURSE. I SHOULD REACH DEFCON 1 AND LAUNCH MY MISSILES IN 28 HOURS.

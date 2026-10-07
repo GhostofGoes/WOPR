@@ -12,7 +12,9 @@ text" and "Third-party art" below.
 the film shows on the WOPR computer's terminal: the game list, log-on and greeting lines, NORAD notices
 and similar screen text. Those quotations remain the property of their copyright holders. They are
 not licensed under the MIT License, and they are listed with a provenance tag in
-`internal/wopr/lines.go`, `internal/assets/` and `internal/movie/scenes/`.
+`internal/wopr/lines.go`, `internal/assets/` and `internal/movie/scenes/`. Movie mode (`wopr --movie`)
+replays the film's terminal scenes with that text, including the lines typed at the terminal; it contains no
+dialogue that is only spoken, no audio and no stills.
 
 This project is not affiliated with, endorsed by, or sponsored by Metro-Goldwyn-Mayer, United
 Artists, or anyone involved in making the film. *WarGames* is a trademark of its owner and is used

@@ -119,8 +119,22 @@ func TestRefusesWithoutTerminal(t *testing.T) {
 	if code != 2 {
 		t.Errorf("usage error exit %d, want 2", code)
 	}
-	if _, errOut, code := run(t, "--movie"); code != 2 || !strings.Contains(errOut, "v1.1") {
-		t.Errorf("--movie before M6: exit %d, stderr %q; want 2 and when it arrives", code, errOut)
+	if _, errOut, code := run(t, "--movie"); code != 2 || !strings.Contains(errOut, "not a terminal") {
+		t.Errorf("--movie without a terminal: exit %d, stderr %q; want 2 and an explanation", code, errOut)
+	}
+}
+
+// --scenes lists the movie's scenes; an unknown scene is a usage error that lists them.
+func TestScenes(t *testing.T) {
+	for _, flagName := range []string{"-S", "--scenes"} {
+		out, _, code := run(t, flagName)
+		if code != 0 || !strings.Contains(out, " 1. first-contact") || !strings.Contains(out, " 6. climax") {
+			t.Errorf("%s: exit %d, output %q", flagName, code, out)
+		}
+	}
+	_, errOut, code := run(t, "-m", "nowhere")
+	if code != 2 || !strings.Contains(errOut, "no scene matches") || !strings.Contains(errOut, "norad-terminal") {
+		t.Errorf("an unknown scene: exit %d, stderr %q; want 2 and the list", code, errOut)
 	}
 }
 
@@ -273,6 +287,31 @@ func TestLogonConversationLogoff(t *testing.T) {
 	}
 	if !strings.Contains(s.screen(), "--CONNECTION TERMINATED--") {
 		t.Errorf("no exit line on the screen:\n%s", s.screen())
+	}
+}
+
+// Movie mode (M6): a scene played with --instant runs on to the end of the list and exits 0
+// without a key.
+func TestMoviePlaysToTheEnd(t *testing.T) {
+	s := start(t, 80, 24, "--movie", "first-contact", "--instant")
+	if code := s.wait(60 * time.Second); code != 0 {
+		t.Errorf("exit %d at the end of the movie, want 0", code)
+	}
+	if !strings.Contains(s.screen(), "--CONNECTION TERMINATED--") {
+		t.Errorf("no exit line on the screen:\n%s", s.screen())
+	}
+}
+
+// wopr -m opens the scene menu; q leaves with exit 0.
+func TestMovieMenuQuits(t *testing.T) {
+	s := start(t, 80, 24, "-m", "--instant")
+	s.waitFor("SCENE:", 10*time.Second)
+	if !strings.Contains(s.screen(), "6.  CLIMAX") {
+		t.Errorf("the menu lists the scenes:\n%s", s.screen())
+	}
+	s.send("q\r")
+	if code := s.wait(10 * time.Second); code != 0 {
+		t.Errorf("exit %d after q, want 0", code)
 	}
 }
 

@@ -1,0 +1,8 @@
+ 1. first-contact    LOGON ATTEMPTS, HELP AND THE LIST OF GAMES
+ 2. joshua           THE BACKDOOR, THE GREETING AND A GAME OF CHOICE
+ 3. first-strike     A SIDE, TWO TARGETS AND THE BIG BOARD
+ 4. call-back        WOPR CALLS BACK TO FINISH THE GAME
+ 5. norad-terminal   JOSHUA AT NORAD: KILL RATIOS AND FALKEN'S ADDRESS
+ 6. climax           DEFCON 1, TIC-TAC-TOE AND A STRANGE GAME
+
+Play from one with wopr -m <number or name>; wopr -m alone opens a menu.

@@ -8,9 +8,10 @@ Flags:
   -v, --version                print the version and exit
   -h, --help                   print this help and exit
   -g, --games                  list the games and exit
+  -S, --scenes                 list the movie's scenes and exit
   -L, --licenses               print licence notices and exit
   -p, --play <game>            start a game: number, name, alias or prefix
-  -m, --movie                  replay the film's WOPR scenes [scene]
+  -m, --movie                  replay the film's WOPR scenes from [scene] on
   -t, --theme <name>           imsai, green, amber, norad (env WOPR_THEME)
   -i, --instant                no typewriter pacing (env WOPR_INSTANT)
   -s, --seed <n>               deterministic run with this seed
@@ -19,7 +20,12 @@ Flags:
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
 
+Movie mode plays the film's scenes from the one named to the end, then exits;
+without one, it opens a menu of scenes. Space pauses, n or Right skips a scene,
+p or Left goes back, and Esc opens the menu.
+
 Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
   wopr --games         list the games
+  wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)

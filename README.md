@@ -102,6 +102,31 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
   both your hand and dummy's (`7h`); WOPR defends. Make the contract to win.
 - **Tic-tac-toe** (`ttt`, not on the list): squares are numbered 1 to 9. WOPR never loses. Try zero players.
 
+## Movie mode
+
+`wopr --movie` replays the film's scenes at WOPR's terminal, typed and paced as on screen, through the same
+console and games you play with. `wopr --scenes` lists them:
+
+```text
+ 1. first-contact    LOGON ATTEMPTS, HELP AND THE LIST OF GAMES
+ 2. joshua           THE BACKDOOR, THE GREETING AND A GAME OF CHOICE
+ 3. first-strike     A SIDE, TWO TARGETS AND THE BIG BOARD
+ 4. call-back        WOPR CALLS BACK TO FINISH THE GAME
+ 5. norad-terminal   JOSHUA AT NORAD: KILL RATIOS AND FALKEN'S ADDRESS
+ 6. climax           DEFCON 1, TIC-TAC-TOE AND A STRANGE GAME
+```
+
+- `wopr -m` opens a menu of the scenes: type a number or a name, or `q` to leave.
+- `wopr -m 3` (or `wopr -m first-strike`, or any unique start of a name) plays from that scene to the end of
+  the list, then exits.
+- While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
+  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays through.
+- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply, and
+  `--instant` plays the whole film at once.
+
+The scenes show only what appears on WOPR's terminal in the film, David's typing included, and every line
+carries a provenance tag ([NOTICE.md](NOTICE.md)). They are still to be checked line by line against the film.
+
 ## Command-line flags
 
 | Flag | Meaning |
@@ -109,9 +134,10 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
 | `-v`, `--version` | print the version and exit |
 | `-h`, `--help` | print help and exit |
 | `-g`, `--games` | list the games and exit |
+| `-S`, `--scenes` | list the movie's scenes and exit |
 | `-L`, `--licenses` | print licence notices and exit |
 | `-p`, `--play <game>` | start a game directly (number, name, alias or unique prefix); `wopr <game>` does the same |
-| `-m`, `--movie [scene]` | replay the film's WOPR scenes (arrives in v1.1) |
+| `-m`, `--movie [scene]` | replay the film's WOPR scenes from that one on, or pick from a menu; see [Movie mode](#movie-mode) |
 | `-t`, `--theme <name>` | `imsai` (white phosphor, the default), `green`, `amber` or `norad`; env `WOPR_THEME` |
 | `-i`, `--instant` | no typewriter pacing; env `WOPR_INSTANT=1` |
 | `-s`, `--seed <n>` | deterministic run |
