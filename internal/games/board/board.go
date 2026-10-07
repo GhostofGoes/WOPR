@@ -6,6 +6,10 @@
 // squares are blank. Docs/PLAN.md Appendix C drew the board gridless and unshaded; the
 // frame and shading were added for the owner's request for more visual flair, and stay
 // spare: one thin outline, the shading in the dim style, the pieces bright.
+//
+// Draw's squares are three columns wide and one row tall (checkers). DrawCompact's are two
+// by one, which a terminal, its cells about twice as tall as wide, shows square (chess, at
+// the owner's request: three columns made the board half as wide again as it is tall).
 package board
 
 import (
@@ -19,33 +23,58 @@ type Glyph struct {
 	R    rune        // the piece, or 0 for an empty square
 	S    proto.Style // the piece's style
 	A    proto.Attr  // the piece's attributes
-	Disc bool        // draw the piece as a disc, (b): a checker
-	Mark bool        // bracket the square, [n] or [ ]: a square the last move touched
+	Disc bool        // draw the piece as a disc, (b): a checker; Draw only
+	Mark bool        // mark a square the last move touched: [n] or [ ] in Draw, n< or [] in DrawCompact
 }
 
-// Geometry. Each square is three columns: the piece in the middle, shading or brackets on
-// either side.
+// Geometry. Draw's squares are three columns: the piece in the middle, shading or brackets
+// on either side. DrawCompact's are two: the piece or shading, then shading or a mark.
 const (
-	Rows  = 12 // file letters, the frame's top, eight ranks, its bottom, file letters
-	Width = 30 // a rank number, a space, the frame, 8 squares of 3, the frame, a space, a rank number
+	Rows         = 12 // file letters, the frame's top, eight ranks, its bottom, file letters
+	Width        = 30 // a rank number, a space, the frame, 8 squares of 3, the frame, a space, a rank number
+	CompactWidth = 22 // the same with 8 squares of 2
 
-	squareW = 3
-	inner   = 8 * squareW
-	shade   = ':'
+	shade = ':'
 )
 
 // Dark reports whether a square is dark; a1 is.
 func Dark(file, rank int) bool { return (file+rank)%2 == 0 }
 
-// Files is the file letters, one over the middle of each square.
-const Files = "a  b  c  d  e  f  g  h"
+// The file letters, one over each square's piece: Files for Draw, over the middle of each
+// square, and CompactFiles for DrawCompact, over the first column of each.
+const (
+	Files        = "a  b  c  d  e  f  g  h"
+	CompactFiles = "a b c d e f g h"
+)
+
+// geometry is one way of drawing the squares.
+type geometry struct {
+	w      int    // columns per square
+	piece  int    // the piece's column within its square
+	files  string // the file letters, one over each square's piece
+	square func(c *proto.Canvas, x, y int, dark bool, g Glyph)
+}
+
+var (
+	wide    = geometry{w: 3, piece: 1, files: Files, square: drawSquare}
+	compact = geometry{w: 2, piece: 0, files: CompactFiles, square: drawCompactSquare}
+)
 
 // Draw draws the board with its top-left corner at x, y; it takes Width columns and Rows
 // rows. at returns the glyph for a square, with file and rank counted from 0 (a1 is 0, 0).
 // Rank 8 is at the top.
-func Draw(c *proto.Canvas, x, y int, at func(file, rank int) Glyph) {
+func Draw(c *proto.Canvas, x, y int, at func(file, rank int) Glyph) { wide.draw(c, x, y, at) }
+
+// DrawCompact draws the board as Draw does, with squares two columns wide so that it looks
+// square: it takes CompactWidth columns and Rows rows. It draws no discs.
+func DrawCompact(c *proto.Canvas, x, y int, at func(file, rank int) Glyph) {
+	compact.draw(c, x, y, at)
+}
+
+func (gm geometry) draw(c *proto.Canvas, x, y int, at func(file, rank int) Glyph) {
+	inner := 8 * gm.w
 	frame := x + 2
-	c.Put(frame+2, y, Files, proto.StyleDim, 0)
+	c.Put(frame+1+gm.piece, y, gm.files, proto.StyleDim, 0)
 	c.Put(frame, y+1, "."+strings.Repeat("-", inner)+".", proto.StyleDim, 0)
 	for row := range 8 {
 		rank := 7 - row
@@ -54,16 +83,16 @@ func Draw(c *proto.Canvas, x, y int, at func(file, rank int) Glyph) {
 		c.Put(x, ry, label, proto.StyleDim, 0)
 		c.Put(frame, ry, "|", proto.StyleDim, 0)
 		for file := range 8 {
-			drawSquare(c, frame+1+squareW*file, ry, Dark(file, rank), at(file, rank))
+			gm.square(c, frame+1+gm.w*file, ry, Dark(file, rank), at(file, rank))
 		}
 		c.Put(frame+1+inner, ry, "|", proto.StyleDim, 0)
 		c.Put(frame+inner+3, ry, label, proto.StyleDim, 0)
 	}
 	c.Put(frame, y+10, "'"+strings.Repeat("-", inner)+"'", proto.StyleDim, 0)
-	c.Put(frame+2, y+11, Files, proto.StyleDim, 0)
+	c.Put(frame+1+gm.piece, y+11, gm.files, proto.StyleDim, 0)
 }
 
-// drawSquare draws one square, three columns from x.
+// drawSquare draws one of Draw's squares, three columns from x.
 func drawSquare(c *proto.Canvas, x, y int, dark bool, g Glyph) {
 	side := proto.Cell{R: ' ', S: proto.StyleDim}
 	if dark {
@@ -86,6 +115,28 @@ func drawSquare(c *proto.Canvas, x, y int, dark bool, g Glyph) {
 	c.Set(x, y, left)
 	c.Set(x+1, y, mid)
 	c.Set(x+2, y, right)
+}
+
+// drawCompactSquare draws one of DrawCompact's squares, two columns from x: the piece (or
+// shading), then shading, so the second column shows each square's colour in its glyph,
+// piece or not. A marked square is [] when empty; otherwise a pointer follows its piece, n<.
+func drawCompactSquare(c *proto.Canvas, x, y int, dark bool, g Glyph) {
+	fill := proto.Cell{R: ' ', S: proto.StyleDim}
+	if dark {
+		fill.R = shade
+	}
+	piece := fill
+	if g.R != 0 {
+		piece = proto.Cell{R: g.R, S: g.S, A: g.A}
+	}
+	if g.Mark {
+		fill = proto.Cell{R: '<', S: proto.StyleAccent}
+		if g.R == 0 {
+			piece, fill = proto.Cell{R: '[', S: proto.StyleAccent}, proto.Cell{R: ']', S: proto.StyleAccent}
+		}
+	}
+	c.Set(x, y, piece)
+	c.Set(x+1, y, fill)
 }
 
 // ParseSquare reads a square such as "e4" (any case) as file and rank from 0.

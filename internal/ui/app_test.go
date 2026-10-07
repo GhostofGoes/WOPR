@@ -433,7 +433,7 @@ func TestFinalBoardStaysUntilItsLastWords(t *testing.T) {
 		screen := d.screen()
 		if strings.Contains(screen, "WOPR: D8H4") && !strings.Contains(screen, "CHECKMATE.") {
 			sawMate = true // the mating move is out, the game's last line still typing
-			if !strings.Contains(screen, "a  b  c  d  e  f  g  h") {
+			if !strings.Contains(screen, "a b c d e f g h") {
 				t.Fatalf("the board vanished before the mating move was shown:\n%s", screen)
 			}
 		}
