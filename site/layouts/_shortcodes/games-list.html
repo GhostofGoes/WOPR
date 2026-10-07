@@ -1,8 +1,8 @@
 {{- /*
   The table of games on the Games page, from site/data/games: number, name (a link to the
-  game's page), the command that starts it, and its summary, in LIST GAMES order. Call it with %
-  delimiters: {{% games-list %}}. Its output is Markdown, so it is marked safe: escaping it as
-  HTML would show entities in code spans.
+  game's page), the command that starts it, and the first sentence of its summary, in LIST GAMES
+  order. Call it with % delimiters: {{% games-list %}}. Its output is Markdown, so it is marked
+  safe: escaping it as HTML would show entities in code spans.
 */ -}}
 {{- $games := slice -}}
 {{- range hugo.Data.games -}}
@@ -19,5 +19,8 @@
   {{- if not $page -}}
     {{- errorf "games-list: no page for %s" $g.slug -}}
   {{- end -}}
-| {{ with $g.number }}{{ . }}{{ else }}&ndash;{{ end }} | [{{ partial "games/md-text.html" $g.name | safeHTML }}]({{ $page.Path }}) | {{ partial "games/md-code.html" $g.launch | safeHTML }} | {{ partial "games/md-text.html" $g.summary | safeHTML }} |
+  {{- /* The summary's first sentence; the game's page has the rest. */ -}}
+  {{- $summary := $g.summary -}}
+  {{- with findRESubmatch `^(.+?[.!?])\s+[A-Z(]` $summary 1 }}{{ $summary = index (index . 0) 1 }}{{ end -}}
+| {{ with $g.number }}{{ . }}{{ else }}&ndash;{{ end }} | [{{ partial "games/md-text.html" $g.name | safeHTML }}]({{ $page.Path }}) | {{ partial "games/md-code.html" $g.launch | safeHTML }} | {{ partial "games/md-text.html" $summary | safeHTML }} |
 {{ end -}}

@@ -48,12 +48,8 @@
     {{- if strings.Contains .caption "`" -}}
       {{- errorf "site/data/games/%s.json: a screenshot caption may not contain a backtick" $g.slug -}}
     {{- end -}}
-    {{- $credit := "" -}}
-    {{- if eq $g.slug "gtw" -}}
-      {{- /* The big board's map, whose licence asks for this line wherever it appears (NOTICE.md). */ -}}
-      {{- $credit = ` credit="The big board's map: Map (C) 1998 Matthew Thomas. Freely usable if this line is included."` -}}
-    {{- end -}}
-    {{- $md = $md | append (printf "{{< screenshot src=\"img/games/%s\" caption=`%s`%s >}}" .file .caption $credit) -}}
+    {{- /* A screenshot that shows the big board's map has the map's credit line in its caption. */ -}}
+    {{- $md = $md | append (printf "{{< screenshot src=\"img/games/%s\" caption=`%s` >}}" .file (partial $t .caption)) -}}
   {{- end -}}
 {{- end -}}
 
