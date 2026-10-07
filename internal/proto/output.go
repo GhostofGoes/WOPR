@@ -14,17 +14,27 @@ var ErrCanceled = errors.New("cancelled by the user")
 // program can produce is declared in this file.
 type Output interface{ isOutput() }
 
-// Say prints lines through the typewriter.
+// Say prints lines through the typewriter. With Open, the last line stays open: the next
+// Say continues it on the same row, as a typist's keystrokes do (movie mode, Typed).
 type Say struct {
 	Lines []string
 	Pace  Pace
+	Open  bool
 }
 
 // Prompt switches to line mode; the next LineEvent answers it.
 type Prompt struct{ Text string }
 
 // AwaitKeys switches to key mode; KeyEvents follow until the next Prompt.
-type AwaitKeys struct{ Hint string }
+//
+// Capture is for a root program other than the persona (the movie director): it then
+// receives every key, Esc included (KeyEsc), with none of the host's side effects: no key
+// skips the typewriter and Esc is not the host's. While a program it launched runs, keys
+// other than Ctrl+C do nothing. The host ignores Capture from a launched program.
+type AwaitKeys struct {
+	Hint    string
+	Capture bool
+}
 
 // Animate asks for TickEvents every Every; 0 stops them.
 type Animate struct{ Every time.Duration }
@@ -69,6 +79,20 @@ type Done struct{ Result Result }
 // Quit ends the session normally (exit code 0).
 type Quit struct{}
 
+// Hold freezes output while On: the typewriter, Wait, Animate and Blink stop where they are,
+// as they do behind the TERMINAL TOO SMALL card, until a Hold with On false (movie mode's
+// pause). Keys still arrive. A hold ends with the program that set it.
+type Hold struct{ On bool }
+
+// Drain asks for a Drained event once everything output before it has been revealed and its
+// pauses waited out, so a program can pace itself one step at a time (movie mode). A newer
+// Drain replaces a pending one, and only the running program hears it.
+type Drain struct{}
+
+// Skip reveals at once everything output before it, as a key press skips the typewriter
+// (movie mode's next and previous scene).
+type Skip struct{}
+
 func (Say) isOutput()       {}
 func (Prompt) isOutput()    {}
 func (AwaitKeys) isOutput() {}
@@ -81,3 +105,6 @@ func (Think) isOutput()     {}
 func (Launch) isOutput()    {}
 func (Done) isOutput()      {}
 func (Quit) isOutput()      {}
+func (Hold) isOutput()      {}
+func (Drain) isOutput()     {}
+func (Skip) isOutput()      {}

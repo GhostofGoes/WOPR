@@ -63,7 +63,7 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 - With `Env.Deterministic` (`--seed`, tests, movie mode), searches stop at `Think.Limit`. Wall-clock
   `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never
-  see it.
+  see it, except a root program that captures keys (`AwaitKeys{Capture: true}`, movie mode).
 - Colour is semantic: draw with `proto.Style` values; themes decide the colours. Meaning must not depend on
   colour alone (vary the glyph or use `AttrReverse`).
 

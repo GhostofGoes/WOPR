@@ -1,6 +1,7 @@
 package proto
 
-// Key is a key a program can receive in key mode. Esc is not a Key: the host owns it.
+// Key is a key a program can receive in key mode. Esc belongs to the host: only a root program
+// that captures keys (AwaitKeys.Capture, movie mode) receives KeyEsc.
 type Key uint8
 
 // Keys.
@@ -12,6 +13,7 @@ const (
 	KeyRight
 	KeyEnter
 	KeyBackspace
+	KeyEsc // only for a capturing root program
 )
 
 func (k Key) String() string {
@@ -30,6 +32,8 @@ func (k Key) String() string {
 		return "enter"
 	case KeyBackspace:
 		return "backspace"
+	case KeyEsc:
+		return "esc"
 	default:
 		return "unknown"
 	}

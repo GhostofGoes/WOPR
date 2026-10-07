@@ -2,9 +2,10 @@
 // not import Bubble Tea: internal/ui adapts it to the terminal, and games/testkit drives
 // the same code in tests.
 //
-// The runner owns the program stack (the persona at the bottom, games launched on top),
-// the input mode, the Esc state machine, Think jobs and Animate cadence. Each call
-// returns Effects, in order, for the caller to apply.
+// The runner owns the program stack (the persona or the movie director at the bottom, games
+// launched on top), the input mode, the Esc state machine, Think jobs, Animate cadence and the
+// movie-mode hooks (key capture, Hold, Drain). Each call returns Effects, in order, for the
+// caller to apply.
 package host
 
 import (
@@ -48,10 +49,12 @@ const (
 // Effect is something the caller must do, in order.
 type Effect interface{ isEffect() }
 
-// Print queues lines on the typewriter.
+// Print queues lines on the typewriter. With Open, the last line stays open: the next Print
+// continues it on the same row.
 type Print struct {
 	Lines []string
 	Pace  proto.Pace
+	Open  bool
 }
 
 // Pause queues a skippable pause in the typewriter.
@@ -97,6 +100,17 @@ type Redraw struct{}
 // Exit ends the session normally (exit code 0).
 type Exit struct{}
 
+// Hold freezes (On) or releases the typewriter, pauses, Animate and Blink, as the TOO SMALL
+// card does. The runner stops Animate itself; the caller stops the rest.
+type Hold struct{ On bool }
+
+// Drain queues a marker after everything printed so far. When the typewriter reaches it, the
+// caller reports ID with Runner.Drained.
+type Drain struct{ ID uint64 }
+
+// Skip reveals everything queued so far at once, as a key press would.
+type Skip struct{}
+
 func (Print) isEffect()       {}
 func (Pause) isEffect()       {}
 func (PageBreak) isEffect()   {}
@@ -108,6 +122,9 @@ func (Notice) isEffect()      {}
 func (Relayout) isEffect()    {}
 func (Redraw) isEffect()      {}
 func (Exit) isEffect()        {}
+func (Hold) isEffect()        {}
+func (Drain) isEffect()       {}
+func (Skip) isEffect()        {}
 
 type inputMode uint8
 
@@ -129,6 +146,8 @@ type frame struct {
 	isRoot    bool
 	launchKey proto.Launch
 	seed      uint64 // Env.Seed for this program
+	capture   bool   // the root captures every key (AwaitKeys.Capture)
+	drain     uint64 // the pending Drain's marker, 0 = none
 }
 
 // Runner interprets the protocol for a stack of programs.
@@ -139,6 +158,8 @@ type Runner struct {
 	escArmed time.Duration // time left in the Esc window; 0 = not armed
 	exited   bool
 	plays    map[string]uint16 // launches so far, by slug
+	holder   *frame            // the program holding output frozen (Hold), nil = none
+	drains   uint64            // Drain markers issued
 }
 
 // New returns a Runner.
@@ -170,10 +191,28 @@ func (r *Runner) KeyMode() bool { return len(r.stack) > 0 && r.top().mode == mod
 // Thinking reports whether the running program has a Think pending.
 func (r *Runner) Thinking() bool { return len(r.stack) > 0 && r.top().thinkGen != 0 }
 
-// NeedsTicks reports whether Advance must be called (animation or an armed Esc).
+// NeedsTicks reports whether Advance must be called (animation or an armed Esc). Nothing
+// moves while output is held.
 func (r *Runner) NeedsTicks() bool {
-	return len(r.stack) > 0 && (r.top().every > 0 || r.escArmed > 0)
+	return len(r.stack) > 0 && r.holder == nil && (r.top().every > 0 || r.escArmed > 0)
 }
+
+// Captures reports whether the running program is a root that captures keys: every key goes
+// to it with Key, Esc as proto.KeyEsc, and none skips output (docs/PLAN.md §7).
+func (r *Runner) Captures() bool {
+	if len(r.stack) == 0 {
+		return false
+	}
+	f := r.top()
+	return f.isRoot && f.mode == modeKeys && f.capture
+}
+
+// Shielded reports whether a capturing root has launched the running program: until it ends,
+// keys other than Ctrl+C do nothing (the movie's ending plays through).
+func (r *Runner) Shielded() bool { return len(r.stack) > 1 && r.stack[0].capture }
+
+// Held reports whether output is frozen by Hold.
+func (r *Runner) Held() bool { return r.holder != nil }
 
 // commandWords upper-cases text and turns every run of characters other than A-Z and
 // 0-9 into one space, so "Log off." and "quit!" read as LOG OFF and QUIT. (The host may
@@ -205,14 +244,15 @@ func (r *Runner) Line(text string) []Effect {
 	return append(effects, r.apply(f, f.prog.Handle(proto.LineEvent{Text: text}))...)
 }
 
-// Key delivers a key to the running program in key mode.
+// Key delivers a key to the running program in key mode. KeyEsc reaches only a root that
+// captures keys; everywhere else Esc is the host's (Runner.Esc).
 func (r *Runner) Key(k proto.Key, ch rune) []Effect {
 	if r.exited || len(r.stack) == 0 {
 		return nil
 	}
 	effects := r.disarm()
 	f := r.top()
-	if f.mode != modeKeys {
+	if f.mode != modeKeys || k == proto.KeyEsc && !r.Captures() {
 		return effects
 	}
 	return append(effects, r.apply(f, f.prog.Handle(proto.KeyEvent{Key: k, Rune: ch}))...)
@@ -245,9 +285,10 @@ func (r *Runner) Esc() []Effect {
 	return append([]Effect{Notice{}}, r.pop(proto.Result{Outcome: proto.Aborted})...)
 }
 
-// Advance moves time forward: Animate ticks and the Esc window.
+// Advance moves time forward: Animate ticks and the Esc window. While output is held, time
+// stands still.
 func (r *Runner) Advance(dt time.Duration) []Effect {
-	if r.exited || len(r.stack) == 0 {
+	if r.exited || len(r.stack) == 0 || r.holder != nil {
 		return nil
 	}
 	var effects []Effect
@@ -268,6 +309,21 @@ func (r *Runner) Advance(dt time.Duration) []Effect {
 		}
 	}
 	return effects
+}
+
+// Drained reports that the typewriter reached the Drain marker id. Only the running program's
+// latest Drain is answered: an older marker, or one left by a program that has since
+// launched another or ended, is dropped.
+func (r *Runner) Drained(id uint64) []Effect {
+	if r.exited || len(r.stack) == 0 || id == 0 {
+		return nil
+	}
+	f := r.top()
+	if f.drain != id {
+		return nil
+	}
+	f.drain = 0
+	return r.apply(f, f.prog.Handle(proto.Drained{}))
 }
 
 // ThinkResult delivers a finished Think. Results for cancelled or superseded jobs are
@@ -351,7 +407,7 @@ func (r *Runner) apply(f *frame, outs []proto.Output) []Effect {
 		}
 		switch o := o.(type) {
 		case proto.Say:
-			effects = append(effects, Print{Lines: o.Lines, Pace: o.Pace})
+			effects = append(effects, Print{Lines: o.Lines, Pace: o.Pace, Open: o.Open})
 		case proto.Wait:
 			if !r.cfg.Instant {
 				effects = append(effects, Pause{D: o.D})
@@ -359,10 +415,10 @@ func (r *Runner) apply(f *frame, outs []proto.Output) []Effect {
 		case proto.Clear:
 			effects = append(effects, PageBreak{})
 		case proto.Prompt:
-			f.mode = modeLine
+			f.mode, f.capture = modeLine, false
 			effects = append(effects, AskLine{Prompt: o.Text})
 		case proto.AwaitKeys:
-			f.mode = modeKeys
+			f.mode, f.capture = modeKeys, o.Capture && f.isRoot // a launched game never captures Esc
 			effects = append(effects, AskKeys{Hint: o.Hint})
 		case proto.Animate:
 			f.every, f.acc = o.Every, 0
@@ -388,9 +444,38 @@ func (r *Runner) apply(f *frame, outs []proto.Output) []Effect {
 		case proto.Quit:
 			r.exited = true
 			return append(effects, Exit{})
+		case proto.Hold:
+			effects = append(effects, r.hold(f, o.On)...)
+		case proto.Drain:
+			r.drains++
+			f.drain = r.drains
+			effects = append(effects, Drain{ID: f.drain})
+		case proto.Skip:
+			effects = append(effects, Skip{})
 		}
 	}
 	return effects
+}
+
+// hold freezes or releases output for f. Only a change is reported.
+func (r *Runner) hold(f *frame, on bool) []Effect {
+	switch {
+	case on && r.holder == nil:
+		r.holder = f
+	case !on && r.holder != nil:
+		r.holder = nil
+	default:
+		return nil
+	}
+	return []Effect{Hold{On: on}}
+}
+
+// release ends f's hold when f stops running: a hold never outlives its program.
+func (r *Runner) release(f *frame) []Effect {
+	if r.holder != f {
+		return nil
+	}
+	return r.hold(f, false)
 }
 
 // deadline is a Think's wall-clock bound. Deterministic runs bound searches by Limit, so
@@ -433,7 +518,7 @@ func (r *Runner) finish(f *frame, res proto.Result) []Effect {
 		panic(fmt.Sprintf("host: Done from a program that is not running (%T)", f.prog))
 	}
 	if res.Next != nil { // hand-off: replace this program with the next, without a verdict
-		var effects []Effect
+		effects := r.release(f)
 		if f.thinkGen != 0 {
 			effects = append(effects, CancelThink{Gen: f.thinkGen})
 		}
@@ -454,7 +539,7 @@ func (r *Runner) finish(f *frame, res proto.Result) []Effect {
 // pop removes the running game and reports its result to the program below.
 func (r *Runner) pop(res proto.Result) []Effect {
 	f := r.top()
-	var effects []Effect
+	effects := r.release(f)
 	if f.thinkGen != 0 {
 		effects = append(effects, CancelThink{Gen: f.thinkGen})
 	}

@@ -479,17 +479,19 @@ type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
 // Events: host → program.
 type Event interface{ isEvent() }
 type LineEvent   struct{ Text string }          // answer to the last Prompt; "" for an empty Enter
-type KeyEvent    struct{ Key Key; Rune rune }   // only in key mode; Key: Up Down Left Right Enter Backspace Rune
+type KeyEvent    struct{ Key Key; Rune rune }   // only in key mode; Key: Up Down Left Right Enter Backspace Rune Esc
 type TickEvent   struct{ Dt time.Duration }     // at the cadence the program asked for
 type ResizeEvent struct{ Width, Height int }
 type ThinkDone   struct{ Value any; Err error } // see the Think contract below
 type GameOver    struct{ Result Result }        // to the program below a popped one
+type Drained     struct{}                       // answers Drain: the output before it has been revealed (M6)
 
 // Outputs: program → host. All are declared here, so the interface stays sealed (A-15).
 type Output interface{ isOutput() }
-type Say       struct{ Lines []string; Pace Pace }       // typewriter; PaceSpeech, PaceTable, PaceInstant, PaceTyping
+type Say       struct{ Lines []string; Pace Pace; Open bool } // typewriter; PaceSpeech, PaceTable, PaceInstant,
+                                                         // PaceTyping; Open: the next Say continues the last line
 type Prompt    struct{ Text string }                     // line mode: next LineEvent answers it
-type AwaitKeys struct{ Hint string }                     // key mode (maze, board cursor)
+type AwaitKeys struct{ Hint string; Capture bool }       // key mode (maze, board cursor); Capture: M6, below
 type Animate   struct{ Every time.Duration }             // 0 stops
 type Wait      struct{ D time.Duration }                 // host-timed pause; skippable; dropped under Instant
 type Clear     struct{}                                  // page break
@@ -503,6 +505,9 @@ type Think     struct {                                  // all slow work runs o
 type Launch struct{ Slug, Mode string }               // push the program the host's resolver builds
 type Done   struct{ Result Result }                   // pop this program
 type Quit   struct{}                                  // LOGOFF: exit 0
+type Hold   struct{ On bool }                         // freeze output, as TOO SMALL does (M6)
+type Drain  struct{}                                  // ask for Drained (M6)
+type Skip   struct{}                                  // reveal what is queued at once, as a key would (M6)
 
 type Outcome uint8 // Win, Loss, Draw, NoWinner, Aborted
 type Result struct {
@@ -540,6 +545,22 @@ type Resolver func(proto.Launch) (proto.Program, Placement, error)
 
 Rules:
 
+- **Movie-mode hooks** (M6, AR-7, RF-1, IM-11; the `gamestest` stub has a case for each). They are additive:
+  no other program uses them, and the goldens did not move when they landed.
+  - **Key capture.** A *root* program sends `AwaitKeys{Capture: true}` and then receives every key as a
+    `KeyEvent`, Esc as `KeyEsc`, with none of the host's side effects: no key skips output, and the Esc
+    machine is idle. A `Prompt` ends the capture. The host ignores `Capture` from a launched program, so Esc
+    stays the host's in every game. While a capturing root's launched program runs, keys other than Ctrl+C
+    (and PgUp/PgDn) do nothing.
+  - **`Hold{On}`** freezes the typewriter, `Wait`, `Animate`, Blink and the front panel, reusing the TOO
+    SMALL pause; keys still arrive. Only a change is reported, and a hold ends with the program that set it.
+  - **`Drain`** queues a marker after the program's output; when the typewriter reaches it, the running
+    program receives `Drained`. A newer `Drain` replaces a pending one, and a marker reached while another
+    program runs is dropped. `testkit` answers it after the rest of its batch, where the console would.
+  - **`Skip`** reveals what is queued at once (next and previous scene).
+  - **`Say.Open`** leaves the last line open, so the next `Say` continues it on the same row:
+    `proto.Typed(prompt, text, rng)` uses it to type a user's line a few seeded keystrokes at a time after
+    its prompt, followed by the blank line the console leaves after an answer.
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
   between them as it needs (checkers: type `b6-a5`, or move a cursor). While a `Prompt` is active, an empty
   Enter is delivered as `LineEvent{""}`; GTW ends its target list that way.
