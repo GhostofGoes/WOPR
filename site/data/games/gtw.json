@@ -1,0 +1,45 @@
+{
+  "slug": "gtw",
+  "number": 15,
+  "name": "Global Thermonuclear War",
+  "launch": "wopr gtw",
+  "aliases": ["15", "global-thermonuclear-war", "thermonuclear"],
+  "summary": "The film's set piece: pick a side, name the enemy's cities as targets, and watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
+  "howToPlay": [
+    "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION.",
+    "Name up to eight targets on the enemy's side, one per line or several on a line split by commas (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file; your own cities and names not on file are refused. An empty line ends the list and launches the first strike on WOPR's war plan.",
+    "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]: give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100), or ALL, HOLD or AUTO. Enter carries out the plan in brackets.",
+    "After each of your launches WOPR launches on warning and DEFCON falls; the > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it has left.",
+    "Press Enter for the PROJECTED KILL RATIOS, and Enter again: the board returns at DEFCON 1 while WOPR cracks the launch code and refuses every request to stop.",
+    "Only TIC-TAC-TOE gets through. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending, then offers a game of chess."
+  ],
+  "controls": [
+    {"input": "1 or 2", "does": "choose the United States or the Soviet Union (US, USA, USSR and RUSSIA work too)"},
+    {"input": "LAS VEGAS, SEATTLE", "does": "add targets; a comma separates several on one line, and names in use today (KYIV, ST PETERSBURG, NYC) work too"},
+    {"input": "LIST (or HELP, ?)", "does": "at the targets prompt, list the enemy targets on file"},
+    {"input": "Enter on an empty line", "does": "end the target list and launch the first strike"},
+    {"input": "50 25 100", "does": "at a strike prompt, fire those percentages of your ICBMs, SLBMs and bombers; one number (40) applies to all three"},
+    {"input": "ICBM 50 BOMBERS ALL", "does": "name systems with amounts: ICBM, SLBM or SUBS, BOMBERS or BMB, each with a number, HALF, ALL or NONE"},
+    {"input": "Enter (or FIRE, YES)", "does": "carry out the war plan shown in brackets"},
+    {"input": "ALL or HOLD", "does": "fire everything you hold, or launch nothing this strike"},
+    {"input": "AUTO", "does": "let WOPR order every strike that is left"},
+    {"input": "HELP or ?", "does": "at a strike prompt, explain how orders work"},
+    {"input": "TIC-TAC-TOE", "does": "at the climax, the one request WOPR accepts"},
+    {"input": "0", "does": "at PLEASE LIST NUMBER OF PLAYERS:, zero players: WOPR plays itself"},
+    {"input": "Esc, Esc", "does": "abandon the war and go back to WOPR"}
+  ],
+  "tips": [
+    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads and the enemy's at most 750. The warhead counts have no dice, so the same orders always give the same counts, and you can see what each order changes.",
+    "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field; fire yours, and WOPR's land on your cities instead.",
+    "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
+    "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR drops a hint."
+  ],
+  "screenshots": [
+    {"file": "gtw-1.png", "caption": "The side choice: outlines of the two nations, WHICH SIDE DO YOU WANT? and PLEASE CHOOSE ONE:."},
+    {"file": "gtw-2.png", "caption": "The big board after the first strike: missile tracks and impacts (X) on the world map, the DEFCON ladder with > at 4, the trajectory and forces tables, and HELP's three lines above the STRIKE 2 OF 3 prompt. Map (C) 1998 Matthew Thomas. Freely usable if this line is included."},
+    {"file": "gtw-3.png", "caption": "The projected kill ratios after DEFCON 1: military assets, civilian assets and human losses for both sides."},
+    {"file": "gtw-4.png", "caption": "The climax at DEFCON 1: nothing is left to fire, the launch code cracks one character at a time, and STOP THE WAR gets ** IMPROPER REQUEST **. Map (C) 1998 Matthew Thomas. Freely usable if this line is included."},
+    {"file": "gtw-5.png", "caption": "Zero players: WOPR plays tic-tac-toe against itself, every game a draw, while the launch code fills in."},
+    {"file": "gtw-6.png", "caption": "The ending: GREETINGS PROFESSOR FALKEN., then A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY. HOW ABOUT A NICE GAME OF CHESS?"}
+  ]
+}

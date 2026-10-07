@@ -1,0 +1,37 @@
+{
+  "slug": "tactical",
+  "number": 13,
+  "name": "Theaterwide Tactical Warfare",
+  "launch": "wopr tactical",
+  "aliases": ["13", "theaterwide-tactical-warfare"],
+  "summary": "Corps and air wings fight over seven regions of a European front, with an escalation ladder. WOPR answers every rung you climb with one of its own, and the top rung ends the game with no winner.",
+  "howToPlay": [
+    "Win by holding five of the seven regions, or more regions than WOPR after ten turns. If the ladder reaches STRATEGIC, every unit and every city is lost and nobody wins.",
+    "Each turn WOPR asks for one order per unit (AIR1 IN CHANNEL PORTS:). Then both sides' orders take effect together: every move first, then every attack, then everything else, then an event card.",
+    "Name a region by its number (1 is your rear, 7 is WOPR's), its name, or the start of a word in it: MOVE 4, ATTACK 5, MOVE FULDA. MOVE, ATTACK and HOLD can be shortened to M, A and H.",
+    "Corps (COR) move one region and attack next door. Air wings (AIR) move up to three regions and attack up to two away. A * after a unit means it has lost one of its two steps and fights at half.",
+    "ESCALATE must be typed in full and works once a turn. The ladder climbs CONVENTIONAL, CHEMICAL, TACTICAL NUCLEAR, STRATEGIC. Each rung adds 2 to every attack on both sides; from CHEMICAL on, civilians die every turn, and at TACTICAL NUCLEAR fallout costs a random unit a step every turn.",
+    "ROUGH ground shifts the odds one column toward the defender, and a CITY two. Results: NE no effect, AE the attacker loses a step, EX both do, DR the defender falls back (or loses a step), DE the defender loses a step."
+  ],
+  "controls": [
+    {"input": "MOVE 4 or MOVE FULDA", "does": "move to that region, as far as the unit can, not through the enemy"},
+    {"input": "ATTACK 5", "does": "attack an enemy there, if it is in range"},
+    {"input": "HOLD (or an empty line)", "does": "stay put"},
+    {"input": "ESCALATE", "does": "climb one rung of the ladder (typed in full, once a turn)"},
+    {"input": "END (or DONE)", "does": "hold every unit not yet ordered and play the turn"},
+    {"input": "STATUS (or MAP)", "does": "show the map again"},
+    {"input": "HELP", "does": "list the orders and the combat results"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Do not escalate twice. WOPR answers every ESCALATE with one of its own on its next turn, so your second rung reaches STRATEGIC, and nobody wins.",
+    "Do not get far ahead without winning. Once WOPR has 3 steps fewer than you, it climbs the ladder by itself, a rung a turn, so take five regions quickly when you lead.",
+    "Take the FULDA GAP (4) on turn 1. It is rough ground, so WOPR's corps will not attack your corps there, and from it your corps can attack the INNER GERMAN BORDER (5).",
+    "Keep your air wing in a region with a corps. An attack always hits the strongest unit in a region, so the corps (defence 6) takes it instead of the air wing (defence 2)."
+  ],
+  "screenshots": [
+    {"file": "tactical-1.png", "caption": "The opening: the front picture, the rules, and the map of seven regions, with AIR1 asked for its first order."},
+    {"file": "tactical-2.png", "caption": "Turn 2: three units hold the FULDA GAP, COR1's ESCALATE has raised the ladder to CHEMICAL, and WOPR's reserves have arrived at the ODER."},
+    {"file": "tactical-3.png", "caption": "WOPR answers with TACTICAL NUCLEAR. Fallout covers the picture and destroys WOPR's own COR1."}
+  ]
+}

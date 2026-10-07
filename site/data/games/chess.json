@@ -4,29 +4,31 @@
   "name": "Chess",
   "launch": "wopr chess",
   "aliases": ["7"],
-  "summary": "Chess against WOPR. You play White and move first, and WOPR answers with its move as squares, such as WOPR: D7D5.",
+  "summary": "Chess against WOPR. You play White (the capital letters) and move first, and WOPR answers with its move as squares, such as WOPR: D7D5.",
   "howToPlay": [
-    "Checkmate WOPR's king. Stalemate and too few pieces to mate are draws.",
-    "At YOUR MOVE: type a move as squares (E2E4, E2-E4 or E2 E4) or in algebraic notation (NF3, EXD5, O-O).",
+    "Checkmate WOPR's king. Stalemate, too few pieces to mate, a position repeated three times and the fifty-move rule are draws; WOPR claims the last two at once.",
+    "At YOUR MOVE: type a move as its squares (E2E4, E2-E4 or E2 E4) or in algebraic notation (NF3, EXD5, O-O, O-O-O).",
     "To promote a pawn, type E7E8Q or E8=Q. E7E8 alone makes a queen.",
+    "The board marks the square the last move left with [] and the square it reached with <. Beside the board, each side's TAKEN pieces are listed, and CHECK shows when you are in check.",
     "A move that is not legal gets ILLEGAL MOVE. Type RESIGN to give up."
   ],
   "controls": [
     {"input": "E2E4", "does": "move by squares, from then to (E2-E4 and E2 E4 work too)"},
     {"input": "NF3", "does": "move in algebraic notation; EXD5 is a pawn capture"},
-    {"input": "O-O or O-O-O", "does": "castle on the king's side or the queen's side"},
-    {"input": "E7E8Q or E8=Q", "does": "promote a pawn"},
+    {"input": "O-O or O-O-O", "does": "castle on the king's side or the queen's side (0-0 and 0-0-0 work too)"},
+    {"input": "E7E8Q or E8=Q", "does": "promote a pawn; E7E8 alone makes a queen"},
     {"input": "RESIGN", "does": "give up the game"},
     {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
   ],
   "tips": [
-    "WOPR takes loose pieces. Before each move, check that every piece you have is defended.",
-    "WOPR looks only a few moves ahead, so a slow plan can get past it.",
-    "Start with a seed (wopr chess -s 1) and WOPR plays the same way every time, which helps you practise."
+    "WOPR looks only four half-moves ahead (three with a seed), plus any captures after that. A plan that needs several quiet moves, such as building an attack on its king or pushing a pawn to promote, can get past it.",
+    "WOPR grabs any piece it can win within that short look ahead. After each move, check that every one of your pieces is defended or out of reach.",
+    "When you are ahead, do not repeat positions. WOPR counts a repeated position as a draw, and when it is losing it steers toward one.",
+    "For an easier game, start it with a seed (wopr chess -s 1): WOPR then looks one half-move less far ahead."
   ],
   "screenshots": [
-    {"file": "chess-1.png", "caption": "After E2E4 D7D5 and EXD5, WOPR's queen takes back on D5."},
-    {"file": "chess-2.png", "caption": "NC3 attacks the queen, and WOPR answers D5E6 with check."},
-    {"file": "chess-3.png", "caption": "Both sides have castled or brought out their knights."}
+    {"file": "chess-1.png", "caption": "After an illegal E2E5 is refused, E2E4 D7D5 and EXD5, WOPR's queen takes back on D5. The board marks where it left ([]) and where it landed (<)."},
+    {"file": "chess-2.png", "caption": "NC3 attacks the queen, and WOPR answers D5E6 with check: the console says CHECK. and CHECK shows beside YOU."},
+    {"file": "chess-3.png", "caption": "After O-O and G8F6: White has castled, and both sides have brought out their knights."}
   ]
 }

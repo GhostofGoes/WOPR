@@ -3,27 +3,32 @@
   "number": null,
   "name": "Tic-Tac-Toe",
   "launch": "wopr ttt",
-  "aliases": ["tic-tac-toe", "tictactoe", "noughts and crosses"],
-  "summary": "Tic-tac-toe, the game that ends the film. WOPR never loses, so the best you can do is a draw.",
+  "aliases": ["noughts and crosses", "tic-tac-toe", "tictactoe"],
+  "summary": "Tic-tac-toe with large marks, the game that ends the film. WOPR plays perfectly, so the best you can do is a draw.",
   "howToPlay": [
-    "At PLEASE LIST NUMBER OF PLAYERS: type 1 to play WOPR, 2 for two people at one keyboard, or 0 to watch WOPR play itself.",
-    "You are X and move first. Type a square from 1 to 9, numbered left to right from the top row.",
-    "Three in a row wins. A full board with no line is a draw."
+    "Tic-tac-toe is not on LIST GAMES (wopr --games shows it under ALSO AVAILABLE). Start it with wopr ttt, or ask WOPR for it by name.",
+    "At PLEASE LIST NUMBER OF PLAYERS: type 1 to play WOPR, 2 for two people taking turns at one keyboard, or 0 to let WOPR play itself, as at the end of the film.",
+    "With one player you are X and move first. WOPR is O and answers each move with a line such as WOPR: 3.",
+    "At YOUR MOVE: type a square from 1 to 9, numbered left to right from the top row, or a column letter and row number from A1 (top left) to C3 (bottom right). A taken square gets CHOOSE AN EMPTY SQUARE, 1 TO 9.",
+    "Three in a row wins. A full board with no line is a draw: WINNER: NONE."
   ],
   "controls": [
-    {"input": "1, 2 or 0", "does": "at the players prompt: play WOPR, play a friend, or let WOPR play itself"},
+    {"input": "1", "does": "at the players prompt, play against WOPR"},
+    {"input": "2", "does": "at the players prompt, two players take turns"},
+    {"input": "0", "does": "at the players prompt, WOPR plays itself (the film's ending)"},
     {"input": "5", "does": "take square 5, the centre"},
     {"input": "A1", "does": "take the top-left square; columns A to C, rows 1 to 3"},
     {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
   ],
   "tips": [
-    "Before each move, check whether WOPR has two in a row, and block it.",
-    "Open in a corner. The only safe answer is the centre.",
+    "WOPR never makes a mistake, so a draw is the best result. Before each move, check whether WOPR has two in a row with the third square empty, and block it.",
+    "Open in a corner. The only safe answer is the centre: WOPR always finds it, but a friend playing O in a two-player game often does not.",
+    "WOPR picks at random among its best moves, so games differ even though it never loses. With a seed (wopr ttt -s 7) it makes the same choices every time, which helps you study a line of play.",
     "Try 0 players to see what WOPR learns from playing itself."
   ],
   "screenshots": [
-    {"file": "ttt-1.png", "caption": "The empty board shows each square's number."},
-    {"file": "ttt-2.png", "caption": "Square 3 is taken, so WOPR asks again. A1 names the top-left square."},
-    {"file": "ttt-3.png", "caption": "A full board with no line: WINNER: NONE."}
+    {"file": "ttt-1.png", "caption": "The empty board shows each square's number. YOU are X and WOPR is O."},
+    {"file": "ttt-2.png", "caption": "After 5, WOPR takes 3; a second 3 is refused (CHOOSE AN EMPTY SQUARE, 1 TO 9.), A1 takes the top left, and WOPR blocks the diagonal with 9, its last mark underlined."},
+    {"file": "ttt-3.png", "caption": "The full board is a draw: WINNER: NONE, then SHALL WE PLAY ANOTHER GAME?"}
   ]
 }

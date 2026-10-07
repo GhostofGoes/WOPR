@@ -43,6 +43,17 @@ like). An archive keeps the executable bit: unpack it and run `./wopr`.
 - **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
   *More info → Run anyway*.
 
+**Manual page.** The Linux and macOS archives also hold `wopr.6`, the manual page: the options, every game
+with how to play it and tips, and movie mode. Read it in place with `man ./wopr.6`, or install it so that
+`man wopr` finds it, for everyone or just for you:
+
+```sh
+sudo install -d /usr/local/share/man/man6 && sudo install -m 644 wopr.6 /usr/local/share/man/man6/
+mkdir -p ~/.local/share/man/man6 && cp wopr.6 ~/.local/share/man/man6/
+```
+
+`man` searches `~/.local/share/man` when `~/.local/bin` is on your `PATH`; otherwise add it to `MANPATH`.
+
 With Go installed, you can instead build from source:
 
 ```sh

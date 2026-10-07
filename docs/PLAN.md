@@ -255,6 +255,7 @@ internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, ga
 internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
 internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
+internal/tools/manpage → cli, games, games/catalog, movie, theme   the manual page, from the program itself (§13)
 internal/tools/...   → stdlib                         sizegate, stage, notices, relnotes (Go programs, not shell)
 internal/llm         → proto, wopr                    plus net/http (M7)
 ```
@@ -299,7 +300,7 @@ internal/games/              registry.go (Info, Status, Game, Entry, Registry, R
 internal/sim/                M4 engine
 internal/assets/             gtw_map.go (original), scenarios.go (third-party:abs0), banner.go (original)
 internal/movie/              director.go scenes/*.go (M6)
-internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage,notices,relnotes}/
+internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage,notices,relnotes,manpage}/
 tools/go.mod                 Go tools: gitleaks, govulncheck
 tools/lint/go.mod            Go tool: golangci-lint (separate: its dependencies break gitleaks's build, SL-2)
 tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3)
@@ -938,7 +939,9 @@ Every game must meet all of these:
 - a one-line "how to play" in the README;
 - every script line provenance-tagged;
 - a playbook in `internal/ui/access_test.go` that reaches its main screens, so the accessibility sweeps
-  (§4.5) check them (`TestEveryGameHasAPlaybook` fails without one).
+  (§4.5) check them (`TestEveryGameHasAPlaybook` fails without one);
+- a page, `site/data/games/<slug>.json`: how to play, the controls, at least three tips true of its AI, and
+  two or three screenshots with captions (§13). `internal/tools/manpage`'s tests check it against the catalog.
 
 | # | Game | Layout | Input | M | Notes and quality test |
 |---|---|---|---|---|---|
@@ -1489,7 +1492,7 @@ its run tests exactly the tree the squash merge produces.
 |---|---|---|
 | `lint` | `ubuntu-24.04` | `fetch-depth: 0`. prek via `j178/prek-action` with `prek-version: 0.5.5`, including the `change-notes` hook (`relnotes -check`: the notes parse and fit one Debian changelog line, `CHANGELOG.md` is `changie merge`'s output, every release tag has its `.changes/vX.Y.Z.md`). The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). `relnotes -since origin/main`: a branch that changes a non-test file under `cmd/` or `internal/` (test-only packages aside) adds a change note or carries a `Changelog: none` trailer (AGENTS.md). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
-| `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
+| `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12); the manual-page check (§13). |
 | `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR`; GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, checks every archive's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
 | `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. |
 | `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`: a deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. |
@@ -1513,7 +1516,8 @@ its run tests exactly the tree the squash merge produces.
    refuses when an earlier tag has no `.changes/vX.Y.Z.md`, whose notes would repeat (AGENTS.md,
    "Releasing"). Then `goreleaser release --clean --skip=publish`, the size gate,
    then `stage -archives -assets dist/release`, which checks that every archive contains `LICENSE`,
-   `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), and collects every file the release
+   `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), that the Linux and macOS archives hold the
+   manual page `wopr.6` at their root and the Windows ones do not (Windows has no `man`), and collects every file the release
    publishes into `dist/release`: the six archives, the six bare binaries (a GoReleaser `binary`-format
    archive, named like the archives, `.exe` on Windows), those four documents, and `checksums.txt`, which
    GoReleaser writes over all of them (`checksum.extra_files` adds the documents). Each file must match its
@@ -1696,6 +1700,14 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - **Third-party files at build time.** Hextra's search fetches FlexSearch (Apache-2.0) from jsDelivr at
     the version Hextra pins; the theme's own stylesheet and scripts come from the module. Nothing else is
     fetched, and no page loads anything from another site.
+- **Game pages** (`site/data/games/<slug>.json`, one per game, named by the slug `wopr --games` shows):
+  summary, how to play, controls, tips and captioned screenshots (`site/static/img/games/`), written from
+  the code. The docs site's game pages and the manual page are generated from them; nothing else repeats
+  them.
+- **Manual page** `docs/man/wopr.6`, section 6, generated by `internal/tools/manpage` from the flag table
+  (`cli.Flags`), the catalog, the game pages and the movie's scenes, and checked in CI with `-check`.
+  It is dated by the newest `.changes/vX.Y.Z.md`, never by the clock. It ships at the root of the Linux
+  and macOS archives; `mandoc -T lint -W all` and `groff -man -ww` pass it clean.
 - **Screens**: Appendix C holds the target mockups. The real screens are goldens, kept current by the tests:
   `internal/ui/testdata/gtw_screens.golden` and `card_screens.golden` (Hearts, Gin Rummy, Bridge at 80×24).
 - **This plan** is updated at milestone boundaries. Superseded text is deleted.
@@ -1705,7 +1717,8 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 ## 14. Verification (per release)
 
 1. `ci-ok` is green on the tagged commit. The release pipeline's `verify`, `build`, `smoke` and `repro` jobs pass.
-   The six archives each contain the four notice files and are within the size budget.
+   The six archives each contain the four notice files and are within the size budget; the four Linux and macOS
+   archives also hold `wopr.6`.
 2. `wopr -v`, `-h`, `-g`, `-L` and their long forms print plain text and exit 0 without a terminal.
    `wopr --games | head -1` exits 0 on every OS.
 3. `wopr`:
