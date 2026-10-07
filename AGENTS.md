@@ -28,6 +28,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
+| Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
 | Release build (local dry run) | `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
@@ -52,6 +53,12 @@ newer than the root `toolchain` line (a test checks): bump the toolchain first, 
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
+- **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
+  `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
+  `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
+  repeats them. `internal/tools/manpage`'s tests check each file against the catalog, and check that
+  `docs/man/wopr.6` is what the tool generates. The page takes its version and date from the newest
+  `.changes/vX.Y.Z.md`, so regenerate it after batching a release.
 - **Accessibility** (`docs/PLAN.md` §4.5). `internal/ui/access_test.go` plays every game in the catalog from a
   playbook (every playable game must have one) and checks each screen: printable ASCII only, a prompt's text
   ends in `:` or `?`, the cursor at the end of the input line, a hint in key mode, no colour codes under
@@ -83,6 +90,9 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
    testkit transcript, a quality test, fits 80×24, README line, provenance tags.
 4. Add a playbook for it in `internal/ui/access_test.go` that reaches its main screens, with `want` naming
    what they must show, so the accessibility sweeps check them (`TestEveryGameHasAPlaybook` fails without one).
+5. Write its page, `site/data/games/<slug>.json`, from the code: how to play, the controls, and tips that
+   are true of its AI. Add two or three 80×24 screenshots as `site/static/img/games/<slug>-<n>.png`, each with
+   a caption that says what it shows. Then run `go run ./internal/tools/manpage`.
 
 ## Film text and provenance
 
@@ -119,8 +129,9 @@ recognises (not a GitHub-supported token pattern, which push protection blocks),
 If a rights holder asks for material to be removed:
 
 1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
-   `internal/assets/`, `internal/movie/scenes/`, and the games' film text), and the README's screenshots
-   in `docs/screenshots/`, which show some of it.
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text). The README's screenshots in
+   `docs/screenshots/` and the game screenshots in `site/static/img/games/` show some of it, and the game
+   pages in `site/data/games/` quote some, which the manual page (`docs/man/wopr.6`) repeats.
 2. Remove or replace it in one pull request, and release a patch version.
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).

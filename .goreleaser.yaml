@@ -39,6 +39,13 @@ archives:
         info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
       - src: THIRD_PARTY_NOTICES.txt
         info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
+      # The manual page (go run ./internal/tools/manpage), at the archive's root as wopr.6,
+      # in the Linux and macOS archives only: Windows has no man. For Windows this is a
+      # pattern that matches nothing, which GoReleaser logs as "no files matched"; a missing
+      # plain path would fail the build instead.
+      - src: 'docs/man/*.{{ if eq .Os "windows" }}none{{ else }}6{{ end }}'
+        strip_parent: true
+        info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
 
   # The bare binaries too, for a download that needs no unpacking. Same name as the archive, plus
   # .exe on Windows.

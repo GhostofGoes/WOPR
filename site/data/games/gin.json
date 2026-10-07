@@ -1,0 +1,37 @@
+{
+  "slug": "gin",
+  "number": 3,
+  "name": "Gin Rummy",
+  "launch": "wopr gin",
+  "aliases": ["3", "gin-rummy", "rummy"],
+  "summary": "Gin Rummy against WOPR, first to 100 points. The panel shows WOPR's face-down hand, the stock, the top discard, and your hand sorted into melds with your deadwood count.",
+  "howToPlay": [
+    "Each side holds ten cards. A meld is three or four cards of one rank, or a run of three or more in one suit. Aces are low: A-2-3 is a run, Q-K-A is not.",
+    "Cards outside your melds are deadwood. Aces count 1, faces 10, and other cards their number. The panel shows your DEADWOOD and which positions are MELDS.",
+    "On your turn, answer STOCK OR DISCARD? with S to draw from the stock or D to take the top discard. Then at DISCARD: name a card (7H) or its position on the panel. You cannot throw back the card you just took from the discard pile.",
+    "With 10 or less deadwood after your discard, type KNOCK and the card (KNOCK 7H) to end the hand. With no deadwood, GIN 7H goes gin. The other side's cards are laid off on the knocker's melds for it, except after gin.",
+    "The knocker scores the difference in deadwood. If the other side has as little or less, that is an undercut, and it scores the difference plus 25. Gin scores 25 plus the other side's deadwood.",
+    "At NEXT HAND? press Enter to deal again, or type LEAVE. A hand ends with no score when the stock is down to two cards."
+  ],
+  "controls": [
+    {"input": "S or STOCK", "does": "draw the top card of the stock"},
+    {"input": "D or DISCARD", "does": "take the top card of the discard pile"},
+    {"input": "7H or 3", "does": "at DISCARD:, discard that card, by name or by its position on the panel"},
+    {"input": "KNOCK 7H", "does": "discard the 7H and knock (10 or less deadwood)"},
+    {"input": "GIN 7H", "does": "discard the 7H and go gin (no deadwood)"},
+    {"input": "Enter", "does": "at NEXT HAND?, deal the next hand"},
+    {"input": "LEAVE", "does": "at NEXT HAND?, stop with the score so far"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "WOPR knocks as soon as its deadwood is 10 or less, so hands are short. Throw away high cards that are not in a meld (kings, queens and jacks) early.",
+    "Keep your deadwood low even when you cannot knock. If WOPR knocks and you have as little deadwood or less after laying off, you score an undercut: the difference plus 25.",
+    "WOPR takes the discard only when it goes straight into a meld. Watch which cards it takes, and do not throw it cards of the same rank or next to them in the same suit.",
+    "WOPR discards the card that leaves it the least deadwood. A card of the same rank as one it just threw away is less likely to help it."
+  ],
+  "screenshots": [
+    {"file": "gin-1.png", "caption": "The opening panel: WOPR's ten cards face down, the stock, the JC on the discard pile, and your hand with the 3H-4H-5H run (MELDS 1-3) and 61 deadwood."},
+    {"file": "gin-2.png", "caption": "Three melds after drawing from the stock: eights, jacks and the heart run (MELDS 1-3 4-6 7-9), with 11 deadwood before the discard."},
+    {"file": "gin-3.png", "caption": "KNOCK 6C: you knock with 5 deadwood, WOPR lays off the 2H and 6H on your heart run, and you score 45."}
+  ]
+}

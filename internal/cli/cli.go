@@ -71,6 +71,23 @@ var flagPairs = []flagPair{
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 }
 
+// Flag is one option as the help shows it, for the manual page (internal/tools/manpage).
+type Flag struct {
+	Long, Short string
+	Arg         string // the value's name, "" for a switch
+	Help        string
+	Env         string // the environment variable that sets it too, or ""
+}
+
+// Flags lists every option, in the help's order.
+func Flags() []Flag {
+	out := make([]Flag, len(flagPairs))
+	for i, f := range flagPairs {
+		out[i] = Flag{Long: f.long, Short: f.short, Arg: f.arg, Help: f.help, Env: f.env}
+	}
+	return out
+}
+
 // Parse parses args (without the program name). getenv supplies environment fallbacks.
 func Parse(args []string, reg *games.Registry, getenv func(string) string) (Config, Action, error) {
 	var (

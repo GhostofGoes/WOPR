@@ -1,0 +1,35 @@
+{
+  "slug": "hearts",
+  "number": 4,
+  "name": "Hearts",
+  "launch": "wopr hearts",
+  "aliases": ["4"],
+  "summary": "Four-handed Hearts: you sit South, and WOPR plays West, North and East. Take as few points as you can.",
+  "howToPlay": [
+    "Each heart you take is 1 point and the queen of spades is 13. Take all 26 and you shoot the moon: you score 0 and the other three score 26 each. When someone reaches 100 at the end of a hand, the lowest score wins.",
+    "Each hand starts by passing three cards: to the left (West), then the right (East), then across (North), then no pass. At PASS THREE CARDS TO WEST: name three cards (QS AH KH) or their positions on the panel (1 5 6).",
+    "The 2C leads the first trick, and no points may be played on it unless you have nothing else. Follow suit if you can. Hearts cannot be led until one has been played.",
+    "At YOUR PLAY: name one card (7H, 10D, QS) or its position under your hand. WOPR plays its three seats and says each trick, for example YOU 2C, WEST 6C, NORTH 5C, EAST 4C. WEST TAKES IT.",
+    "After the last trick WOPR shows this hand's points and the scores. At NEXT HAND? press Enter to deal again, or type LEAVE to stop."
+  ],
+  "controls": [
+    {"input": "QS AH KH", "does": "at the pass, pass these three cards (commas work too)"},
+    {"input": "1 5 6", "does": "at the pass, pass the cards at these positions"},
+    {"input": "7H, 10D or TH", "does": "play that card"},
+    {"input": "3", "does": "play the card at position 3 in your hand (a number alone is always a position)"},
+    {"input": "Enter", "does": "at NEXT HAND?, deal again"},
+    {"input": "LEAVE", "does": "at NEXT HAND?, stop with the final scores"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Pass the queen, king and ace of spades and your high hearts, unless you hold several low spades to cover them. WOPR's seats pass the same kind of cards, so expect some back.",
+    "Empty a short suit early, by passing it or playing it out. Once you are out of a suit, you can throw away the queen of spades or a high heart whenever that suit is led.",
+    "If you do not hold the queen, king or ace of spades, lead low spades. WOPR's seats play the highest card that still loses, so a seat with the queen and no lower spade may have to play it.",
+    "WOPR's seats never try to stop a moon shot. With many high hearts and spades, try for all 26: they play under your high cards and throw you their hearts when they run out of a suit."
+  ],
+  "screenshots": [
+    {"file": "hearts-1.png", "caption": "The deal: your thirteen cards numbered 1 to 13, PASS LEFT beside your hand, and an arrow from the table to WEST, who gets the three cards you pass."},
+    {"file": "hearts-2.png", "caption": "West leads the 3D and WOPR refuses your QH: YOU MUST FOLLOW SUIT: DIAMONDS. The cards already in the trick are said in words above the prompt."},
+    {"file": "hearts-3.png", "caption": "Your 3S lead draws West's QS under North's AS. The panel shows LAST TRICK (13), TAKEN BY NORTH."}
+  ]
+}

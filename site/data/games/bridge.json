@@ -1,0 +1,31 @@
+{
+  "slug": "bridge",
+  "number": 5,
+  "name": "Bridge",
+  "launch": "wopr bridge",
+  "aliases": ["5"],
+  "summary": "Contract bridge, kept simple. WOPR deals and bids all four hands, your side always declares, and you play both your hand and dummy's while WOPR defends; one deal is one game.",
+  "howToPlay": [
+    "WOPR bids by point count and shows the auction and the contract, for example CONTRACT: 3NT BY SOUTH. WEST LEADS. If East and West hold more points, WOPR turns the table so that your side declares.",
+    "Make the contract: take at least 6 tricks plus its level (3NT needs 9). The contract's suit is trumps; NT has none.",
+    "The panel shows North's and South's hands a suit at a time. The > marks the hand to play, and the prompt names it: SOUTH PLAYS: or DUMMY (NORTH) PLAYS:.",
+    "Name a card as 7H, 10D or KS. A rank alone (K, 7) also works when it fits one card: the one in the suit led, or the only card of that rank in the hand.",
+    "Follow suit if you can. The winner of a trick leads the next. At the end WOPR says CONTRACT MADE WITH n TRICKS or DOWN n, with the score."
+  ],
+  "controls": [
+    {"input": "7H, 10D or KS", "does": "play that card from the hand whose turn it is"},
+    {"input": "K", "does": "play a rank alone: the king in the suit led, or the only king in that hand"},
+    {"input": "Esc, Esc", "does": "leave the deal and go back to WOPR"}
+  ],
+  "tips": [
+    "Before you play to the first trick, count the sure tricks in both hands and compare them with the tricks the contract needs.",
+    "Lead toward your high cards. WOPR's defender who plays second always plays low, so with the ace and queen in dummy, lead a low card from your hand: if West holds the king, your queen wins.",
+    "In a suit contract, draw trumps early. WOPR's defenders trump your winners whenever they are out of a suit and their partner is not already winning the trick.",
+    "WOPR's opening lead is the top of a run of high cards, or the fourth-highest card of its longest suit outside trumps, so the lead tells you where the defenders are long."
+  ],
+  "screenshots": [
+    {"file": "bridge-1.png", "caption": "The deal: CONTRACT 3NT BY SOUTH, dummy's North hand and your South hand a suit at a time, the auction, and West's opening 2D. The > marks dummy, which plays next."},
+    {"file": "bridge-2.png", "caption": "East leads the 3S, South plays the JS and West covers with the QS; the > beside NORTH (DUMMY) says dummy plays next. LAST TRICK shows East's AD taking dummy's QD."},
+    {"file": "bridge-3.png", "caption": "A club is refused because diamonds were led (SOUTH MUST FOLLOW SUIT: DIAMONDS.), then the KD and the AC take tricks: N-S 3, E-W 1."}
+  ]
+}
