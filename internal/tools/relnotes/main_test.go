@@ -312,6 +312,152 @@ func TestSnapshot(t *testing.T) {
 	r.clean()
 }
 
+// A release pull request batches its notes before its merge commit is tagged. Its snapshot is that
+// release: the snapshot's notes are the batched ones, then any added since, and the package
+// changelog's newest entry is the snapshot's own version, as stage and the smoke jobs require.
+func TestSnapshotOfABatchedRelease(t *testing.T) {
+	r := v010(t)
+	r.note("Fixed-maze", "Fixed", "Fixed a crash in some cases.", "2026-10-02T10:00:00Z")
+	r.commit("2026-10-02T10:00:00Z", "maze")
+	r.releasePR("v0.2.0", "2026-10-03")
+	r.commit("2026-10-03T10:00:00Z", "v0.2.0")
+	short := strings.TrimSpace(r.git("rev-parse", "--short", "HEAD"))
+
+	files := r.release("", true, "")
+	if strings.Contains(r.log.String(), "warning") {
+		t.Errorf("a snapshot must not warn:\n%s", r.log.String())
+	}
+	e := entries(t, files["changelog.yml"])
+	if len(e) != 2 || e[0].Semver != "0.1.1~snapshot."+short+"-1" || e[0].Date != "2026-10-03T10:00:00Z" ||
+		len(e[0].Changes) != 1 || e[0].Changes[0].Note != "Fixed a crash in some cases." || e[1].Semver != "0.1.0-1" {
+		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
+	}
+	if !strings.HasPrefix(files["notes.md"], "### Fixed\n\n- Fixed a crash in some cases.\n\n---\n") {
+		t.Errorf("notes.md =\n%s", files["notes.md"])
+	}
+	if !strings.Contains(files[changelogFile], "## v0.1.1-snapshot."+short+" - 2026-10-03\n\n### Fixed\n\n- Fixed a crash in some cases.\n") ||
+		strings.Contains(files[changelogFile], "## v0.2.0") {
+		t.Errorf("CHANGELOG.md =\n%s", files[changelogFile])
+	}
+
+	// Notes merged after the release pull request come after its own, kind by kind.
+	r.note("Added-seed", "Added", "Seeds.", "2026-10-04T10:00:00Z")
+	r.note("Fixed-chess", "Fixed", "Fixed an issue with the Chess game.", "2026-10-04T11:00:00Z")
+	r.commit("2026-10-04T12:00:00Z", "later")
+	files = r.release("", true, "")
+	want := "### Added\n\n- Seeds.\n\n### Fixed\n\n- Fixed a crash in some cases.\n- Fixed an issue with the Chess game.\n\n---\n"
+	if !strings.HasPrefix(files["notes.md"], want) {
+		t.Errorf("notes.md =\n%s\nwant it to start\n%s", files["notes.md"], want)
+	}
+	if e := entries(t, files["changelog.yml"]); len(e) != 2 || len(e[0].Changes) != 3 {
+		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
+	}
+	r.clean()
+}
+
+// The commit a release was tagged at without batching its notes still passes -check and builds a
+// snapshot, so its CI run (or a re-run) stays green; only the commits after it must catch up.
+func TestUnbatchedTagAtHead(t *testing.T) {
+	r := v010(t)
+	r.note("Added-seed", "Added", "Seeds.", "2026-10-09T10:00:00Z")
+	r.commit("2026-10-09T12:00:00Z", "seed")
+	r.git("tag", "v0.2.0")
+	short := strings.TrimSpace(r.git("rev-parse", "--short", "HEAD"))
+
+	if err := r.runner().check(); err != nil {
+		t.Errorf("check at the release's own commit: %v\n%s", err, r.log.String())
+	}
+	files := r.release("", true, "")
+	if e := entries(t, files["changelog.yml"]); e[0].Semver != "0.2.1~snapshot."+short+"-1" {
+		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
+	}
+
+	r.commit("2026-10-10T12:00:00Z", "after the release")
+	r.log.Reset()
+	if err := r.runner().check(); !errors.Is(err, errCheck) || !strings.Contains(r.log.String(), "-catch-up") {
+		t.Errorf("check after the release = %v, want it to ask for -catch-up:\n%s", err, r.log.String())
+	}
+	err := r.runner().release("", true, "", defaultPackager, t.TempDir())
+	if !errors.Is(err, errCheck) || !strings.Contains(r.log.String(), "v0.2.0 went out without") {
+		t.Errorf("snapshot after the release = %v, want a refusal naming v0.2.0:\n%s", err, r.log.String())
+	}
+}
+
+// A tag that release.yml does not publish, such as a release candidate, is not a release: it asks
+// for no catch-up, and the snapshot is named as GoReleaser names it (incpatch drops the
+// prerelease, so v0.2.0-rc.1 gives 0.2.0).
+func TestPrereleaseTag(t *testing.T) {
+	r := v010(t)
+	r.note("Added-seed", "Added", "Seeds.", "2026-10-09T10:00:00Z")
+	r.commit("2026-10-09T12:00:00Z", "seed")
+	r.git("tag", "v0.2.0-rc.1")
+	r.commit("2026-10-10T12:00:00Z", "after the candidate")
+	short := strings.TrimSpace(r.git("rev-parse", "--short", "HEAD"))
+
+	if err := r.runner().check(); err != nil {
+		t.Errorf("check: %v\n%s", err, r.log.String())
+	}
+	if err := r.runner().catchUp(); err != nil {
+		t.Fatalf("catchUp: %v\n%s", err, r.log.String())
+	}
+	if r.exists(changesDir+"/v0.2.0-rc.1.md") || !r.exists(unreleasedDir+"/Added-seed.yaml") {
+		t.Error("catch-up must leave a prerelease tag's notes where they are")
+	}
+	files := r.release("", true, "")
+	if e := entries(t, files["changelog.yml"]); e[0].Semver != "0.2.0~snapshot."+short+"-1" || e[1].Semver != "0.1.0-1" {
+		t.Errorf("changelog.yml =\n%s", files["changelog.yml"])
+	}
+	r.clean()
+}
+
+// A release is refused when its tag does not name the batched version, and when it has no notes.
+func TestReleaseRefusals(t *testing.T) {
+	r := v010(t)
+	r.note("Fixed-maze", "Fixed", "Fixed a crash in some cases.", "2026-10-02T10:00:00Z")
+	r.commit("2026-10-02T10:00:00Z", "maze")
+	r.releasePR("v0.2.0", "2026-10-03")
+	r.commit("2026-10-03T10:00:00Z", "v0.2.0")
+
+	r.git("tag", "v0.3.0") // the wrong version
+	err := r.runner().release("0.3.0", false, "", defaultPackager, t.TempDir())
+	if !errors.Is(err, errCheck) || !strings.Contains(r.log.String(), "tag the commit that batched them as v0.2.0") {
+		t.Errorf("release = %v, want a refusal naming v0.2.0:\n%s", err, r.log.String())
+	}
+
+	r.git("tag", "-d", "v0.3.0")
+	r.git("tag", "v0.2.0")
+	r.commit("2026-10-04T10:00:00Z", "nothing a player sees")
+	r.git("tag", "v0.2.1")
+	r.log.Reset()
+	err = r.runner().release("0.2.1", false, "", defaultPackager, t.TempDir())
+	if !errors.Is(err, errCheck) || !strings.Contains(r.log.String(), "v0.2.1 has no notes") {
+		t.Errorf("release = %v, want a refusal for no notes:\n%s", err, r.log.String())
+	}
+}
+
+// A batched release warns when notes came in after its pull request, which its tag then ships but
+// does not list, and when its header is dated another day than the tagged commit.
+func TestReleaseWarnings(t *testing.T) {
+	r := v010(t)
+	r.note("Fixed-maze", "Fixed", "Fixed a crash in some cases.", "2026-10-02T10:00:00Z")
+	r.commit("2026-10-02T10:00:00Z", "maze")
+	r.releasePR("v0.2.0", "2026-10-03")
+	r.commit("2026-10-03T10:00:00Z", "v0.2.0")
+	r.note("Added-seed", "Added", "Seeds.", "2026-10-05T10:00:00Z")
+	r.commit("2026-10-05T12:00:00Z", "seed")
+	r.git("tag", "v0.2.0") // the tip of main, not the release pull request's commit
+
+	files := r.release("0.2.0", false, "")
+	log := r.log.String()
+	if !strings.Contains(log, "still holds notes at this commit (1)") ||
+		!strings.Contains(log, "dated 2026-10-03, but the tagged commit is from 2026-10-05") {
+		t.Errorf("want both warnings:\n%s", log)
+	}
+	if strings.Contains(files["notes.md"], "Seeds.") || !strings.Contains(files["notes.md"], "Fixed a crash") {
+		t.Errorf("notes.md =\n%s", files["notes.md"])
+	}
+}
+
 // A release after one that went out unbatched is refused until -catch-up commits the earlier
 // notes; then each version gets only its own notes.
 func TestCatchUp(t *testing.T) {
@@ -396,27 +542,41 @@ func TestSince(t *testing.T) {
 	r.write("internal/game/game.go", "package game\n")
 	r.commit("2026-10-01T10:00:00Z", "start")
 
+	// flagged is the file a failing case must name; "" means the branch passes.
 	for _, tc := range []struct {
-		name   string
-		change func()
-		msg    string
-		ok     bool
+		name    string
+		change  func()
+		msg     string
+		flagged string
 	}{
-		{"tests only", func() { r.write("internal/game/game_test.go", "package game\n") }, "test", true},
-		{"tools only", func() { r.write("internal/tools/x/main.go", "package main\n") }, "tool", true},
-		{"docs only", func() { r.write("README.md", "# wopr\n") }, "docs", true},
-		{"code", func() { r.write("internal/game/game.go", "package game // changed\n") }, "code", false},
+		{"tests only", func() { r.write("internal/game/game_test.go", "package game\n") }, "test", ""},
+		{"tools only", func() { r.write("internal/tools/x/main.go", "package main\n") }, "tool", ""},
+		{"docs only", func() { r.write("README.md", "# wopr\n") }, "docs", ""},
+		{"code", func() { r.write("internal/game/game.go", "package game // changed\n") }, "code", "internal/game/game.go"},
+		{"packaging", func() { r.write("packaging/description.txt", "Game\nA game.\n") }, "package", "packaging/description.txt"},
+		{"release config", func() { r.write(".goreleaser.yaml", "version: 2\n") }, "release", ".goreleaser.yaml"},
+		{"manual page", func() { r.write("docs/man/wopr.6", ".TH WOPR 6\n") }, "man", "docs/man/wopr.6"},
 		{"code and a note", func() {
 			r.write("cmd/wopr/main.go", "package main\n")
 			r.note("Fixed-x", "Fixed", "Fixed a crash in some cases.", "2026-10-02T10:00:00Z")
-		}, "code", true},
+		}, "code", ""},
 		{"code and a release", func() {
 			r.write("cmd/wopr/main.go", "package main\n")
 			r.write(changesDir+"/v0.1.0.md", "## v0.1.0 - 2026-10-01\n")
-		}, "code", true},
+		}, "code", ""},
 		{
 			"code, Changelog: none", func() { r.write("internal/game/game.go", "package game // refactor\n") },
-			"Refactor\n\nNothing a player sees.\n\nChangelog: none", true,
+			"Refactor\n\nNothing a player sees.\n\nChangelog: none", "",
+		},
+		{
+			// AGENTS.md: the trailer goes in the last paragraph, with any Co-Authored-By lines.
+			"code, Changelog: none with other trailers", func() { r.write("internal/game/game.go", "package game // tidy\n") },
+			"Tidy\n\nNothing a player sees.\n\nChangelog: none\nCo-Authored-By: Someone", "",
+		},
+		{
+			// A line in the body is not a trailer.
+			"code, Changelog: none in the body", func() { r.write("internal/game/game.go", "package game // tidy again\n") },
+			"Tidy\n\nChangelog: none\nThis line makes it body text.\n\nCo-Authored-By: Someone", "internal/game/game.go",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -425,11 +585,11 @@ func TestSince(t *testing.T) {
 			r.commit("2026-10-02T10:00:00Z", tc.msg)
 			r.log.Reset()
 			err := r.runner().since("main")
-			if tc.ok && err != nil {
+			if tc.flagged == "" && err != nil {
 				t.Errorf("since = %v\n%s", err, r.log.String())
 			}
-			if !tc.ok && (!errors.Is(err, errCheck) || !strings.Contains(r.log.String(), "internal/game/game.go")) {
-				t.Errorf("since = %v, want a failure naming the file:\n%s", err, r.log.String())
+			if tc.flagged != "" && (!errors.Is(err, errCheck) || !strings.Contains(r.log.String(), tc.flagged)) {
+				t.Errorf("since = %v, want a failure naming %s:\n%s", err, tc.flagged, r.log.String())
 			}
 		})
 	}

@@ -99,6 +99,10 @@ params:
     flexsearch:
       index: content
       tokenize: forward
+      # The search box's script, FlexSearch (Apache-2.0; credited in NOTICE.md, and its licence is
+      # on the credits page). Hugo fetches it at build time from this exact version, Hextra's
+      # default as of Hextra v0.13.0, and the site serves its own copy.
+      version: "0.8.143"
   highlight:
     copy:
       enable: true

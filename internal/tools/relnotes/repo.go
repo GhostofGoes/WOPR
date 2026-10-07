@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strconv"
@@ -41,8 +42,11 @@ type tag struct {
 	version semver
 }
 
-// releaseTags lists the vX.Y.Z tags that HEAD contains, oldest first. Tags that are not versions
-// are skipped.
+// releaseTagRE is a tag that release.yml publishes: vMAJOR.MINOR.PATCH, with no prerelease.
+var releaseTagRE = regexp.MustCompile(`^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
+
+// releaseTags lists the release tags that HEAD contains, oldest first. A tag release.yml would not
+// publish, such as v0.3.0-rc.1, is not a release, so it is skipped like any other tag.
 func releaseTags(root string) ([]tag, error) {
 	out, err := git(root, "tag", "--merged", "HEAD", "--list", "v*")
 	if err != nil {
@@ -50,12 +54,28 @@ func releaseTags(root string) ([]tag, error) {
 	}
 	var tags []tag
 	for _, name := range strings.Fields(out) {
-		if v, err := parseSemver(name); err == nil && strings.HasPrefix(name, "v") {
+		if !releaseTagRE.MatchString(name) {
+			continue
+		}
+		if v, err := parseSemver(name); err == nil {
 			tags = append(tags, tag{name: name, version: v})
 		}
 	}
 	slices.SortFunc(tags, func(a, b tag) int { return a.version.compare(b.version) })
 	return tags, nil
+}
+
+// tagsAtHead is the set of tags that point at HEAD.
+func tagsAtHead(root string) (map[string]bool, error) {
+	out, err := git(root, "tag", "--points-at", "HEAD")
+	if err != nil {
+		return nil, err
+	}
+	at := map[string]bool{}
+	for _, name := range strings.Fields(out) {
+		at[name] = true
+	}
+	return at, nil
 }
 
 // commitDate is the UTC date (YYYY-MM-DD) of a commit, or of the commit a tag points at.
@@ -102,11 +122,16 @@ func releaseTimes(root string, head semver) (map[semver]time.Time, error) {
 }
 
 // snapshotVersion is the version GoReleaser gives a snapshot build with .goreleaser.yaml's
-// version_template, "{{ incpatch .Version }}-snapshot.{{ .ShortCommit }}": the latest tag
-// (v0.0.0 if there is none) with its patch number raised, and HEAD's short hash. ref is that hash.
+// version_template, "{{ incpatch .Version }}-snapshot.{{ .ShortCommit }}", and ref is HEAD's short
+// hash. GoReleaser's version comes from its current tag, which it finds as this does: the
+// highest-sorting tag at HEAD, else the nearest one below it (git describe), else v0.0.0.
+// incpatch raises the patch number of a release, and only drops the prerelease of a prerelease
+// (v0.3.0-rc.1 gives 0.3.0).
 func snapshotVersion(root string) (v semver, ref string, err error) {
 	latest := "v0.0.0"
-	if out, err := git(root, "describe", "--tags", "--abbrev=0"); err == nil {
+	if out, err := git(root, "tag", "--points-at", "HEAD", "--sort", "-version:refname"); err == nil && strings.TrimSpace(out) != "" {
+		latest = strings.Fields(out)[0]
+	} else if out, err := git(root, "describe", "--tags", "--abbrev=0", "HEAD"); err == nil {
 		latest = strings.TrimSpace(out)
 	}
 	v, err = parseSemver(latest)
@@ -118,7 +143,11 @@ func snapshotVersion(root string) (v semver, ref string, err error) {
 		return semver{}, "", err
 	}
 	ref = strings.TrimSpace(out)
-	return semver{major: v.major, minor: v.minor, patch: v.patch + 1, pre: "snapshot." + ref}, ref, nil
+	next := semver{major: v.major, minor: v.minor, patch: v.patch + 1, pre: "snapshot." + ref}
+	if v.pre != "" {
+		next.patch = v.patch
+	}
+	return next, ref, nil
 }
 
 // fragmentsAt returns the change notes waiting in .changes/unreleased at a tag: file name to content.
@@ -189,8 +218,9 @@ func (c changie) run(dir, date string, args ...string) (string, error) {
 
 // stage copies .changie.yaml and .changes into a new temporary directory, where changie can batch
 // and merge without touching the git tree. With frags not nil, the unreleased notes are frags
-// instead of the tree's.
-func stage(root string, frags map[string][]byte) (string, error) {
+// instead of the tree's. The files named in omit (paths under .changes, such as v0.3.0.md) are
+// left out.
+func stage(root string, frags map[string][]byte, omit map[string]bool) (string, error) {
 	dir, err := os.MkdirTemp("", "relnotes-")
 	if err != nil {
 		return "", err
@@ -212,6 +242,9 @@ func stage(root string, frags map[string][]byte) (string, error) {
 			return os.MkdirAll(dst, 0o755)
 		}
 		if frags != nil && filepath.Dir(rel) == "unreleased" && strings.HasSuffix(rel, ".yaml") {
+			return nil
+		}
+		if omit[filepath.ToSlash(rel)] {
 			return nil
 		}
 		return copyFile(p, dst)
@@ -256,10 +289,11 @@ func versionFiles(root string) (map[string]string, error) {
 	return files, nil
 }
 
-// unbatchedTags lists the tags that HEAD contains, below limit (all of them if limit is nil),
-// that have no .changes/vX.Y.Z.md: releases whose notes were batched on the fly and never
-// committed.
-func unbatchedTags(root string, limit *semver) ([]tag, error) {
+// unbatchedTags lists the release tags that HEAD contains, below limit (all of them if limit is
+// nil), that have no .changes/vX.Y.Z.md: releases whose notes were batched on the fly and never
+// committed. With skipHead, a tag at HEAD itself is left out: that commit is the release, its
+// notes are still in .changes/unreleased, and only the commits after it must catch up.
+func unbatchedTags(root string, limit *semver, skipHead bool) ([]tag, error) {
 	tags, err := releaseTags(root)
 	if err != nil {
 		return nil, err
@@ -268,9 +302,15 @@ func unbatchedTags(root string, limit *semver) ([]tag, error) {
 	if err != nil {
 		return nil, err
 	}
+	atHead := map[string]bool{}
+	if skipHead {
+		if atHead, err = tagsAtHead(root); err != nil {
+			return nil, err
+		}
+	}
 	var out []tag
 	for _, t := range tags {
-		if limit != nil && t.version.compare(*limit) >= 0 {
+		if (limit != nil && t.version.compare(*limit) >= 0) || atHead[t.name] {
 			continue
 		}
 		if _, ok := files[t.version.String()]; !ok {
@@ -278,4 +318,36 @@ func unbatchedTags(root string, limit *semver) ([]tag, error) {
 		}
 	}
 	return out, nil
+}
+
+// pendingVersions lists the batched versions that are not released yet: each .changes/vX.Y.Z.md
+// newer than every release tag that HEAD contains, oldest first. A release pull request leaves
+// one, until its merge commit is tagged.
+func pendingVersions(root string) ([]semver, error) {
+	tags, err := releaseTags(root)
+	if err != nil {
+		return nil, err
+	}
+	files, err := versionFiles(root)
+	if err != nil {
+		return nil, err
+	}
+	var out []semver
+	for name := range files {
+		v, err := parseSemver(name)
+		if err != nil {
+			return nil, err
+		}
+		if len(tags) == 0 || v.compare(tags[len(tags)-1].version) > 0 {
+			out = append(out, v)
+		}
+	}
+	slices.SortFunc(out, semver.compare)
+	return out, nil
+}
+
+// unreleasedNotes counts the change notes waiting in .changes/unreleased.
+func unreleasedNotes(root string) (int, error) {
+	paths, err := filepath.Glob(filepath.Join(root, filepath.FromSlash(unreleasedDir), "*.yaml"))
+	return len(paths), err
 }

@@ -19,8 +19,8 @@ Everything colour shows is also in the characters, so nothing is lost in a termi
 - Gin Rummy names your melds by their positions in your hand.
 - Chess and checkers mark the last move with brackets.
 
-Set `NO_COLOR` (to any value) to turn colour off. Every theme then uses bold, dim, underline and reverse
-instead.
+Set `NO_COLOR` (to any value but an empty one) to turn colour off. Every theme then uses bold, dim,
+underline and reverse instead.
 
 {{< screenshot src="img/themes-nocolor.png" caption="Black Jack with `NO_COLOR=1`: the cards read `AS` and `JS`." >}}
 

@@ -241,7 +241,7 @@ jobs:
           if-no-files-found: error
 
   # The documentation site (site/), built as docs.yml builds it for GitHub Pages: a warning, a
-  # broken link or a missing screenshot fails it. docs.yml deploys it from main.
+  # broken link or a missing screenshot fails it. docs.yml publishes it from each release's tag.
   docs:
     name: docs
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository

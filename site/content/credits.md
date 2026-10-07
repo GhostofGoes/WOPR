@@ -23,3 +23,9 @@ This site's look, stylesheet and scripts come from the Hextra theme, used under 
 The viewer that shows a screenshot full size is PhotoSwipe, used under its MIT licence:
 
 {{< license-text "photoswipe" >}}
+
+## FlexSearch's licence
+
+The search box runs on FlexSearch, used under the Apache License 2.0:
+
+{{< license-text "flexsearch" >}}

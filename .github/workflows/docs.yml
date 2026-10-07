@@ -1,30 +1,26 @@
 # Publishes the documentation site (site/: Hugo with the Hextra theme) to GitHub Pages, at
-# https://ghostofgoes.github.io/WOPR/, whenever main changes a file the site shows. ci.yml's docs
-# job builds the same site on every push, so this workflow only builds and deploys. It needs the
-# repository's Pages source set to GitHub Actions (AGENTS.md, "Repository settings").
+# https://ghostofgoes.github.io/WOPR/, from a release tag, so that the site always describes a
+# release that exists: its version and downloads, its options and its manual page. release.yml
+# starts it on main with the tag it has just published. Run it by hand to publish again: with no
+# tag, it takes the latest release. ci.yml's docs job builds main's copy of the site on every push,
+# so this workflow only builds a release's and deploys it. It needs the repository's Pages source
+# set to GitHub Actions (AGENTS.md, "Repository settings").
 name: Docs
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - site/**
-      - tools/docs/**
-      - docs/man/**
-      - docs/screenshots/**
-      - AGENTS.md # its Commands and Pull requests sections
-      - CHANGELOG.md
-      - CODE_OF_CONDUCT.md
-      - NOTICE.md
-      - .github/workflows/docs.yml
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish the site from, such as v0.3.0; empty for the latest release
+        type: string
+        required: false
+        default: ""
 
 permissions: {}
 
-# One deployment at a time. A newer run waits for the one in progress instead of cancelling it,
-# so a deployment is never cut off halfway.
+# One run per branch at a time; deploy also waits for any other deployment (below).
 concurrency:
-  group: pages
+  group: docs-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -39,6 +35,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # the tags, to find the release
+      # The site, Hugo and the theme all come from the release tag, not from the branch this
+      # workflow runs on. A release is vMAJOR.MINOR.PATCH, as release.yml publishes it.
+      - name: Check out the release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          if [[ -z "${TAG}" ]]; then
+            TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' --exclude '*-*' HEAD)"
+          fi
+          if [[ ! "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::the tag input must be a release tag such as v0.3.0"
+            exit 1
+          fi
+          if ! git rev-parse --quiet --verify "refs/tags/${TAG}^{commit}" > /dev/null; then
+            echo "::error::there is no tag ${TAG}"
+            exit 1
+          fi
+          git checkout --quiet --detach "refs/tags/${TAG}"
+          if [[ ! -f site/hugo.yaml ]]; then
+            echo "::error::${TAG} has no docs site; the first release with one is the one after v0.2.0"
+            exit 1
+          fi
+          echo "The docs site from ${TAG}." >> "${GITHUB_STEP_SUMMARY}"
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
@@ -66,6 +86,12 @@ jobs:
     permissions:
       pages: write # deploy-pages publishes the uploaded site
       id-token: write # deploy-pages proves the artifact came from this workflow
+    # One deployment at a time. A newer one waits for the one in progress instead of cancelling
+    # it, so a deployment is never cut off halfway. Only main's runs reach this group, so a run
+    # on another branch never replaces a deployment that is waiting.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

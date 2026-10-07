@@ -794,7 +794,7 @@ Your ICBMs only ever hit its silos.
 .SS Tic\-Tac\-Toe
 Start it with
 .BR "wopr ttt" .
-It also answers to noughts and crosses, tic\-tac\-toe and tictactoe.
+It also answers to "noughts and crosses", tic\-tac\-toe and tictactoe.
 .PP
 Tic\-tac\-toe with large marks, the game that ends the film.
 WOPR plays perfectly, so the best you can do is a draw.
@@ -875,8 +875,10 @@ option, or SIGTERM.
 A runtime error or a crash.
 .TP
 .B 2
-A usage error: an unknown option, game or scene, a name that fits more than one,
-or no terminal to run in.
+A usage error, such as an unknown option, game, scene or theme, a seed that is
+not a whole number, too many arguments, options that cannot be combined, a name
+that fits more than one, or no terminal to run in (standard output is not a
+terminal, or TERM is dumb).
 .TP
 .B 130
 Ctrl+C or SIGINT.
@@ -900,7 +902,7 @@ When true, it turns on \-\-reduce\-motion (no blinking or speed\-ups).
 .TP
 .B WOPR_PANEL
 Shows the front panel when true and hides it when false, in any theme.
-Unset, the theme decides: norad shows it.
+Unset or empty, the theme decides: norad shows it.
 .TP
 .B WOPR_DEBUG
 When true, wopr writes a debug log (never what you type) and prints its path
@@ -908,11 +910,11 @@ when it exits.
 See FILES.
 .TP
 .B NO_COLOR
-Set to anything, it turns colour off.
+Set to any non\-empty value, it turns colour off.
 .TP
 .B TERM
-When it is dumb, wopr does not start its full\-screen interface; the options
-that print and exit still work.
+When it is dumb, wopr does not start its full\-screen interface and exits with
+status 2; the options that print and exit still work.
 .SH FILES
 .TP
 .I ~/.cache/wopr/debug.log

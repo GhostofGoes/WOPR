@@ -187,8 +187,15 @@ sudo dnf install "./wopr-${VERSION}-1.${ARCH}.rpm"
 wopr --version
 ```
 
-The program goes in `/usr/bin`. To remove it: `sudo dnf remove wopr`. On openSUSE, use `zypper` in
-place of `dnf`.
+The program goes in `/usr/bin`. To remove it: `sudo dnf remove wopr`.
+
+On openSUSE, download and verify the `.rpm` the same way, then install it with `zypper`, which refuses a
+package with no GPG signature unless you tell it not to. Do that only after `gh attestation verify` has
+passed:
+
+```sh
+sudo zypper install --allow-unsigned-rpm "./wopr-${VERSION}-1.${ARCH}.rpm"
+```
 
 The packages carry no GPG signature. Check them with `gh attestation verify`, as above, like every other
 file in a release.
@@ -202,6 +209,10 @@ and install the latest release:
 ```sh
 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
 ```
+
+If `go` says that the module needs a newer Go and mentions `GOTOOLCHAIN=local`, your system's Go is set
+not to download one, as some Linux distributions set it. Run `go env -w GOTOOLCHAIN=auto` once and try
+again, or install Go from [go.dev](https://go.dev/dl/).
 
 The program goes into Go's `bin` folder: `~/go/bin` on Linux and macOS, `%USERPROFILE%\go\bin` on
 Windows (`go env GOPATH` prints the folder above it). Add that folder to your `PATH` if `wopr` is not
@@ -223,8 +234,12 @@ mkdir -p ~/.local/share/man/man6
 cp wopr.6 ~/.local/share/man/man6/
 ```
 
-`man` looks in `~/.local/share/man` when `~/.local/bin` is on your `PATH`; if it does not, add the
-folder to `MANPATH`.
+`man` looks in `~/.local/share/man` when `~/.local/bin` is on your `PATH`. If it does not, add this line
+to your `~/.bashrc` or `~/.zshrc`; the colon at the end keeps the system's manual pages too:
+
+```sh
+export MANPATH="$HOME/.local/share/man:"
+```
 
 ## Development builds
 

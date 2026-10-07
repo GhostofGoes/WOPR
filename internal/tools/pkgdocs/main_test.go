@@ -61,11 +61,13 @@ func TestCompress(t *testing.T) {
 func TestRun(t *testing.T) {
 	t.Parallel()
 	root, notes, out := t.TempDir(), t.TempDir(), filepath.Join(t.TempDir(), "pkg")
+	const page = ".\\\" generated\n.TH WOPR 6 2026-10-07 \"wopr 0.2.0\" \"Games Manual\"\n.SH NAME\nwopr \\- WOPR\n"
 	sources := map[string]string{
-		filepath.Join(root, "docs", "man", "wopr.6"): ".TH WOPR 6\n",
+		filepath.Join(root, "docs", "man", "wopr.6"): page,
 		filepath.Join(root, "README.md"):             "# wopr\n",
 		filepath.Join(root, "NOTICE.md"):             "# Notices\n",
 		filepath.Join(notes, "CHANGELOG.md"):         "# Changelog\n",
+		filepath.Join(notes, "changelog.yml"):        "[]\n",
 	}
 	for p, s := range sources {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -75,25 +77,63 @@ func TestRun(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := run(root, notes, out); err != nil {
+	if err := run(root, notes, out, "0.3.0-snapshot.abc1234"); err != nil {
 		t.Fatal(err)
 	}
+	// Every package and archive names the version being built, whatever the tree's page says.
+	stamped := strings.Replace(page, `"wopr 0.2.0"`, `"wopr 0.3.0\-snapshot.abc1234"`, 1)
 	for name, want := range map[string]string{
-		"wopr.6.gz": ".TH WOPR 6\n", "NEWS.gz": "# Changelog\n", "README.md.gz": "# wopr\n", "NOTICE.md.gz": "# Notices\n",
+		"wopr.6": stamped, "wopr.6.gz": stamped, "NEWS.gz": "# Changelog\n", "README.md.gz": "# wopr\n",
+		"NOTICE.md.gz": "# Notices\n", "changelog.yml": "[]\n",
 	} {
 		data, err := os.ReadFile(filepath.Join(out, name))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got := string(gunzip(t, data)); got != want {
+		if strings.HasSuffix(name, ".gz") {
+			data = gunzip(t, data)
+		}
+		if got := string(data); got != want {
 			t.Errorf("%s holds %q, want %q", name, got, want)
 		}
+	}
+	if err := run(root, notes, out, "v0.3.0"); err == nil {
+		t.Error("a version with a v must fail: GoReleaser's {{ .Version }} has none")
+	}
+	if err := os.Remove(filepath.Join(notes, "changelog.yml")); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(root, notes, out, "0.3.0"); err == nil {
+		t.Error("a missing package changelog must fail")
 	}
 	if err := os.Remove(filepath.Join(notes, "CHANGELOG.md")); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(root, notes, out); err == nil {
+	if err := run(root, notes, out, "0.3.0"); err == nil {
 		t.Error("missing release notes must fail")
+	}
+}
+
+func TestStampVersion(t *testing.T) {
+	t.Parallel()
+	got, err := stampVersion([]byte(".TH WOPR 6 2026-10-07 \"wopr\" \"Games Manual\"\n.TH OTHER 1 x \"y\" \"z\"\n"), "1.0.0")
+	if want := ".TH WOPR 6 2026-10-07 \"wopr 1.0.0\" \"Games Manual\"\n.TH OTHER 1 x \"y\" \"z\"\n"; err != nil || string(got) != want {
+		t.Errorf("stampVersion = %q, %v; want %q (only the first title line changes)", got, err, want)
+	}
+	if _, err := stampVersion([]byte(".SH NAME\n"), "1.0.0"); err == nil {
+		t.Error("a page with no title line must fail")
+	}
+}
+
+// The manual page in the tree has the title line stampVersion rewrites.
+func TestRepositoryPage(t *testing.T) {
+	t.Parallel()
+	data, err := os.ReadFile(filepath.Join("..", "..", "..", filepath.FromSlash(manPage)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stampVersion(data, "1.0.0"); err != nil {
+		t.Error(err)
 	}
 }
 

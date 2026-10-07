@@ -237,3 +237,13 @@ func TestRoff(t *testing.T) {
 		}
 	}
 }
+
+// A name of several words is quoted, as the shell needs it, so that a list of names reads as
+// the names it holds: tic-tac-toe answers to "noughts and crosses", not to "crosses".
+func TestShellWords(t *testing.T) {
+	t.Parallel()
+	got := joinAnd(shellWords([]string{"noughts and crosses", "tic-tac-toe", "tictactoe"}), "and")
+	if want := `"noughts and crosses", tic-tac-toe and tictactoe`; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+}

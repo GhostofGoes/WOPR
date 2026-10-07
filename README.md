@@ -66,7 +66,9 @@ sudo install -d /usr/local/share/man/man6 && sudo install -m 644 wopr.6 /usr/loc
 mkdir -p ~/.local/share/man/man6 && cp wopr.6 ~/.local/share/man/man6/
 ```
 
-`man` searches `~/.local/share/man` when `~/.local/bin` is on your `PATH`; otherwise add it to `MANPATH`.
+`man` searches `~/.local/share/man` when `~/.local/bin` is on your `PATH`. Otherwise add
+`export MANPATH="$HOME/.local/share/man:"` to your shell's startup file: the colon at the end keeps the
+system's manual pages too.
 
 With Go installed, you can instead build from source:
 
@@ -193,7 +195,7 @@ film's lines are still to be checked one by one against the film.
 | `-s`, `--seed <n>` | deterministic run; env `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations); env `WOPR_REDUCE_MOTION=1` |
 
-`NO_COLOR` (any value) turns colour off.
+`NO_COLOR` (any value but an empty one) turns colour off.
 
 ## Accessibility
 

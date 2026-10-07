@@ -35,7 +35,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6 -packages 4` |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and the Linux packages, and collects every release file) |
-| Lint the Linux packages (after a release build; Linux, tools not pinned) | `lintian --pedantic dist/*.deb` and `rpmlint dist/*.rpm` with Fedora's rpmlint configuration; see `docs/PLAN.md` §8 for what they report |
+| Lint the Linux packages (after a release build; Linux, tools not pinned) | `lintian --pedantic dist/*.deb` and, with Fedora's rpmlint configuration, `rpmlint -r packaging/rpmlintrc dist/*.rpm`; see `docs/PLAN.md` §8 for what they report. List an `.rpm`'s files with `rpm -qlvp`, or unpack it with `bsdtar -xf X.rpm -C dir`; never pipe `rpm2cpio` into a plain `cpio -idm`, which writes into `/` (the payload's paths are absolute) |
 | Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
 | Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
 
@@ -69,14 +69,17 @@ toolchain first, then the tool.
   `/usr/games`, the manual page in section 6, the documents in `/usr/share/doc/wopr`) and an `.rpm`
   (Fedora: `/usr/bin`, `%license`, `%doc`) for each Linux build (`docs/PLAN.md` §8). `stage -archives`
   checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
-  changelogs it writes, so change both together. `pkgdocs`'s tests hold `packaging/description.txt`, both
-  packages' description, to both formats' rules. The smoke jobs install, run and remove both packages.
+  changelogs it writes, so change both together. `pkgdocs` writes the packages' documents and their
+  `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
+  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. The smoke
+  jobs install, run and remove both packages.
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
   `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
   repeats them. `internal/tools/manpage`'s tests check each file against the catalog, and check that
   `docs/man/wopr.6` is what the tool generates. The page takes its version and date from the newest
-  `.changes/vX.Y.Z.md`, so regenerate it after batching a release.
+  `.changes/vX.Y.Z.md`, so regenerate it after batching a release. The archives and packages carry it
+  with the version being built in its header instead (`pkgdocs`).
 - **Accessibility** (`docs/PLAN.md` §4.5). `internal/ui/access_test.go` plays every game in the catalog from a
   playbook (every playable game must have one) and checks each screen: printable ASCII only, a prompt's text
   ends in `:` or `?`, the cursor at the end of the input line, a hint in key mode, no colour codes under
@@ -141,8 +144,10 @@ Every change a player could notice gets a change note: a small file in `.changes
 - **When a note is not needed.** Tests, CI, tooling, refactoring and contributor docs need none. CI's
   `relnotes -since origin/main` asks for a note when a branch changes a file under `cmd/` or `internal/`
   that is not a test, test data, or in a test-only package (`internal/tools`, `archtest`, `e2e`, `golden`,
-  `games/testkit`, `games/gamestest`). If players will notice nothing, add the trailer `Changelog: none`
-  to a commit message on the branch, after a blank line, as the last line.
+  `games/testkit`, `games/gamestest`), or a file that decides what the downloads hold: `.goreleaser.yaml`,
+  `packaging/` or the manual page in `docs/man/`. If players will notice nothing, add `Changelog: none`
+  as a trailer to a commit message on the branch: a line in the message's last paragraph, next to any
+  `Co-Authored-By:` lines. A line higher up in the message is not a trailer.
 - **Never edit `CHANGELOG.md` by hand.** It is `changie merge`'s output, and the `change-notes` hook
   (`relnotes -check`) fails when it differs, when a note does not parse or is too long, or when a release
   tag has no `.changes/vX.Y.Z.md`.
@@ -165,25 +170,40 @@ request or done by `release.yml`.
    version, and the manual page's header names it (CI fails until it does). Read the notes once more as
    a player would; to change one, edit `.changes/vX.Y.Z.md` and run `changie merge` again. Every CI
    run's `build` job shows the notes the next release would get, in its summary.
-2. **The owner merges it**, then tags the merge commit and pushes the tag:
-   `git fetch origin && git tag vX.Y.Z origin/main && git push origin vX.Y.Z`.
+2. **The owner merges it**, then tags its merge commit, by the commit's hash, and pushes the tag:
+   `git fetch origin && git tag vX.Y.Z <merge commit> && git push origin vX.Y.Z`. Tag that commit even
+   if other pull requests merged after it: their notes are not in this release's notes, so their changes
+   wait for the next one.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
    `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
-   (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes.
+   (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes. Then it
+   republishes the docs site from the new tag (`docs.yml`).
+
+`relnotes` refuses a tag that does not name the batched version, and nothing is published: delete that
+tag and push the right one. It warns when the tagged commit has notes the release does not list. The `.deb` and `.rpm`
+changelogs date a release by its tagged commit, and `CHANGELOG.md` by the day it was batched. If the pull
+request merges on a later day (UTC), they differ, and `relnotes` warns; to keep one date, set the date in
+`.changes/vX.Y.Z.md`'s header to the merge day before merging, and run `changie merge` and the manpage tool
+again.
 
 If the pull request did not batch the notes, the release still gets them: the workflow batches
 `.changes/unreleased/` itself, dated by the tagged commit, and warns. `main` then lags behind the release,
-so CI fails on every branch until one pull request runs `go run ./internal/tools/relnotes -catch-up`. It
-writes the missing `.changes/vX.Y.Z.md` from the tag, removes those notes from `.changes/unreleased/`,
-and merges `CHANGELOG.md`; run `go run ./internal/tools/manpage` too, and commit the result. That
-release's manual page still names the version before it.
+so CI fails on every later commit (the tagged one still passes) until one pull request runs
+`go run ./internal/tools/relnotes -catch-up`. It writes the missing `.changes/vX.Y.Z.md` from the tag,
+removes those notes from `.changes/unreleased/`, and merges `CHANGELOG.md`; run
+`go run ./internal/tools/manpage` too, and commit the result. That release's manual page names its own
+version, as every build's does, but keeps the previous release's date. Only `vX.Y.Z` tags are releases:
+`release.yml` publishes no other, and `relnotes` ignores the rest, such as `v0.3.0-rc.1`.
 
 ## Docs site
 
 `site/` is the documentation site: Hugo with the Hextra theme, published to
-<https://ghostofgoes.github.io/WOPR/> by `docs.yml` whenever `main` changes something it shows. CI's `docs`
-job builds it on every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a
-missing screenshot fails the build.
+<https://ghostofgoes.github.io/WOPR/> by `docs.yml` from the latest release's tag, so that it describes a
+version people can download. `release.yml` starts `docs.yml` after it publishes a release; to publish
+again without a release (after changing the Pages settings, say), run `docs.yml` on `main` by hand. A
+change to the site therefore goes live with the next release. CI's `docs` job builds `main`'s copy on
+every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a missing
+screenshot fails the build.
 
 - Pages are Markdown in `site/content/`, written for players in plain, direct prose.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
@@ -195,12 +215,13 @@ missing screenshot fails the build.
   caption is also its alt text and shows in the lightbox. PNGs are 960×564, made smaller with
   `optipng -o2`. One that shows the big board's map gets the map's credit line. Wrap several in the
   `screenshots` shortcode to open them as one set, as each game's page does.
-- The lightbox is Hextra's, PhotoSwipe, fetched at build time from the exact version in `site/hugo.yaml`
-  (`params.gallery.base`); the credits page shows its licence from the same version.
+- The lightbox is Hextra's, PhotoSwipe, and the search is FlexSearch, both fetched from jsDelivr at
+  build time at the exact versions in `site/hugo.yaml` (`params.gallery.base`,
+  `params.search.flexsearch.version`); the credits page shows their licences from the same versions.
 - Download commands use the `version` shortcode, the latest release in `CHANGELOG.md`. Text about the
   `.deb` and `.rpm` goes inside `{{% if-packages %}}`, which shows it only once the latest release has
-  them (every release after v0.2.0), so no page names a package that does not exist yet. Its content is
-  Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
+  them (every release after v0.2.0), so no build of the site names a package that does not exist yet.
+  Its content is Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 
@@ -236,8 +257,8 @@ If a rights holder asks for material to be removed:
    `site/static/img/games/`) show some of it, and the docs site's pages (`site/content/`,
    `site/data/games/`) quote some, which the manual page (`docs/man/wopr.6`) repeats. The `.deb`'s
    copyright file (`packaging/debian/copyright`) names the files; regenerate it afterwards.
-2. Remove or replace it in one pull request, and release a patch version. Merging it also redeploys the
-   docs site (`docs.yml`).
+2. Remove or replace it in one pull request, and release a patch version. Releasing it also republishes
+   the docs site from the new tag (`docs.yml`).
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).
 4. Reply to the requester saying what was done. Copies remain in git history and in the Go module mirror,
@@ -262,7 +283,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   vulnerabilities.
 - **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. `docs.yml` then
   deploys the docs site to <https://ghostofgoes.github.io/WOPR/> through the `github-pages` environment,
-  which GitHub creates and limits to deployments from `main`.
+  which GitHub creates and limits to deployments from `main`; it runs on `main` and builds from a release
+  tag. The first deployment comes with the first release after v0.2.0, the first with a docs site.
 
 ## Milestone checklist
 
@@ -271,8 +293,10 @@ At every milestone boundary:
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
    `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
    docs theme with `go -C site get github.com/imfing/hextra@latest`; set PhotoSwipe in `site/hugo.yaml`
-   (`params.gallery.base`) to its newest 5.x release, the major version Hextra's script is written for.
-   Build the docs site: a new Hugo can deprecate a setting, which `--panicOnWarning` turns into an error.
+   (`params.gallery.base`) to its newest 5.x release, the major version Hextra's script is written for,
+   and FlexSearch (`params.search.flexsearch.version`) to the version the new Hextra defaults to (its
+   `layouts/_partials/scripts/search.html`). Build the docs site: a new Hugo can deprecate a setting,
+   which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
 3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
    Fedora release's (`registry.fedoraproject.org/fedora:<N>`).

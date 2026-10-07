@@ -219,6 +219,35 @@ func (s section) body() string {
 	return b.String()
 }
 
+// markdown is the section as changie writes a version file: the header, then each kind's notes.
+func (s section) markdown() string {
+	header := fmt.Sprintf("## v%s - %s\n", s.version, s.date)
+	if len(s.kinds) == 0 {
+		return header
+	}
+	return header + "\n" + s.body()
+}
+
+// combine gathers the notes of parts into one section with into's version and date: kind by kind,
+// in the order of kinds, and within a kind in the order of parts.
+func combine(into section, parts []section, kinds []string) section {
+	out := section{version: into.version, date: into.date}
+	for _, k := range kinds {
+		var notes []string
+		for _, p := range parts {
+			for _, kn := range p.kinds {
+				if kn.kind == k {
+					notes = append(notes, kn.notes...)
+				}
+			}
+		}
+		if len(notes) > 0 {
+			out.kinds = append(out.kinds, kindNotes{kind: k, notes: notes})
+		}
+	}
+	return out
+}
+
 // releaseNotes is the GitHub Release body: the version's notes, a pointer to the attestation check,
 // and the comparison with the previous version (prev is "" for the first release). ref is what to
 // compare against: the tag, or a commit for a snapshot.

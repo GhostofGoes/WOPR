@@ -25,7 +25,7 @@ You need Git, Go and prek. The race detector also needs a C compiler. Nothing el
 release tools and Hugo, which builds this site, are pinned as Go tools and build themselves on first use.
 
 **Go.** The repository pins its Go version in `go.mod`. Any Go from 1.21 on downloads that version the
-first time you build, so the Go your system offers is fine.
+first time you build, unless it is set not to (`GOTOOLCHAIN=local`; see the Linux tab).
 
 **prek** runs the formatters and linters before each commit, and the tests before each push. It is a
 single program; [prek's README](https://github.com/j178/prek#installation) lists every way to get it.
@@ -42,7 +42,10 @@ sudo pacman -S git go gcc              # Arch
 ```
 
 If your distribution's Go is older than 1.21, install it from [go.dev](https://go.dev/doc/install)
-instead. Then install prek with its installer, or with `brew install prek` if you use Homebrew:
+instead. Some distributions set their Go not to download another version: if `go test` says that
+`go.mod` needs a newer Go and mentions `GOTOOLCHAIN=local`, run `go env -w GOTOOLCHAIN=auto` once, or
+install Go from go.dev. Then install prek with its installer, or with `brew install prek` if you use
+Homebrew:
 
 ```sh
 curl --proto '=https' --tlsv1.2 -LsSf https://github.com/j178/prek/releases/download/v0.5.5/prek-installer.sh | sh
@@ -153,7 +156,9 @@ theme, both pinned in the repository. Its pages are in `site/content/`; each gam
 go tool -modfile=tools/docs/go.mod hugo server --source site
 ```
 
-Every page has an "Edit this page" link that opens its source on GitHub.
+Every page has an "Edit this page" link that opens its source on GitHub. The site is published from
+each release, so that it always describes a version you can download: a change to it goes live with
+the next release.
 
 ## Licence
 

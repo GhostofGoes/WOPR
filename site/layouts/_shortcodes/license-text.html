@@ -6,15 +6,27 @@
     {{< license-text "photoswipe" >}}             the lightbox's LICENSE, fetched at build time
                                                   from the version that hugo.yaml pins
                                                   (params.gallery.base), so the two always match
+    {{< license-text "flexsearch" >}}             the search's LICENSE, fetched at build time from
+                                                  the version that hugo.yaml pins
+                                                  (params.search.flexsearch.version), likewise
 */ -}}
 {{- $name := .Get 0 -}}
 {{- $text := "" -}}
+{{- $url := "" -}}
 {{- if eq $name "photoswipe" -}}
   {{- $base := site.Params.gallery.base | default "" -}}
   {{- if not (and (hasPrefix $base "https://") (hasSuffix $base "/dist")) -}}
     {{- errorf "%s: license-text: params.gallery.base in hugo.yaml must be PhotoSwipe's https://.../dist folder, not %q" .Page.String $base -}}
   {{- end -}}
-  {{- $url := printf "%s/LICENSE" (strings.TrimSuffix "/dist" $base) -}}
+  {{- $url = printf "%s/LICENSE" (strings.TrimSuffix "/dist" $base) -}}
+{{- else if eq $name "flexsearch" -}}
+  {{- $version := site.Params.search.flexsearch.version | default "" | string -}}
+  {{- if not (findRE `^\d+\.\d+\.\d+$` $version) -}}
+    {{- errorf "%s: license-text: params.search.flexsearch.version in hugo.yaml must be an exact version such as 0.8.143, not %q" .Page.String $version -}}
+  {{- end -}}
+  {{- $url = printf "https://cdn.jsdelivr.net/npm/flexsearch@%s/LICENSE" $version -}}
+{{- end -}}
+{{- if $url -}}
   {{- with try (resources.GetRemote $url) -}}
     {{- with .Err -}}
       {{- errorf "%s: license-text: could not fetch %s: %s" $.Page.String $url . -}}

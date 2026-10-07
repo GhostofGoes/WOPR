@@ -17,7 +17,15 @@
 //
 // A release pull request batches the notes into .changes/vX.Y.Z.md. When it did not, relnotes
 // batches them itself in a temporary copy, dated with HEAD's commit date (-date overrides it), and
-// warns; the git tree is never changed. Either way the same commit gives the same files.
+// warns; the git tree is never changed. Either way the same commit gives the same files. A
+// release is refused when another version is batched but not tagged (the tag names the wrong
+// version) or when it has no notes at all.
+//
+// A snapshot is named as GoReleaser names it (see snapshotVersion). On a release pull request,
+// whose version is batched but not yet tagged, the snapshot's notes are that version's, followed
+// by any added since, so the packages' newest changelog entry is always their own version.
+//
+// Only tags that release.yml publishes (vX.Y.Z, no prerelease) count as releases.
 //
 // Exit status: 0 when all is well, 1 when a check fails, 2 when relnotes could not run.
 package main
@@ -27,6 +35,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -128,8 +137,8 @@ func (r *runner) changieBin() (changie, error) {
 	return c, nil
 }
 
-func (r *runner) stage(frags map[string][]byte) (string, error) {
-	dir, err := stage(r.root, frags)
+func (r *runner) stage(frags map[string][]byte, omit map[string]bool) (string, error) {
+	dir, err := stage(r.root, frags, omit)
 	if dir != "" {
 		r.tmp = append(r.tmp, dir)
 	}
@@ -174,8 +183,10 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 		return err
 	}
 
-	// Each earlier release must have its own file, or its notes would be counted again here.
-	behind, err := unbatchedTags(r.root, &v)
+	// Each earlier release must have its own file, or its notes would be counted again here. The
+	// commit a release was tagged at is that release, not an earlier one, so a snapshot of it is
+	// not refused.
+	behind, err := unbatchedTags(r.root, &v, snapshot)
 	if err != nil {
 		return err
 	}
@@ -189,7 +200,25 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 	if err != nil {
 		return err
 	}
-	dir, err := r.stage(nil)
+	_, batched := files[v.String()]
+	waiting, err := unreleasedNotes(r.root)
+	if err != nil {
+		return err
+	}
+	var omit map[string]bool
+	var ahead []section
+	if snapshot {
+		// A release pull request batches its notes before its merge commit is tagged. Its snapshot
+		// is that release: the batched notes go under the snapshot's version, ahead of any added
+		// since, so the packages' newest changelog entry is always their own version.
+		if ahead, omit, err = pendingSections(r.root, files, kinds); err != nil {
+			return err
+		}
+	} else if err := r.checkRelease(v, files, batched, waiting); err != nil {
+		return err
+	}
+
+	dir, err := r.stage(nil, omit)
 	if err != nil {
 		return err
 	}
@@ -197,7 +226,7 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 	if err != nil {
 		return err
 	}
-	if _, batched := files[v.String()]; !batched {
+	if !batched {
 		if date == "" {
 			if date, err = commitDate(r.root, "HEAD"); err != nil {
 				return err
@@ -208,6 +237,11 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 		}
 		if v.pre == "" {
 			r.annotate("warning", fmt.Sprintf("v%s was not batched in its release pull request, so its notes were made from .changes/unreleased here; the next pull request must run `go run ./internal/tools/relnotes -catch-up`", v))
+		}
+	}
+	if len(ahead) > 0 {
+		if err := prependNotes(filepath.Join(dir, changesDir, "v"+v.String()+".md"), ahead, kinds); err != nil {
+			return err
 		}
 	}
 	if _, err := c.run(dir, "", "merge"); err != nil {
@@ -221,6 +255,11 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 	i := slices.IndexFunc(sections, func(s section) bool { return s.version == v })
 	if i < 0 {
 		return fmt.Errorf("changie wrote no notes for v%s", v)
+	}
+	if batched && !snapshot {
+		if err := r.warnBatched(sections[i], waiting); err != nil {
+			return err
+		}
 	}
 	prev := ""
 	if i+1 < len(sections) {
@@ -254,12 +293,98 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 	return nil
 }
 
+// checkRelease refuses a release whose notes would be wrong: when another version is batched but
+// not tagged (the tag names the wrong version, and the notes would go out under it), and when
+// there is nothing to batch for an unbatched release.
+func (r *runner) checkRelease(v semver, files map[string]string, batched bool, waiting int) error {
+	tags, err := releaseTags(r.root)
+	if err != nil {
+		return err
+	}
+	tagged := map[string]bool{}
+	for _, t := range tags {
+		tagged[t.version.String()] = true
+	}
+	for _, name := range slices.Sorted(maps.Keys(files)) {
+		if name != v.String() && !tagged[name] {
+			r.annotate("error", fmt.Sprintf("v%s is batched in .changes/v%s.md but not tagged, so its notes would go out under v%s; tag the commit that batched them as v%s instead",
+				name, name, v, name))
+			return errCheck
+		}
+	}
+	if !batched && waiting == 0 {
+		r.annotate("error", fmt.Sprintf("v%s has no notes: there is no .changes/v%s.md, and .changes/unreleased is empty", v, v))
+		return errCheck
+	}
+	return nil
+}
+
+// warnBatched warns when a batched release's notes may not match what it ships: notes merged after
+// the release pull request, whose changes ship now but are listed under the next release, and a
+// version header dated another day than the tagged commit, which dates the package changelogs.
+func (r *runner) warnBatched(s section, waiting int) error {
+	if waiting > 0 {
+		r.annotate("warning", fmt.Sprintf("v%s was batched, but .changes/unreleased still holds notes at this commit (%d): their changes ship in v%s and are listed under the next release. Tag the release pull request's merge commit, not a later one",
+			s.version, waiting, s.version))
+	}
+	day, err := commitDate(r.root, "HEAD")
+	if err != nil {
+		return err
+	}
+	if day != s.date {
+		r.annotate("warning", fmt.Sprintf(".changes/v%s.md is dated %s, but the tagged commit is from %s (UTC), which dates the .deb and .rpm changelogs. To make them agree, set the header's date to the day the release pull request merges, then run changie merge and the manpage tool again",
+			s.version, s.date, day))
+	}
+	return nil
+}
+
+// pendingSections reads the batched versions that are not released yet (pendingVersions), oldest
+// first, and names their files for stage to leave out.
+func pendingSections(root string, files map[string]string, kinds []string) ([]section, map[string]bool, error) {
+	pending, err := pendingVersions(root)
+	if err != nil {
+		return nil, nil, err
+	}
+	var out []section
+	omit := map[string]bool{}
+	for _, p := range pending {
+		path := files[p.String()]
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil, nil, err
+		}
+		s, err := parseSection(string(data), kinds)
+		if err != nil {
+			return nil, nil, fmt.Errorf("%s: %w", filepath.ToSlash(path), err)
+		}
+		out = append(out, s)
+		omit[filepath.Base(path)] = true
+	}
+	return out, omit, nil
+}
+
+// prependNotes rewrites the version file at path, as changie batch wrote it, with the notes of
+// ahead before its own.
+func prependNotes(path string, ahead []section, kinds []string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	s, err := parseSection(string(data), kinds)
+	if err != nil {
+		return fmt.Errorf("%s: %w", filepath.Base(path), err)
+	}
+	all := slices.Concat(ahead, []section{s})
+	return os.WriteFile(path, []byte(combine(s, all, kinds).markdown()), 0o644)
+}
+
 // check reports every problem it finds with the notes, then fails if there was one:
 //
 //   - each .changes/vX.Y.Z.md parses (see parseSection) and is named for its version;
 //   - changie can batch the unreleased notes, and each comes out as one short line;
 //   - CHANGELOG.md is exactly what changie merge writes;
-//   - every release tag that HEAD contains has its .changes/vX.Y.Z.md (only where tags are fetched).
+//   - every release tag that HEAD contains has its .changes/vX.Y.Z.md (only where tags are fetched),
+//     except one at HEAD itself: that commit is the release, which release.yml batches.
 func (r *runner) check() error {
 	kinds, err := configKinds(filepath.Join(r.root, configFile))
 	if err != nil {
@@ -292,7 +417,7 @@ func (r *runner) check() error {
 		}
 	}
 
-	behind, err := unbatchedTags(r.root, nil)
+	behind, err := unbatchedTags(r.root, nil, true)
 	if err != nil {
 		return err
 	}
@@ -315,10 +440,19 @@ var testOnly = []string{
 	"internal/games/testkit/", "internal/games/gamestest/",
 }
 
+// shipped are the files outside cmd/ and internal/ that decide what players get: how the archives
+// and the Linux packages are built and what they hold, and the manual page they carry.
+var shipped = []string{".goreleaser.yaml", "packaging/", "docs/man/"}
+
 // userVisible is the -since heuristic for "a player could notice this": a file under cmd/ or
-// internal/ that is not a test, not test data, and not in a test-only package. It errs towards
-// asking for a note; "Changelog: none" answers a false alarm.
+// internal/ that is not a test, not test data, and not in a test-only package, or one of shipped.
+// It errs towards asking for a note; "Changelog: none" answers a false alarm.
 func userVisible(path string) bool {
+	for _, p := range shipped {
+		if path == p || (strings.HasSuffix(p, "/") && strings.HasPrefix(path, p)) {
+			return true
+		}
+	}
 	if !strings.HasPrefix(path, "cmd/") && !strings.HasPrefix(path, "internal/") {
 		return false
 	}
@@ -380,7 +514,7 @@ func (r *runner) since(base string) error {
 	if len(shown) > 5 {
 		shown = append(shown[:5:5], fmt.Sprintf("and %d more", len(visible)-5))
 	}
-	r.annotate("error", fmt.Sprintf("this branch changes code players use (%s) but adds no change note. Add one with `go tool -modfile=tools/release/go.mod changie new`, or, if players will not notice, put a \"Changelog: none\" trailer in a commit message (AGENTS.md, Change notes)",
+	r.annotate("error", fmt.Sprintf("this branch changes what players get (%s) but adds no change note. Add one with `go tool -modfile=tools/release/go.mod changie new`, or, if players will not notice, add \"Changelog: none\" as a trailer in a commit message's last paragraph, next to any Co-Authored-By lines (AGENTS.md, Change notes)",
 		strings.Join(shown, ", ")))
 	return errCheck
 }
@@ -446,7 +580,7 @@ func (r *runner) batchTag(t tag, frags map[string][]byte) error {
 	if err != nil {
 		return err
 	}
-	dir, err := r.stage(frags)
+	dir, err := r.stage(frags, nil)
 	if err != nil {
 		return err
 	}

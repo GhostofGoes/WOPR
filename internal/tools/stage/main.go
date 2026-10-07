@@ -56,8 +56,8 @@ func (a artifact) bare() bool { return a.Type == "Binary" && a.Extra.Format == "
 // publishes each of them on its own.
 var requiredInArchives = []string{"LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt"}
 
-// manPage is the manual page (docs/man/wopr.6), at the root of every Linux and macOS
-// archive (tar.gz) and of no Windows one (zip): Windows has no man.
+// manPage is the manual page (docs/man/wopr.6, with the build's version from pkgdocs), at the
+// root of every Linux and macOS archive (tar.gz) and of no Windows one (zip): Windows has no man.
 const manPage = "wopr.6"
 
 func main() {

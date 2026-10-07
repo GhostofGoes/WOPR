@@ -277,6 +277,12 @@ func TestUserVisible(t *testing.T) {
 		"docs/PLAN.md":                              false,
 		".github/workflows/ci.yml":                  false,
 		"go.mod":                                    false,
+		".goreleaser.yaml":                          true,
+		"packaging/description.txt":                 true,
+		"packaging/debian/copyright":                true,
+		"docs/man/wopr.6":                           true,
+		"docs/manual.md":                            false,
+		"site/content/install.md":                   false,
 	} {
 		if got := userVisible(path); got != want {
 			t.Errorf("userVisible(%q) = %v, want %v", path, got, want)

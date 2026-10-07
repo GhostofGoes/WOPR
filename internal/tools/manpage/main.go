@@ -244,6 +244,19 @@ func themeDetail() string {
 		joinAnd(names, "or"), theme.Default)
 }
 
+// shellWords quotes each name that holds a space, as a shell needs it typed (wopr "noughts and
+// crosses"), so that a list of names reads as the names it holds.
+func shellWords(names []string) []string {
+	out := make([]string, len(names))
+	for i, n := range names {
+		if strings.ContainsAny(n, " \t") {
+			n = `"` + n + `"`
+		}
+		out[i] = n
+	}
+	return out
+}
+
 // joinAnd lists words in English: "a, b and c".
 func joinAnd(words []string, and string) string {
 	switch len(words) {
@@ -268,7 +281,7 @@ func writeGames(p *page, gs []game) {
 		p.macro("SS", title)
 		p.text("Start it with")
 		p.macro("BR", g.Launch, ".")
-		p.text("It also answers to " + joinAnd(g.Aliases, "and") + ".")
+		p.text("It also answers to " + joinAnd(shellWords(g.Aliases), "and") + ".")
 		p.macro("PP")
 		p.text(g.Summary)
 		p.macro("PP")
@@ -305,7 +318,8 @@ func writeEnd(p *page) {
 	for _, s := range [][2]string{
 		{"0", "The session ended normally: LOGOFF, the end of movie mode, a print-and-exit option, or SIGTERM."},
 		{"1", "A runtime error or a crash."},
-		{"2", "A usage error: an unknown option, game or scene, a name that fits more than one, or no terminal to run in."},
+		{"2", "A usage error, such as an unknown option, game, scene or theme, a seed that is not a whole number, too many arguments, " +
+			"options that cannot be combined, a name that fits more than one, or no terminal to run in (standard output is not a terminal, or TERM is dumb)."},
 		{"130", "Ctrl+C or SIGINT."},
 	} {
 		p.macro("TP")
@@ -328,10 +342,10 @@ func writeEnd(p *page) {
 		}
 	}
 	for _, e := range [][2]string{
-		{"WOPR_PANEL", "Shows the front panel when true and hides it when false, in any theme. Unset, the theme decides: norad shows it."},
+		{"WOPR_PANEL", "Shows the front panel when true and hides it when false, in any theme. Unset or empty, the theme decides: norad shows it."},
 		{"WOPR_DEBUG", "When true, wopr writes a debug log (never what you type) and prints its path when it exits. See FILES."},
-		{"NO_COLOR", "Set to anything, it turns colour off."},
-		{"TERM", "When it is dumb, wopr does not start its full-screen interface; the options that print and exit still work."},
+		{"NO_COLOR", "Set to any non-empty value, it turns colour off."},
+		{"TERM", "When it is dumb, wopr does not start its full-screen interface and exits with status 2; the options that print and exit still work."},
 	} {
 		p.macro("TP")
 		p.macro("B", e[0])

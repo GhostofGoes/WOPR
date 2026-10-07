@@ -43,12 +43,12 @@ Every option has a one-letter form, and options can come before or after the gam
 | `WOPR_INSTANT` | Set to `1` for `--instant`. |
 | `WOPR_REDUCE_MOTION` | Set to `1` for `--reduce-motion`. |
 | `WOPR_SEED` | The seed, as `--seed` sets it. The option wins if you give both. |
-| `WOPR_PANEL` | `1` shows the front panel, a status line along the bottom, in any theme; `0` hides it. Unset, only the `norad` theme shows it. |
+| `WOPR_PANEL` | `1` shows the front panel, a status line along the bottom, in any theme; `0` hides it. Unset or empty, only the `norad` theme shows it. |
 | `WOPR_DEBUG` | Set to `1` to write a [debug log](#debug-log). |
-| `NO_COLOR` | Set to anything to turn colour off. See [Accessibility](/accessibility). |
+| `NO_COLOR` | Set to any value but an empty one to turn colour off. See [Accessibility](/accessibility). |
 
-For the on and off variables, `0`, `false`, `no`, `off` and an empty value mean off; anything else means
-on.
+For the on and off variables, `0`, `false`, `no` and `off` mean off, and any other value means on. An
+empty value counts as unset.
 
 `wopr` exits with 0 after `LOGOFF`, 130 after Ctrl+C, 2 for a mistake on the command line or a terminal it
 cannot use, and 1 for any other error.

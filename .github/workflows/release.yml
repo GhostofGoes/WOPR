@@ -1,8 +1,8 @@
-# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish.
-# workflow_dispatch runs everything but verify and publish as a dry run, and never publishes.
+# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish → docs.
+# workflow_dispatch runs everything but verify, publish and docs as a dry run, and never publishes.
 # The release notes come from .changes/ (AGENTS.md, "Releasing"): build and rebuild both write them
 # with internal/tools/relnotes into build/notes (WOPR_NOTES_DIR), which .gitignore keeps out of the
-# tree that GoReleaser needs clean. It is a fixed path because nfpms.changelog takes no template.
+# tree that GoReleaser needs clean.
 name: Release
 
 on:
@@ -234,3 +234,23 @@ jobs:
           fi
           gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag "${notes[@]}" assets/*
           gh release edit "${TAG}" --repo "${REPO}" --draft=false
+
+  # The docs site describes the latest release, so it is published from this tag once the release
+  # exists, and not before: docs.yml runs on main, whose github-pages environment allows the
+  # deployment, and builds the site from the tag. A run started with GITHUB_TOKEN through
+  # workflow_dispatch is the one kind such a token may start.
+  docs:
+    name: docs
+    needs: publish
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write # gh workflow run starts docs.yml
+    steps:
+      - name: Publish the docs site from this release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: gh workflow run docs.yml --repo "${REPO}" --ref main -f tag="${TAG}"
