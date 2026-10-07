@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"sync"
@@ -400,32 +401,47 @@ func TestTooSmallThenResize(t *testing.T) {
 	}
 }
 
-// The debug log records the seed (WOPR_SEED pins it), says where it is, and never holds typed
-// input.
+// The debug log records the session's seed, says where it is, and never holds typed input.
+// Without a pinned seed it records the random one, so a bug report can replay the session
+// (docs/PLAN.md §4.6); WOPR_SEED pins it. The unpinned run sets WOPR_SEED empty, which means
+// unset, so a value in the test's own environment cannot leak in.
 func TestDebugLog(t *testing.T) {
-	cache := t.TempDir()
-	env := []string{"WOPR_DEBUG=1", "WOPR_SEED=1983", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
-	s := startEnv(t, 80, 24, env, "--instant")
-	s.waitFor("LOGON:", 10*time.Second)
-	s.send("Joshua\r")
-	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
-	s.send("\x03")
-	s.wait(10 * time.Second)
-	if !strings.Contains(s.screen(), "debug log:") {
-		t.Errorf("the log's path is printed on exit:\n%s", s.screen())
-	}
-	var found string
-	_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
-		if err == nil && d.Name() == "debug.log" {
-			found = path
-		}
-		return nil
-	})
-	data, err := os.ReadFile(found)
-	if err != nil {
-		t.Fatalf("no debug log under %s: %v", cache, err)
-	}
-	if !strings.Contains(string(data), "seed 1983 (pinned: true)") || strings.Contains(string(data), "Joshua") {
-		t.Errorf("the log must hold the seed from WOPR_SEED and no typed input:\n%s", data)
+	for _, tc := range []struct {
+		name, seedEnv string
+		want          *regexp.Regexp
+	}{
+		{"random", "WOPR_SEED=", regexp.MustCompile(`seed [0-9]+ \(pinned: false\)`)},
+		{"WOPR_SEED", "WOPR_SEED=1983", regexp.MustCompile(`seed 1983 \(pinned: true\)`)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cache := t.TempDir()
+			env := []string{"WOPR_DEBUG=1", tc.seedEnv, "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
+			s := startEnv(t, 80, 24, env, "--instant")
+			s.waitFor("LOGON:", 10*time.Second)
+			s.send("Joshua\r")
+			s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
+			s.send("\x03")
+			s.wait(10 * time.Second)
+			if !strings.Contains(s.screen(), "debug log:") {
+				t.Errorf("the log's path is printed on exit:\n%s", s.screen())
+			}
+			var found string
+			_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
+				if err == nil && d.Name() == "debug.log" {
+					found = path
+				}
+				return nil
+			})
+			data, err := os.ReadFile(found)
+			if err != nil {
+				t.Fatalf("no debug log under %s: %v", cache, err)
+			}
+			if !tc.want.Match(data) {
+				t.Errorf("the log must hold %q:\n%s", tc.want, data)
+			}
+			if strings.Contains(string(data), "Joshua") {
+				t.Errorf("the log must hold no typed input:\n%s", data)
+			}
+		})
 	}
 }
