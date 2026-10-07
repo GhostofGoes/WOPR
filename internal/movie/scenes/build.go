@@ -35,6 +35,10 @@ func typedAs(p script.Prov, prompt script.Ls, text string) Type {
 	return Type{Prompt: prompt, Text: script.User(p, text)[0]}
 }
 
+// beat is the pause before a new page, or a program, replaces what was just typed: a page is
+// always left up for a moment, even under --instant, where nothing else would hold it.
+const beat = time.Second
+
 // pause is a pause in the film's pacing (reconstructed) or in ours (original).
 func pause(d time.Duration, p script.Prov) Wait { return Wait{D: d, Prov: p} }
 

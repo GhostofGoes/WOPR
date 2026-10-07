@@ -77,6 +77,32 @@ func TestEveryStepHasProvenance(t *testing.T) {
 	}
 }
 
+// Every page is left up for a pause before a new page, a launched program or the end of the
+// scene replaces it. Under --instant nothing else holds a page: text and typing appear at once.
+func TestEveryPageIsHeld(t *testing.T) {
+	t.Parallel()
+	held := func(st Step) bool {
+		switch st.(type) {
+		case Wait, Clock:
+			return true
+		}
+		return false
+	}
+	for _, s := range All() {
+		for i, st := range s.Steps {
+			switch st.(type) {
+			case Clear, Run:
+				if i > 0 && !held(s.Steps[i-1]) {
+					t.Errorf("%s step %d: %T follows %T, not a pause", s.Slug, i, st, s.Steps[i-1])
+				}
+			}
+		}
+		if last := s.Steps[len(s.Steps)-1]; !held(last) {
+			t.Errorf("%s ends on %T, not a pause", s.Slug, last)
+		}
+	}
+}
+
 // checkClock: a game clock has two readings, each with one # for its seconds, which stay within
 // their minute for as long as the clock runs, and fits 80 columns.
 func checkClock(t *testing.T, c Clock) {

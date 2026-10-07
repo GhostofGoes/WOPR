@@ -49,6 +49,7 @@ var joshua = Scene{
 		dial(dialPause),
 		[]Step{
 			typedAt(logon, "Joshua"),
+			pause(beat, script.Original),
 			page(script.Reconstructed),
 			table(script.Tag(script.ABS0, // the connect header, as abs0/wargames transcribes it (NOTICE.md)
 				"#45     11456          11009          11893          11972        11315",

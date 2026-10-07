@@ -1122,8 +1122,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   starts on a clean page straight away. `--theme` and `--reduce-motion` apply.
 - **`--instant`** (or `WOPR_INSTANT=1`) drops the typing and the typewriter's pacing, but not the scenes'
   pauses: the host drops `Wait` under `Instant`, so the director waits each pause out itself on `Animate`
-  ticks, and every page stays up to be read. The board jumps to each stage, and tic-tac-toe and the ending
-  play at once. The package's transcript tests skip the pauses with an unexported option, since `testkit`
+  ticks, and every page stays up to be read. For that, a scene's every page break and launch follows a pause
+  (a one-second beat after typing where the film has none; a test checks), and so does its end. The board
+  jumps to each stage, and tic-tac-toe and the ending play at once. The whole film takes about a minute. The package's transcript tests skip the pauses with an unexported option, since `testkit`
   has no clock; the UI tests and e2e play them on the fake and the real clock.
 - **The scene menu.** `wopr -m` opens it: the scenes, numbered, the keys, and `SCENE:`, which takes a number, a
   slug, a title or a unique prefix. `q` (or `LOGOFF`, `EXIT`, `QUIT`) exits 0; an empty line asks again; an
