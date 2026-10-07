@@ -33,7 +33,8 @@ const (
 	rounds       = 6 // games each board plays
 	firstStep    = 350 * time.Millisecond
 	fastestStep  = 60 * time.Millisecond
-	speedUp      = 0.75 // each round's step is this fraction of the last
+	speedUp      = 0.75                   // each round's step is this fraction of the last
+	steadyStep   = 200 * time.Millisecond // with --reduce-motion: no speeding up, about as long in all
 	pauseBetween = 1200 * time.Millisecond
 
 	// The montage moves the whole table, so it redraws under the 3 Hz flash cap
@@ -101,6 +102,9 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 		g.toMove[i], g.last[i] = 'X', -1
 	}
 	g.step = firstStep
+	if env.ReduceMotion {
+		g.step = steadyStep
+	}
 	g.start = min(len(lineCode[0].Text)-heldBack, len(lineCode[0].Text))
 	if _, code, ok := strings.Cut(env.Mode, ":"); ok && (g.movie || strings.HasPrefix(env.Mode, tictactoe.CodeMode)) {
 		if n, err := strconv.Atoi(code); err == nil {
@@ -158,7 +162,8 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 }
 
 // playStep makes one move on every board; a finished board starts its next game, and when
-// every board has played its rounds, the montage begins.
+// every board has played its rounds, the montage begins. Each round plays faster than the
+// last, except with --reduce-motion, which keeps a steady step.
 func (g *Game) playStep() {
 	finished := 0
 	for i := range g.boards {
@@ -181,7 +186,9 @@ func (g *Game) playStep() {
 		g.phase, g.acc = montage, 0
 		return
 	}
-	g.step = max(time.Duration(float64(g.step)*speedUp), fastestStep)
+	if !g.env.ReduceMotion {
+		g.step = max(time.Duration(float64(g.step)*speedUp), fastestStep)
+	}
 	for i := range g.boards {
 		g.boards[i], g.toMove[i], g.last[i] = tictactoe.Board{}, 'X', -1
 	}

@@ -197,6 +197,32 @@ func TestMontageFlashCap(t *testing.T) {
 	}
 }
 
+// Self-play speeds up round by round, but not with --reduce-motion, which plays every move at
+// one steady pace and so takes about as long in all.
+func TestSelfPlayAcceleration(t *testing.T) {
+	t.Parallel()
+	took := map[bool]time.Duration{}
+	for _, rm := range []bool{false, true} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 3, Width: 80, Height: 19, ReduceMotion: rm})
+		steps := map[time.Duration]bool{}
+		for g.phase == selfPlay {
+			steps[g.step] = true
+			g.Handle(proto.TickEvent{Dt: tick})
+			took[rm] += tick
+		}
+		if rm && (len(steps) != 1 || !steps[steadyStep]) {
+			t.Errorf("reduce motion: steps %v, want only %v", steps, steadyStep)
+		}
+		if !rm && len(steps) < rounds {
+			t.Errorf("self-play must speed up each round: steps %v", steps)
+		}
+	}
+	if d := took[true] - took[false]; d < -2*time.Second || d > 2*time.Second {
+		t.Errorf("self-play takes %v with reduce motion and %v without; keep them close", took[true], took[false])
+	}
+}
+
 // An empty Enter at GREETINGS PROFESSOR FALKEN. (one pressed to hurry the show along) is
 // not the answer.
 func TestEmptyLineDoesNotAnswerTheGreeting(t *testing.T) {

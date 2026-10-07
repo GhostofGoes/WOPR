@@ -2,9 +2,9 @@
 HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
 
                       NORTH
-                                           .---.
+                                           .===.
           WEST               . - .         |2C | EAST
-                        YOU  :   :         '---'
+                        YOU  :   :         '==='
                              ' - '
 .---.---.---.---.---.---.---.---.---.---.---.---.---.
 |QS |KH |8H |4H |AD |KD |JD |10D|8D |4D |AC |QC |9C |         YOUR HAND
@@ -32,7 +32,7 @@ WOPR   |/|/|/|/|/|/|/|/|/|/\/| 10 CARDS   STOCK |/\/| 31          DISCARD |10C|
 
 .---.---.---.---.---.---.---.---.---.---.                     YOUR HAND
 |AD |AH |2S |3C |4H |6D |8C |10H|10S|JS |                     DEADWOOD: 55
-  1   2   3   4   5   6   7   8   9  10
+  1   2   3   4   5   6   7   8   9  10                       NO MELDS
                                               \
                                            .___\_____.
                                             \~~~(O)~/       G I N   R U M M Y
@@ -55,9 +55,9 @@ BRIDGE                                     CONTRACT 3NT BY NORTH    N-S 0  E-W 0
 NORTH           S Q J 8 6  H 10  D A Q 7  C K Q J 6 2
 
                       NORTH
-                                           .---.
+                                           .===.
           WEST               . - .         |4S | EAST
-                      SOUTH  :   :         '---'
+                      SOUTH  :   :         '==='
                              ' - '
 SOUTH (DUMMY) > S 10  H A K Q J 6 4  D 5 4 2  C 7 5 4
 AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS

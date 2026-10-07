@@ -91,7 +91,7 @@ func (g *Game) drawBoard(c *proto.Canvas, x int) {
 		c.Put(x+infoX, y, who, proto.StyleLabel, 0)
 		end := c.Put(x+valueX, y, colour, proto.StyleText, 0)
 		if toMove && check {
-			c.Put(end+2, y, panelCheck[0].Text, proto.StyleAlert, proto.AttrBold)
+			c.Put(end+2, y, panelCheck[0].Text, proto.StyleAlert, 0)
 		}
 	}
 	turn := pos.Turn()

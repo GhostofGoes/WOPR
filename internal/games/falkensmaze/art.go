@@ -88,7 +88,7 @@ func (g *Game) drawFrame(c *proto.Canvas, foot int) {
 	if g.won {
 		title = frameTitle[1].Text
 	}
-	c.Put((c.W-len(title))/2, 0, title, proto.StyleBright, proto.AttrBold)
+	c.Put((c.W-len(title))/2, 0, title, proto.StyleBright, 0)
 }
 
 // drawMaze draws the maze with its top-left corner at x0, y0: three columns and two rows a
@@ -123,9 +123,9 @@ func (g *Game) drawMaze(c *proto.Canvas, x0, y0 int) {
 			}
 			switch {
 			case cell == g.player:
-				c.Set(x+1, y+1, proto.Cell{R: '@', S: proto.StyleBright, A: proto.AttrBold})
+				c.Set(x+1, y+1, proto.Cell{R: '@', S: proto.StyleBright})
 			case cell == g.exit:
-				c.Put(x+1, y+1, "[]", proto.StyleAlert, proto.AttrBold)
+				c.Put(x+1, y+1, "[]", proto.StyleAlert, 0)
 			case g.won && g.visited[cell]:
 				c.Set(x+1, y+1, proto.Cell{R: ':', S: proto.StyleAccent})
 			case !g.won && !g.seen[cell]:

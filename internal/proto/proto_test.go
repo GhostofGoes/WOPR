@@ -26,6 +26,9 @@ func TestStyleLettersCoverEveryStyle(t *testing.T) {
 	if len(styleLetters) != int(numStyles) {
 		t.Fatalf("styleLetters has %d letters for %d styles", len(styleLetters), numStyles)
 	}
+	if got := Styles(); len(got) != int(numStyles) || got[0] != StyleText || got[len(got)-1] != numStyles-1 {
+		t.Fatalf("Styles() = %v, want every style in order", got)
+	}
 	seen := map[byte]bool{}
 	for s := range numStyles {
 		l := s.Letter()

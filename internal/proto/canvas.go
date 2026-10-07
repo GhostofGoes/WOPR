@@ -32,6 +32,16 @@ const (
 // styleLetters render a StyleMap: one letter per style, in Style order.
 const styleLetters = "tbdalLiox12345Arks"
 
+// Styles lists every Style in order. Tests that must hold for each style (every theme
+// defines it, its contrast) range over it, so a new Style is covered once it is declared.
+func Styles() []Style {
+	out := make([]Style, numStyles)
+	for i := range out {
+		out[i] = Style(i)
+	}
+	return out
+}
+
 // Letter returns the one-character code StyleMap uses for s.
 func (s Style) Letter() byte {
 	if int(s) < len(styleLetters) {

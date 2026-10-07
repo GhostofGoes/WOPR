@@ -13,12 +13,13 @@ package cards
 //	|  10H| |/\/\/|       |   |   |   |   4H|
 //	'-----' '-----'       '---'---'---'-----'
 //
-// Panels draw mini cards three rows high, face up, face down or as an empty slot, and a
-// held hand as a row of card tops:
+// Panels draw mini cards three rows high, face up, face down, as an empty slot or, on a
+// trick table, as the card winning the trick so far (a doubled edge, not colour or bold,
+// says which), and a held hand as a row of card tops:
 //
-//	.---.  .---.  . - .       .---.---.---.---.
-//	|QS |  |/\/|  :   :       |KS |QS |4S |AH |
-//	'---'  '---'  ' - '
+//	.---.  .---.  . - .  .===.       .---.---.---.---.
+//	|QS |  |/\/|  :   :  |AS |       |KS |QS |4S |AH |
+//	'---'  '---'  ' - '  '==='
 
 import (
 	"fmt"
@@ -144,10 +145,20 @@ func SuitStyle(s Suit) proto.Style {
 // DrawMini draws c face up as a mini card with its top left corner at x, y: the frame in
 // frame, the index in its suit's style, both with attributes a.
 func DrawMini(cv *proto.Canvas, x, y int, c Card, frame proto.Style, a proto.Attr) {
-	cv.Put(x, y, ".---.", frame, a)
+	drawMini(cv, x, y, c, frame, a, "---")
+}
+
+// DrawMiniWinning draws c as DrawMini does, with the doubled top and bottom edge that marks
+// the card winning a trick so far: .===.
+func DrawMiniWinning(cv *proto.Canvas, x, y int, c Card, frame proto.Style, a proto.Attr) {
+	drawMini(cv, x, y, c, frame, a, "===")
+}
+
+func drawMini(cv *proto.Canvas, x, y int, c Card, frame proto.Style, a proto.Attr, edge string) {
+	cv.Put(x, y, "."+edge+".", frame, a)
 	cv.Put(x, y+1, "|   |", frame, a)
 	cv.Put(x+1, y+1, c.String(), SuitStyle(c.Suit), a)
-	cv.Put(x, y+2, "'---'", frame, a)
+	cv.Put(x, y+2, "'"+edge+"'", frame, a)
 }
 
 // DrawMiniBack draws a mini card face down at x, y.
@@ -208,12 +219,13 @@ func trickLabel(seat, cardX int, name string) int {
 }
 
 // DrawTrick draws t around a table at x, y, TrickW by TrickH: each seat's card where the
-// seat sits, labelled with its name from names, with the card winning so far in bold. The
-// seat next (or none, when next < 0) gets an empty slot until it plays.
+// seat sits, labelled with its name from names, with the card winning so far edged in =
+// (its style is already bold, so bold could not say it). The seat next (or none, when
+// next < 0) gets an empty slot until it plays.
 //
-//	                   .---.
+//	                   .===.
 //	            NORTH  |QS |
-//	     .---.         '---'         .---.
+//	     .---.         '==='         .---.
 //	WEST |10H|         . - .         |2H | EAST
 //	     '---'  SOUTH  :   :         '---'
 //	                   ' - '
@@ -227,12 +239,10 @@ func DrawTrick(cv *proto.Canvas, x, y int, t Trick, trump Suit, names [Seats]str
 		cv.Put(trickLabel(s, cx, names[s]), cy+1, names[s], proto.StyleLabel, 0)
 		card, ok := t.Played(s)
 		switch {
+		case ok && s == winning:
+			DrawMiniWinning(cv, cx, cy, card, proto.StyleBright, 0)
 		case ok:
-			var a proto.Attr
-			if s == winning {
-				a = proto.AttrBold
-			}
-			DrawMini(cv, cx, cy, card, proto.StyleBright, a)
+			DrawMini(cv, cx, cy, card, proto.StyleBright, 0)
 		case s == next:
 			DrawSlot(cv, cx, cy, proto.StyleDim)
 		}

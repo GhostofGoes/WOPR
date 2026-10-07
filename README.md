@@ -152,12 +152,35 @@ film's lines are still to be checked one by one against the film.
 
 `NO_COLOR` (any value) turns colour off.
 
+## Accessibility
+
+- **Colour is never the only signal.** With `NO_COLOR`, or on a monochrome terminal, every theme falls back to
+  bold, faint, underline and reverse, and what colour adds is in the characters too: outgoing tracks on the
+  big board are `+` and incoming `*`, the current DEFCON level is pointed at with `>`, every card shows its
+  suit letter, the card winning a trick is edged `.===.`, Gin Rummy names your melds by position, and chess
+  and checkers mark the last move with brackets.
+- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking (the cursor's and DEFCON 1's),
+  keeps the front panel's lights and the `PROCESSING` dots still, and plays the ending at a steady pace
+  instead of speeding up. With or without it, nothing flashes more than three times a second.
+- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out. Without it,
+  any key shows the rest of what is being typed, and what you type is kept.
+- **Text.** Everything on screen is plain ASCII. Every prompt ends in a question or a colon (WOPR's
+  conversation, as in the film, has no prompt: the line above asks), the cursor sits at the end of the
+  line you are typing, and WOPR's moves are written out in the console as well as drawn on the boards.
+- **Contrast.** In every theme's full colours, text meets WCAG AA contrast (4.5:1) against the background,
+  and the deliberately faint text 3:1. In 16-colour mode every style keeps at least 3:1 on xterm's palette.
+
+The full-screen interface has not yet been tried with a screen reader. Reports are welcome.
+
 ## Troubleshooting
 
 - **"standard output is not a terminal"**: run `wopr` directly in a terminal, not through a pipe. On
   Windows, use Windows Terminal; mintty without ConPTY is not supported.
 - **"TERMINAL TOO SMALL"**: WOPR needs at least 80×24.
 - **Strange colours**: try `--theme green`, or set `NO_COLOR=1`.
+- **The mouse wheel changes what I typed**: on WOPR's full screen some terminals (GNOME Terminal and other
+  VTE-based ones) turn the wheel into ↑ and ↓, which step through the lines you have typed. Scroll back with
+  PgUp and PgDn. wopr leaves mouse reporting off so that you can select and copy text as usual.
 - **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
   path when it exits; attach it to the issue, with `--seed` (or `WOPR_SEED`) if you used one.
 

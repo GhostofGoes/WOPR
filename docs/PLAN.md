@@ -454,8 +454,10 @@ tools/release/go.mod         Go tool: goreleaser (T-11)
   No program starts before the first valid size. `ResizeEvent` fires only when a program's layout area
   actually changes.
 - **Mouse.** Mouse reporting stays off, so native text selection works. On the alternate screen some terminals
-  (VTE) turn the wheel into ↑/↓, which cycles input history. This is documented as known behaviour, and the M5
-  accessibility pass revisits it (U-9).
+  (VTE) turn the wheel into ↑/↓, which cycles input history (U-9). The M5 accessibility pass kept this:
+  mouse reporting would take native selection and copying away, and resetting the terminal's alternate-scroll
+  mode (DECRST 1007) would outlast wopr, since Bubble Tea restores only the modes it sets. The README's
+  troubleshooting says so and points to PgUp/PgDn.
 
 ### 4.4 The program protocol (`internal/proto`)
 
@@ -636,24 +638,78 @@ are red (9) and outgoing yellow (11).
 
 **Contrast** (RF-10). `TestTextContrast` checks every Style against its background: WCAG AA (4.5:1) in
 truecolor, or 3:1 for the deliberately faint `Dim` and `Land`, and at least 3:1 under the default xterm and VGA
-16-colour palettes. norad's Dim moved from ANSI blue (4), which is under 2.3:1 on black in both palettes, to
+16-colour palettes. The theme tests range over `proto.Styles()`, so a Style added later is covered as soon as
+it is declared. norad's Dim moved from ANSI blue (4), which is under 2.3:1 on black in both palettes, to
 cyan (6). Two exceptions are accepted and documented: imsai's Dim is bright black (8), 2.8:1 on the Linux
 console's VGA palette; and Solarized redefines bright black as its background colour, which no theme can
 work around.
 
 **Accessibility rules.**
 
-- **Meaning never rests on colour alone.**
-  - Incoming tracks draw `*` and outgoing `+`.
-  - The current DEFCON level is `Reverse`. Alerts are `Bold`.
-  - Card suits always show their letter.
+- **Meaning never rests on colour alone**, nor on an attribute that cannot show: bold on `Bright`, `Alert` or
+  `Accent`, which are bold in every theme, changes nothing.
+  - Incoming tracks draw `*` and outgoing `+`; an impact is a reversed `X`. The forces and kill-ratio tables
+    name each side's row or column.
+  - The current DEFCON level is pointed at, `>| 3 |`, as well as reversed. The pointer is what says it: the
+    monochrome themes reverse the DEFCON 1 rung at every level (their stand-in for white on red), and so
+    does norad without colour.
+  - Card suits always show their letter. The card winning a trick so far is edged `.===.` (it was bold, on
+    a style already bold).
+  - Chess and checkers bracket the last move (`[]` and `P<`, `[b]`); kings are capitals and a jumped man is
+    `x`. Tic-tac-toe underlines the last mark, and the console says every move.
+  - Gin Rummy names the melds by position beside the hand (`MELDS 1-3 4-6`, or `NO MELDS`), besides
+    drawing them bright. Bridge points at the hand to play (`>`); Hearts draws its pass as an arrow and
+    names its direction; the maze marks the player `@`, the exit `[]`, unseen cells `.` and, once out,
+    the trail `:`.
+  - Alerts and notices are words, between `**` in the console.
 - **Flashing** is capped at 3 Hz for any change covering a large area of the screen. That includes Blink
   toggles, DEFCON 1 and montage frames. This meets WCAG 2.3.1.
-- **`-r/--reduce-motion`** (`WOPR_REDUCE_MOTION=1`) stops Blink, freezes the front panel, and removes the
-  montage's acceleration.
+- **`-r/--reduce-motion`** (`WOPR_REDUCE_MOTION=1`) stops Blink (the cursor's too), freezes the front panel's
+  lights and `PROCESSING`'s dots, and removes the acceleration of the ending's self-play (a steady 200 ms a
+  move) and montage (a steady three lines a frame). Pacing is not motion: the typewriter, movie mode's typing
+  and the big board's flights are `--instant`'s to skip. Movie mode's game clock keeps ticking, as the film
+  shows it; Space pauses it with the rest (WCAG 2.2.2).
+- **Text is real characters.** Every screen and every view is printable ASCII; boards, maps and tables carry
+  words (labels, legends, seat and side names), and the console says each move. Every prompt with text ends
+  in `:` or `?`; the film's open prompts (WOPR's conversation, GTW's targets) have none, and the line above
+  them asks. The cursor sits at the end of the input line; key mode shows a hint where the input line would
+  be.
 - **Art** is pure ASCII.
 - **Goldens.** From M2, game goldens include `Canvas.StyleMap()`; the theme tests check each Style's rendering
   under the TrueColor, ANSI and ASCII profiles.
+- **Sweeps** (`internal/ui/access_test.go`). The persona, the movie menu, the whole film and every playable
+  game in the catalog are played through the real UI, each game a little way from a playbook of inputs (a
+  game without one is checked on its first screen; GTW's goes on through the climax, tic-tac-toe with zero
+  players and the ending). `TestEveryScreenIsAccessible` checks each screen they reach (the film's every half
+  second) for the rules above (ASCII, prompts, cursor, key hint, no attribute that no theme shows) and renders
+  it in every theme under the ASCII profile: the same text as in colour, and no colour codes.
+  `TestNothingFlashes` plays them again with pacing and fails if the clock's ticks change a tenth of the
+  program's view or more four times within a second (input-driven changes and the console's scrolling are
+  not counted). `TestReduceMotion` watches movie mode's climax and a slow chess search tick by tick, with
+  and without the flag.
+
+**The M5 accessibility pass** (2026-10-07) audited everything built through v0.2.0 against these rules.
+
+- *Checked:* every game's screens, the persona, the GTW board and kill ratios, the ending, movie mode (the
+  board, the game clock, typed lines, the menu) and the front panel; each under `NO_COLOR` and the ASCII
+  profile in all four themes, paced and `--instant`, with and without `--reduce-motion`; the contrast table.
+- *Fixed:* the trick table's winning card and tic-tac-toe's last X were marked only by bold on a style that is
+  already bold in every theme, so nothing showed; they are now edged `.===.` and underlined. The current
+  DEFCON level rested on reversal, which the DEFCON 1 rung always has in the monochrome themes; it now has
+  a `>` pointer. Gin Rummy's melds were told from the deadwood only by brightness; their positions are now
+  written beside the hand. The ending's self-play still sped up under `--reduce-motion`; it now keeps a
+  steady step. Bold that never showed (chess's `CHECK`, GTW's last-orders warning and launch code, the
+  ending's code, the maze's player, exit and title, checkers' white kings, gin's discard) was removed, and the
+  sweep keeps it out. The theme tests now cover every Style, a Style that paints a background keeps a
+  reversed block without colour, the meaningful pairs stay apart without colour, and every Style renders under
+  each profile with only that profile's colours. The README gained an accessibility section and the
+  mouse-wheel note.
+- *Left for a human with a screen reader* (Orca, NVDA with Windows Terminal, VoiceOver): how the alternate
+  screen reads while the typewriter reveals text and Bubble Tea redraws changed rows; whether the 2-D panels
+  (trick tables, boards, the big board, the sims' maps) read in a useful order, and whether Hearts and
+  Bridge should say the cards already led before `YOUR PLAY:` (the console says a trick once it is
+  complete); whether the cursor, hidden in key mode (the maze) and while movie mode plays, should be parked
+  at the key hint for magnifiers; and how the film's open prompts sound with no prompt text.
 
 ### 4.6 Persona: session, intent, offers, brain
 
@@ -787,7 +843,7 @@ wopr -S | --scenes            list the movie's scenes (number, slug, what happen
 wopr -t | --theme <name>      imsai | green | amber | norad          (env WOPR_THEME)
 wopr -i | --instant           no pacing                              (env WOPR_INSTANT)
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
-wopr -r | --reduce-motion     no blink, no panel animation, no montage acceleration (env WOPR_REDUCE_MOTION)
+wopr -r | --reduce-motion     no blink, no panel animation, no speeding up in the ending (env WOPR_REDUCE_MOTION)
 wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
 ```
 
@@ -979,7 +1035,8 @@ no verdict of their own.
      that display from here on, since GTW is gone from the stack: tic-tac-toe passes GTW's count on
      (`Launch{ending, "code:N"}`), and the ending cracks the rest over its self-play, complete on the last round.
 3. **The ending** runs with Animate, Prompt and `Wait`, and cannot be aborted with Esc:
-   1. self-play at increasing speed, capped by the flash rule, using `games/tictactoe`'s engine (AR-6);
+   1. self-play at increasing speed, capped by the flash rule, using `games/tictactoe`'s engine (AR-6); with
+      `--reduce-motion` a steady 200 ms a move, about as long in all;
    2. the scenario montage, each ending `WINNER: NONE`. It redraws at most 2.5 times a second (a frame every
       400 ms) and speeds up by adding lines to each frame, one to eight; with `--reduce-motion`
       (`Env.ReduceMotion`) it adds a steady three;
@@ -1230,7 +1287,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - the LOGON table;
   - the host runner: routing, launch seeds, hand-off, the Esc machine, Think deadlines, Animate;
   - the scripted brain, typewriter dt math and pauses, and the line editor;
-  - `Sanitize*`, the canvas, and the themes: every Style defined, distinct pairs in 16 colours, contrast.
+  - `Sanitize*`, the canvas, and the themes: every Style defined, distinct pairs in 16 colours and without
+    colour, contrast, and each profile rendering only its own colours;
+  - accessibility (M5): the sweeps of every game in `internal/ui/access_test.go` (§4.5).
 - **Architecture**: `archtest` covers the DAG (test imports and e2e files included), toolchain equality in CI,
   the tool modules' `go` lines, the pins shared between `prek.toml` and the tool modules, and the lint
   self-test. Each data package's tests check its provenance tags.
@@ -1550,7 +1609,7 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - install per OS, **verify first** (§12), then Gatekeeper and SmartScreen notes, then `go install …@latest`;
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
-  - flags; themes; the games (with the `Planned` ones marked as coming); movie mode;
+  - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
   - troubleshooting: too small, `NO_COLOR`, reduced motion, Windows/mintty, the mouse-wheel note, `-i`, `-s`;
   - development builds: artifacts from **`main` push runs only** (B-13);
   - build from source (a link to the AGENTS.md Commands table); credits and licence; a link to this plan.
@@ -1612,7 +1671,7 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 | 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
-| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass; dependency and runner checklist (last run 2026-10-07, to be run again at the v1.0.0 boundary: only indirect modules moved, `ultraviolet` to its 2026-10-01 commit, `go-runewidth` v0.0.30, `xo/terminfo` v1.2.0, `x/sync` v0.23.0 and `x/sys` v0.48.0, with goldens byte-identical and linux/amd64 6,119,584 → 6,140,064 bytes stripped; Go 1.27.1, the direct modules, the four tools, the prek hooks, the action SHAs and the runner labels (§11.4) were already current; `scheduled.yml` is active). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; the checklist run again just before tagging v1.0.0, not only the 2026-10-07 run. | **v1.0.0** |
+| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass (**done**: §4.5 records what was checked, what changed and what is left for a screen-reader user); dependency and runner checklist (last run 2026-10-07, to be run again at the v1.0.0 boundary: only indirect modules moved, `ultraviolet` to its 2026-10-01 commit, `go-runewidth` v0.0.30, `xo/terminfo` v1.2.0, `x/sync` v0.23.0 and `x/sys` v0.48.0, with goldens byte-identical and linux/amd64 6,119,584 → 6,140,064 bytes stripped; Go 1.27.1, the direct modules, the four tools, the prek hooks, the action SHAs and the runner labels (§11.4) were already current; `scheduled.yml` is active). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; the checklist run again just before tagging v1.0.0, not only the 2026-10-07 run. | **v1.0.0** |
 | 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), `-o/--only` (the owner's request to play one scene and stop), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
@@ -1904,14 +1963,14 @@ PLEASE CHOOSE ONE: █
 strip, the input row and the panel (AR-11). This is the built screen at the strike 2 prompt (the
 `gtw_screens` golden: USSR, Las Vegas and Seattle, after the first strike). Trajectory values are illustrative.
 Outgoing tracks draw `+`, incoming `*`, and an impact a reversed `X`, drawn over every track; earlier strikes keep only their impacts.
-The current DEFCON level is reversed, shown here as `[4]`:
+The current DEFCON level is pointed at (`>`) and reversed, shown here as `[4]`:
 
 ```text
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
 |               |:/''-\:::::::|   + '-'             .___.               |  +---+
 |        .___.  |:\.  '\::++++++++ ++++++++ .. ...__/:::\__. ._.        |  | 5 |
 |._______/:::\__/:/\_. ++++:*****************++/\/:::::::::\_/:\______. |  +---+
-||::::::::::::::/-'|+++*******      .*************:::::::::::::::::::/' |  |[4]|
+||::::::::::::::/-'|+++*******      .*************:::::::::::::::::::/' | >|[4]|
 |'\:/-\::::::::/' ++****'-'        .//********:******:::::::::/--\/--'  |  +---+
 | '-' '-\::::::\+***:\_.         ..|:\/**:****X::::*X*X::::::/'  ''     |  | 3 |
 |       '+::::****:::/-'         |\/::::X:::**:::::::::::::::|          |  +---+

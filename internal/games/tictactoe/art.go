@@ -85,7 +85,7 @@ func Size(h int) (w, height int) {
 }
 
 // Draw draws b with its top-left corner at x, y, as large as fits in h rows: an open grid,
-// as on the big board, X bright and O plain, the square last (-1 for none) in bold. With
+// as on the big board, X bright and O plain, the square last (-1 for none) underlined. With
 // numbers set, each empty square shows its number.
 func (b Board) Draw(c *proto.Canvas, x, y, h, last int, numbers bool) {
 	s := fit(h)
@@ -123,7 +123,7 @@ func (b Board) Draw(c *proto.Canvas, x, y, h, last int, numbers bool) {
 				continue
 			}
 			if sq == last {
-				attr = proto.AttrBold
+				attr = proto.AttrUnderline // not bold: X is bold already, in every theme
 			}
 			s.put(c, cx, top, art, style, attr)
 		}
@@ -157,7 +157,7 @@ func (b Board) Text(h int) []string {
 
 // View implements proto.Program. While it asks for the number of players the panel shows
 // the title card; in play, the board as large as the panel allows, with the empty squares
-// numbered, the last move in bold and, against WOPR, whose mark is whose.
+// numbered, the last move underlined and, against WOPR, whose mark is whose.
 func (g *Game) View(c *proto.Canvas) {
 	if g.state == askPlayers {
 		w := len(artTitle[0].Text)

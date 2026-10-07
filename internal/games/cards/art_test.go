@@ -160,9 +160,9 @@ func TestRow(t *testing.T) {
 	}
 }
 
-// The panel drawings, with their styles: a trick around the table (the winning card bold,
-// a slot for the seat to play), the trick taken, a fan of backs, a hand's card tops, and
-// the single cards.
+// The panel drawings, with their styles: a trick around the table (the winning card edged
+// in =, a slot for the seat to play), the trick taken, a fan of backs, a hand's card tops,
+// and the single cards.
 func TestDrawings(t *testing.T) {
 	t.Parallel()
 	names := [cards.Seats]string{"SOUTH", "WEST", "NORTH", "EAST"}
@@ -210,6 +210,46 @@ func TestDrawPass(t *testing.T) {
 		t.Errorf("a pass to South drew:\n%s", c.String())
 	}
 	golden.AssertString(t, "pass", b.String())
+}
+
+// The card winning the trick so far is told by its glyphs, wherever it lies on the table and
+// with or without trumps: one card edged in =, and it is the winner's, with nothing but the
+// glyphs to go on (no colour, no bold).
+func TestTrickWinnerIsDrawnInGlyphs(t *testing.T) {
+	t.Parallel()
+	names := [cards.Seats]string{"SOUTH", "WEST", "NORTH", "EAST"}
+	for _, tc := range []struct {
+		leader int
+		hand   string
+		trump  cards.Suit
+	}{
+		{cards.West, "10H QH", cards.NoTrump},
+		{cards.North, "2C 9C 5C", cards.NoTrump},
+		{cards.East, "KD 3D AD 4D", cards.NoTrump},
+		{cards.South, "AS 2H KS QS", cards.Hearts},
+		{cards.South, "7C", cards.NoTrump},
+	} {
+		tr := cards.Trick{Leader: tc.leader, Cards: mustHand(t, tc.hand)}
+		want := tr.Cards[tr.Winning(tc.trump)].String()
+		c := proto.NewCanvas(cards.TrickW, cards.TrickH)
+		cards.DrawTrick(c, 0, 0, tr, tc.trump, names, -1)
+		rows := strings.Split(c.String(), "\n")
+		var marked []string
+		for y, row := range rows {
+			x := strings.Index(row, ".===.")
+			if x < 0 {
+				continue
+			}
+			if y+2 >= len(rows) || len(rows[y+2]) < x+5 || rows[y+2][x:x+5] != "'==='" {
+				t.Errorf("%s: the winner's edge is not closed below:\n%s", tc.hand, c.String())
+				continue
+			}
+			marked = append(marked, strings.TrimSpace(strings.Trim(rows[y+1][x:x+5], "|")))
+		}
+		if len(marked) != 1 || marked[0] != want {
+			t.Errorf("%s led by %s: marked %v, want only %s:\n%s", tc.hand, names[tc.leader], marked, want, c.String())
+		}
+	}
 }
 
 func TestSuitStyle(t *testing.T) {

@@ -2,6 +2,7 @@ package theme
 
 import (
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -18,7 +19,7 @@ func TestEveryThemeDefinesEveryStyle(t *testing.T) {
 		if !ok {
 			t.Fatalf("theme %q missing", name)
 		}
-		for s := proto.StyleText; s <= proto.StyleSelected; s++ {
+		for _, s := range proto.Styles() {
 			spec, ok := th.Styles[s]
 			if !ok {
 				t.Errorf("%s: style %c undefined", name, s.Letter())
@@ -54,6 +55,93 @@ func TestMeaningfulPairsStayDistinctIn16Colours(t *testing.T) {
 				t.Errorf("%s: styles %c and %c look identical in 16 colours", name, p[0].Letter(), p[1].Letter())
 			}
 		}
+	}
+}
+
+// Without colour (NO_COLOR, TERM=xterm-mono: the ASCII profile) a style is only its
+// attributes, and Dim and Land are faint. The pairs whose difference carries meaning must
+// still look different there, and a style that paints its own background (norad's DEFCON 1,
+// white on red) must keep a visible block: Reverse.
+func TestMeaningSurvivesWithoutColour(t *testing.T) {
+	t.Parallel()
+	look := func(th *Theme, s proto.Style) string {
+		return th.Lip(s, 0, colorprofile.ASCII).Render("x")
+	}
+	pairs := [][2]proto.Style{
+		{proto.StyleText, proto.StyleBright},
+		{proto.StyleText, proto.StyleDim},
+		{proto.StyleText, proto.StyleAccent},
+		{proto.StyleText, proto.StyleAlert},
+		{proto.StyleText, proto.StyleSelected},
+		{proto.StyleIncoming, proto.StyleOutgoing},
+	}
+	for _, name := range Names() {
+		th, _ := Get(name)
+		for _, p := range pairs {
+			if a, b := look(th, p[0]), look(th, p[1]); a == b {
+				t.Errorf("%s: styles %c and %c both render %q without colour", name, p[0].Letter(), p[1].Letter(), a)
+			}
+		}
+		for _, s := range proto.Styles() {
+			if spec := th.Styles[s]; spec.BG != nil && (spec.Attr|spec.NoColAttr)&proto.AttrReverse == 0 {
+				t.Errorf("%s: style %c paints a background, which vanishes without colour unless it is reversed", name, s.Letter())
+			}
+		}
+	}
+}
+
+// Every style in every theme renders under each colour profile with only what that profile
+// allows: 24-bit colour, the 16 ANSI colours, or no colour at all (attributes only).
+func TestEveryStyleUnderEveryProfile(t *testing.T) {
+	t.Parallel()
+	for _, name := range Names() {
+		th, _ := Get(name)
+		for _, s := range proto.Styles() {
+			for _, p := range []colorprofile.Profile{colorprofile.TrueColor, colorprofile.ANSI, colorprofile.ASCII} {
+				params := sgrParams(th.Lip(s, proto.AttrBold, p).Render("x"))
+				truecolour, colour := false, false
+				for i, v := range params {
+					switch n, _ := strconv.Atoi(v); {
+					case (n == 38 || n == 48) && i+1 < len(params) && params[i+1] == "2":
+						truecolour = true
+						colour = true
+					case n >= 30 && n <= 49, n >= 90 && n <= 107:
+						colour = true
+					}
+				}
+				if want := p != colorprofile.ASCII; colour != want {
+					t.Errorf("%s %c under %v: colour %v, want %v (%v)", name, s.Letter(), p, colour, want, params)
+				}
+				if want := p == colorprofile.TrueColor; truecolour != want {
+					t.Errorf("%s %c under %v: 24-bit colour %v, want %v (%v)", name, s.Letter(), p, truecolour, want, params)
+				}
+				if !slices.Contains(params, "1") {
+					t.Errorf("%s %c under %v: the cell's own Bold was dropped (%v)", name, s.Letter(), p, params)
+				}
+			}
+		}
+	}
+}
+
+// sgrParams lists the parameters of every SGR sequence in s; a sub-parameter (4:3) counts
+// as its main one.
+func sgrParams(s string) []string {
+	var out []string
+	for {
+		i := strings.Index(s, "\x1b[")
+		if i < 0 {
+			return out
+		}
+		s = s[i+2:]
+		j := strings.IndexByte(s, 'm')
+		if j < 0 {
+			return out
+		}
+		for p := range strings.SplitSeq(s[:j], ";") {
+			main, _, _ := strings.Cut(p, ":")
+			out = append(out, main)
+		}
+		s = s[j+1:]
 	}
 }
 
@@ -94,7 +182,7 @@ func TestTextContrast(t *testing.T) {
 	t.Parallel()
 	for _, name := range Names() {
 		th, _ := Get(name)
-		for s := proto.StyleText; s <= proto.StyleSelected; s++ {
+		for _, s := range proto.Styles() {
 			spec := th.Styles[s]
 			bg := th.bg(spec)
 			faint := s == proto.StyleDim || s == proto.StyleLand
