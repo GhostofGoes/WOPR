@@ -111,3 +111,46 @@ func TestViews(t *testing.T) {
 	snap("one player, 12 rows", g, 12)
 	golden.AssertString(t, "views", strings.Join(shots, "\n"))
 }
+
+// The last move is told by more than colour: at every size, with an X or an O last, every
+// cell of that mark is underlined and no other cell is. X is bright, which is bold in every
+// theme, so bold could not mark it.
+func TestLastMoveIsUnderlined(t *testing.T) {
+	t.Parallel()
+	b := Board{'X', 'O', 0, 0, 'X', 'O', 0, 0, 0}
+	for _, s := range sizes {
+		for _, last := range []int{4, 5} { // an X, then an O
+			c := proto.NewCanvas(s.width(), s.height())
+			b.Draw(c, 0, 0, s.height(), last, true)
+			marked := 0
+			for y := range c.H {
+				for x := range c.W {
+					cell := c.At(x, y)
+					sq := 3*(y/(s.rows+1)) + x/(s.cellW+1)
+					inLast := sq == last && x%(s.cellW+1) != s.cellW && y%(s.rows+1) != s.rows
+					underlined := cell.A&proto.AttrUnderline != 0
+					switch {
+					case inLast && cell.R != ' ' && !underlined:
+						t.Errorf("%d-row board, square %d last: %q at %d,%d is not underlined:\n%s", s.rows, last+1, cell.R, x, y, c.String())
+					case !inLast && underlined:
+						t.Errorf("%d-row board, square %d last: %q at %d,%d is underlined:\n%s", s.rows, last+1, cell.R, x, y, c.String())
+					case underlined:
+						marked++
+					}
+				}
+			}
+			if marked == 0 {
+				t.Errorf("%d-row board, square %d last: nothing is underlined", s.rows, last+1)
+			}
+		}
+	}
+	c := proto.NewCanvas(sizes[0].width(), sizes[0].height())
+	b.Draw(c, 0, 0, c.H, -1, true)
+	for y := range c.H {
+		for x := range c.W {
+			if c.At(x, y).A&proto.AttrUnderline != 0 {
+				t.Fatalf("no last move, yet %d,%d is underlined:\n%s", x, y, c.String())
+			}
+		}
+	}
+}

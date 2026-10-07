@@ -20,20 +20,22 @@ import (
 
 // The accessibility pass (docs/PLAN.md §4.5) as checks that sweep every game, so a new game
 // is covered as soon as it is in the catalog. Each game is played a little way through the
-// real UI from a playbook of inputs (a game with no playbook is checked on its first screen),
+// real UI from a playbook of inputs (TestEveryGameHasAPlaybook fails for a game without one),
 // and every screen it reaches must hold up: real characters only, prompts that end in a
 // question or a colon, the cursor at the end of the input line, key mode saying what the keys
-// do, no attribute that no theme shows, and the same text without colour as with it, in every
-// theme. Played again with pacing, no game may flash: no more than three changes over a large
-// part of its view in any second.
+// do, no attribute that no theme shows and, without colour in every theme, no colour codes and
+// the meaningful style pairs still apart. Played again with pacing, no game may flash: no more
+// than three changes over a large part of its view in any second.
 
 // playbook is what to type into a game, in turn: lines at a prompt, and in key mode the
 // names of keys (keyNames). With cycle, the list starts again when it runs out, up to steps
-// inputs in all.
+// inputs in all. Each of want must show in the game's view on at least one screen, so that
+// the playbook is known to reach what the sweep is there to check.
 type playbook struct {
 	inputs []string
 	cycle  bool
 	steps  int
+	want   []string
 }
 
 // keyNames are the keys a playbook can press in key mode.
@@ -46,12 +48,14 @@ var keyNames = map[string]tea.KeyPressMsg{
 var playbooks = map[string]playbook{
 	"falkens-maze": {inputs: []string{"right", "right", "down", "right", "down", "left", "down", "right", "up"}, cycle: true, steps: 40},
 	"black-jack":   {inputs: []string{"5", "h", "s", "d"}, cycle: true, steps: 24},
-	"gin-rummy":    {inputs: []string{"s", "1", "d", "2", "y"}, cycle: true, steps: 30},
-	"hearts":       {inputs: append([]string{"1 2 3"}, numbers(13)...), cycle: true, steps: 50},
-	"bridge":       {inputs: allCards(), cycle: true, steps: 80},
+	"gin-rummy":    {inputs: []string{"s", "1", "d", "2", "y"}, cycle: true, steps: 30, want: []string{"MELDS 1-", "NO MELDS"}},
+	"hearts":       {inputs: append([]string{"1 2 3"}, numbers(13)...), cycle: true, steps: 50, want: []string{".===.", "LAST TRICK"}},
+	"bridge":       {inputs: allCards(), cycle: true, steps: 80, want: []string{".===.", "LAST TRICK"}},
+	// Legal moves against WOPR at seed 1, taking each jump, until a man is crowned at b8.
 	"checkers": {inputs: []string{
-		"c3-d4", "b6-a5", "b2-c3", "a3-b4", "e3-f4", "d2-e3", "g3-h4", "f2-g3", "c1-d2", "e1-f2", "h2-g3", "c3xe5", "d4xb6",
-	}, cycle: true, steps: 40},
+		"a3-b4", "b4-a5", "a5xc7", "c3-d4", "d4xb6", "e3-f4", "f4xd6", "d6-c7",
+		"g3-f4", "b2-c3", "d2-e3", "f4-e5", "e5-d6", "c3-d4", "d6-c7", "c7-b8",
+	}, want: []string{"x", "KINGS"}}, // a man the last move jumped; a side's count of kings
 	"chess":                        {inputs: []string{"e2e4", "d2d4", "g1f3", "b1c3", "f1c4", "c1f4", "d1d2", "e1g1", "a2a3", "h2h3", "resign"}},
 	"poker":                        {inputs: []string{"c", "b", "1 2", "c", "f", "y"}, cycle: true, steps: 30},
 	"fighter-combat":               {inputs: []string{"press", "climb", "fire", "extend", "break", "fire"}, cycle: true, steps: 30},
@@ -64,7 +68,7 @@ var playbooks = map[string]playbook{
 	// with zero players, and the ending.
 	"global-thermonuclear-war": {inputs: []string{
 		"2", "Las Vegas", "Seattle", "", "", "", "", "", "List Games", "Chess", "Tic-Tac-Toe", "0", "Hello.",
-	}},
+	}, want: []string{">|", "PROJECTED KILL RATIOS"}}, // the pointer at the current DEFCON level; the ratios
 	"tic-tac-toe": {inputs: []string{"1", "5", "1", "3", "7", "9", "2", "8", "4", "6"}},
 }
 
@@ -151,24 +155,61 @@ func TestEveryScreenIsAccessible(t *testing.T) {
 			opts := c.opts(Options{Instant: true, Seed: 1, SeedSet: true, Registry: catalog.Registry(), Panel: PanelOff})
 			d := newDriver(t, opts, 80, 24)
 			screens := 0
+			want := map[string]bool{}
+			for _, w := range c.book.want {
+				want[w] = true
+			}
+			inspect := func(label string) {
+				inspectScreen(t, label, d)
+				screens++
+				if v := currentView(d.m); v != nil {
+					for w := range want {
+						if strings.Contains(v.String(), w) {
+							delete(want, w)
+						}
+					}
+				}
+			}
 			c.play(d, func(label string) {
 				for i := 0; c.film && d.ended == "" && i < maxSteps; i++ {
 					if i%filmEvery == 0 {
-						inspectScreen(t, fmt.Sprintf("%s, tick %d", c.name, i), d)
-						screens++
+						inspect(fmt.Sprintf("%s, tick %d", c.name, i))
 					}
 					d.step()
 				}
 				d.settle()
 				if d.ended == "" {
-					inspectScreen(t, label, d)
-					screens++
+					inspect(label)
 				}
 			})
 			if screens == 0 {
 				t.Error("no screen was checked")
 			}
+			for w := range want {
+				t.Errorf("the playbook never reached a view showing %q", w)
+			}
 		})
+	}
+}
+
+// TestEveryGameHasAPlaybook makes the sweeps' reach a rule: every playable game in the
+// catalog has a playbook, so they check more than its first screen.
+func TestEveryGameHasAPlaybook(t *testing.T) {
+	t.Parallel()
+	playable := map[string]bool{}
+	for _, e := range catalog.Registry().All() {
+		if e.Info.Status != games.Playable {
+			continue
+		}
+		playable[e.Info.Slug] = true
+		if len(playbooks[e.Info.Slug].inputs) == 0 {
+			t.Errorf("%s has no playbook in playbooks: add the inputs that reach its main screens", e.Info.Slug)
+		}
+	}
+	for slug := range playbooks {
+		if !playable[slug] {
+			t.Errorf("playbook %q is for no playable game", slug)
+		}
 	}
 }
 
@@ -204,7 +245,9 @@ func inspectScreen(t *testing.T, label string, d *driver) {
 		fail("the key hint %q is not on screen", m.keyHint)
 	case m.asking && !m.keyMode:
 		// A prompt asks a question or ends in a colon. The film's open prompt (WOPR's
-		// conversation, GTW's target list) has no text: the line above it asks.
+		// conversation, GTW's target list) has no text: what WOPR said last usually asks,
+		// though after a list it is the list's last line (docs/PLAN.md §4.5 leaves that to a
+		// screen-reader tester).
 		if p := strings.TrimRight(m.prompt, " "); p != "" && !strings.HasSuffix(p, ":") && !strings.HasSuffix(p, "?") {
 			fail("the prompt %q ends in neither a colon nor a question mark", m.prompt)
 		}
@@ -220,19 +263,23 @@ func inspectScreen(t *testing.T, label string, d *driver) {
 		}
 	}
 
-	if c := currentView(m); c != nil {
-		inspectCanvas(t, label, c)
+	view := currentView(m)
+	if view != nil {
+		inspectCanvas(t, label, view)
 	}
 
-	// Without colour (NO_COLOR, a monochrome terminal) nothing is lost: in every theme the
-	// screen has the same text, and no colour at all.
+	// Without colour (NO_COLOR, a monochrome terminal) nothing is lost. In every theme the
+	// screen carries no colour at all, and where the program's view draws both styles of a
+	// pair whose difference carries meaning (theme.Distinct), they still look different, each
+	// cell with its own attributes. The text is the same as in colour: a guard, since nothing
+	// yet chooses characters by profile.
 	th, profile := m.th, m.profile
 	defer func() { m.th, m.profile = th, profile }()
 	for _, name := range theme.Names() {
 		m.th, _ = theme.Get(name)
 		m.profile = colorprofile.TrueColor
 		coloured := ansi.Strip(m.View().Content)
-		m.profile = colorprofile.Ascii
+		m.profile = colorprofile.ASCII
 		plain := m.View().Content
 		if ansi.Strip(plain) != coloured {
 			fail("theme %s: the text without colour differs from the text with it", name)
@@ -240,7 +287,46 @@ func inspectScreen(t *testing.T, label string, d *driver) {
 		if p := colourParam(plain); p != "" {
 			fail("theme %s: SGR %s is a colour, under NO_COLOR", name, p)
 		}
+		if view != nil {
+			if msg := sameWithoutColour(m.th, view); msg != "" {
+				fail("theme %s, without colour: %s\n%s", name, msg, view.String())
+			}
+		}
 	}
+}
+
+// sameWithoutColour reports the first pair of cells in c, drawn in the two styles of a
+// meaningful pair (theme.Distinct), that th renders alike without colour, or "".
+func sameWithoutColour(th *theme.Theme, c *proto.Canvas) string {
+	type place struct {
+		r    rune
+		x, y int
+	}
+	looks := map[proto.Style]map[string]place{} // style: how it renders without colour: a cell
+	for y := range c.H {
+		for x := range c.W {
+			cell := c.At(x, y)
+			if cell.R == ' ' {
+				continue
+			}
+			look := th.Lip(cell.S, cell.A, colorprofile.ASCII).Render("x")
+			if looks[cell.S] == nil {
+				looks[cell.S] = map[string]place{}
+			}
+			if _, ok := looks[cell.S][look]; !ok {
+				looks[cell.S][look] = place{cell.R, x, y}
+			}
+		}
+	}
+	for _, pair := range theme.Distinct() {
+		for look, a := range looks[pair[0]] {
+			if b, ok := looks[pair[1]][look]; ok {
+				return fmt.Sprintf("%q at %d,%d (style %c) and %q at %d,%d (style %c) both render %q",
+					a.r, a.x, a.y, pair[0].Letter(), b.r, b.x, b.y, pair[1].Letter(), look)
+			}
+		}
+	}
+	return ""
 }
 
 // currentView draws the running program's view as the UI would, or returns nil in the

@@ -653,10 +653,13 @@ work around.
   - The current DEFCON level is pointed at, `>| 3 |`, as well as reversed. The pointer is what says it: the
     monochrome themes reverse the DEFCON 1 rung at every level (their stand-in for white on red), and so
     does norad without colour.
-  - Card suits always show their letter. The card winning a trick so far is edged `.===.` (it was bold, on
-    a style already bold).
-  - Chess and checkers bracket the last move (`[]` and `P<`, `[b]`); kings are capitals and a jumped man is
-    `x`. Tic-tac-toe underlines the last mark, and the console says every move.
+  - Card suits always show their letter. The card winning a trick so far is edged `.===.`; it was bold, which
+    showed only on the card's index, and not at all on a red card in the monochrome themes, whose red suits
+    are bold already. Before each play prompt, Hearts and Bridge say the trick so far in the console
+    (`WEST LEADS 7H. NORTH PLAYS KH.`), and each trick once it is complete.
+  - Chess and checkers bracket the last move (`[]` and `P<`, `[b]`); a king is its capital letter alone (bold
+    on Black's made it look like White's men without colour), and a jumped man is `x`. Tic-tac-toe
+    underlines the last mark, and the console says every move.
   - Gin Rummy names the melds by position beside the hand (`MELDS 1-3 4-6`, or `NO MELDS`), besides
     drawing them bright. Bridge points at the hand to play (`>`); Hearts draws its pass as an arrow and
     names its direction; the maze marks the player `@`, the exit `[]`, unseen cells `.` and, once out,
@@ -666,23 +669,31 @@ work around.
   toggles, DEFCON 1 and montage frames. This meets WCAG 2.3.1.
 - **`-r/--reduce-motion`** (`WOPR_REDUCE_MOTION=1`) stops Blink (the cursor's too), freezes the front panel's
   lights and `PROCESSING`'s dots, and removes the acceleration of the ending's self-play (a steady 200 ms a
-  move) and montage (a steady three lines a frame). Pacing is not motion: the typewriter, movie mode's typing
-  and the big board's flights are `--instant`'s to skip. Movie mode's game clock keeps ticking, as the film
-  shows it; Space pauses it with the rest (WCAG 2.2.2).
+  move) and montage (a steady three lines a frame). It is not "no motion", and `--help` and the README say
+  so: the typewriter, movie mode's typing, the big board's flights, the self-play and the montage still
+  play, and `--instant` is what skips them (it draws each strike at once and goes straight past the
+  self-play and the montage). Movie mode's game clock keeps ticking, as the film shows it; Space pauses it
+  with the rest (WCAG 2.2.2).
 - **Text is real characters.** Every screen and every view is printable ASCII; boards, maps and tables carry
-  words (labels, legends, seat and side names), and the console says each move. Every prompt with text ends
-  in `:` or `?`; the film's open prompts (WOPR's conversation, GTW's targets) have none, and the line above
-  them asks. The cursor sits at the end of the input line; key mode shows a hint where the input line would
-  be.
+  words (labels, legends, seat and side names), and the console says each of WOPR's moves (in Hearts and
+  Bridge, the trick so far). Every prompt with text ends in `:` or `?`. The film's open prompts (WOPR's
+  conversation, GTW's targets) have no text: WOPR's line before them usually asks, but not always (after
+  `HELP` or `LIST GAMES` it is the list's last line). The cursor sits at the end of the input line; key mode
+  shows a hint where the input line would be.
 - **Art** is pure ASCII.
 - **Goldens.** From M2, game goldens include `Canvas.StyleMap()`; the theme tests check each Style's rendering
   under the TrueColor, ANSI and ASCII profiles.
 - **Sweeps** (`internal/ui/access_test.go`). The persona, the movie menu, the whole film and every playable
-  game in the catalog are played through the real UI, each game a little way from a playbook of inputs (a
-  game without one is checked on its first screen; GTW's goes on through the climax, tic-tac-toe with zero
-  players and the ending). `TestEveryScreenIsAccessible` checks each screen they reach (the film's every half
-  second) for the rules above (ASCII, prompts, cursor, key hint, no attribute that no theme shows) and renders
-  it in every theme under the ASCII profile: the same text as in colour, and no colour codes.
+  game in the catalog are played through the real UI, each game a little way from a playbook of inputs
+  (`TestEveryGameHasAPlaybook` fails for a game without one; GTW's goes on through the climax, tic-tac-toe
+  with zero players and the ending). A playbook names what its screens must show at least once (checkers'
+  king count and a jumped `x`, the trick tables' `.===.`, Gin's melds, GTW's DEFCON pointer and kill
+  ratios), so it is known to reach them. `TestEveryScreenIsAccessible` checks each screen they reach (the
+  film's every half second) for the rules above (ASCII, prompts, cursor, key hint, no attribute that no theme
+  shows) and renders it in every theme under the ASCII profile: no colour codes, and in the program's view
+  the pairs of styles whose difference carries meaning (`theme.Distinct`, which the theme tests also check)
+  still look different wherever both are drawn, each cell with its own attributes. It also compares the text
+  with the coloured screen's, as a guard: nothing yet chooses characters by profile.
   `TestNothingFlashes` plays them again with pacing and fails if the clock's ticks change a tenth of the
   program's view or more four times within a second (input-driven changes and the console's scrolling are
   not counted). `TestReduceMotion` watches movie mode's climax and a slow chess search tick by tick, with
@@ -693,23 +704,28 @@ work around.
 - *Checked:* every game's screens, the persona, the GTW board and kill ratios, the ending, movie mode (the
   board, the game clock, typed lines, the menu) and the front panel; each under `NO_COLOR` and the ASCII
   profile in all four themes, paced and `--instant`, with and without `--reduce-motion`; the contrast table.
-- *Fixed:* the trick table's winning card and tic-tac-toe's last X were marked only by bold on a style that is
-  already bold in every theme, so nothing showed; they are now edged `.===.` and underlined. The current
+- *Fixed:* tic-tac-toe's last X was marked only by bold on a style that is bold in every theme, so nothing
+  showed; the last mark is now underlined. The trick table's winning card was marked by bold, which showed
+  only on its index (not at all on a red card in the monochrome themes); it is now edged `.===.`. The current
   DEFCON level rested on reversal, which the DEFCON 1 rung always has in the monochrome themes; it now has
   a `>` pointer. Gin Rummy's melds were told from the deadwood only by brightness; their positions are now
   written beside the hand. The ending's self-play still sped up under `--reduce-motion`; it now keeps a
   steady step. Bold that never showed (chess's `CHECK`, GTW's last-orders warning and launch code, the
-  ending's code, the maze's player, exit and title, checkers' white kings, gin's discard) was removed, and the
-  sweep keeps it out. The theme tests now cover every Style, a Style that paints a background keeps a
-  reversed block without colour, the meaningful pairs stay apart without colour, and every Style renders under
-  each profile with only that profile's colours. The README gained an accessibility section and the
-  mouse-wheel note.
+  ending's code, the maze's player, exit and title, checkers' white kings) was removed, and the sweep keeps it
+  out. Gin's discard lost its bold too: its frame was bold already, so only a black card's index (any card's
+  in norad) looks different. The theme tests now cover every Style, a Style that paints a background keeps
+  a reversed block without colour, the meaningful pairs stay apart in 16 colours and without colour, and
+  every Style renders under each profile with only that profile's colours. The README gained an
+  accessibility section and the mouse-wheel note. After review: Hearts and Bridge say the trick so far before
+  each play prompt; Black's checkers kings lost their bold, which the sweep's no-colour check found making
+  them look like White's men; every game must have a playbook, and checkers' now plays to a king; `--help`
+  and the README say what `-r` does and does not do, and point to `-i`.
 - *Left for a human with a screen reader* (Orca, NVDA with Windows Terminal, VoiceOver): how the alternate
   screen reads while the typewriter reveals text and Bubble Tea redraws changed rows; whether the 2-D panels
-  (trick tables, boards, the big board, the sims' maps) read in a useful order, and whether Hearts and
-  Bridge should say the cards already led before `YOUR PLAY:` (the console says a trick once it is
-  complete); whether the cursor, hidden in key mode (the maze) and while movie mode plays, should be parked
-  at the key hint for magnifiers; and how the film's open prompts sound with no prompt text.
+  (trick tables, boards, the big board, the sims' maps) read in a useful order, or whether the console's
+  words (each move, the trick so far) are enough on their own; whether the cursor, hidden in key mode (the
+  maze) and while movie mode plays, should be parked at the key hint for magnifiers; and how the film's open
+  prompts sound with no prompt text, above all after a list.
 
 ### 4.6 Persona: session, intent, offers, brain
 
@@ -843,7 +859,8 @@ wopr -S | --scenes            list the movie's scenes (number, slug, what happen
 wopr -t | --theme <name>      imsai | green | amber | norad          (env WOPR_THEME)
 wopr -i | --instant           no pacing                              (env WOPR_INSTANT)
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
-wopr -r | --reduce-motion     no blink, no panel animation, no speeding up in the ending (env WOPR_REDUCE_MOTION)
+wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
+                              typing or the animations, which -i skips
 wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
 ```
 
@@ -916,7 +933,9 @@ Every game must meet all of these:
 - a game-specific quality test (below);
 - fits 80×24 (`PanelRows` declared);
 - a one-line "how to play" in the README;
-- every script line provenance-tagged.
+- every script line provenance-tagged;
+- a playbook in `internal/ui/access_test.go` that reaches its main screens, so the accessibility sweeps
+  (§4.5) check them (`TestEveryGameHasAPlaybook` fails without one).
 
 | # | Game | Layout | Input | M | Notes and quality test |
 |---|---|---|---|---|---|

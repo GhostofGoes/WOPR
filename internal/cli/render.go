@@ -94,6 +94,9 @@ func RenderHelp(w io.Writer) error {
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
 
+With -r nothing blinks, the front panel's lights stand still and the ending
+keeps a steady pace; the typing and the animations still play. -i skips them.
+
 Movie mode plays the film's scenes from the one named to the end, then exits;
 without one, it opens a menu of scenes. With -o, each scene plays alone, then
 wopr exits, or returns to the menu if you came from it. Space pauses, n or

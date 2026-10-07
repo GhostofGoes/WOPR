@@ -16,10 +16,13 @@ Flags:
   -t, --theme <name>           imsai, green, amber, norad (env WOPR_THEME)
   -i, --instant                no typewriter pacing (env WOPR_INSTANT)
   -s, --seed <n>               deterministic run with this seed (env WOPR_SEED)
-  -r, --reduce-motion          no blinking or motion (env WOPR_REDUCE_MOTION)
+  -r, --reduce-motion          no blinking or speed-ups (env WOPR_REDUCE_MOTION)
 
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
+
+With -r nothing blinks, the front panel's lights stand still and the ending
+keeps a steady pace; the typing and the animations still play. -i skips them.
 
 Movie mode plays the film's scenes from the one named to the end, then exits;
 without one, it opens a menu of scenes. With -o, each scene plays alone, then

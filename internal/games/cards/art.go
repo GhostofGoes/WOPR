@@ -219,9 +219,10 @@ func trickLabel(seat, cardX int, name string) int {
 }
 
 // DrawTrick draws t around a table at x, y, TrickW by TrickH: each seat's card where the
-// seat sits, labelled with its name from names, with the card winning so far edged in =
-// (its style is already bold, so bold could not say it). The seat next (or none, when
-// next < 0) gets an empty slot until it plays.
+// seat sits, labelled with its name from names, with the card winning so far edged in =.
+// The edge replaces bold, a weak cue that showed only on the index, and not at all on a red
+// card in the monochrome themes, whose red suits are bold already. The seat next (or none,
+// when next < 0) gets an empty slot until it plays.
 //
 //	                   .===.
 //	            NORTH  |QS |

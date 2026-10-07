@@ -39,17 +39,9 @@ func TestEveryThemeDefinesEveryStyle(t *testing.T) {
 // colour index or attributes (U-7).
 func TestMeaningfulPairsStayDistinctIn16Colours(t *testing.T) {
 	t.Parallel()
-	pairs := [][2]proto.Style{
-		{proto.StyleText, proto.StyleAccent},
-		{proto.StyleText, proto.StyleBright},
-		{proto.StyleText, proto.StyleDim},
-		{proto.StyleIncoming, proto.StyleOutgoing},
-		{proto.StyleDefcon1, proto.StyleDefcon2},
-		{proto.StyleDefcon2, proto.StyleDefcon3},
-	}
 	for _, name := range Names() {
 		th, _ := Get(name)
-		for _, p := range pairs {
+		for _, p := range Distinct() {
 			a, b := th.Styles[p[0]], th.Styles[p[1]]
 			if a.FG.ANSI == b.FG.ANSI && a.Attr == b.Attr && a.BG == nil && b.BG == nil {
 				t.Errorf("%s: styles %c and %c look identical in 16 colours", name, p[0].Letter(), p[1].Letter())
@@ -67,17 +59,9 @@ func TestMeaningSurvivesWithoutColour(t *testing.T) {
 	look := func(th *Theme, s proto.Style) string {
 		return th.Lip(s, 0, colorprofile.ASCII).Render("x")
 	}
-	pairs := [][2]proto.Style{
-		{proto.StyleText, proto.StyleBright},
-		{proto.StyleText, proto.StyleDim},
-		{proto.StyleText, proto.StyleAccent},
-		{proto.StyleText, proto.StyleAlert},
-		{proto.StyleText, proto.StyleSelected},
-		{proto.StyleIncoming, proto.StyleOutgoing},
-	}
 	for _, name := range Names() {
 		th, _ := Get(name)
-		for _, p := range pairs {
+		for _, p := range Distinct() {
 			if a, b := look(th, p[0]), look(th, p[1]); a == b {
 				t.Errorf("%s: styles %c and %c both render %q without colour", name, p[0].Letter(), p[1].Letter(), a)
 			}

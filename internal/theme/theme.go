@@ -152,5 +152,23 @@ func (t *Theme) bg(s Spec) Color {
 	return t.Background
 }
 
+// Distinct lists the pairs of styles whose difference carries meaning (docs/PLAN.md §4.5):
+// plain text against bright, dim, accented, alert and selected text, incoming against
+// outgoing, and neighbouring DEFCON levels. Every theme keeps each pair apart in 16 colours
+// and without colour, and the accessibility sweeps check the pairs as the screens draw them,
+// with each cell's own attributes.
+func Distinct() [][2]proto.Style {
+	return [][2]proto.Style{
+		{proto.StyleText, proto.StyleBright},
+		{proto.StyleText, proto.StyleDim},
+		{proto.StyleText, proto.StyleAccent},
+		{proto.StyleText, proto.StyleAlert},
+		{proto.StyleText, proto.StyleSelected},
+		{proto.StyleIncoming, proto.StyleOutgoing},
+		{proto.StyleDefcon1, proto.StyleDefcon2},
+		{proto.StyleDefcon2, proto.StyleDefcon3},
+	}
+}
+
 // ValidName reports whether name is a theme.
 func ValidName(name string) bool { return slices.Contains(Names(), name) }

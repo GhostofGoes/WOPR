@@ -96,8 +96,9 @@ func TestTheShow(t *testing.T) {
 }
 
 // The self-play frame fits the Full layout at 80x24, with the front panel (19 rows) and
-// without (20): all seven boards whole, the launch code below the big board, nothing drawn
-// outside 80 columns, and the frame centred, a row or two clear above and below.
+// without (20): all seven boards whole, the last moves marked, the launch code below the big
+// board, nothing drawn outside 80 columns, and the frame centred, a row or two clear above and
+// below.
 func TestSelfPlayFits(t *testing.T) {
 	t.Parallel()
 	for _, h := range []int{19, 20} {
@@ -126,6 +127,17 @@ func TestSelfPlayFits(t *testing.T) {
 			if strings.Contains(row, lineCodeLabel[0].Text) {
 				code = y
 			}
+		}
+		underlined := 0
+		for y := range c.H {
+			for x := range c.W {
+				if c.At(x, y).A&proto.AttrUnderline != 0 {
+					underlined++
+				}
+			}
+		}
+		if underlined == 0 { // the last move on each board, as tictactoe draws it
+			t.Errorf("height %d: no board marks its last move:\n%s", h, c.String())
 		}
 		if corners != 4*boards || code < tictactoe.BigRows || code >= h {
 			t.Errorf("height %d: %d grid crossings (want %d), code on row %d:\n%s", h, corners, 4*boards, code, c.String())

@@ -53,10 +53,11 @@ newer than the root `toolchain` line (a test checks): bump the toolchain first, 
   (golangci-lint, gitleaks) must have the same version.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
 - **Accessibility** (`docs/PLAN.md` §4.5). `internal/ui/access_test.go` plays every game in the catalog from a
-  playbook and checks each screen: printable ASCII only, a prompt's text ends in `:` or `?`, the cursor at
-  the end of the input line, a hint in key mode, the same text without colour in every theme, no attribute
-  the style already has in every theme (`Bright`, `Alert` and `Accent` are bold everywhere, so bold on them
-  shows nothing), and nothing flashing more than three times a second. The theme tests cover every
+  playbook (every playable game must have one) and checks each screen: printable ASCII only, a prompt's text
+  ends in `:` or `?`, the cursor at the end of the input line, a hint in key mode, no colour codes under
+  `NO_COLOR`, the style pairs of `theme.Distinct` still apart without colour wherever a view draws both, no
+  attribute the style already has in every theme (`Bright`, `Alert` and `Accent` are bold everywhere, so bold
+  on them shows nothing), and nothing flashing more than three times a second. The theme tests cover every
   `proto.Style` for contrast and for meaning without colour.
 
 ## The program protocol (`internal/proto`)
@@ -80,8 +81,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 2. Wire its constructor in `internal/games/catalog` and set `Status: games.Playable`.
 3. Meet the definition of done in `docs/PLAN.md` §6.1: rules, legal AI through `Think`, a deterministic
    testkit transcript, a quality test, fits 80×24, README line, provenance tags.
-4. Add a playbook for it in `internal/ui/access_test.go`, so the accessibility sweeps reach its main screens
-   (without one they check only its first screen).
+4. Add a playbook for it in `internal/ui/access_test.go` that reaches its main screens, with `want` naming
+   what they must show, so the accessibility sweeps check them (`TestEveryGameHasAPlaybook` fails without one).
 
 ## Film text and provenance
 

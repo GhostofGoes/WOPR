@@ -148,7 +148,7 @@ film's lines are still to be checked one by one against the film.
 | `-t`, `--theme <name>` | `imsai` (white phosphor, the default), `green`, `amber` or `norad`; env `WOPR_THEME` |
 | `-i`, `--instant` | no typewriter pacing; env `WOPR_INSTANT=1` |
 | `-s`, `--seed <n>` | deterministic run; env `WOPR_SEED` |
-| `-r`, `--reduce-motion` | no blinking or motion; env `WOPR_REDUCE_MOTION=1` |
+| `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations); env `WOPR_REDUCE_MOTION=1` |
 
 `NO_COLOR` (any value) turns colour off.
 
@@ -161,12 +161,18 @@ film's lines are still to be checked one by one against the film.
   and checkers mark the last move with brackets.
 - **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking (the cursor's and DEFCON 1's),
   keeps the front panel's lights and the `PROCESSING` dots still, and plays the ending at a steady pace
-  instead of speeding up. With or without it, nothing flashes more than three times a second.
-- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out. Without it,
+  instead of speeding up. It does not stop the animations: the typing, the big board's missile tracks and
+  the ending's self-play and scrolling scenarios still play. Add `--instant` to skip them. With or without
+  either, nothing flashes more than three times a second.
+- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out, draws each
+  strike on the big board at once, and skips the ending's self-play and scrolling scenarios. Without it,
   any key shows the rest of what is being typed, and what you type is kept.
-- **Text.** Everything on screen is plain ASCII. Every prompt ends in a question or a colon (WOPR's
-  conversation, as in the film, has no prompt: the line above asks), the cursor sits at the end of the
-  line you are typing, and WOPR's moves are written out in the console as well as drawn on the boards.
+- **Text.** Everything on screen is plain ASCII. Every prompt with words ends in a question or a colon, and
+  the cursor sits at the end of the line you are typing. WOPR's conversation, as in the film, has no prompt
+  text: what WOPR said last usually asks, but after a list (`HELP`, `LIST GAMES`) the list's last line comes
+  just before the empty prompt. WOPR's moves are written out in the console as well as drawn on the boards,
+  and in Hearts and Bridge the console says the cards already in the trick before you play
+  (`WEST LEADS 7H. NORTH PLAYS KH.`).
 - **Contrast.** In every theme's full colours, text meets WCAG AA contrast (4.5:1) against the background,
   and the deliberately faint text 3:1. In 16-colour mode every style keeps at least 3:1 on xterm's palette.
 

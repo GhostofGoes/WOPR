@@ -26,6 +26,8 @@ var (
 	lineNotBroken  = script.Orig("HEARTS HAVE NOT BEEN BROKEN.")
 	lineNoPoints   = script.Orig("NO POINTS ON THE FIRST TRICK.")
 	lineFinish     = script.Orig("FINISH THE HAND FIRST.")
+	lineLeads      = script.Orig("# LEADS #.")
+	linePlays      = script.Orig("# PLAYS #.")
 	lineTrick      = script.Orig("#. # TAKES IT.")
 	lineYouTake    = script.Orig("#. YOU TAKE IT.")
 	linePoints     = script.Orig("(#)")
@@ -49,7 +51,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineRules, promptPass, promptPlay, promptNext, lineHold, lineReceived, linePassHelp, linePlayHelp, lineNotHeld,
-	lineFollow, lineLeadTwo, lineNotBroken, lineNoPoints, lineFinish, lineTrick, lineYouTake, linePoints, lineMoon, lineYouMoon,
+	lineFollow, lineLeadTwo, lineNotBroken, lineNoPoints, lineFinish, lineLeads, linePlays, lineTrick, lineYouTake, linePoints, lineMoon, lineYouMoon,
 	lineHandPoints, lineScores, lineYou, seatNames, panelTitle, panelHand, panelLast, panelTaken, panelBroken, panelPass, panelDirs, artTitle,
 }
 

@@ -68,7 +68,7 @@ var flagPairs = []flagPair{
 	{"theme", "t", "name", strings.Join(theme.Names(), ", "), "WOPR_THEME"},
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
 	{"seed", "s", "n", "deterministic run with this seed", "WOPR_SEED"},
-	{"reduce-motion", "r", "", "no blinking or motion", "WOPR_REDUCE_MOTION"},
+	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 }
 
 // Parse parses args (without the program name). getenv supplies environment fallbacks.
