@@ -368,7 +368,7 @@ func (g *Game) scoreLine() string {
 func (g *Game) onNext(input string) []proto.Output {
 	norm := prompt.Normalize(input)
 	if leaving(norm) || prompt.YesNo(input) == prompt.No {
-		return []proto.Output{say(fill(lineLeave, g.scoreLine())), proto.Done{Result: g.result()}}
+		return []proto.Output{say(lineLeave[0].Text), proto.Done{Result: g.result()}}
 	}
 	return g.newHand(nil)
 }
