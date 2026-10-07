@@ -100,18 +100,24 @@ params:
       index: content
       tokenize: forward
       # The search box's script, FlexSearch (Apache-2.0; credited in NOTICE.md, and its licence is
-      # on the credits page). Hugo fetches it at build time from this exact version, Hextra's
-      # default as of Hextra v0.13.0, and the site serves its own copy.
-      version: "0.8.143"
+      # on the credits page), from assets/vendor (see gallery below).
+      js: vendor/flexsearch/flexsearch.bundle.min.js
   highlight:
     copy:
       enable: true
       display: hover
   # Clicking a screenshot opens it in Hextra's lightbox, PhotoSwipe (MIT; credited in NOTICE.md, and
-  # its licence is on the credits page). Hugo fetches it at build time from this exact version and
-  # the site serves its own copy; Hextra's default would take the newest 5.x on each build.
+  # its licence is on the credits page). Hextra's default would fetch the newest 5.x from jsDelivr
+  # on each build. Instead, assets/vendor holds the files, with each package's LICENSE, byte for byte
+  # as their npm packages publish them, so the build needs no network beyond the Go module proxy and
+  # git pins what the site serves:
+  #   photoswipe 5.4.4  sha512-WNFHoKrkZNnvFFhbHL93WDkW3ifwVOXSW3w1UuZZelSmgXpIGiZSNlZJq37rR8YejqME2rHs9EhH9ZvlvFH2NA==
+  #   flexsearch 0.8.143  sha512-J7TiCTSdtqSdmd723Bk9Wj5se2gGLLpRwujQztOm45n24VlW53O3H1GpWK/ZslOPB/WzQxwSGDaQ8Pm8RQW89Q==
+  # (the npm tarballs' integrity; AGENTS.md's milestone checklist says how to update them).
   gallery:
-    base: https://cdn.jsdelivr.net/npm/photoswipe@5.4.4/dist
+    js: vendor/photoswipe/photoswipe.esm.min.js
+    lightboxJs: vendor/photoswipe/photoswipe-lightbox.esm.min.js
+    css: vendor/photoswipe/photoswipe.css
   # Repository links used by the pages and shortcodes.
   repo: https://github.com/GhostofGoes/WOPR
   repoBlob: https://github.com/GhostofGoes/WOPR/blob/main

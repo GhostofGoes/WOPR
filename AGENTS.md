@@ -215,9 +215,10 @@ screenshot fails the build.
   caption is also its alt text and shows in the lightbox. PNGs are 960×564, made smaller with
   `optipng -o2`. One that shows the big board's map gets the map's credit line. Wrap several in the
   `screenshots` shortcode to open them as one set, as each game's page does.
-- The lightbox is Hextra's, PhotoSwipe, and the search is FlexSearch, both fetched from jsDelivr at
-  build time at the exact versions in `site/hugo.yaml` (`params.gallery.base`,
-  `params.search.flexsearch.version`); the credits page shows their licences from the same versions.
+- The lightbox is Hextra's, PhotoSwipe, and the search is FlexSearch. Their files and licences are in
+  `site/assets/vendor/`, exactly as their npm packages publish them (never edit them; `.gitattributes`
+  and `prek.toml` leave them alone), and `site/hugo.yaml` names them. The credits page shows the
+  licences, so the build needs no network beyond the Go module proxy.
 - Download commands use the `version` shortcode, the latest release in `CHANGELOG.md`. Text about the
   `.deb` and `.rpm` goes inside `{{% if-packages %}}`, which shows it only once the latest release has
   them (every release after v0.2.0), so no build of the site names a package that does not exist yet.
@@ -292,11 +293,13 @@ At every milestone boundary:
 
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
    `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
-   docs theme with `go -C site get github.com/imfing/hextra@latest`; set PhotoSwipe in `site/hugo.yaml`
-   (`params.gallery.base`) to its newest 5.x release, the major version Hextra's script is written for,
-   and FlexSearch (`params.search.flexsearch.version`) to the version the new Hextra defaults to (its
-   `layouts/_partials/scripts/search.html`). Build the docs site: a new Hugo can deprecate a setting,
-   which `--panicOnWarning` turns into an error.
+   docs theme with `go -C site get github.com/imfing/hextra@latest`. Re-vendor PhotoSwipe (its newest
+   5.x, the major version Hextra's script is written for) and FlexSearch (the version the new Hextra
+   defaults to, in its `layouts/_partials/scripts/search.html`): download each npm tarball from
+   `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, check its SHA-512 against the
+   registry's `dist.integrity`, copy the same files and `LICENSE` into `site/assets/vendor/<name>/`,
+   and update the versions and hashes in `site/hugo.yaml`. Build the docs site: a new Hugo can
+   deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
 3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
    Fedora release's (`registry.fedoraproject.org/fedora:<N>`).

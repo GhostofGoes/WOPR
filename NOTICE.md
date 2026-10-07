@@ -114,3 +114,6 @@ include:
   License 2.0, for the search box. The site's credits page reproduces its licence;
 - [PhotoSwipe](https://photoswipe.com/), Copyright (c) 2014-2022 Dmitry Semenov, under the MIT License,
   which shows a screenshot full size. The site's credits page reproduces its licence.
+
+The site's copies of FlexSearch and PhotoSwipe, with their licences, are in `site/assets/vendor/`,
+unchanged from their npm packages.

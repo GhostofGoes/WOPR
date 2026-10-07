@@ -1782,13 +1782,15 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     concurrency group `pages`, never cancelling a deployment in progress, so a run on another branch
     cannot replace one from `main` that is waiting; no build cache. Pages must be set to deploy from
     GitHub Actions (AGENTS.md, repository settings).
-  - **Third-party files at build time.** Hextra's search fetches FlexSearch (Apache-2.0) and its lightbox,
-    which shows a screenshot full size, fetches PhotoSwipe (MIT), both from jsDelivr at the exact versions
-    `site/hugo.yaml` pins (`params.search.flexsearch.version`, `params.gallery.base`). The credits page
-    fetches both licences from the same versions. The theme's own stylesheet and scripts come from the
-    module. Nothing else is fetched, and no page loads anything from another site. A jsDelivr outage fails
-    the build, and with it CI's `docs` job and `ci-ok`; vendoring the four files into `site/assets/` would
-    remove that dependency (open, owner decision).
+  - **Third-party files, vendored** (review of 2026-10-07: fetching them from jsDelivr at build time made
+    `ci-ok`, and so every release, depend on a CDN, and nothing pinned the bytes it served). Hextra's
+    search runs on FlexSearch 0.8.143 (Apache-2.0) and its lightbox, which shows a screenshot full size, on
+    PhotoSwipe 5.4.4 (MIT). `site/assets/vendor/` holds their files and each package's `LICENSE`, byte for
+    byte as the npm tarballs publish them (`.gitattributes` keeps git and prek's fixers from changing
+    them); `site/hugo.yaml` names the files (`params.gallery.js`, `lightboxJs`, `css`;
+    `params.search.flexsearch.js`) and records each tarball's integrity hash. The credits page shows both
+    licences from those files. The theme's own stylesheet and scripts come from the module. The build
+    fetches nothing but Go modules, and no page loads anything from another site.
   - **Game pages' layout.** The summary, how to start the game and the other names it answers to, the
     screenshots (one set in the lightbox), how to play, the controls, every tip, and a link back to the
     games index, which lists the games in `LIST GAMES` order with tic-tac-toe last.

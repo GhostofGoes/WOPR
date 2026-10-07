@@ -22,9 +22,10 @@ lint = 20
 repo = "builtin"
 hooks = [
   { id = "fix-byte-order-marker", stages = ["pre-commit", "manual"], priority = "bom" },
-  { id = "mixed-line-ending", args = ["--fix=lf"], stages = ["pre-commit", "manual"], priority = "eol" },
-  { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md"], exclude = '\.golden$', stages = ["pre-commit", "manual"], priority = "ws" },  # goldens are byte-exact
-  { id = "end-of-file-fixer", exclude = '\.golden$', stages = ["pre-commit", "manual"], priority = "eof" },
+  # Goldens are byte-exact, and so are the docs site's vendored files (.gitattributes).
+  { id = "mixed-line-ending", args = ["--fix=lf"], exclude = '^site/assets/vendor/', stages = ["pre-commit", "manual"], priority = "eol" },
+  { id = "trailing-whitespace", args = ["--markdown-linebreak-ext=md"], exclude = '\.golden$|^site/assets/vendor/', stages = ["pre-commit", "manual"], priority = "ws" },
+  { id = "end-of-file-fixer", exclude = '\.golden$|^site/assets/vendor/', stages = ["pre-commit", "manual"], priority = "eof" },
   { id = "check-yaml", priority = "lint" },
   { id = "check-toml", priority = "lint" },
   { id = "check-json", priority = "lint" },
@@ -64,7 +65,7 @@ hooks = [{ id = "actionlint", priority = "lint" }]  # workflow syntax; zizmor co
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
