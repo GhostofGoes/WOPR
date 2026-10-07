@@ -75,6 +75,29 @@ func fitsPanel(t *testing.T, g *Game) {
 	}
 }
 
+// Which cards are melded is said in words beside the hand, by position, not only by the
+// melds' brighter frames: the widest case, three melds in eleven cards, still fits.
+func TestMeldsAreNamedInWords(t *testing.T) {
+	t.Parallel()
+	for in, want := range map[string]string{
+		"AS 2S 3S 7C 7D 7H JD JC JH QD QH":  "MELDS 1-3 4-6 7-9",
+		"AS 2S 3S 4H 5H 6H 7H 9C 10C JC QC": "MELDS 1-4 5-8 9-11",
+		"7C 7D 7H KH QD 9C 4C 2D 8S 5H":     "MELDS 1-3",
+		"KH QD 9C 4C 2D 8S 5H 3C JS 10D":    "NO MELDS",
+	} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 1, Instant: true, Deterministic: true})
+		g.hands[player] = hand(t, in)
+		g.order()
+		c := proto.NewCanvas(80, 8)
+		g.View(c)
+		row := strings.Split(c.String(), "\n")[numbersY]
+		if got := strings.TrimSpace(row[min(asideX, len(row)):]); got != want {
+			t.Errorf("%s: %q beside the hand, want %q:\n%s", in, got, want, c.String())
+		}
+	}
+}
+
 // The panel fits through seeded games, and with the widest hand: three melds and deadwood.
 func TestViewFitsThePanel(t *testing.T) {
 	t.Parallel()

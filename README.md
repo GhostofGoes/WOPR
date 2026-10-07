@@ -56,6 +56,20 @@ Wait for `LOGON:`. If you have seen the film, you know what to type. If not, `wo
 Once logged on, talk to WOPR, type `LIST GAMES`, and pick one by name or by its place in the list. Type
 `LOGOFF` to leave; Ctrl+C always quits.
 
+## Screenshots
+
+Recorded from the program itself in an 80×24 terminal with the default white-phosphor theme.
+
+| Logon and the film's conversation | Global Thermonuclear War's big board |
+|---|---|
+| ![LOGON: Joshua, GREETINGS PROFESSOR FALKEN. and the conversation that follows](docs/screenshots/logon.png) | ![The world map with missile tracks, impacts and the DEFCON ladder at 4](docs/screenshots/global-thermonuclear-war.png) |
+| **The climax: zero players** | **Chess** |
+| ![WOPR playing tic-tac-toe against itself while the launch code cracks](docs/screenshots/climax.png) | ![The chess board in check, with the last move marked](docs/screenshots/chess.png) |
+| **Black Jack** | **Falken's Maze** |
+| ![A split pair of eights paid out after the dealer busts](docs/screenshots/black-jack.png) | ![The maze half explored, WOPR noting that you favour right turns](docs/screenshots/falkens-maze.png) |
+
+The big board's map: Map (C) 1998 Matthew Thomas. Freely usable if this line is included.
+
 ## Games
 
 Every game in `LIST GAMES` is playable, and each has its own ASCII art: title pieces, card faces and trick
@@ -119,12 +133,14 @@ console and games you play with. `wopr --scenes` lists them:
 - `wopr -m` opens a menu of the scenes: type a number or a name, or `q` to leave.
 - `wopr -m 3` (or `wopr -m first-strike`, or any unique start of a name) plays from that scene to the end of
   the list, then exits.
+- `wopr -m 3 --only` (or `-o`) plays just that scene, then exits. `wopr -m --only` opens the menu, and each
+  scene picked there plays alone, then the menu returns.
 - While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
-  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays to the end, and any
-  other key only says so.
-- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply.
-  `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
-  can be read.
+  and Esc opens the menu. With `--only`, the scene that `n` or `p` reaches plays alone too. Ctrl+C quits.
+  Once the climax reaches tic-tac-toe, it plays to the end, and any other key only says so.
+- Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`. `--theme` and `--reduce-motion`
+  apply. `--instant` shows each line at once instead of typing it, but the scenes still pause so that every
+  page can be read.
 
 The only film text in the scenes is what WOPR's terminal shows on screen, David's typing included; there is
 no dialogue that is only spoken. The dial, GTW's strike exchange, tic-tac-toe's prompts and the game clock's
@@ -142,12 +158,39 @@ film's lines are still to be checked one by one against the film.
 | `-L`, `--licenses` | print licence notices and exit |
 | `-p`, `--play <game>` | start a game directly (number, name, alias or unique prefix); `wopr <game>` does the same |
 | `-m`, `--movie [scene]` | replay the film's WOPR scenes from that one on, or pick from a menu; see [Movie mode](#movie-mode) |
+| `-o`, `--only` | with `--movie`, play just the chosen scene, then stop |
 | `-t`, `--theme <name>` | `imsai` (white phosphor, the default), `green`, `amber` or `norad`; env `WOPR_THEME` |
 | `-i`, `--instant` | no typewriter pacing; env `WOPR_INSTANT=1` |
-| `-s`, `--seed <n>` | deterministic run |
-| `-r`, `--reduce-motion` | no blinking or motion; env `WOPR_REDUCE_MOTION=1` |
+| `-s`, `--seed <n>` | deterministic run; env `WOPR_SEED` |
+| `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations); env `WOPR_REDUCE_MOTION=1` |
 
 `NO_COLOR` (any value) turns colour off.
+
+## Accessibility
+
+- **Colour is never the only signal.** With `NO_COLOR`, or on a monochrome terminal, every theme falls back to
+  bold, faint, underline and reverse, and what colour adds is in the characters too: outgoing tracks on the
+  big board are `+` and incoming `*`, the current DEFCON level is pointed at with `>`, every card shows its
+  suit letter, the card winning a trick is edged `.===.`, Gin Rummy names your melds by position, and chess
+  and checkers mark the last move with brackets.
+- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking (the cursor's and DEFCON 1's),
+  keeps the front panel's lights and the `PROCESSING` dots still, and plays the ending at a steady pace
+  instead of speeding up. It does not stop the animations: the typing, the big board's missile tracks and
+  the ending's self-play and scrolling scenarios still play. Add `--instant` to skip them. With or without
+  either, nothing flashes more than three times a second.
+- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out, draws each
+  strike on the big board at once, and skips the ending's self-play and scrolling scenarios. Without it,
+  any key shows the rest of what is being typed, and what you type is kept.
+- **Text.** Everything on screen is plain ASCII. Every prompt with words ends in a question or a colon, and
+  the cursor sits at the end of the line you are typing. WOPR's conversation, as in the film, has no prompt
+  text: what WOPR said last usually asks, but after a list (`HELP`, `LIST GAMES`) the list's last line comes
+  just before the empty prompt. WOPR's moves are written out in the console as well as drawn on the boards,
+  and in Hearts and Bridge the console says the cards already in the trick before you play
+  (`WEST LEADS 7H. NORTH PLAYS KH.`).
+- **Contrast.** In every theme's full colours, text meets WCAG AA contrast (4.5:1) against the background,
+  and the deliberately faint text 3:1. In 16-colour mode every style keeps at least 3:1 on xterm's palette.
+
+The full-screen interface has not yet been tried with a screen reader. Reports are welcome.
 
 ## Troubleshooting
 
@@ -155,8 +198,11 @@ film's lines are still to be checked one by one against the film.
   Windows, use Windows Terminal; mintty without ConPTY is not supported.
 - **"TERMINAL TOO SMALL"**: WOPR needs at least 80×24.
 - **Strange colours**: try `--theme green`, or set `NO_COLOR=1`.
+- **The mouse wheel changes what I typed**: on WOPR's full screen some terminals (GNOME Terminal and other
+  VTE-based ones) turn the wheel into ↑ and ↓, which step through the lines you have typed. Scroll back with
+  PgUp and PgDn. wopr leaves mouse reporting off so that you can select and copy text as usual.
 - **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
-  path when it exits; attach it to the issue, with `--seed` if you used one.
+  path when it exits; attach it to the issue, with `--seed` (or `WOPR_SEED`) if you used one.
 
 ## Development builds
 

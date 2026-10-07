@@ -96,8 +96,9 @@ func TestTheShow(t *testing.T) {
 }
 
 // The self-play frame fits the Full layout at 80x24, with the front panel (19 rows) and
-// without (20): all seven boards whole, the launch code below the big board, nothing drawn
-// outside 80 columns, and the frame centred, a row or two clear above and below.
+// without (20): all seven boards whole, the last moves marked, the launch code below the big
+// board, nothing drawn outside 80 columns, and the frame centred, a row or two clear above and
+// below.
 func TestSelfPlayFits(t *testing.T) {
 	t.Parallel()
 	for _, h := range []int{19, 20} {
@@ -126,6 +127,17 @@ func TestSelfPlayFits(t *testing.T) {
 			if strings.Contains(row, lineCodeLabel[0].Text) {
 				code = y
 			}
+		}
+		underlined := 0
+		for y := range c.H {
+			for x := range c.W {
+				if c.At(x, y).A&proto.AttrUnderline != 0 {
+					underlined++
+				}
+			}
+		}
+		if underlined == 0 { // the last move on each board, as tictactoe draws it
+			t.Errorf("height %d: no board marks its last move:\n%s", h, c.String())
 		}
 		if corners != 4*boards || code < tictactoe.BigRows || code >= h {
 			t.Errorf("height %d: %d grid crossings (want %d), code on row %d:\n%s", h, corners, 4*boards, code, c.String())
@@ -194,6 +206,32 @@ func TestMontageFlashCap(t *testing.T) {
 				t.Errorf("reduce motion must not accelerate: steps %v", counts)
 			}
 		}
+	}
+}
+
+// Self-play speeds up round by round, but not with --reduce-motion, which plays every move at
+// one steady pace and so takes about as long in all.
+func TestSelfPlayAcceleration(t *testing.T) {
+	t.Parallel()
+	took := map[bool]time.Duration{}
+	for _, rm := range []bool{false, true} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 3, Width: 80, Height: 19, ReduceMotion: rm})
+		steps := map[time.Duration]bool{}
+		for g.phase == selfPlay {
+			steps[g.step] = true
+			g.Handle(proto.TickEvent{Dt: tick})
+			took[rm] += tick
+		}
+		if rm && (len(steps) != 1 || !steps[steadyStep]) {
+			t.Errorf("reduce motion: steps %v, want only %v", steps, steadyStep)
+		}
+		if !rm && len(steps) < rounds {
+			t.Errorf("self-play must speed up each round: steps %v", steps)
+		}
+	}
+	if d := took[true] - took[false]; d < -2*time.Second || d > 2*time.Second {
+		t.Errorf("self-play takes %v with reduce motion and %v without; keep them close", took[true], took[false])
 	}
 }
 

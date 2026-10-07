@@ -27,9 +27,9 @@ const (
 //	NORTH           S 3  H Q 3  D K J 7  C A 2
 //	                                                              LAST TRICK
 //	                      NORTH                                   NORTH  4D
-//	                                           .---.              EAST   QD
+//	                                           .===.              EAST   QD
 //	          WEST               . - .         |QC | EAST         SOUTH  9D
-//	                      SOUTH  :   :         '---'              WEST   3D
+//	                      SOUTH  :   :         '==='              WEST   3D
 //	                             ' - '                            TAKEN BY EAST
 //	SOUTH (DUMMY) > S -  H A K J 9 7  D -  C 7 6 5
 //	AUCTION, WEST DEALING: PASS 1H PASS 3H PASS PASS PASS

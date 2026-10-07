@@ -162,6 +162,9 @@ func (g *Game) run(outs []proto.Output) []proto.Output {
 		}
 		seat := g.trick.Next()
 		if seat == you {
+			if len(g.trick.Cards) > 0 {
+				outs = append(outs, proto.Say{Lines: []string{soFar(g.trick)}, Pace: proto.PaceTable})
+			}
 			return append(outs, proto.Redraw{}, proto.Prompt{Text: promptPlay[0].Text})
 		}
 		legal := Legal(g.hands[seat], g.trick, g.tricks == 0, g.broken)
@@ -190,6 +193,20 @@ func (g *Game) takeTrick() []proto.Output {
 	}
 	g.trick = cards.Trick{Leader: w}
 	return []proto.Output{proto.Say{Lines: []string{text}, Pace: proto.PaceTable}}
+}
+
+// soFar is the trick before the player's turn, said in the console as well as drawn on the
+// panel, so that the cards to follow are in words: WEST LEADS 7H. NORTH PLAYS KH.
+func soFar(t cards.Trick) string {
+	var parts []string
+	for i, c := range t.Cards {
+		l := linePlays
+		if i == 0 {
+			l = lineLeads
+		}
+		parts = append(parts, fill(l, seatName(t.Seat(i)), c.String()))
+	}
+	return strings.Join(parts, " ")
 }
 
 // trickText is a taken trick: each seat's card in play order, and who took it.

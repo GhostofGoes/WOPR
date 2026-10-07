@@ -56,6 +56,7 @@ var (
 	panelDiscard  = script.Orig("DISCARD")
 	panelHand     = script.Orig("YOUR HAND")
 	panelDeadwood = script.Orig("DEADWOOD: #")
+	panelMelds    = script.Orig("MELDS #", "NO MELDS") // the positions of each meld: MELDS 1-3 4-6
 )
 
 // Lines is every script block, for the provenance test.
@@ -64,7 +65,7 @@ var Lines = []script.Ls{
 	lineDiscardHelp, lineNotGin, lineKnockHow, lineNotBack, lineTooMuch, lineFinish, lineYouDrew, lineYouTook, lineYouDiscard,
 	lineWOPRDrew, lineWOPRTook, lineWOPRDiscards, lineWOPRKnocks, lineWOPRGin, lineYouKnock, lineYouGin,
 	lineWOPRHand, lineYourHand, lineYouLay, lineWOPRLays, lineUndercut, lineYouScore, lineWOPRScores, lineScore,
-	lineVoid, lineLeave, panelTitle, panelScore, panelWOPR, panelCards, panelStock, panelDiscard, panelHand, panelDeadwood, artTitle,
+	lineVoid, lineLeave, panelTitle, panelScore, panelWOPR, panelCards, panelStock, panelDiscard, panelHand, panelDeadwood, panelMelds, artTitle,
 }
 
 // fill replaces each # in l's first line with the next arg.

@@ -144,3 +144,21 @@ func TestMovieNextAndPrevious(t *testing.T) {
 		t.Errorf("past the last scene, the list ends: %q", d.ended)
 	}
 }
+
+// wopr -m joshua --only -i: the one scene plays, pauses and all, and the session ends (exit 0)
+// instead of going on to the next scene.
+func TestMovieOnlyPlaysOneScene(t *testing.T) {
+	t.Parallel()
+	opts := movieMode("joshua")
+	opts.Instant, opts.Only = true, true
+	d := newDriver(t, opts, 80, 24)
+	begun := d.now
+	d.settle()
+	text := strings.Join(transcript(d), "\n")
+	if d.ended != "quit" || !strings.Contains(text, "FINE.") || strings.Contains(text, "WHICH SIDE DO YOU WANT?") {
+		t.Fatalf("ended %q:\n%s", d.ended, text)
+	}
+	if played := d.now.Sub(begun); played < 5*time.Second {
+		t.Errorf("the scene took %v: its pauses were skipped", played)
+	}
+}

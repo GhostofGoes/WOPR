@@ -36,6 +36,7 @@ type Config struct {
 	Play         string // resolved game slug, "" for none
 	Movie        bool
 	Scene        string // with Movie: the slug of the scene to play from, "" for the scene menu
+	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
 	Theme        string
 	Instant      bool
 	Seed         uint64
@@ -63,18 +64,19 @@ var flagPairs = []flagPair{
 	{"licenses", "L", "", "print licence notices and exit", ""},
 	{"play", "p", "game", "start a game: number, name, alias or prefix", ""},
 	{"movie", "m", "", "replay the film's WOPR scenes from [scene] on", ""},
+	{"only", "o", "", "with -m, play just the chosen scene, then stop", ""},
 	{"theme", "t", "name", strings.Join(theme.Names(), ", "), "WOPR_THEME"},
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
-	{"seed", "s", "n", "deterministic run with this seed", ""},
-	{"reduce-motion", "r", "", "no blinking or motion", "WOPR_REDUCE_MOTION"},
+	{"seed", "s", "n", "deterministic run with this seed", "WOPR_SEED"},
+	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 }
 
 // Parse parses args (without the program name). getenv supplies environment fallbacks.
 func Parse(args []string, reg *games.Registry, getenv func(string) string) (Config, Action, error) {
 	var (
-		cfg                                        Config
-		version, help, list, scenes, licences, mov bool
-		play, seed                                 string
+		cfg                                              Config
+		version, help, list, scenes, licences, mov, only bool
+		play                                             string
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -82,6 +84,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	}
 	cfg.Instant = Truthy(getenv("WOPR_INSTANT"))
 	cfg.ReduceMotion = Truthy(getenv("WOPR_REDUCE_MOTION"))
+	seed := getenv("WOPR_SEED") // empty means unset, here and on the command line
 
 	fs := flag.NewFlagSet("wopr", flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
@@ -105,6 +108,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&licences, byName["licenses"])
 	strVar(&play, byName["play"])
 	boolVar(&mov, byName["movie"])
+	boolVar(&only, byName["only"])
 	strVar(&cfg.Theme, byName["theme"])
 	boolVar(&cfg.Instant, byName["instant"])
 	strVar(&seed, byName["seed"])
@@ -136,14 +140,17 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	if seed != "" {
 		n, err := strconv.ParseUint(seed, 10, 64)
 		if err != nil {
-			return cfg, RunTUI, usagef("--seed needs a non-negative integer, got %q", seed)
+			return cfg, RunTUI, usagef("%s needs a non-negative integer, got %q", seedSource(fs), seed)
 		}
 		cfg.Seed, cfg.SeedSet = n, true
 	}
 	if len(positionals) > 1 {
 		return cfg, RunTUI, usagef("too many arguments: %s", strings.Join(positionals, " "))
 	}
-	cfg.Movie = mov
+	if only && !mov {
+		return cfg, RunTUI, usagef("--only needs --movie")
+	}
+	cfg.Movie, cfg.Only = mov, only
 	if mov {
 		if play != "" {
 			return cfg, RunTUI, usagef("--movie and --play cannot be combined")
@@ -187,6 +194,18 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		cfg.Play = e.Info.Slug
 	}
 	return cfg, RunTUI, nil
+}
+
+// seedSource names where the seed came from, for its error: the flag if the command line gave
+// one (it wins), otherwise WOPR_SEED.
+func seedSource(fs *flag.FlagSet) string {
+	src := "WOPR_SEED"
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "seed" || f.Name == "s" {
+			src = "--seed"
+		}
+	})
+	return src
 }
 
 // parseInterspersed lets flags follow positionals ("wopr gtw -i"). The standard flag

@@ -52,7 +52,7 @@ func (g *Game) drawBoards(c *proto.Canvas) {
 	shown := code[:n] + strings.Repeat("_", len(code)-n)
 	line := lineCodeLabel[0].Text + shown[:3] + " " + shown[3:7] + " " + shown[7:]
 	y := top + (sideH-bh)/2 + bh + codeGap
-	c.Put((c.W-len(line))/2, y, line, proto.StyleAlert, proto.AttrBold)
+	c.Put((c.W-len(line))/2, y, line, proto.StyleAlert, 0)
 }
 
 // drawMontage is the scenario table, scrolling up as WOPR runs each strategy.

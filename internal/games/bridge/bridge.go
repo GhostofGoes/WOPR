@@ -135,6 +135,9 @@ func (g *Game) run(outs []proto.Output) []proto.Output {
 		}
 		seat := g.trick.Next()
 		if side(seat) == 0 {
+			if len(g.trick.Cards) > 0 {
+				outs = append(outs, proto.Say{Lines: []string{soFar(g.trick)}, Pace: proto.PaceTable})
+			}
 			return append(outs, proto.Redraw{}, g.ask())
 		}
 		g.play(seat, defend(g.hands[seat], g.trick, trump, seat))
@@ -152,6 +155,20 @@ func (g *Game) takeTrick() proto.Output {
 	g.last, g.lastBy = g.trick, w
 	g.trick = cards.Trick{Leader: w}
 	return proto.Say{Lines: []string{trickText(g.last, w)}, Pace: proto.PaceTable}
+}
+
+// soFar is the trick before declarer or dummy plays, said in the console as well as drawn
+// on the panel, so that the cards to follow are in words: WEST LEADS 7H. NORTH PLAYS KH.
+func soFar(t cards.Trick) string {
+	var parts []string
+	for i, c := range t.Cards {
+		l := linePlays
+		if i == 0 {
+			l = lineLeads
+		}
+		parts = append(parts, fill(l, seatNames[t.Seat(i)].Text, c.String()))
+	}
+	return strings.Join(parts, " ")
 }
 
 func trickText(t cards.Trick, winner int) string {

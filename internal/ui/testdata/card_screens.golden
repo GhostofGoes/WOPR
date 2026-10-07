@@ -2,14 +2,13 @@
 HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
 
                       NORTH
-                                           .---.
+                                           .===.
           WEST               . - .         |2C | EAST
-                        YOU  :   :         '---'
+                        YOU  :   :         '==='
                              ' - '
 .---.---.---.---.---.---.---.---.---.---.---.---.---.
 |QS |KH |8H |4H |AD |KD |JD |10D|8D |4D |AC |QC |9C |         YOUR HAND
   1   2   3   4   5   6   7   8   9  10  11  12  13
-      /     \ /     \         .-----.
      |       V       |        |QS   |       H E A R T S
       \             /         |  S  |       = = = = = =
        '.         .'          |   QS|       TAKE NONE, OR TAKE THEM ALL.
@@ -22,6 +21,7 @@ LOWEST SCORE WINS WHEN SOMEONE REACHES 100. NAME CARDS AS 7H OR BY POSITION.
 PASS THREE CARDS TO WEST: 1 2 3
 
 YOU RECEIVE QS KH AD.
+EAST LEADS 2C.
 YOUR PLAY:
 cursor: col 11, row 23
 ==== gin-rummy (80x24) ====
@@ -32,7 +32,7 @@ WOPR   |/|/|/|/|/|/|/|/|/|/\/| 10 CARDS   STOCK |/\/| 31          DISCARD |10C|
 
 .---.---.---.---.---.---.---.---.---.---.                     YOUR HAND
 |AD |AH |2S |3C |4H |6D |8C |10H|10S|JS |                     DEADWOOD: 55
-  1   2   3   4   5   6   7   8   9  10
+  1   2   3   4   5   6   7   8   9  10                       NO MELDS
                                               \
                                            .___\_____.
                                             \~~~(O)~/       G I N   R U M M Y
@@ -55,9 +55,9 @@ BRIDGE                                     CONTRACT 3NT BY NORTH    N-S 0  E-W 0
 NORTH           S Q J 8 6  H 10  D A Q 7  C K Q J 6 2
 
                       NORTH
-                                           .---.
+                                           .===.
           WEST               . - .         |4S | EAST
-                      SOUTH  :   :         '---'
+                      SOUTH  :   :         '==='
                              ' - '
 SOUTH (DUMMY) > S 10  H A K Q J 6 4  D 5 4 2  C 7 5 4
 AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
@@ -73,9 +73,9 @@ NAME CARDS AS 7H. ONE DEAL IS A GAME: MAKE THE CONTRACT TO WIN.
 WOPR TURNS THE TABLE SO THAT YOUR SIDE DECLARES.
 AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
 CONTRACT: 3NT BY NORTH. EAST LEADS.
+EAST LEADS 4S.
 DUMMY (SOUTH) PLAYS:
-
-cursor: col 21, row 22
+cursor: col 21, row 23
 ==== falkens-maze (80x24) ====
 .------------------------------[ FALKEN'S MAZE ]-------------------------------.
 |          +--+                                                                |

@@ -183,7 +183,9 @@ func TestSideChoiceFits(t *testing.T) {
 // assessment and the climax: the title, the DEFCON ladder 5..1, the sides' names, both
 // trajectory columns, the forces table with your side's row first, and the last row, which
 // shows one thing by state: the orders hint, the last-orders warning, the legend or the
-// climax's launch code. A strike that draws one track still leaves both columns full.
+// climax's launch code. A strike that draws one track still leaves both columns full. The
+// current DEFCON level is pointed at (>), the only pointer beside the ladder, so it does not
+// rest on reversal (which the monochrome themes also give the DEFCON 1 rung) or colour.
 func TestBoardKeepsEveryElement(t *testing.T) {
 	t.Parallel()
 	always := []string{
@@ -193,24 +195,25 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	type stage struct {
 		name, order, last string
 		table             []string // the trajectory and forces rows that must be there
+		defcon            int
 	}
 	enter := []stage{
 		{"strike 2 orders", "", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
 			"A-MM3-A", "C-C4-A", "US        500   450   200     0", "USSR      737   562     0   375",
-		}},
+		}, 4},
 		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
 			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
-		}},
+		}, 3},
 		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
 			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
-		}},
-		{"kill ratios", "", "", nil},
-		{"climax", "", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "C-C4-A"}},
+		}, 1},
+		{"kill ratios", "", "", nil, 0},
+		{"climax", "", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "C-C4-A"}, 1},
 	}
 	oneTrack := []stage{ // strike 2 fires 1% of the ICBMs: one track
-		{"strike 2 orders", "1 0 0", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", nil},
-		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{"A-MM3-A", "C-MM3-A"}},
-		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{"A-MM3-A", "C-MM3-A"}},
+		{"strike 2 orders", "1 0 0", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", nil, 4},
+		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{"A-MM3-A", "C-MM3-A"}, 3},
+		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{"A-MM3-A", "C-MM3-A"}, 1},
 	}
 	for _, path := range [][]stage{enter, oneTrack} {
 		g := gtw.New()
@@ -238,6 +241,15 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 			}
 			if !strings.Contains(rows[16], " US  ") || !strings.Contains(rows[17], " USSR  ") {
 				t.Errorf("%s: the forces table puts your side first:\n%s", tc.name, screen)
+			}
+			var pointed []int // the levels a > points at, right of the map box
+			for y, row := range rows {
+				if len(row) > 73 && strings.Contains(row[73:], ">") {
+					pointed = append(pointed, 5-(y-2)/2)
+				}
+			}
+			if len(pointed) != 1 || pointed[0] != tc.defcon || !strings.Contains(rows[2+2*(5-tc.defcon)], fmt.Sprintf(">| %d |", tc.defcon)) {
+				t.Errorf("%s: the ladder points at %v, want DEFCON %d alone:\n%s", tc.name, pointed, tc.defcon, screen)
 			}
 		}
 	}

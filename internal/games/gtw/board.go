@@ -95,11 +95,11 @@ func (g *Game) drawFoot(c *proto.Canvas) {
 		code := lineCode[0].Text
 		shown := code[:g.cracked] + strings.Repeat("_", len(code)-g.cracked)
 		line := lineCodeLabel[0].Text + shown[:3] + " " + shown[3:7] + " " + shown[7:]
-		c.Put((c.W-len(line))/2, footRow, line, proto.StyleAlert, proto.AttrBold)
+		c.Put((c.W-len(line))/2, footRow, line, proto.StyleAlert, 0)
 	case g.phase == orders && g.film:
 		g.drawLegend(c)
 	case g.phase == orders && g.stage == strikes-1:
-		c.Put(0, footRow, lineLastOrders[0].Text, proto.StyleAlert, proto.AttrBold)
+		c.Put(0, footRow, lineLastOrders[0].Text, proto.StyleAlert, 0)
 	case g.phase == orders:
 		c.Put(0, footRow, lineOrdersHint[0].Text, proto.StyleDim, 0)
 	default:
@@ -163,8 +163,10 @@ func (g *Game) drawForces(c *proto.Canvas) {
 	}
 }
 
-// drawDefcon draws the ladder 5..1, a rung per level beside the map; the current level is
-// reversed, and blinks at 1.
+// drawDefcon draws the ladder 5..1, a rung per level beside the map. The current level is
+// pointed at (>) and reversed, and blinks at 1. The pointer is what says it in every theme:
+// the monochrome themes always reverse the DEFCON 1 rung (their stand-in for white on red),
+// and so does norad without colour, so reversal alone would show two current levels.
 func (g *Game) drawDefcon(c *proto.Canvas) {
 	x := defconX + 1
 	c.Put(x, 1, "+---+", proto.StyleDim, 0)
@@ -173,6 +175,7 @@ func (g *Game) drawDefcon(c *proto.Canvas) {
 		style := [6]proto.Style{0, proto.StyleDefcon1, proto.StyleDefcon2, proto.StyleDefcon3, proto.StyleDefcon4, proto.StyleDefcon5}[level]
 		var attr proto.Attr
 		if level == g.defcon {
+			c.Put(x-1, y, ">", proto.StyleBright, 0)
 			attr = proto.AttrReverse
 			if level == 1 {
 				attr |= proto.AttrBlink

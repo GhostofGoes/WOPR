@@ -41,6 +41,7 @@ type Options struct {
 	Play         string // game slug to start directly
 	Movie        bool   // movie mode: the director replays the film's scenes instead of the persona
 	Scene        string // with Movie: the scene to play from (a slug); "" opens the scene menu
+	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
 	NoColor      bool   // NO_COLOR set to any non-empty value (no-color.org)
 	Panel        Panel  // the front-panel row
 	Registry     *games.Registry
@@ -230,8 +231,8 @@ func (m *model) start() tea.Cmd {
 	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
 	if m.opts.Movie {
 		seed, deterministic = movie.Seed, true
-		root = movie.New(movie.Options{Scene: m.opts.Scene})
-		m.opts.Log.Printf("movie mode from scene %q, seed %d", m.opts.Scene, seed)
+		root = movie.New(movie.Options{Scene: m.opts.Scene, Only: m.opts.Only})
+		m.opts.Log.Printf("movie mode from scene %q (only %v), seed %d", m.opts.Scene, m.opts.Only, seed)
 	}
 	if m.testRoot != nil {
 		root = m.testRoot

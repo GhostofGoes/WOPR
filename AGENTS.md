@@ -52,6 +52,13 @@ newer than the root `toolchain` line (a test checks): bump the toolchain first, 
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
+- **Accessibility** (`docs/PLAN.md` §4.5). `internal/ui/access_test.go` plays every game in the catalog from a
+  playbook (every playable game must have one) and checks each screen: printable ASCII only, a prompt's text
+  ends in `:` or `?`, the cursor at the end of the input line, a hint in key mode, no colour codes under
+  `NO_COLOR`, the style pairs of `theme.Distinct` still apart without colour wherever a view draws both, no
+  attribute the style already has in every theme (`Bright`, `Alert` and `Accent` are bold everywhere, so bold
+  on them shows nothing), and nothing flashing more than three times a second. The theme tests cover every
+  `proto.Style` for contrast and for meaning without colour.
 
 ## The program protocol (`internal/proto`)
 
@@ -60,12 +67,13 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 - They get Events and return Outputs. They never block: anything slow is a `Think`, which runs off the UI
   goroutine. A `Think`'s `Fn` captures values only, never a pointer the program keeps using; copy a chess
   position as a FEN string.
-- With `Env.Deterministic` (`--seed`, tests, movie mode), searches stop at `Think.Limit`. Wall-clock
-  `Budget` is only a cap.
+- With `Env.Deterministic` (`--seed` or `WOPR_SEED`, tests, movie mode), searches stop at `Think.Limit`.
+  Wall-clock `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never
   see it, except a root program that captures keys (`AwaitKeys{Capture: true}`, movie mode).
 - Colour is semantic: draw with `proto.Style` values; themes decide the colours. Meaning must not depend on
-  colour alone (vary the glyph or use `AttrReverse`).
+  colour alone (vary the glyph or use `AttrReverse`), nor on an attribute the style already has (see
+  Accessibility above).
 
 ## Adding a game
 
@@ -73,6 +81,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 2. Wire its constructor in `internal/games/catalog` and set `Status: games.Playable`.
 3. Meet the definition of done in `docs/PLAN.md` §6.1: rules, legal AI through `Think`, a deterministic
    testkit transcript, a quality test, fits 80×24, README line, provenance tags.
+4. Add a playbook for it in `internal/ui/access_test.go` that reaches its main screens, with `want` naming
+   what they must show, so the accessibility sweeps check them (`TestEveryGameHasAPlaybook` fails without one).
 
 ## Film text and provenance
 
@@ -109,7 +119,8 @@ recognises (not a GitHub-supported token pattern, which push protection blocks),
 If a rights holder asks for material to be removed:
 
 1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
-   `internal/assets/`, `internal/movie/scenes/`, and the games' film text).
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text), and the README's screenshots
+   in `docs/screenshots/`, which show some of it.
 2. Remove or replace it in one pull request, and release a patch version.
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).

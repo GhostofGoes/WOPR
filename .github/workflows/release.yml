@@ -18,7 +18,7 @@ jobs:
     name: verify
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 50 # most of it waiting for CI on a commit tagged right after its merge
     permissions:
       contents: read
       checks: read
@@ -38,12 +38,27 @@ jobs:
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main || { echo "::error::${TAG} is not on main"; exit 1; }
           # Every ci-ok that GitHub Actions posted on the commit must have passed; a check run with
           # the same name from another app does not count. A run still in progress reads "pending".
-          result="$(gh api "repos/${REPO}/commits/${GITHUB_SHA}/check-runs?check_name=ci-ok" --jq '
-            [.check_runs[] | select(.app.slug == "github-actions") | .conclusion]
-            | if length == 0 then "missing"
-              elif all(. == "success") then "success"
-              else map(select(. != "success")) | first // "pending" end')"
-          [[ "${result}" == "success" ]] || { echo "::error::ci-ok is ${result} for ${GITHUB_SHA}"; exit 1; }
+          # A tag pushed right after its merge arrives before main's CI run has finished (or posted
+          # ci-ok at all), so missing and pending are waited out, for up to 45 minutes.
+          deadline=$((SECONDS + 45 * 60))
+          while :; do
+            result="$(gh api "repos/${REPO}/commits/${GITHUB_SHA}/check-runs?check_name=ci-ok" --jq '
+              [.check_runs[] | select(.app.slug == "github-actions") | .conclusion]
+              | if length == 0 then "missing"
+                elif all(. == "success") then "success"
+                else map(select(. != "success")) | first // "pending" end')"
+            case "${result}" in
+              success) break ;;
+              missing | pending) ;;
+              *) echo "::error::ci-ok is ${result} for ${GITHUB_SHA}"; exit 1 ;;
+            esac
+            if (( SECONDS >= deadline )); then
+              echo "::error::ci-ok is still ${result} for ${GITHUB_SHA} after 45 minutes"
+              exit 1
+            fi
+            echo "ci-ok is ${result} for ${GITHUB_SHA}; waiting for CI to finish"
+            sleep 30
+          done
 
   build:
     name: build

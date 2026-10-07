@@ -12,9 +12,9 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/movie/scenes"
 )
 
-// Seed is movie mode's session seed. The director pins it, whatever --seed says, and runs
-// deterministically, so every replay draws the same typing, the same games and the same
-// numbers (RF-5).
+// Seed is movie mode's session seed. The director pins it, whatever --seed or WOPR_SEED says,
+// and runs deterministically, so every replay draws the same typing, the same games and the
+// same numbers (RF-5).
 const Seed uint64 = 1983
 
 // Info describes a scene for --scenes and the menu.

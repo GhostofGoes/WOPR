@@ -5,4 +5,5 @@
  5. norad-terminal   JOSHUA AT NORAD: KILL RATIOS AND FALKEN'S ADDRESS
  6. climax           DEFCON 1, TIC-TAC-TOE AND A STRANGE GAME
 
-Play from one with wopr -m <number or name>; wopr -m alone opens a menu.
+Play from one with wopr -m <number or name>; add -o to play just that one.
+wopr -m alone opens a menu.

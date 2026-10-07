@@ -25,7 +25,7 @@ type Env struct {
 	Seed          uint64 // derive random streams with NewRand(Seed, StreamID)
 	Width, Height int    // the program's layout area, always at least its minimum
 	Instant       bool   // no pacing: --instant, tests
-	Deterministic bool   // --seed given, tests, movie mode: searches obey Limit, not the clock
+	Deterministic bool   // --seed or WOPR_SEED, tests, movie mode: searches obey Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking
 	Mode          string // optional launch mode, e.g. "climax"
 }

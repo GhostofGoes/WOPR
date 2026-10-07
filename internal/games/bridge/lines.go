@@ -25,6 +25,8 @@ var (
 	lineFollow    = script.Orig("# MUST FOLLOW SUIT: #.")
 	linePlayHelp  = script.Orig("NAME A CARD FROM #, SUCH AS 7H.")
 	lineFinish    = script.Orig("FINISH THE HAND FIRST.")
+	lineLeads     = script.Orig("# LEADS #.")
+	linePlays     = script.Orig("# PLAYS #.")
 	lineTrick     = script.Orig("#. # TAKES IT.")
 	lineMade      = script.Orig("CONTRACT MADE WITH # TRICKS. SCORE #.")
 	lineDown      = script.Orig("DOWN #. SCORE #.")
@@ -46,7 +48,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineRules, linePassedOut, lineTurned, lineAuction, lineContract, promptHand, promptDummy, lineNotHeld, lineFollow,
-	linePlayHelp, lineFinish, lineTrick, lineMade, lineDown, callPass, strainNames, seatNames, panelTitle, panelContract,
+	linePlayHelp, lineFinish, lineLeads, linePlays, lineTrick, lineMade, lineDown, callPass, strainNames, seatNames, panelTitle, panelContract,
 	panelTricks, panelDummy, panelLast, panelTaken, panelToPlay, panelVoid, artTitle,
 }
 

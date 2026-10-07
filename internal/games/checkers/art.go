@@ -76,12 +76,12 @@ func (g *Game) drawBoard(c *proto.Canvas, x int) {
 		switch g.pos.sq[sq] {
 		case blackMan:
 			gl.R, gl.S = 'b', proto.StyleText
-		case blackKing:
-			gl.R, gl.S, gl.A = 'B', proto.StyleText, proto.AttrBold
+		case blackKing: // the capital says king; bold would make it look like White without colour
+			gl.R, gl.S = 'B', proto.StyleText
 		case whiteMan:
 			gl.R, gl.S = 'w', proto.StyleBright
 		case whiteKing:
-			gl.R, gl.S, gl.A = 'W', proto.StyleBright, proto.AttrBold
+			gl.R, gl.S = 'W', proto.StyleBright
 		}
 		if g.last.n > 0 && sq == g.last.to() {
 			gl.A |= proto.AttrUnderline

@@ -25,9 +25,9 @@ const (
 //	HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
 //	                             .---.                            LAST TRICK (4)
 //	                      NORTH  |2S |                            EAST   3H
-//	                             '---'         .---.              YOU    QH
+//	                             '---'         .===.              YOU    QH
 //	          WEST               . - .         |9S | EAST         WEST   10H
-//	                        YOU  :   :         '---'              NORTH  AH
+//	                        YOU  :   :         '==='              NORTH  AH
 //	                             ' - '                            TAKEN BY NORTH
 //	.---.---.---.---.---.---.---.
 //	|JH |5H |2H |QC |8C |7C |4C |                                 YOUR HAND
