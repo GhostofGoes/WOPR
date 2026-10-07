@@ -40,8 +40,20 @@ archives:
       - src: THIRD_PARTY_NOTICES.txt
         info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
 
+  # The bare binaries too, for a download that needs no unpacking. Same name as the archive, plus
+  # .exe on Windows.
+  - id: binaries
+    ids: [wopr]
+    formats: [binary]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
 checksum:
   name_template: checksums.txt       # the default would be wopr_<version>_checksums.txt
+  extra_files:                       # published beside the archives, so attested with them
+    - glob: ./LICENSE
+    - glob: ./README.md
+    - glob: ./NOTICE.md
+    - glob: ./THIRD_PARTY_NOTICES.txt
 
 snapshot:
   version_template: "{{ incpatch .Version }}-snapshot.{{ .ShortCommit }}"

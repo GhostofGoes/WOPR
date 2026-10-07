@@ -9,29 +9,34 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
-> **Status: under construction.** The first release (v0.1.0) arrives with the film's set pieces:
-> Global Thermonuclear War, tic-tac-toe, chess and checkers. The other games follow in later releases. See
+> **Status: under construction.** Every game on the list is playable as of v0.1.0. Movie mode
+> (`--movie`) and a pass over the film's text against the film are still to come. See
 > [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
 
 ## Install
 
-Release binaries for Linux, macOS (26 Tahoe) and Windows 11, on amd64 and arm64, will be attached to each
-[GitHub Release](https://github.com/GhostofGoes/WOPR/releases).
+Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds for Linux, macOS (26 Tahoe)
+and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
+`wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
+licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
+`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.)
 
-**Verify before you run.** Every release archive carries a build-provenance attestation. With the
+**Verify before you run.** Every file in a release carries a build-provenance attestation. With the
 [GitHub CLI](https://cli.github.com/):
 
 ```sh
-gh attestation verify wopr_<version>_<os>_<arch>.tar.gz --repo GhostofGoes/WOPR \
+gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
   --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
   --source-ref refs/tags/v<version> --deny-self-hosted-runners
 ```
 
-Then unpack the archive and run `./wopr`.
+Then run it. On Linux and macOS a downloaded binary is not executable yet:
+`chmod +x wopr_<version>_<os>_<arch>`, then `./wopr_<version>_<os>_<arch>` (rename it to `wopr` if you
+like). An archive keeps the executable bit: unpack it and run `./wopr`.
 
 - **macOS:** the binary is not signed, so Gatekeeper quarantines it. After verifying it, run
-  `xattr -d com.apple.quarantine wopr`.
-- **Windows:** SmartScreen may warn about an unrecognised app. After verifying the archive, choose
+  `xattr -d com.apple.quarantine` on it.
+- **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
   *More info → Run anyway*.
 
 With Go installed, you can instead build from source:
@@ -127,9 +132,10 @@ Thomas's ASCII world map; see [NOTICE.md](NOTICE.md).
 Every CI run builds all six targets and keeps one download per platform. Open a
 [CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 and, under **Artifacts**, download the one for your platform, for example
-`wopr_0.0.1-snapshot.1a2b3c4_linux_amd64.tar.gz` or `..._windows_amd64.zip` (about 2.5 MB). It holds the
-binary, already executable on Linux and macOS, with the README, licence and notices. Downloads from `main`
-are kept for 30 days; builds from other branches (7 days) and pull requests (3 days) are for testing only.
+`wopr_0.0.1-snapshot.1a2b3c4_linux_amd64` or `..._windows_amd64.exe` (about 6 MB). It is the bare binary:
+`chmod +x` it on Linux and macOS, and `wopr --licenses` prints its licence and notices. Downloads from
+`main` are kept for 30 days; builds from other branches (7 days) and pull requests (3 days) are for
+testing only.
 
 ## Building and contributing
 

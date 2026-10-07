@@ -69,8 +69,9 @@ jobs:
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6
-      - name: Stage binaries and check archive contents
-        run: go run ./internal/tools/stage -archives
+      # dist/release gets every published file, each checked against checksums.txt.
+      - name: Stage binaries, check archive contents, collect the release files
+        run: go run ./internal/tools/stage -archives -assets dist/release
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-stage
@@ -80,10 +81,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: release-dist
-          path: |
-            dist/*.tar.gz
-            dist/*.zip
-            dist/checksums.txt
+          path: dist/release/
           retention-days: 7
           if-no-files-found: error
 
@@ -160,16 +158,16 @@ jobs:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-dist
-          path: dist
+          path: assets
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
-          subject-checksums: dist/checksums.txt
+          subject-checksums: assets/checksums.txt
+      # Archives, bare binaries, LICENSE, README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt, checksums.txt.
       - name: Create the release as a draft, upload, then publish
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag --generate-notes \
-            dist/*.tar.gz dist/*.zip dist/checksums.txt
+          gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag --generate-notes assets/*
           gh release edit "${TAG}" --repo "${REPO}" --draft=false

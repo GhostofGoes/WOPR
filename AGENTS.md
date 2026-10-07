@@ -30,7 +30,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
 | Release build (local dry run) | `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
-| Stage binaries and e2e tests | `go run ./internal/tools/stage` |
+| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
 
 Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
 fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:

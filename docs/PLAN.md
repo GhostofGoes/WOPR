@@ -1285,7 +1285,7 @@ its run tests exactly the tree the squash merge produces.
 | `lint` | `ubuntu-24.04` | prek via `j178/prek-action` with `prek-version: 0.5.5`. The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
-| `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, and checks every archive's contents. Uploads one download per platform, GoReleaser's own archive uploaded as-is (`archive: false`, so it is not zipped again and the tar.gz keeps the binary executable), named after its file such as `wopr_<version>_linux_amd64.tar.gz`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
+| `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, checks every archive's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
 | `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. |
 | `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
@@ -1295,17 +1295,22 @@ its run tests exactly the tree the squash merge produces.
    `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (one still
    running reads as pending, and a check of the same name from another app is ignored).
 2. **`build`** (`contents: read`, no OIDC). `goreleaser release --clean --skip=publish`, then the size gate,
-   then `stage -archives`, which checks that every archive contains `LICENSE`, `README.md`, `NOTICE.md` and
-   `THIRD_PARTY_NOTICES.txt` (B-11). The staged files and the archives are uploaded.
+   then `stage -archives -assets dist/release`, which checks that every archive contains `LICENSE`,
+   `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), and collects every file the release
+   publishes into `dist/release`: the six archives, the six bare binaries (a GoReleaser `binary`-format
+   archive, named like the archives, `.exe` on Windows), those four documents, and `checksums.txt`, which
+   GoReleaser writes over all of them (`checksum.extra_files` adds the documents). Each file must match its
+   checksum line. The staged files and `dist/release` are uploaded.
 3. **`smoke`**: the reusable workflow, run on the staged release binaries.
 4. **`rebuild`** runs beside `build`, not after it: GoReleaser again from a fresh checkout on
    `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. **`repro`** then diffs the two
    `checksums.txt` files. Any difference fails the release.
 5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`), on a tag push only, and only
    when every earlier job succeeded.
-   1. `actions/attest@v4` with `subject-checksums: dist/checksums.txt`.
-   2. `gh release create vX.Y.Z --draft --verify-tag --generate-notes`, then upload the archives and
-      `checksums.txt`. GoReleaser's own changelog is disabled (CR-8).
+   1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt`, so every published file is
+      attested.
+   2. `gh release create vX.Y.Z --draft --verify-tag --generate-notes` with every file from `dist/release`.
+      GoReleaser's own changelog is disabled (CR-8).
    3. `gh release edit vX.Y.Z --draft=false`.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
@@ -1390,7 +1395,7 @@ boundary (AGENTS.md checklist) (B-5).
 - **The app.** No network code before M7, no telemetry, no transcripts. External text is sanitised. wopr's
   debug log holds no typed input (§8).
 - **Releases.** Users verify before running:
-  - Command: `gh attestation verify <archive> --repo GhostofGoes/WOPR`, plus
+  - Command: `gh attestation verify <file> --repo GhostofGoes/WOPR`, plus
     `--signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml`,
     `--source-ref refs/tags/vX.Y.Z` and `--deny-self-hosted-runners`.
   - Only after that: `xattr -d com.apple.quarantine`, or the SmartScreen prompt.
@@ -1465,7 +1470,7 @@ boundary (AGENTS.md checklist) (B-5).
    self-test are green.
 6. The e2e test passes on all six smoke runners. A manual pass in Windows Terminal and conhost checks colours,
    cursor, resize, Ctrl+C restore and SmartScreen.
-7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each archive, and the release is
+7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
 8. From M6: `wopr --movie` plays every scene, and `wopr -m 2 -i` plays from scene 2 to the end of the list
    and exits 0. The movie consistency test is green. Before M6, `wopr -m` exits 2 saying it arrives in v1.1.

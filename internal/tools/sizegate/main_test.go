@@ -39,6 +39,7 @@ func TestRunReadsOnlyBinaries(t *testing.T) {
 	const js = `[
 	 {"name":"metadata.json","path":"dist/metadata.json","type":"Metadata"},
 	 {"name":"wopr","path":"dist/wopr_linux_amd64_v1/wopr","goos":"linux","goarch":"amd64","type":"Binary"},
+	 {"name":"wopr_0.1.0_linux_amd64","path":"dist/wopr_linux_amd64_v1/wopr","goos":"linux","goarch":"amd64","type":"Binary","extra":{"Format":"binary","ID":"binaries"}},
 	 {"name":"wopr_0.1.0_linux_amd64.tar.gz","path":"dist/x.tar.gz","goos":"linux","goarch":"amd64","type":"Archive"}
 	]`
 	if err := os.WriteFile(list, []byte(js), 0o644); err != nil {
@@ -50,6 +51,6 @@ func TestRunReadsOnlyBinaries(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(seen) != 1 || seen[0] != "dist/wopr_linux_amd64_v1/wopr" {
-		t.Errorf("sized %v, want only the binary", seen)
+		t.Errorf("sized %v, want only the binary, once", seen)
 	}
 }
