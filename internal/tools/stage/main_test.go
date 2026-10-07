@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -82,8 +83,12 @@ func TestAssemble(t *testing.T) {
 	if err := assemble(arts, dir, root); err != nil {
 		t.Fatalf("good release rejected: %v", err)
 	}
-	if fi, err := os.Stat(filepath.Join(dir, "wopr_1.0.0_linux_amd64")); err != nil || fi.Mode().Perm()&0o100 == 0 {
-		t.Errorf("bare binary missing or not executable: %v %v", fi, err)
+	fi, err := os.Stat(filepath.Join(dir, "wopr_1.0.0_linux_amd64"))
+	switch {
+	case err != nil:
+		t.Errorf("bare binary missing: %v", err)
+	case runtime.GOOS != "windows" && fi.Mode().Perm()&0o100 == 0: // Windows has no executable bit
+		t.Errorf("bare binary not executable: %v", fi.Mode())
 	}
 	if err := assemble(arts, dir, root); err != nil {
 		t.Errorf("a second run must replace the first: %v", err)
