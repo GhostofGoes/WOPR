@@ -23,7 +23,7 @@ The latest release is **v{{< version >}}**.
 | File | What it is |
 |---|---|
 | `wopr_<version>_<os>_<arch>` (`.exe` on Windows) | The program itself, ready to run. |
-| `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) | An archive of the program with the README, the licence and the notices. On Linux and macOS it also holds the manual page, `wopr.6`. |
+| `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) | An archive of the program with the README, the licence and the notices.{{% if-packages %}} On Linux and macOS it also holds the manual page, `wopr.6`.{{% /if-packages %}} |
 | `checksums.txt` | The SHA-256 checksum of every file. |
 
 `<os>` is `linux`, `darwin` (macOS) or `windows`, and `<arch>` is `amd64` or `arm64`. Not sure which you
@@ -222,8 +222,8 @@ found. [Contributing](/contributing) explains how to build from a clone of the r
 
 On Linux and macOS, `man wopr` can show every option, every game with how to play it and tips, and
 movie mode.{{% if-packages %}} The [Linux packages](#linux-packages) install it for you.{{% /if-packages %}}
-The archives hold the page as `wopr.6`; you can also download {{< man-page >}} on its own. Read it in
-place with `man ./wopr.6`, or install it so that `man wopr` finds it:
+Download {{< man-page >}}{{% if-packages %}}, or take it from the archive you downloaded{{% /if-packages %}}.
+Read it in place with `man ./wopr.6`, or install it so that `man wopr` finds it:
 
 ```sh
 # for everyone

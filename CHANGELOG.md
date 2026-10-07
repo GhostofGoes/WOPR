@@ -7,6 +7,28 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.3.0 - 2026-10-07
+
+### Added
+
+- `WOPR_SEED` sets the seed, as `--seed` does.
+- `wopr -m 3 --only` plays just one movie scene, then stops.
+- Hearts and Bridge say the cards already in the trick before you play.
+- The README now has screenshots and a section on accessibility.
+
+### Changed
+
+- The card that wins a trick now has a border around it.
+- Tic-tac-toe underlines the last mark played.
+- The DEFCON ladder points at the current level with a `>`.
+- Gin Rummy's panel now names your melds.
+- `wopr --help` now says what `--reduce-motion` does.
+
+### Fixed
+
+- Fixed the ending speeding up when `--reduce-motion` is on.
+- Fixed Black's checkers kings looking like White's men without colour.
+
 ## v0.2.0 - 2026-10-07
 
 ### Added

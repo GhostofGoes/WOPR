@@ -220,9 +220,10 @@ screenshot fails the build.
   `site/assets/vendor/`, exactly as their npm packages publish them (never edit them; `.gitattributes`
   and `prek.toml` leave them alone), and `site/hugo.yaml` names them. The credits page shows the
   licences, so the build needs no network beyond the Go module proxy.
-- Download commands use the `version` shortcode, the latest release in `CHANGELOG.md`. Text about the
-  `.deb` and `.rpm` goes inside `{{% if-packages %}}`, which shows it only once the latest release has
-  them (every release after v0.2.0), so no build of the site names a package that does not exist yet.
+- Download commands use the `version` shortcode: the latest published release in `docs.yml`'s builds, the
+  latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
+  inside `{{% if-packages %}}`, which shows it only once the latest release has them (every release after
+  v0.3.0), so no build of the site names a file that does not exist yet.
   Its content is Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.

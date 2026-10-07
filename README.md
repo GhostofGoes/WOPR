@@ -23,7 +23,7 @@ and Windows 11, on amd64 and arm64. For each platform there is the bare binary, 
 `wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
 licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
 `THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) Releases after
-v0.2.0 also have Linux packages: a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and RHEL. What changed
+v0.3.0 also have Linux packages: a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and RHEL. What changed
 in each version is on its release page and in [CHANGELOG.md](CHANGELOG.md).
 
 **Verify before you run.** Every file in a release carries a build-provenance attestation. With the
@@ -57,8 +57,9 @@ Then run `wopr`, and read `man wopr`. The package needs nothing else. The `.deb`
 package also holds the changelog, the licences and the notices. Remove it with `sudo apt remove wopr` or
 `sudo dnf remove wopr`.
 
-**Manual page.** The Linux and macOS archives also hold `wopr.6`, the manual page: the options, every game
-with how to play it and tips, and movie mode. Read it in place with `man ./wopr.6`, or install it so that
+**Manual page.** `wopr.6` is the manual page: the options, every game with how to play it and tips, and
+movie mode. The Linux and macOS archives hold it from the release after v0.3.0, and
+[docs/man/wopr.6](docs/man/wopr.6) has it too. Read it in place with `man ./wopr.6`, or install it so that
 `man wopr` finds it, for everyone or just for you:
 
 ```sh

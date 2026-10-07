@@ -1764,8 +1764,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
     requests sections are mounted and rendered, not copied; so are `docs/screenshots/` and the manual page.
     The download commands name the latest release (below), and the `.deb` and `.rpm` instructions appear once
-    that release has packages (any release after v0.2.0; the `if-packages` shortcode). Tests in `internal/cli`
-    check that the usage page lists every option and environment variable and the movie page every scene.
+    that release has packages (any release after v0.3.0, which also has `wopr.6` in its archives; the
+    `if-packages` shortcode). Tests in `internal/cli` check that the usage page lists every option and
+    environment variable and the movie page every scene.
   - **Strict build.** `--panicOnWarning` (deprecations included) and `--printPathWarnings`; an internal link
     to no page or file, a missing screenshot or a game file without its required fields is an error. CI's
     `docs` job builds it on every push (§11.2).
