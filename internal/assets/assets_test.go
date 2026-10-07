@@ -74,7 +74,7 @@ func TestMapAndCities(t *testing.T) {
 	}
 	// Places follow the art's projection: Las Vegas in the south-west, Moscow north-east of
 	// Kiev, Vladivostok at the far east, and the map's corners at 180W, 82.5N.
-	if p := Locate("LAS VEGAS", US); p.X != 12 || p.Y != 6 {
+	if p := Locate("LAS VEGAS", US); p.X != 13 || p.Y != 6 {
 		t.Errorf("Las Vegas: %+v", p)
 	}
 	moscow, kiev := Locate("MOSCOW", USSR), Locate("KIEV", USSR)
@@ -96,8 +96,8 @@ func TestMapAndCities(t *testing.T) {
 }
 
 // The art's lines enclose the land: the oceans are sea, the continents' interiors are not,
-// and every city and missile field lies on land or its coast. Murmansk, a few degrees east of
-// the art's Kola coast, is moved onto that coast.
+// and every city and missile field lies on land or its coast. Murmansk, a little north of
+// the art's Kola coast, is moved south onto that coast.
 func TestCitiesAreInsideTheOutline(t *testing.T) {
 	t.Parallel()
 	for _, c := range append(Cities, Silos[US], Silos[USSR]) {
@@ -122,7 +122,143 @@ func TestCitiesAreInsideTheOutline(t *testing.T) {
 		}
 	}
 	m := Locate("MURMANSK", USSR)
-	if x, y := At(68.97, 33.08); !Sea(x, y) || Sea(m.X, m.Y) || abs(m.X-x)+abs(m.Y-y) != 1 {
-		t.Errorf("Murmansk is at %d,%d; its true cell %d,%d should be sea, one step off the coast", m.X, m.Y, x, y)
+	if x, y := At(68.97, 33.08); !Sea(x, y) || Sea(m.X, m.Y) || m.X != x || m.Y != y+1 {
+		t.Errorf("Murmansk is at %d,%d; its true cell %d,%d should be sea, a row north of the coast", m.X, m.Y, x, y)
+	}
+}
+
+// cityCells is every city's real position and its cell on the big board, pinned so that a
+// change to the map, its projection or the placing rules cannot move a city unseen. A
+// city's cell is the one that holds its position; or, where that is open water, the land
+// cell nearest it (Murmansk); or, where the art or a neighbour says so, a cell beside it
+// (moved, with the reason in Cities). Checked against the art: every city in its own
+// country, coastal cities on or beside their coast, inland ones not across it.
+var cityCells = []struct {
+	name     string
+	side     Side
+	lat, lon float64
+	x, y     int
+	moved    bool
+}{
+	{"SEATTLE", US, 47.61, -122.33, 11, 4, false},
+	{"SAN FRANCISCO", US, 37.77, -122.42, 11, 5, false},
+	{"LOS ANGELES", US, 34.05, -118.24, 12, 6, false},
+	{"LAS VEGAS", US, 36.17, -115.14, 13, 6, true},
+	{"DENVER", US, 39.74, -104.99, 15, 5, false},
+	{"OMAHA", US, 41.26, -95.94, 16, 5, false},
+	{"CHICAGO", US, 41.88, -87.63, 18, 5, false},
+	{"HOUSTON", US, 29.76, -95.37, 16, 7, false},
+	{"ATLANTA", US, 33.75, -84.39, 19, 6, false},
+	{"MIAMI", US, 25.76, -80.19, 20, 7, true},
+	{"WASHINGTON", US, 38.91, -77.04, 20, 5, false},
+	{"NEW YORK", US, 40.71, -74.01, 21, 5, false},
+	{"BOSTON", US, 42.36, -71.06, 22, 5, true},
+	{"LENINGRAD", USSR, 59.93, 30.34, 42, 3, false},
+	{"MURMANSK", USSR, 68.97, 33.08, 42, 2, false},
+	{"MINSK", USSR, 53.90, 27.57, 41, 3, false},
+	{"MOSCOW", USSR, 55.76, 37.62, 43, 3, false},
+	{"KIEV", USSR, 50.45, 30.52, 41, 4, true},
+	{"KHARKOV", USSR, 49.99, 36.23, 43, 4, false},
+	{"ODESSA", USSR, 46.48, 30.73, 42, 4, false},
+	{"GORKY", USSR, 56.33, 44.00, 44, 3, false},
+	{"SVERDLOVSK", USSR, 56.84, 60.61, 48, 3, false},
+	{"TASHKENT", USSR, 41.30, 69.24, 49, 5, false},
+	{"NOVOSIBIRSK", USSR, 55.01, 82.93, 52, 3, false},
+	{"IRKUTSK", USSR, 52.29, 104.30, 56, 4, false},
+	{"VLADIVOSTOK", USSR, 43.12, 131.89, 62, 5, false},
+}
+
+func TestCityCells(t *testing.T) {
+	t.Parallel()
+	if len(Cities) != len(cityCells) {
+		t.Fatalf("%d cities, %d pinned", len(Cities), len(cityCells))
+	}
+	held := map[[2]int]string{}
+	for i, want := range cityCells {
+		c := Cities[i]
+		if c.Name != want.name || c.Side != want.side || c.X != want.x || c.Y != want.y {
+			t.Errorf("city %d is %s (side %d) at %d,%d, want %s (side %d) at %d,%d",
+				i, c.Name, c.Side, c.X, c.Y, want.name, want.side, want.x, want.y)
+		}
+		tx, ty := At(want.lat, want.lon)
+		steps := max(c.X-tx, tx-c.X) + max(c.Y-ty, ty-c.Y)
+		switch {
+		case want.moved && steps != 1:
+			t.Errorf("%s is moved %d steps from its true cell %d,%d, want 1", c.Name, steps, tx, ty)
+		case !want.moved && !Sea(tx, ty) && steps != 0:
+			t.Errorf("%s is %d steps from its true cell %d,%d, which is land", c.Name, steps, tx, ty)
+		case !want.moved && Sea(tx, ty) && steps != 1:
+			t.Errorf("%s is %d steps from its true cell %d,%d, which is sea; want the coast beside it", c.Name, steps, tx, ty)
+		}
+		if other, ok := held[[2]int{c.X, c.Y}]; ok {
+			t.Errorf("%s and %s share cell %d,%d", other, c.Name, c.X, c.Y)
+		}
+		held[[2]int{c.X, c.Y}] = c.Name
+	}
+	// The missile fields: the northern Great Plains, and Uzhur in southern Siberia. Their
+	// cells, and the cells two columns east that a second track hits, hold no city.
+	for side, want := range map[Side][2]int{US: {15, 4}, USSR: {53, 3}} {
+		s := Silos[side]
+		if s.X != want[0] || s.Y != want[1] {
+			t.Errorf("side %d's silo field is at %d,%d, want %d,%d", side, s.X, s.Y, want[0], want[1])
+		}
+		for _, x := range []int{s.X, s.X + 2} {
+			if city, ok := held[[2]int{x, s.Y}]; ok {
+				t.Errorf("side %d's silo strikes land on %s at %d,%d", side, city, x, s.Y)
+			}
+		}
+	}
+}
+
+// The art around the cities placed by its coastlines: if the map is redrawn, these say which
+// placements to check again. Each is a glyph at an offset from the city, or sea there.
+func TestCitiesAgainstTheArt(t *testing.T) {
+	t.Parallel()
+	const sea = 0
+	for _, c := range []struct {
+		name   string
+		dx, dy int
+		glyph  byte
+		why    string
+	}{
+		{"SEATTLE", -2, 0, '\\', "the Pacific coast of the north-west"},
+		{"SAN FRANCISCO", -1, 0, '|', "on the Pacific coast"},
+		{"LOS ANGELES", -1, 0, '.', "on the Pacific coast"},
+		{"LAS VEGAS", -1, 0, ' ', "inland, beside Los Angeles"},
+		{"HOUSTON", 1, 0, '.', "at the Gulf coast's west end"},
+		{"MIAMI", -1, 0, '.', "the Gulf coast is to its west"},
+		{"MIAMI", 1, 0, ')', "the Atlantic coast is to its east"},
+		{"BOSTON", 0, 0, ',', "on the New England coast"},
+		{"BOSTON", 1, 0, '\'', "on the New England coast"},
+		{"MURMANSK", 0, 0, '"', "on the Kola coast"},
+		{"MURMANSK", 0, -1, sea, "the Barents Sea is north of it"},
+		{"MURMANSK", -1, -1, '_', "Norway's North Cape is north-west of it"},
+		{"MINSK", -1, 0, '(', "east of the Baltic's shore"},
+		{"ODESSA", 0, 1, '<', "on the Black Sea's north shore"},
+		{"KHARKOV", 0, 1, '>', "north of the Black Sea's east end"},
+		{"TASHKENT", -4, 0, '6', "east of the Caspian"},
+		{"IRKUTSK", 1, 0, ')', "beside Lake Baikal"},
+		{"VLADIVOSTOK", 0, 0, '\'', "on the Pacific coast"},
+		{"VLADIVOSTOK", 1, 0, sea, "the Sea of Japan is east of it"},
+		{"VLADIVOSTOK", 2, 0, '/', "Japan is across that sea"},
+	} {
+		var p Place
+		for _, city := range Cities {
+			if city.Name == c.name {
+				p = city
+			}
+		}
+		if p.Name == "" {
+			t.Fatalf("no city %s", c.name)
+		}
+		x, y := p.X+c.dx, p.Y+c.dy
+		row := Map[y].Text
+		got := byte(' ')
+		if x < len(row) {
+			got = row[x]
+		}
+		if c.glyph == sea && !Sea(x, y) || c.glyph != sea && got != c.glyph {
+			t.Errorf("%s (%d,%d): %d,%d is %q, want %q: %s", c.name, p.X, p.Y, x, y, got, c.glyph, c.why)
+		}
 	}
 }

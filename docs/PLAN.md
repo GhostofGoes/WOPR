@@ -201,7 +201,7 @@ art (L-4).
 | 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
-| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude). | U |
+| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the assets tests pin every city's cell). | U |
 
 ---
 
@@ -1774,7 +1774,7 @@ PLEASE CHOOSE ONE: █
 **GTW big board** (`norad`, `LayoutFull`, front panel shown): the view takes `H' − 4` = 19 rows, then the 3-row
 strip, the input row and the panel (AR-11). This is the built screen at the strike 2 prompt (the
 `gtw_screens` golden: USSR, Las Vegas and Seattle, after the first strike). Trajectory values are illustrative.
-Outgoing tracks draw `+`, incoming `*`, and an impact a reversed `X`; earlier strikes keep only their impacts.
+Outgoing tracks draw `+`, incoming `*`, and an impact a reversed `X`, drawn over every track; earlier strikes keep only their impacts.
 The current DEFCON level is reversed, shown here as `[4]`:
 
 ```text

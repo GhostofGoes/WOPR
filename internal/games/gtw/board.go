@@ -62,11 +62,19 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 		c.Put(boxRight, mapTop+y, "|", proto.StyleDim, 0)
 		c.Put(mapLeft, mapTop+y, row.Text, proto.StyleLand, 0)
 	}
-	for _, m := range g.impacts { // earlier stages leave only their impacts
+	for _, m := range g.missiles {
+		g.drawTrack(c, m)
+	}
+	// Impacts go over every track, so no launch hides where a strike landed: a city beside
+	// a silo field (Novosibirsk) would otherwise lose its X under the field's launches.
+	// Earlier stages leave only their impacts.
+	for _, m := range g.impacts {
 		c.Put(mapLeft+m.to.X, mapTop+m.to.Y, "X", trackStyle(m), proto.AttrReverse)
 	}
 	for _, m := range g.missiles {
-		g.drawTrack(c, m)
+		if g.progress(m) >= 1 {
+			c.Put(mapLeft+m.to.X, mapTop+m.to.Y, "X", trackStyle(m), proto.AttrReverse)
+		}
 	}
 
 	c.Put(defconX, 0, lineDefcon[0].Text, proto.StyleLabel, 0)
@@ -172,17 +180,14 @@ func (g *Game) drawDefcon(c *proto.Canvas) {
 
 // drawTrack draws a track's arc so far: an ICBM's rises over the top of the map, as a polar
 // route does, a bomber's is lower and dotted, and an SLBM's is a short hop from the sea.
-// Outgoing tracks are '+', incoming '*'; an impact is a reversed 'X'. Once its stage has
-// played out, a track is drawn whole. Every bomber's dots fall on the even columns, so where
-// the two sides' routes run together one dotted track covers the other instead of the two
-// filling each other's gaps.
+// Outgoing tracks are '+', incoming '*'; drawBoard puts a reversed 'X' over each impact.
+// Once its stage has played out, a track is drawn whole. Every bomber's dots fall on the
+// even columns, so where the two sides' routes run together one dotted track covers the
+// other instead of the two filling each other's gaps.
 func (g *Game) drawTrack(c *proto.Canvas, m missile) {
-	if g.phase == flight && g.frame < m.launch {
+	progress := g.progress(m)
+	if progress < 0 {
 		return
-	}
-	progress := 1.0
-	if g.phase == flight {
-		progress = min(float64(g.frame-m.launch)/float64(flightFrames[m.kind]), 1)
 	}
 	glyph, style := "*", trackStyle(m)
 	if m.ours {
@@ -195,9 +200,18 @@ func (g *Game) drawTrack(c *proto.Canvas, m missile) {
 		}
 		c.Put(mapLeft+x, mapTop+y, glyph, style, 0)
 	}
-	if progress >= 1 {
-		c.Put(mapLeft+m.to.X, mapTop+m.to.Y, "X", style, proto.AttrReverse)
+}
+
+// progress is how far along its flight a track is drawn, 0 to 1 (1 has landed), or -1
+// before its launch.
+func (g *Game) progress(m missile) float64 {
+	switch {
+	case g.phase != flight:
+		return 1
+	case g.frame < m.launch:
+		return -1
 	}
+	return min(float64(g.frame-m.launch)/float64(flightFrames[m.kind]), 1)
 }
 
 // arc is a track's position at s (0 to 1) along its flight: a longer ICBM or bomber flight

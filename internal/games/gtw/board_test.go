@@ -77,6 +77,54 @@ func TestPatrolsAreAtSea(t *testing.T) {
 	}
 }
 
+// Every city the board knows is struck where the assets place it: listed alone, it takes the
+// first strike's city-aimed ICBMs and SLBMs, and its impact is a reversed X at its cell
+// inside the map box. The film's two targets are pinned on the screen as well: Las Vegas in
+// the south-west, a column inland of Los Angeles, and Seattle in the north-west, under the
+// Pacific coast's '\'.
+func TestStrikesLandOnTheirCities(t *testing.T) {
+	t.Parallel()
+	screen := map[string][2]int{"LAS VEGAS": {14, 7}, "SEATTLE": {12, 5}}
+	for _, city := range assets.Cities {
+		side := "1"
+		if city.Side == assets.US {
+			side = "2"
+		}
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 1, Instant: true})
+		for _, in := range []string{side, city.Name, ""} {
+			g.Handle(proto.LineEvent{Text: in})
+		}
+		hits := 0
+		for _, m := range g.missiles {
+			if m.ours && m.to.Name == city.Name {
+				hits++
+				if m.to.X != city.X || m.to.Y != city.Y {
+					t.Errorf("%s: a track lands at %d,%d, want %d,%d", city.Name, m.to.X, m.to.Y, city.X, city.Y)
+				}
+			}
+		}
+		if hits == 0 {
+			t.Errorf("%s: the first strike sent nothing at it", city.Name)
+		}
+		c := proto.NewCanvas(80, 19)
+		g.View(c)
+		x, y := mapLeft+city.X, mapTop+city.Y
+		if cell := c.At(x, y); cell.R != 'X' || cell.A&proto.AttrReverse == 0 {
+			t.Errorf("%s: the board shows %q at %d,%d, want a reversed X:\n%s", city.Name, cell.R, x, y, c.String())
+		}
+		if want, ok := screen[city.Name]; ok {
+			delete(screen, city.Name)
+			if x != want[0] || y != want[1] {
+				t.Errorf("%s is drawn at %d,%d, want %d,%d", city.Name, x, y, want[0], want[1])
+			}
+		}
+	}
+	if len(screen) != 0 {
+		t.Errorf("the board does not know the film's targets %v", screen)
+	}
+}
+
 // The tables under the map do not overlap: the trajectory columns end before the forces
 // table starts, and the forces table ends at the board's right edge.
 func TestTablesDoNotOverlap(t *testing.T) {

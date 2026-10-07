@@ -153,65 +153,76 @@ var sea = func() [][MapW]bool {
 // Sea reports whether a map cell is open water.
 func Sea(x, y int) bool { return x >= 0 && x < MapW && y >= 0 && y < MapH && sea[y][x] }
 
-// place puts a named point at its latitude and longitude, on the nearest land if the art
-// draws that coast a little differently (Murmansk lies just east of the art's Kola coast).
+// place puts a named point at its latitude and longitude: in the cell that holds it, or, where
+// the art draws that coast a little differently and the cell is open water, on the land cell
+// whose centre is nearest the true point. Murmansk lies just off the art's Kola coast, '">'
+// below it, and goes there, not a column west onto the North Cape's "_._", which is Norway.
 func place(name string, side Side, lat, lon float64) Place {
-	x, y := landNear(At(lat, lon))
+	x, y := At(lat, lon)
+	if Sea(x, y) {
+		x, y = landNear(lat, lon)
+	}
 	return Place{Name: name, Side: side, X: x, Y: y}
 }
 
-// landNear is the nearest cell to x, y that is not sea: the fewest steps across and down,
-// then the same row before the one above it, then west before east.
-func landNear(x, y int) (int, int) {
-	for d := range MapW + MapH {
-		for _, dy := range ring(d) {
-			for _, dx := range []int{-(d - abs(dy)), d - abs(dy)} {
-				if nx, ny := x+dx, y+dy; nx >= 0 && nx < MapW && ny >= 0 && ny < MapH && !Sea(nx, ny) {
-					return nx, ny
-				}
+// landNear is the land cell whose centre is nearest a latitude and longitude, measured in
+// cells across and down, as the map shows them; a tie goes to the first in reading order.
+func landNear(lat, lon float64) (int, int) {
+	px, py := (lon-mapWest)/degCol, (mapNorth-lat)/degRow
+	bx, by, best := 0, 0, math.Inf(1)
+	for y := range MapH {
+		for x := range MapW {
+			dx, dy := float64(x)+0.5-px, float64(y)+0.5-py
+			if d := dx*dx + dy*dy; d < best && !Sea(x, y) {
+				bx, by, best = x, y, d
 			}
 		}
 	}
-	return x, y
+	return bx, by
 }
 
-// ring lists the row offsets at a distance of d steps: 0, -1, 1, -2, 2 and so on.
-func ring(d int) []int {
-	out := []int{0}
-	for i := 1; i <= d; i++ {
-		out = append(out, -i, i)
-	}
-	return out
-}
-
-func abs(v int) int {
-	if v < 0 {
-		return -v
-	}
-	return v
+// moved is p moved dx columns east and dy rows south: for a city whose own cell another city
+// holds, or that the art draws a column off its true coast. Each use says why, and the
+// assets tests pin every city's cell.
+func moved(p Place, dx, dy int) Place {
+	p.X, p.Y = p.X+dx, p.Y+dy
+	return p
 }
 
 // Cities are the targets the board knows by name, placed from their real latitude and
-// longitude. Neighbours less than a column apart share a cell.
+// longitude, each in a cell of its own. A cell is 5 degrees across and 7.5 down, so a few
+// share one, or fall where the art draws a coast a column off its true line; those are
+// moved a cell, each the way that keeps it in its own country and on the right side of
+// its coast.
 var Cities = []Place{
 	place("SEATTLE", US, 47.61, -122.33),
 	place("SAN FRANCISCO", US, 37.77, -122.42),
 	place("LOS ANGELES", US, 34.05, -118.24),
-	place("LAS VEGAS", US, 36.17, -115.14),
+	// Las Vegas shares Los Angeles's cell, 0.14 degrees west of the next column east, which
+	// holds Arizona; there it stands inland, east of Los Angeles, not on top of it.
+	moved(place("LAS VEGAS", US, 36.17, -115.14), 1, 0),
 	place("DENVER", US, 39.74, -104.99),
 	place("OMAHA", US, 41.26, -95.94),
 	place("CHICAGO", US, 41.88, -87.63),
 	place("HOUSTON", US, 29.76, -95.37),
 	place("ATLANTA", US, 33.75, -84.39),
-	place("MIAMI", US, 25.76, -80.19),
+	// Miami's cell is the art's Gulf coast, the "." of ".-."; the art draws the Florida
+	// peninsula a column east, between that coast and the Atlantic's ")", and Miami lies
+	// 0.19 degrees short of that column.
+	moved(place("MIAMI", US, 25.76, -80.19), 1, 0),
 	place("WASHINGTON", US, 38.91, -77.04),
 	place("NEW YORK", US, 40.71, -74.01),
-	place("BOSTON", US, 42.36, -71.06),
+	// Boston shares New York's cell; a column east is the art's New England coast, the ","
+	// of ",'", and Boston stands there, on the coast north-east of New York.
+	moved(place("BOSTON", US, 42.36, -71.06), 1, 0),
 	place("LENINGRAD", USSR, 59.93, 30.34),
 	place("MURMANSK", USSR, 68.97, 33.08),
 	place("MINSK", USSR, 53.90, 27.57),
 	place("MOSCOW", USSR, 55.76, 37.62),
-	place("KIEV", USSR, 50.45, 30.52),
+	// Kiev and Odessa share a cell, the one above the Black Sea's "<". Odessa keeps it, on
+	// the sea's north shore; Kiev, inland and 0.52 degrees east of the column to the west,
+	// moves there.
+	moved(place("KIEV", USSR, 50.45, 30.52), -1, 0),
 	place("KHARKOV", USSR, 49.99, 36.23),
 	place("ODESSA", USSR, 46.48, 30.73),
 	place("GORKY", USSR, 56.33, 44.00),
