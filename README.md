@@ -119,12 +119,14 @@ console and games you play with. `wopr --scenes` lists them:
 - `wopr -m` opens a menu of the scenes: type a number or a name, or `q` to leave.
 - `wopr -m 3` (or `wopr -m first-strike`, or any unique start of a name) plays from that scene to the end of
   the list, then exits.
+- `wopr -m 3 --only` (or `-o`) plays just that scene, then exits. `wopr -m --only` opens the menu, and each
+  scene picked there plays alone, then the menu returns.
 - While a scene plays, Space pauses and resumes, `n` or → skips to the next scene, `p` or ← goes back one,
-  and Esc opens the menu. Ctrl+C quits. Once the climax reaches tic-tac-toe, it plays to the end, and any
-  other key only says so.
-- Every replay is the same: movie mode ignores `--seed`. `--theme` and `--reduce-motion` apply.
-  `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
-  can be read.
+  and Esc opens the menu. With `--only`, the scene that `n` or `p` reaches plays alone too. Ctrl+C quits.
+  Once the climax reaches tic-tac-toe, it plays to the end, and any other key only says so.
+- Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`. `--theme` and `--reduce-motion`
+  apply. `--instant` shows each line at once instead of typing it, but the scenes still pause so that every
+  page can be read.
 
 The only film text in the scenes is what WOPR's terminal shows on screen, David's typing included; there is
 no dialogue that is only spoken. The dial, GTW's strike exchange, tic-tac-toe's prompts and the game clock's
@@ -142,9 +144,10 @@ film's lines are still to be checked one by one against the film.
 | `-L`, `--licenses` | print licence notices and exit |
 | `-p`, `--play <game>` | start a game directly (number, name, alias or unique prefix); `wopr <game>` does the same |
 | `-m`, `--movie [scene]` | replay the film's WOPR scenes from that one on, or pick from a menu; see [Movie mode](#movie-mode) |
+| `-o`, `--only` | with `--movie`, play just the chosen scene, then stop |
 | `-t`, `--theme <name>` | `imsai` (white phosphor, the default), `green`, `amber` or `norad`; env `WOPR_THEME` |
 | `-i`, `--instant` | no typewriter pacing; env `WOPR_INSTANT=1` |
-| `-s`, `--seed <n>` | deterministic run |
+| `-s`, `--seed <n>` | deterministic run; env `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking or motion; env `WOPR_REDUCE_MOTION=1` |
 
 `NO_COLOR` (any value) turns colour off.
@@ -156,7 +159,7 @@ film's lines are still to be checked one by one against the film.
 - **"TERMINAL TOO SMALL"**: WOPR needs at least 80×24.
 - **Strange colours**: try `--theme green`, or set `NO_COLOR=1`.
 - **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
-  path when it exits; attach it to the issue, with `--seed` if you used one.
+  path when it exits; attach it to the issue, with `--seed` (or `WOPR_SEED`) if you used one.
 
 ## Development builds
 

@@ -57,7 +57,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return exitUsage
 	}
 	if !cfg.SeedSet {
-		cfg.Seed = sessionSeed() // every session differs unless --seed pins it
+		cfg.Seed = sessionSeed() // every session differs unless --seed or WOPR_SEED pins it
 	}
 	lg := openDebugLog(getenv, stderr)
 	defer func() {
@@ -69,7 +69,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	lg.Printf("wopr %s, seed %d (pinned: %v)", version.Get(), cfg.Seed, cfg.SeedSet)
 	outcome, err := ui.Run(ui.Options{
 		Log: lg, Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
-		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene,
+		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene, Only: cfg.Only,
 		NoColor: getenv("NO_COLOR") != "", Panel: panelSetting(getenv), Registry: reg,
 	})
 	lg.Printf("session ended: outcome %d, err %v", outcome, err)

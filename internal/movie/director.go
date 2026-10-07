@@ -19,8 +19,10 @@ type Options struct {
 	// Scene plays from this scene (a name Resolve accepts) to the end of the list, then quits
 	// (RF-5). Empty opens the scene menu instead.
 	Scene string
-	// Single plays only Scene, then quits (tests).
-	Single bool
+	// Only plays each scene alone (wopr -m --only): at its end the director quits, or returns to
+	// the menu if the viewer came from it, instead of going on to the next scene. The controls
+	// still move between scenes, and the scene they reach plays alone too.
+	Only bool
 	// Scenes replaces the film's scenes (tests); nil plays scenes.All().
 	Scenes []scenes.Scene
 
@@ -46,8 +48,8 @@ const tickEvery = gtw.FilmFrame
 // Director plays the film's scenes as the root program (docs/PLAN.md §7). It emits one step at
 // a time and waits for the host's Drained before the next, so a pause or a skip to another
 // scene drops only what is on screen. It captures keys: Space pauses and resumes, Right or n
-// skips to the next scene, Left or p goes back one, and Esc opens the menu. While a program it
-// launched runs (the climax), keys do nothing but Ctrl+C.
+// skips to the next scene, Left or p goes back one, and Esc opens the menu, with or without
+// Options.Only. While a program it launched runs (the climax), keys do nothing but Ctrl+C.
 type Director struct {
 	opts   Options
 	scenes []scenes.Scene
@@ -177,9 +179,10 @@ func (d *Director) emit() []proto.Output {
 	panic(fmt.Sprintf("movie: unknown step %T", steps[d.step]))
 }
 
-// next follows the end of a scene: the next scene, or the end of the list.
+// next follows the end of a scene: the next scene, or the end of the list (with Only, every
+// scene is the end of the list).
 func (d *Director) next() []proto.Output {
-	if d.opts.Single || d.scene+1 >= len(d.scenes) {
+	if d.opts.Only || d.scene+1 >= len(d.scenes) {
 		return d.end()
 	}
 	return d.begin(d.scene + 1)
@@ -187,7 +190,7 @@ func (d *Director) next() []proto.Output {
 
 // end follows the last scene: back to the menu if the viewer came from it, otherwise exit 0.
 func (d *Director) end() []proto.Output {
-	if d.menued && !d.opts.Single {
+	if d.menued {
 		return d.menu()
 	}
 	d.phase = ended
@@ -337,7 +340,7 @@ func (d *Director) key(ev proto.KeyEvent) []proto.Output {
 		d.paused = true
 		return []proto.Output{proto.Hold{On: true}, proto.AwaitKeys{Hint: linePaused[0].Text, Capture: true}}
 	case ev.Key == proto.KeyRight || r == 'n' || r == 'N':
-		if d.opts.Single || d.scene+1 >= len(d.scenes) {
+		if d.scene+1 >= len(d.scenes) {
 			return d.cut(d.end())
 		}
 		return d.cut(d.begin(d.scene + 1))
@@ -376,6 +379,12 @@ func (d *Director) menu() []proto.Output {
 		lines = append(lines, fmt.Sprintf("  %d.  %-16s %s", s.Number, s.Title, s.Blurb))
 	}
 	lines = append(lines, lineMenuKeys.Texts()...)
+	if d.opts.Only {
+		lines = append(lines, lineMenuAlone.Texts()...)
+	} else {
+		lines = append(lines, lineMenuPlaysOn.Texts()...)
+	}
+	lines = append(lines, lineMenuAsk.Texts()...)
 	return append(outs, proto.Say{Lines: lines, Pace: proto.PaceTable}, proto.Prompt{Text: promptScene[0].Text})
 }
 

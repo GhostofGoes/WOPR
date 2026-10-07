@@ -164,7 +164,7 @@ func TestFirstStrikeIsTheGames(t *testing.T) {
 	for _, line := range typed {
 		g.Type(line)
 	}
-	movie := transcriptLines(play(t, Options{Scene: s.Slug, Single: true}))[1:] // after the scene's own [CLEAR]
+	movie := transcriptLines(play(t, Options{Scene: s.Slug, Only: true}))[1:] // after the scene's own [CLEAR]
 	game := transcriptLines(g.Session)
 	if len(game) < len(movie) || strings.Join(game[:len(movie)], "\n") != strings.Join(movie, "\n") {
 		t.Errorf("the scene:\n%s\nthe game:\n%s", strings.Join(movie, "\n"), strings.Join(game, "\n"))
@@ -185,7 +185,7 @@ func TestClimaxIsTheGames(t *testing.T) {
 	}
 	game := transcriptLines(g.Session)[start:]
 	game = game[:len(game)-1] // GTW cannot launch tic-tac-toe under testkit.Game; the movie can
-	movie := transcriptLines(play(t, Options{Scene: "climax", Single: true}))[1:]
+	movie := transcriptLines(play(t, Options{Scene: "climax", Only: true}))[1:]
 	if len(movie) < len(game) || strings.Join(movie[:len(game)], "\n") != strings.Join(game, "\n") {
 		t.Errorf("the scene:\n%s\nthe game:\n%s", strings.Join(movie, "\n"), strings.Join(game, "\n"))
 	}

@@ -474,7 +474,7 @@ type Env struct {
 	Seed          uint64 // this program's seed: the session seed for the root, a per-launch seed for games
 	Width, Height int    // the program's layout area for its placement at the current size
 	Instant       bool
-	Deterministic bool   // --seed given, or under test, or movie mode: AI search obeys Limit, not the clock
+	Deterministic bool   // --seed or WOPR_SEED, or under test, or movie mode: AI search obeys Limit, not the clock
 	Mode          string // optional launch mode, e.g. "climax" (§6.2)
 }
 
@@ -594,10 +594,10 @@ Rules:
   - Deadlines: when not deterministic, the host arms `Budget`, and a search returns its best result as a normal
     `Value` when the deadline passes. Slow I/O (the Brain, the M7 LLM) returns an error instead, so its fallback
     line fires.
-  - With `Env.Deterministic` (`--seed`, tests, movie mode), searches stop at their own `Limit`, which `Fn`
-    captures; a non-zero `Think.Limit` tells the host the search is bounded, so it arms only a 60 s safety cap
-    instead of `Budget`. `-race` slows a depth-3 chess search to a p99 of about 1 s, so a 1.5 s budget there
-    would flake (AR-8). `testkit` fails the test if a deterministic `Think` reaches the cap.
+  - With `Env.Deterministic` (`--seed` or `WOPR_SEED`, tests, movie mode), searches stop at their own `Limit`,
+    which `Fn` captures; a non-zero `Think.Limit` tells the host the search is bounded, so it arms only a 60 s
+    safety cap instead of `Budget`. `-race` slows a depth-3 chess search to a p99 of about 1 s, so a 1.5 s
+    budget there would flake (AR-8). `testkit` fails the test if a deterministic `Think` reaches the cap.
   - `Fn` must capture values only. A `*chess.Position` lazily caches its moves and is not goroutine-safe.
 - **Seeds and streams** (AR-10). The host derives each launched program's `Env.Seed` from the session seed,
   the slug and how many times that slug has been played (`NewRand(session, GameStream(slug, n)).Uint64()`), so
@@ -751,8 +751,8 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
   | Movie | `4<<56 \| scene` | a constant seed that the director pins (§7) |
   | UI | `5<<56` | the session seed |
 
-  Without `--seed`, the seed comes from `crypto/rand` and is written to the debug log. Go guarantees seeded
-  `math/rand/v2` sequences across releases.
+  Without `--seed` or `WOPR_SEED`, the seed comes from `crypto/rand` and is written to the debug log. Go
+  guarantees seeded `math/rand/v2` sequences across releases.
 
 ### 4.7 LLM brain (M7) contract, fixed now
 
@@ -782,10 +782,11 @@ wopr -g | --games             numbered list in film order (+ slugs); tic-tac-toe
 wopr -p | --play <game>       launch a game (number 1-15, slug, alias, name, or unique prefix)
 wopr <game> [flags]           same as --play; flags may come before or after
 wopr -m | --movie [scene]     movie mode (§7): from that scene to the end of the list; without one, a scene menu
+wopr -o | --only              with --movie: each scene plays alone, then exit (or back to the menu)
 wopr -S | --scenes            list the movie's scenes (number, slug, what happens) and exit
 wopr -t | --theme <name>      imsai | green | amber | norad          (env WOPR_THEME)
 wopr -i | --instant           no pacing                              (env WOPR_INSTANT)
-wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)
+wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
 wopr -r | --reduce-motion     no blink, no panel animation, no montage acceleration (env WOPR_REDUCE_MOTION)
 wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
 ```
@@ -797,9 +798,12 @@ wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
     consumed value: in `-t -- gtw`, `--` is the theme's value (IM-10).
   - With `--movie`, the positional is a scene. Otherwise it is a game.
   - More than one positional, or a positional together with `--play`, is a usage error (exit 2).
-  - **Environment.** `WOPR_THEME`, `WOPR_INSTANT`, `WOPR_REDUCE_MOTION` and `WOPR_PANEL` are read first, and
-    a flag always wins. A boolean variable is false when empty or `0`, `false`, `no` or `off`, and true
-    otherwise (`cli.Truthy`). `NO_COLOR` is true when set to anything non-empty.
+  - **Environment.** `WOPR_THEME`, `WOPR_INSTANT`, `WOPR_REDUCE_MOTION`, `WOPR_SEED` and `WOPR_PANEL` are read
+    first, and a flag always wins. A boolean variable is false when empty or `0`, `false`, `no` or `off`, and
+    true otherwise (`cli.Truthy`). `WOPR_SEED` takes what `--seed` takes: empty means unset (so `--seed=`
+    drops it for one run), and a value that is not a non-negative integer exits 2 naming `WOPR_SEED`, as a bad
+    `--seed` or `WOPR_THEME` does, even in movie mode, which ignores the seed. `NO_COLOR` is true when set to
+    anything non-empty. `--movie` and `--only` have no variable: they choose what to run, not how.
   - Tests pin each case (`cli_test.go`):
 
     | argv | Result |
@@ -814,13 +818,18 @@ wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
     | `-m nowhere`, `-m 7` | exit 2, listing the scenes |
     | `-m c` | exit 2: could mean `call-back` or `climax` |
     | `-m -p chess` | exit 2: cannot be combined |
+    | `-m joshua --only`, `-m -o 2` | movie: only the `joshua` scene, then exit |
+    | `-o -m` | movie: the scene menu; each scene picked plays alone |
+    | `--only`, `-o gtw` | exit 2: `--only` needs `--movie` |
+    | `-s x`; `WOPR_SEED=x` | exit 2, naming `--seed` or `WOPR_SEED`; `-s 7` wins over `WOPR_SEED` |
     | `--version gtw` | print the version; actions win over a positional |
 
 - **Accepted forms** (C-2). `-games`, `--games`, `-p chess`, `-p=chess`, `-i=false`. Rejected: `-pchess`,
   `-is 1`. A test pins both lists, and the help text shows the accepted ones.
 - **Letters.** `-v` means version, deliberately. A future verbose flag gets another letter (not `-V`, which
   conventionally means version) (C-4). `-l` is reserved for `--llm` (M7). `--licenses` uses `-L`, and
-  `--scenes` uses `-S` because `-s` is the seed.
+  `--scenes` uses `-S` because `-s` is the seed; `--only` is `-o` (`--single` would have needed another letter
+  for the same reason).
 - **`games.Resolve`**: number (1–15) → slug → alias → exact normalised name → unique prefix.
   - Unlisted entries are never matched by number. Tic-tac-toe has `Listed: false`, which is explicit rather
     than relying on a zero `Number` (G-4). A registry test checks that 1..15 each appear exactly once.
@@ -1096,13 +1105,13 @@ before the classified address it leads to; v2.1's provisional table had it in th
     once it is on screen (`Drain`), then hands off to the ending in the same mode. The ending types `Hello.`
     itself and carries on cracking the code from N, the board's count.
 - **Director.** `movie.Director` is the root `proto.Program` in place of the persona. It pins `movie.Seed`
-  (1983) as the session seed and runs `Deterministic`, whatever `--seed` says, so every replay is identical
-  (RF-5): the typing jitter comes from `NewRand(Seed, DomainMovie|scene)` and the launched programs' seeds from
-  the pinned session seed. It emits one step, then `Drain`, and the next step on `Drained`; a `Run` step waits
-  for `GameOver`, then drains the program's last words. A `Drain` sent with the `Launch` reaches the director
-  only if the program could not be built (the runner answers only the running program), and then the scene
-  goes on after the host's `** GAME ROUTINE NOT AVAILABLE **`; the controls also work while a `Run` step
-  is out, so a bad slug in the scene data cannot leave the show stuck.
+  (1983) as the session seed and runs `Deterministic`, whatever `--seed` or `WOPR_SEED` says, so every replay is
+  identical (RF-5): the typing jitter comes from `NewRand(Seed, DomainMovie|scene)` and the launched programs'
+  seeds from the pinned session seed. It emits one step, then `Drain`, and the next step on `Drained`; a `Run`
+  step waits for `GameOver`, then drains the program's last words. A `Drain` sent with the `Launch` reaches
+  the director only if the program could not be built (the runner answers only the running program), and then
+  the scene goes on after the host's `** GAME ROUTINE NOT AVAILABLE **`; the controls also work while a `Run`
+  step is out, so a bad slug in the scene data cannot leave the show stuck.
 - **Host hooks.** Key capture, `Hold`, `Drain` and `Skip`, plus `Say.Open` for typed lines (§4.4). While the
   climax runs on top of the director, keys do nothing but Ctrl+C (and PgUp/PgDn), and any other key shows
   `** THE GAME PLAYS TO THE END. CTRL+C QUITS. **` for three seconds; the menu and `--help` say so too. In
@@ -1119,7 +1128,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   | Ctrl+C | Exit 130 |
 
   Every jump ends a pause, stops the board and reveals what is queued at once (`Skip`), so the next scene
-  starts on a clean page straight away. `--theme` and `--reduce-motion` apply.
+  starts on a clean page straight away. `--theme` and `--reduce-motion` apply. With `--only` the keys are the
+  same: → and ← still move between scenes, and the scene they reach plays alone; → on the last scene is the
+  end of the list. The film's order stays one keypress away, while the end of every scene still stops.
 - **`--instant`** (or `WOPR_INSTANT=1`) drops the typing and the typewriter's pacing, but not the scenes'
   pauses: the host drops `Wait` under `Instant`, so the director waits each pause out itself on `Animate`
   ticks, and every page stays up to be read. For that, a scene's every page break and launch follows a pause
@@ -1129,11 +1140,17 @@ before the classified address it leads to; v2.1's provisional table had it in th
 - **The scene menu.** `wopr -m` opens it: the scenes, numbered, the keys, and `SCENE:`, which takes a number, a
   slug, a title or a unique prefix. `q` (or `LOGOFF`, `EXIT`, `QUIT`) exits 0; an empty line asks again; an
   unknown name gets `NO SUCH SCENE.` and an ambiguous one lists its scenes. Esc during playback returns to it,
-  and a scene picked there plays to the end of the list, then the menu returns.
+  and a scene picked there plays to the end of the list, then the menu returns; with `--only` it plays alone,
+  then the menu returns, and the menu says which (`A SCENE PLAYS ALONE, THEN COMES BACK HERE.`).
 - **Which scenes play.** `wopr -m <scene>` (number, slug, title or unique prefix, resolved by `movie.Resolve`)
   plays from that scene to the end of the list, then exits 0 (RF-5). An unknown scene exits 2 and prints the
   list; an ambiguous one exits 2 naming its scenes. `wopr --scenes` prints the number, slug and blurb of each
   scene and exits 0.
+- **One scene** (the owner's request). `-o/--only` (`movie.Options.Only`) makes every scene the end of the
+  list: `wopr -m joshua --only` plays `joshua` and exits 0, and `wopr -m --only` opens the menu, where each
+  scene picked plays alone and the menu returns. The end of the list means what it does without `--only`:
+  the menu if the viewer came from it, otherwise exit 0. `--only` without `--movie` exits 2, like
+  `--movie --play`.
 - **Isolation.** No LOGON, no persona, no Brain, no network.
 - **Consistency tests** (`internal/movie`). `first-contact` and `joshua` are marked `Interactive`: their
   `Type` steps go through the real persona via `testkit`, and its transcript must begin with the scene's text.
@@ -1257,7 +1274,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
       held by the scene's pauses, and exits 0 at the end of the list without a key; paced, `-m 2` → `LOGON:` →
       Space → `** PAUSED **` and a still screen → Right → the next scene → Esc → `SCENE:` → Ctrl+C → exit
       130; `-m` → the scene menu → `q` → exit 0; `--scenes` lists the scenes, and `-m nowhere` exits 2
-      listing them.
+      listing them; `-m joshua --only --instant` plays that scene and exits 0 at its end without a key, never
+      showing the next scene's `WHICH SIDE DO YOU WANT?`;
+    - after v0.2.0: `--only` without `--movie`, `WOPR_SEED=x` and `-s x` exit 2 naming their source, and with
+      `WOPR_DEBUG=1 WOPR_SEED=1983` the debug log records `seed 1983 (pinned: true)` and nothing typed.
   - On Unix every TUI case also asserts that the terminal modes (termios) are restored. Under ConPTY the
     assertion is weaker (exit code and final screen), because conhost owns the console modes.
   - The `build` job cross-compiles the test per target (`internal/tools/stage`) and ships it next to each
@@ -1577,8 +1597,8 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
 8. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
-   the end of the list, pausing between pages, and exits 0; `wopr --scenes` lists them. The movie
-   consistency tests are green.
+   the end of the list, pausing between pages, and exits 0; `wopr -m 2 -o` plays scene 2 alone and exits 0;
+   `wopr --scenes` lists them. The movie consistency tests are green.
 
 ---
 
@@ -1593,7 +1613,7 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 | 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
 | 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots; accessibility pass; dependency and runner checklist (last run 2026-10-07, to be run again at the v1.0.0 boundary: only indirect modules moved, `ultraviolet` to its 2026-10-01 commit, `go-runewidth` v0.0.30, `xo/terminfo` v1.2.0, `x/sync` v0.23.0 and `x/sys` v0.48.0, with goldens byte-identical and linux/amd64 6,119,584 → 6,140,064 bytes stripped; Go 1.27.1, the direct modules, the four tools, the prek hooks, the action SHAs and the runner labels (§11.4) were already current; `scheduled.yml` is active). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; the checklist run again just before tagging v1.0.0, not only the 2026-10-07 run. | **v1.0.0** |
-| 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
+| 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), `-o/--only` (the owner's request to play one scene and stop), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
 Effort is not estimated per game (P-3). Each milestone's PR description records time spent, which informs the

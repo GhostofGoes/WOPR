@@ -63,8 +63,85 @@ func TestPlaysToTheEndOfTheList(t *testing.T) {
 	if s := play(t, Options{Scene: "2", Scenes: twoScenes}); !strings.HasPrefix(s.Transcript(), "[CLEAR]\nHello.") || !s.Exited() {
 		t.Errorf("from scene 2:\n%s", s.Transcript())
 	}
-	if s := play(t, Options{Scene: "first", Single: true, Scenes: twoScenes}); strings.Contains(s.Transcript(), "BYE.") || !s.Exited() {
-		t.Errorf("Single plays one scene:\n%s", s.Transcript())
+}
+
+// wopr -m <scene> --only plays that scene alone, then exits 0; wopr -m --only opens the menu,
+// and each scene picked there plays alone, then the menu returns.
+func TestOnly(t *testing.T) {
+	t.Parallel()
+	s := play(t, Options{Scene: "first", Only: true, Scenes: twoScenes})
+	if want := "[CLEAR]\nLOGON: \nNAME: Joshua\n\nGREETINGS.\n"; !s.Exited() || s.Transcript() != want {
+		t.Errorf("exited %v, transcript:\n%s\nwant:\n%s", s.Exited(), s.Transcript(), want)
+	}
+
+	s = play(t, Options{Only: true, Scenes: twoScenes})
+	if !s.Contains("A SCENE PLAYS ALONE, THEN COMES BACK HERE.") || s.Contains("TO THE END OF THE LIST") {
+		t.Fatalf("the menu says that a scene plays alone:\n%s", s.Transcript())
+	}
+	s.Type("1")
+	if asking, prompt := s.Asking(); !asking || prompt != "SCENE: " || !s.Contains("GREETINGS.") || s.Contains("Hello.") ||
+		strings.Count(s.Transcript(), "MOVIE MODE") != 2 {
+		t.Fatalf("scene 1 plays alone, then the menu returns:\n%s", s.Transcript())
+	}
+	s.Type("2")
+	if !s.Contains("BYE.") || s.Exited() || strings.Count(s.Transcript(), "MOVIE MODE") != 3 {
+		t.Fatalf("scene 2 plays alone, then the menu returns:\n%s", s.Transcript())
+	}
+	s.Type("q")
+	if !s.Exited() {
+		t.Error("Q leaves")
+	}
+}
+
+// With Only the controls still move between scenes, and the scene they reach plays alone: n or
+// Right goes on to the next scene, p or Left back to the previous one, and either is the last.
+func TestOnlyControls(t *testing.T) {
+	t.Parallel()
+	var d *Director
+	key := func(k proto.Key, r rune) []proto.Output { return d.Handle(proto.KeyEvent{Key: k, Rune: r}) }
+	toEnd := func() []proto.Output {
+		var outs []proto.Output
+		for range 10 {
+			if outs = d.Handle(proto.Drained{}); hasOut[proto.Quit](outs) || hasOut[proto.Prompt](outs) {
+				break
+			}
+		}
+		return outs
+	}
+
+	d = New(Options{Scene: "first", Only: true, Scenes: twoScenes})
+	d.Start(proto.Env{})
+	if key(proto.KeyRune, 'n'); d.scene != 1 || d.phase != playing {
+		t.Fatalf("n goes on to the next scene: scene %d phase %d", d.scene, d.phase)
+	}
+	if outs := toEnd(); !hasOut[proto.Quit](outs) || d.scene != 1 {
+		t.Errorf("the scene n reached plays alone, then quits: scene %d %#v", d.scene, outs)
+	}
+
+	d = New(Options{Scene: "second", Only: true, Scenes: twoScenes})
+	d.Start(proto.Env{})
+	if key(proto.KeyRune, 'p'); d.scene != 0 || d.phase != playing {
+		t.Fatalf("p goes back: scene %d phase %d", d.scene, d.phase)
+	}
+	if outs := toEnd(); !hasOut[proto.Quit](outs) || d.scene != 0 {
+		t.Errorf("the scene p reached plays alone, then quits: scene %d %#v", d.scene, outs)
+	}
+
+	d = New(Options{Scene: "second", Only: true, Scenes: twoScenes})
+	d.Start(proto.Env{})
+	if outs := key(proto.KeyRight, 0); !hasOut[proto.Quit](outs) {
+		t.Errorf("Right on the last scene ends the list: %#v", outs)
+	}
+
+	// Esc opens the menu; a scene picked there plays alone, then the menu returns.
+	d = New(Options{Scene: "first", Only: true, Scenes: twoScenes})
+	d.Start(proto.Env{})
+	if key(proto.KeyEsc, 0); d.phase != inMenu {
+		t.Fatal("Esc opens the menu")
+	}
+	d.Handle(proto.LineEvent{Text: "1"})
+	if outs := toEnd(); !hasOut[proto.Prompt](outs) || d.phase != inMenu {
+		t.Errorf("after a scene picked from the menu, the menu returns: %#v", outs)
 	}
 }
 
@@ -307,7 +384,7 @@ func TestGameClock(t *testing.T) {
 	scene := []scenes.Scene{{Slug: "clock", Steps: []scenes.Step{
 		clock, scenes.Say{Lines: script.Orig("AFTER."), Pace: proto.PaceSpeech},
 	}}, twoScenes[1]}
-	if s := play(t, Options{Scene: "clock", Single: true, Scenes: scene}); s.Transcript() != "[CLEAR]\nELAPSED 1 MIN 00 SEC\nREMAINING 2 MIN 59 SEC\nAFTER.\n" {
+	if s := play(t, Options{Scene: "clock", Only: true, Scenes: scene}); s.Transcript() != "[CLEAR]\nELAPSED 1 MIN 00 SEC\nREMAINING 2 MIN 59 SEC\nAFTER.\n" {
 		t.Errorf("transcript:\n%s", s.Transcript())
 	}
 

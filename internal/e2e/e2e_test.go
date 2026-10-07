@@ -62,7 +62,14 @@ func exitCode(err error) int {
 
 func run(t *testing.T, args ...string) (stdout, stderr string, code int) {
 	t.Helper()
+	return runEnv(t, nil, args...)
+}
+
+// runEnv runs wopr without a terminal, with extra environment variables.
+func runEnv(t *testing.T, env []string, args ...string) (stdout, stderr string, code int) {
+	t.Helper()
 	cmd := exec.Command(binary, args...)
+	cmd.Env = append(os.Environ(), env...)
 	var o, e bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &o, &e
 	err := cmd.Run()
@@ -121,6 +128,20 @@ func TestRefusesWithoutTerminal(t *testing.T) {
 	}
 	if _, errOut, code := run(t, "--movie"); code != 2 || !strings.Contains(errOut, "not a terminal") {
 		t.Errorf("--movie without a terminal: exit %d, stderr %q; want 2 and an explanation", code, errOut)
+	}
+}
+
+// Usage errors exit 2 before wopr looks for a terminal: --only without --movie, and a seed
+// that is not a number, from the flag or from WOPR_SEED, each naming its source.
+func TestUsageErrors(t *testing.T) {
+	if _, errOut, code := run(t, "--only"); code != 2 || !strings.Contains(errOut, "--only needs --movie") {
+		t.Errorf("--only alone: exit %d, stderr %q; want 2 and an explanation", code, errOut)
+	}
+	if _, errOut, code := runEnv(t, []string{"WOPR_SEED=x"}); code != 2 || !strings.Contains(errOut, `WOPR_SEED needs a non-negative integer, got "x"`) {
+		t.Errorf("WOPR_SEED=x: exit %d, stderr %q; want 2 naming WOPR_SEED", code, errOut)
+	}
+	if _, errOut, code := runEnv(t, []string{"WOPR_SEED=1"}, "-s", "x"); code != 2 || !strings.Contains(errOut, "--seed needs") {
+		t.Errorf("-s x: exit %d, stderr %q; want 2 naming --seed", code, errOut)
 	}
 }
 
@@ -308,6 +329,27 @@ func TestMoviePlaysToTheEnd(t *testing.T) {
 	}
 }
 
+// wopr -m joshua --only plays that scene alone, its pauses included, and exits 0 at its end
+// without a key, instead of going on to the next scene (first-strike, which asks for a side).
+func TestMovieOnlyPlaysOneScene(t *testing.T) {
+	s := start(t, 80, 24, "-m", "joshua", "--only", "--instant")
+	s.waitFor("GREETINGS PROFESSOR FALKEN.", 15*time.Second)
+	s.waitFor("FINE.", 30*time.Second)
+	deadline := time.Now().Add(30 * time.Second)
+	for sc := s.screen(); !strings.Contains(sc, "--CONNECTION TERMINATED--"); sc = s.screen() {
+		if strings.Contains(sc, "WHICH SIDE DO YOU WANT?") {
+			t.Fatalf("the next scene started:\n%s", sc)
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("wopr did not end after the scene; screen:\n%s", sc)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if code := s.wait(10 * time.Second); code != 0 {
+		t.Errorf("exit %d at the end of the scene, want 0", code)
+	}
+}
+
 // Movie mode's keys from a real terminal, paced: Space pauses (nothing moves), Right skips to
 // the next scene, a lone Esc opens the menu, and Ctrl+C exits 130.
 func TestMovieKeys(t *testing.T) {
@@ -358,10 +400,11 @@ func TestTooSmallThenResize(t *testing.T) {
 	}
 }
 
-// The debug log records the seed, says where it is, and never holds typed input.
+// The debug log records the seed (WOPR_SEED pins it), says where it is, and never holds typed
+// input.
 func TestDebugLog(t *testing.T) {
 	cache := t.TempDir()
-	env := []string{"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
+	env := []string{"WOPR_DEBUG=1", "WOPR_SEED=1983", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
 	s := startEnv(t, 80, 24, env, "--instant")
 	s.waitFor("LOGON:", 10*time.Second)
 	s.send("Joshua\r")
@@ -382,7 +425,7 @@ func TestDebugLog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("no debug log under %s: %v", cache, err)
 	}
-	if !strings.Contains(string(data), "seed ") || strings.Contains(string(data), "Joshua") {
-		t.Errorf("the log must hold the seed and no typed input:\n%s", data)
+	if !strings.Contains(string(data), "seed 1983 (pinned: true)") || strings.Contains(string(data), "Joshua") {
+		t.Errorf("the log must hold the seed from WOPR_SEED and no typed input:\n%s", data)
 	}
 }
