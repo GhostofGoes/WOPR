@@ -201,7 +201,7 @@ art (L-4).
 | 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
-| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the assets tests pin every city's cell). | U |
+| 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the other targets a list may name are placed the same way and may share a city's cell; the assets tests pin every place's cell). | U |
 
 ---
 
@@ -831,6 +831,12 @@ no verdict of their own.
       then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. Targets are read until an empty
       line; a multi-line paste arrives as one line, so targets on one line are split on commas.
+      - A target must be a place on the enemy's side that the board knows (`internal/assets/gtwmap.go`: the
+        26 cities and 85 more targets), by its 1983 name or another in use (`KYIV`, `ST PETERSBURG`,
+        `NIZHNY NOVGOROD`, `NYC`, `WASHINGTON, D.C.`), in any case. Anything else strikes nothing: it is
+        refused (`SMALLVILLE IS NOT IN THE TARGET DATABASE.`, `MOSCOW IS NOT AN ENEMY TARGET.`) with the hint
+        `TYPE LIST FOR THE ENEMY TARGETS ON FILE.` `LIST` (also `HELP`, `?`) prints them in four columns. A
+        target listed twice counts once, so `WASHINGTON, D.C.` is one.
    3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24). **As built in M5**:
       - **The first strike needs no order.** The empty line that ends the target list opens the board at
         DEFCON 5 and launches strike 1 at once on WOPR's **war plan** (ICBM 25%, SLBM 25%, bombers 0%), as in

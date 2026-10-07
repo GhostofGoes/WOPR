@@ -12,6 +12,10 @@ var (
 	lineAwaiting  = script.Recon("AWAITING FIRST STRIKE COMMAND", "", "PLEASE LIST PRIMARY TARGETS BY", "CITY AND/OR COUNTY NAME:")
 	lineNoTargets = script.Orig("AT LEAST ONE TARGET, PROFESSOR. AN EMPTY LINE ENDS THE LIST.")
 	lineTooMany   = script.Orig("TARGET LIST FULL.")
+	lineUnknown   = script.Orig("# IS NOT IN THE TARGET DATABASE.")
+	lineOwnSide   = script.Orig("# IS NOT AN ENEMY TARGET.")
+	lineListHint  = script.Orig("TYPE LIST FOR THE ENEMY TARGETS ON FILE.")
+	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
 	lineRunning   = script.Recon("** GAME ROUTINE RUNNING **")
@@ -68,7 +72,8 @@ var (
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
-	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineAssessed,
+	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
+	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioTitle, lineRatioHead, lineMilitary, lineCivilian,

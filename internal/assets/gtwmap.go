@@ -4,8 +4,9 @@
 package assets
 
 import (
-	"hash/fnv"
 	"math"
+	"slices"
+	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
@@ -189,11 +190,11 @@ func moved(p Place, dx, dy int) Place {
 	return p
 }
 
-// Cities are the targets the board knows by name, placed from their real latitude and
-// longitude, each in a cell of its own. A cell is 5 degrees across and 7.5 down, so a few
-// share one, or fall where the art draws a coast a column off its true line; those are
-// moved a cell, each the way that keeps it in its own country and on the right side of
-// its coast.
+// Cities are the board's principal targets, and WOPR's aim points: placed from their real
+// latitude and longitude, each in a cell of its own. A cell is 5 degrees across and 7.5
+// down, so a few share one, or fall where the art draws a coast a column off its true line;
+// those are moved a cell, each the way that keeps it in its own country and on the right
+// side of its coast.
 var Cities = []Place{
 	place("SEATTLE", US, 47.61, -122.33),
 	place("SAN FRANCISCO", US, 37.77, -122.42),
@@ -240,26 +241,217 @@ var Silos = map[Side]Place{
 	USSR: place("SILO FIELD", USSR, 55.3, 89.8),
 }
 
-// Locate returns where a target lies on side's territory: the named city, or, for a name
-// the board does not know, a fixed point chosen from the name, so a target always lands
-// in the same place.
-func Locate(name string, side Side) Place {
-	for _, c := range Cities {
-		if c.Name == name && c.Side == side {
-			return c
-		}
-	}
-	var own []Place
-	for _, c := range Cities {
-		if c.Side == side {
-			own = append(own, c)
-		}
-	}
-	h := fnv.New32a()
-	_, _ = h.Write([]byte(name))
-	near := own[int(h.Sum32()%uint32(len(own)))]
-	return Place{Name: name, Side: side, X: near.X, Y: near.Y}
+// Targets are the other places a target list may name, placed the same way from their real
+// latitude and longitude: more cities, and the bases a war plan would name. They are not
+// WOPR's aim points, and at 5 degrees by 7.5 a cell most share one with a city nearby, as
+// they do on a board this coarse: Philadelphia and Baltimore strike Washington's cell, which
+// holds them. Each was checked against the art: in its own country, and on the right side of
+// its coast. Four are moved a cell, each with its reason.
+var Targets = []Place{
+	place("SAN DIEGO", US, 32.72, -117.16),
+	place("SAN JOSE", US, 37.34, -121.89),
+	place("SACRAMENTO", US, 38.58, -121.49),
+	place("PORTLAND", US, 45.52, -122.68),
+	place("SPOKANE", US, 47.66, -117.43),
+	place("BOISE", US, 43.62, -116.20),
+	place("RENO", US, 39.53, -119.81),
+	place("SALT LAKE CITY", US, 40.76, -111.89),
+	place("PHOENIX", US, 33.45, -112.07),
+	place("TUCSON", US, 32.22, -110.97),
+	place("ALBUQUERQUE", US, 35.08, -106.65),
+	place("EL PASO", US, 31.76, -106.49),
+	place("COLORADO SPRINGS", US, 38.83, -104.82), // NORAD, in Cheyenne Mountain
+	place("CHEYENNE", US, 41.14, -104.82),         // the Minuteman fields: Warren,
+	place("GREAT FALLS", US, 47.51, -111.30),      // Malmstrom,
+	place("MINOT", US, 48.23, -101.29),            // Minot
+	place("GRAND FORKS", US, 47.93, -97.03),       // and Grand Forks
+	place("DALLAS", US, 32.78, -96.80),
+	place("FORT WORTH", US, 32.76, -97.33),
+	place("SAN ANTONIO", US, 29.42, -98.49),
+	place("AUSTIN", US, 30.27, -97.74),
+	place("OKLAHOMA CITY", US, 35.47, -97.52),
+	place("WICHITA", US, 37.69, -97.33),
+	place("KANSAS CITY", US, 39.10, -94.58),
+	place("ST LOUIS", US, 38.63, -90.20),
+	place("MINNEAPOLIS", US, 44.98, -93.27),
+	place("MILWAUKEE", US, 43.04, -87.91),
+	place("DETROIT", US, 42.33, -83.05),
+	place("CLEVELAND", US, 41.50, -81.69),
+	place("COLUMBUS", US, 39.96, -83.00),
+	place("CINCINNATI", US, 39.10, -84.51),
+	place("INDIANAPOLIS", US, 39.77, -86.16),
+	place("LOUISVILLE", US, 38.25, -85.76),
+	place("PITTSBURGH", US, 40.44, -80.00),
+	place("BUFFALO", US, 42.89, -78.88),
+	place("PHILADELPHIA", US, 39.95, -75.17),
+	place("BALTIMORE", US, 39.29, -76.61),
+	place("NORFOLK", US, 36.85, -76.29),
+	place("CHARLOTTE", US, 35.23, -80.84),
+	place("CHARLESTON", US, 32.78, -79.93),
+	place("NASHVILLE", US, 36.16, -86.78),
+	place("MEMPHIS", US, 35.15, -90.05),
+	place("LITTLE ROCK", US, 34.75, -92.29),
+	place("NEW ORLEANS", US, 29.95, -90.07),
+	// Jacksonville is on the Atlantic, where the art draws the coast a column east of its
+	// true line (as at Miami): its own cell is inland, Atlanta's, and the column east, 1.66
+	// degrees away, is the coast's.
+	moved(place("JACKSONVILLE", US, 30.33, -81.66), 1, 0),
+	place("TAMPA", US, 27.95, -82.46),
+	// Orlando, like Miami, falls on the art's Gulf coast, the "." of ".-."; it lies inland,
+	// 1.38 degrees short of the column east, where the art draws the Florida peninsula.
+	moved(place("ORLANDO", US, 28.54, -81.38), 1, 0),
+	place("ANCHORAGE", US, 61.22, -149.90),
+	place("HONOLULU", US, 21.31, -157.86), // the art's "`" in the mid-Pacific is Hawaii
+	place("TALLINN", USSR, 59.44, 24.75),
+	place("RIGA", USSR, 56.95, 24.11),
+	place("VILNIUS", USSR, 54.69, 25.28),
+	place("KALININGRAD", USSR, 54.71, 20.51),
+	place("KISHINEV", USSR, 47.01, 28.86),
+	// Sevastopol is on the Crimea, which the art does not draw: its cell is the Black Sea's
+	// "<". It lies 0.38 degrees south of the row above, the sea's north shore, and stands
+	// there, with Odessa.
+	moved(place("SEVASTOPOL", USSR, 44.62, 33.53), 0, -1),
+	place("DNEPROPETROVSK", USSR, 48.46, 35.05),
+	place("DONETSK", USSR, 48.02, 37.80),
+	place("ROSTOV", USSR, 47.24, 39.70),
+	place("VOLGOGRAD", USSR, 48.71, 44.51),
+	place("KUYBYSHEV", USSR, 53.20, 50.10),
+	place("KAZAN", USSR, 55.80, 49.11),
+	place("ARKHANGELSK", USSR, 64.54, 40.52),
+	place("SEVEROMORSK", USSR, 69.07, 33.42), // the Northern Fleet, beside Murmansk
+	place("TBILISI", USSR, 41.72, 44.83),
+	place("YEREVAN", USSR, 40.18, 44.50),
+	place("BAKU", USSR, 40.41, 49.87), // a port on the art's Caspian, "6"; across it is Turkmenia
+	place("ASHKHABAD", USSR, 37.96, 58.33),
+	place("SAMARKAND", USSR, 39.63, 66.98),
+	place("DUSHANBE", USSR, 38.56, 68.79),
+	place("FRUNZE", USSR, 42.87, 74.57),
+	place("ALMA-ATA", USSR, 43.22, 76.85),
+	place("BAIKONUR", USSR, 45.96, 63.31),
+	place("SEMIPALATINSK", USSR, 50.41, 80.23),
+	place("PERM", USSR, 58.01, 56.25),
+	place("UFA", USSR, 54.74, 55.97),
+	place("CHELYABINSK", USSR, 55.16, 61.44),
+	place("OMSK", USSR, 54.99, 73.32),
+	place("TOMSK", USSR, 56.50, 84.97),
+	place("KRASNOYARSK", USSR, 56.02, 92.89),
+	place("NORILSK", USSR, 69.36, 88.19),
+	place("YAKUTSK", USSR, 62.04, 129.68),
+	place("CHITA", USSR, 52.05, 113.47),
+	// Khabarovsk stands on the Amur, inland; its cell is the art's Pacific coast, the "/" of
+	// "/.", and it lies 0.07 degrees east of the column to the west, which is inland.
+	moved(place("KHABAROVSK", USSR, 48.48, 135.07), -1, 0),
+	place("MAGADAN", USSR, 59.56, 150.83),
+	place("PETROPAVLOVSK", USSR, 53.05, 158.65),
 }
 
+// aliases are other names a target list may use for a place the board knows, both sides
+// written as key makes them: today's names for the 1983 ones the board uses, and short
+// forms. A name that is neither a place's nor an alias is not found; the board strikes
+// nothing in its stead.
+var aliases = map[string]string{
+	"WASHINGTON DC":        "WASHINGTON",
+	"DC":                   "WASHINGTON",
+	"DISTRICT OF COLUMBIA": "WASHINGTON",
+	"PENTAGON":             "WASHINGTON",
+	"THE PENTAGON":         "WASHINGTON",
+	"NEW YORK CITY":        "NEW YORK",
+	"NYC":                  "NEW YORK",
+	"MANHATTAN":            "NEW YORK",
+	"VEGAS":                "LAS VEGAS",
+	"NORAD":                "COLORADO SPRINGS",
+	"CHEYENNE MOUNTAIN":    "COLORADO SPRINGS",
+	"PEARL HARBOR":         "HONOLULU",
+
+	"ST PETERSBURG":            "LENINGRAD",
+	"PETERSBURG":               "LENINGRAD",
+	"PETROGRAD":                "LENINGRAD",
+	"MOSKVA":                   "MOSCOW",
+	"KYIV":                     "KIEV",
+	"KHARKIV":                  "KHARKOV",
+	"ODESA":                    "ODESSA",
+	"NIZHNY NOVGOROD":          "GORKY",
+	"NIZHNI NOVGOROD":          "GORKY",
+	"GORKI":                    "GORKY",
+	"GORKIY":                   "GORKY",
+	"YEKATERINBURG":            "SVERDLOVSK",
+	"EKATERINBURG":             "SVERDLOVSK",
+	"STALINGRAD":               "VOLGOGRAD",
+	"SAMARA":                   "KUYBYSHEV",
+	"KUIBYSHEV":                "KUYBYSHEV",
+	"ROSTOV ON DON":            "ROSTOV",
+	"CHISINAU":                 "KISHINEV",
+	"DNIPRO":                   "DNEPROPETROVSK",
+	"DNIPROPETROVSK":           "DNEPROPETROVSK",
+	"SEBASTOPOL":               "SEVASTOPOL",
+	"KONIGSBERG":               "KALININGRAD",
+	"TIFLIS":                   "TBILISI",
+	"ASHGABAT":                 "ASHKHABAD",
+	"BISHKEK":                  "FRUNZE",
+	"ALMATY":                   "ALMA ATA",
+	"TYURATAM":                 "BAIKONUR",
+	"LENINSK":                  "BAIKONUR",
+	"SEMEY":                    "SEMIPALATINSK",
+	"PETROPAVLOVSK KAMCHATSKY": "PETROPAVLOVSK",
+}
+
+// key is a name as Find compares it: in capitals, its words single-spaced, full stops and
+// apostrophes dropped (D.C., ST. LOUIS) and other marks taken as spaces (ALMA-ATA), and SAINT
+// written ST.
+func key(name string) string {
+	var b strings.Builder
+	space := false
+	for _, r := range strings.ToUpper(name) {
+		switch {
+		case r == '.' || r == '\'' || r == '\u2019':
+		case r >= 'A' && r <= 'Z' || r >= '0' && r <= '9':
+			if space && b.Len() > 0 {
+				b.WriteByte(' ')
+			}
+			space = false
+			b.WriteRune(r)
+		default:
+			space = true
+		}
+	}
+	k := b.String()
+	if rest, ok := strings.CutPrefix(k, "SAINT "); ok {
+		k = "ST " + rest
+	}
+	return k
+}
+
+// known is every place the board knows, Cities and Targets, by key.
+var known = func() map[string]Place {
+	m := map[string]Place{}
+	for _, p := range append(slices.Clone(Cities), Targets...) {
+		m[key(p.Name)] = p
+	}
+	return m
+}()
+
+// Find returns the place a target list names, on either side: a city or base the board
+// knows, by the name it had in 1983 (LENINGRAD, GORKY) or another in use (ST PETERSBURG,
+// NIZHNY NOVGOROD, WASHINGTON D.C.), in any case and spacing. A name it does not know is not
+// found, so a target is only ever struck where it is.
+func Find(name string) (Place, bool) {
+	k := key(name)
+	if a, ok := aliases[k]; ok {
+		k = a
+	}
+	p, ok := known[k]
+	return p, ok
+}
+
+// placeNames is every place's name, as a target list (LIST) prints it: real place names,
+// spelled as the board spells them.
+var placeNames = func() script.Ls {
+	var names []string
+	for _, p := range append(slices.Clone(Cities), Targets...) {
+		names = append(names, p.Name)
+	}
+	return script.Orig(names...)
+}()
+
 // Lines is every script block here, for the provenance test. Map is part of World.
-var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Scenarios}
+var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Scenarios, placeNames}

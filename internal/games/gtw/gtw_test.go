@@ -96,6 +96,58 @@ func TestTargets(t *testing.T) {
 	}
 }
 
+// A name the board does not know, or one of your own cities, is refused with the way to see
+// what is on file; LIST prints the enemy's targets, and they fit the console.
+func TestTargetsOnFile(t *testing.T) {
+	t.Parallel()
+	g := testkit.Game(t, gtw.New(), info, "", 1)
+	g.Type("2").Type("Smallville, Moscow")
+	for _, want := range []string{
+		"SMALLVILLE IS NOT IN THE TARGET DATABASE.", "MOSCOW IS NOT AN ENEMY TARGET.",
+		"TYPE LIST FOR THE ENEMY TARGETS ON FILE.",
+	} {
+		if !g.Contains(want) {
+			t.Errorf("missing %q:\n%s", want, g.Transcript())
+		}
+	}
+	g.Type("")
+	if !g.Contains("AT LEAST ONE TARGET") {
+		t.Fatalf("refused targets are not listed:\n%s", g.Transcript())
+	}
+	g.Type("?")
+	if !g.Contains("US TARGETS ON FILE:") {
+		t.Errorf("? lists the targets:\n%s", g.Transcript())
+	}
+	before := g.Transcript()
+	g.Type("list")
+	out := strings.TrimPrefix(g.Transcript(), before)
+	_, list, ok := strings.Cut(out, "US TARGETS ON FILE:")
+	if !ok {
+		t.Fatalf("LIST names the enemy:\n%s", out)
+	}
+	for _, want := range []string{"LAS VEGAS", "SEATTLE", "SAN DIEGO", "HONOLULU", "COLORADO SPRINGS"} {
+		if !strings.Contains(list, want) {
+			t.Errorf("LIST is missing %s:\n%s", want, list)
+		}
+	}
+	if strings.Contains(list, "MOSCOW") || strings.Contains(list, "WASHINGTON DC") {
+		t.Errorf("LIST shows only the enemy's places, by their own names:\n%s", list)
+	}
+	// The list, the prompt and the line typed fit the 23 console rows, in 80 columns.
+	if rows := strings.Count(out, "\n"); rows > 23 {
+		t.Errorf("LIST takes %d rows:\n%s", rows, list)
+	}
+	for _, line := range strings.Split(list, "\n") {
+		if len(line) > 80 {
+			t.Errorf("LIST line is %d wide: %q", len(line), line)
+		}
+	}
+	g.Type("Seattle").Type("")
+	if !g.Contains("FIRST STRIKE LAUNCHED.") {
+		t.Errorf("a known target opens the board:\n%s", g.Transcript())
+	}
+}
+
 // The side choice is one screen: the two outlines, their names and the question fit 80x24
 // with the front panel (23 console rows), the art printed at table pace.
 func TestSideChoiceFits(t *testing.T) {

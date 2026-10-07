@@ -1,6 +1,7 @@
 package gtw
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -70,58 +71,109 @@ func TestPatrolsAreAtSea(t *testing.T) {
 		{assets.US, "MOSCOW", 0},
 		{assets.US, "VLADIVOSTOK", 1},
 	} {
-		enemy := enemyOf(tc.side)
-		if got := seaLaunch(tc.side, assets.Locate(tc.target, enemy)); got != patrols[tc.side][tc.want] {
+		to, ok := assets.Find(tc.target)
+		if !ok || to.Side != enemyOf(tc.side) {
+			t.Fatalf("%s is not an enemy target of side %d: %+v", tc.target, tc.side, to)
+		}
+		if got := seaLaunch(tc.side, to); got != patrols[tc.side][tc.want] {
 			t.Errorf("side %d at %s fires from %+v, want %+v", tc.side, tc.target, got, patrols[tc.side][tc.want])
 		}
 	}
 }
 
-// Every city the board knows is struck where the assets place it: listed alone, it takes the
-// first strike's city-aimed ICBMs and SLBMs, and its impact is a reversed X at its cell
-// inside the map box. The film's two targets are pinned on the screen as well: Las Vegas in
-// the south-west, a column inland of Los Angeles, and Seattle in the north-west, under the
-// Pacific coast's '\'.
+// Every place the board knows is struck where the assets place it, by its own name or
+// another: listed alone, it takes the first strike's city-aimed ICBMs and SLBMs, and its
+// impact is a reversed X at its cell inside the map box. The film's two targets are pinned on
+// the screen as well: Las Vegas in the south-west, a column inland of Los Angeles, and
+// Seattle in the north-west, under the Pacific coast's '\'.
 func TestStrikesLandOnTheirCities(t *testing.T) {
 	t.Parallel()
+	typed := map[string]string{} // what is typed, and the place it names
+	for _, p := range append(slices.Clone(assets.Cities), assets.Targets...) {
+		typed[p.Name] = p.Name
+	}
+	for in, name := range map[string]string{
+		"St. Petersburg": "LENINGRAD", "Kyiv": "KIEV", "Kharkiv": "KHARKOV", "Odesa": "ODESSA",
+		"Yekaterinburg": "SVERDLOVSK", "Nizhny Novgorod": "GORKY", "Washington DC": "WASHINGTON",
+		"Washington, D.C.": "WASHINGTON", "NYC": "NEW YORK", "saint louis": "ST LOUIS",
+		"Alma-Ata": "ALMA-ATA", "Pearl Harbor": "HONOLULU",
+	} {
+		typed[in] = name
+	}
 	screen := map[string][2]int{"LAS VEGAS": {14, 7}, "SEATTLE": {12, 5}}
-	for _, city := range assets.Cities {
+	for in, name := range typed {
+		place, ok := assets.Find(name)
+		if !ok {
+			t.Fatalf("the board does not know %s", name)
+		}
 		side := "1"
-		if city.Side == assets.US {
+		if place.Side == assets.US {
 			side = "2"
 		}
 		g := New().(*Game)
 		g.Start(proto.Env{Seed: 1, Instant: true})
-		for _, in := range []string{side, city.Name, ""} {
-			g.Handle(proto.LineEvent{Text: in})
+		for _, line := range []string{side, in, ""} {
+			g.Handle(proto.LineEvent{Text: line})
+		}
+		if len(g.targets) != 1 || g.targets[0] != place {
+			t.Errorf("%q lists %+v, want only %+v", in, g.targets, place)
 		}
 		hits := 0
 		for _, m := range g.missiles {
-			if m.ours && m.to.Name == city.Name {
+			if m.ours && m.to.Name == place.Name {
 				hits++
-				if m.to.X != city.X || m.to.Y != city.Y {
-					t.Errorf("%s: a track lands at %d,%d, want %d,%d", city.Name, m.to.X, m.to.Y, city.X, city.Y)
+				if m.to.X != place.X || m.to.Y != place.Y {
+					t.Errorf("%q: a track lands at %d,%d, want %d,%d", in, m.to.X, m.to.Y, place.X, place.Y)
 				}
 			}
 		}
 		if hits == 0 {
-			t.Errorf("%s: the first strike sent nothing at it", city.Name)
+			t.Errorf("%q: the first strike sent nothing at it", in)
 		}
 		c := proto.NewCanvas(80, 19)
 		g.View(c)
-		x, y := mapLeft+city.X, mapTop+city.Y
+		x, y := mapLeft+place.X, mapTop+place.Y
 		if cell := c.At(x, y); cell.R != 'X' || cell.A&proto.AttrReverse == 0 {
-			t.Errorf("%s: the board shows %q at %d,%d, want a reversed X:\n%s", city.Name, cell.R, x, y, c.String())
+			t.Errorf("%q: the board shows %q at %d,%d, want a reversed X:\n%s", in, cell.R, x, y, c.String())
 		}
-		if want, ok := screen[city.Name]; ok {
-			delete(screen, city.Name)
+		if want, ok := screen[in]; ok {
+			delete(screen, in)
 			if x != want[0] || y != want[1] {
-				t.Errorf("%s is drawn at %d,%d, want %d,%d", city.Name, x, y, want[0], want[1])
+				t.Errorf("%s is drawn at %d,%d, want %d,%d", in, x, y, want[0], want[1])
 			}
 		}
 	}
 	if len(screen) != 0 {
 		t.Errorf("the board does not know the film's targets %v", screen)
+	}
+}
+
+// A target must be a place the board knows on the enemy's side, by any of its names; anything
+// else is refused and strikes nothing. A target listed twice is listed once.
+func TestUnknownTargetsAreRefused(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		side, in string
+		want     []string // the targets listed
+	}{
+		{"1", "Smallville, London", nil},
+		{"1", "Las Vegas, Seattle", nil},
+		{"2", "Moscow, Washington, D.C.", []string{"WASHINGTON"}},
+		{"2", "San Diego, Detroit, Portland, Dallas", []string{"SAN DIEGO", "DETROIT", "PORTLAND", "DALLAS"}},
+		{"1", "St Petersburg, Kyiv, Kyiv, Kiev", []string{"LENINGRAD", "KIEV"}},
+		{"1", "Moscow, Springfield, Minsk", []string{"MOSCOW", "MINSK"}},
+	} {
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: 1, Instant: true})
+		g.Handle(proto.LineEvent{Text: tc.side})
+		g.Handle(proto.LineEvent{Text: tc.in})
+		var got []string
+		for _, p := range g.targets {
+			got = append(got, p.Name)
+		}
+		if !slices.Equal(got, tc.want) {
+			t.Errorf("side %s, %q lists %q, want %q", tc.side, tc.in, got, tc.want)
+		}
 	}
 }
 
