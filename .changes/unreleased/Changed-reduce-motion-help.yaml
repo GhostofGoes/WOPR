@@ -1,0 +1,3 @@
+kind: Changed
+body: '`wopr --help` now says what `--reduce-motion` does.'
+time: 2026-10-07T05:16:23Z

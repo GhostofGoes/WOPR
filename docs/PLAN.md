@@ -255,7 +255,7 @@ internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, ga
 internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
 internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
-internal/tools/...   → stdlib                         sizegate, stage, notices (Go programs, not shell)
+internal/tools/...   → stdlib                         sizegate, stage, notices, relnotes (Go programs, not shell)
 internal/llm         → proto, wopr                    plus net/http (M7)
 ```
 
@@ -299,10 +299,10 @@ internal/games/              registry.go (Info, Status, Game, Entry, Registry, R
 internal/sim/                M4 engine
 internal/assets/             gtw_map.go (original), scenarios.go (third-party:abs0), banner.go (original)
 internal/movie/              director.go scenes/*.go (M6)
-internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage,notices}/
+internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage,notices,relnotes}/
 tools/go.mod                 Go tools: gitleaks, govulncheck
 tools/lint/go.mod            Go tool: golangci-lint (separate: its dependencies break gitleaks's build, SL-2)
-tools/release/go.mod         Go tool: goreleaser (T-11)
+tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3)
 ```
 
 ### 4.2 Runtime flow and state ownership
@@ -1392,7 +1392,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
   `go tool -modfile=<module> <tool>`:
   - `tools/go.mod`: gitleaks and govulncheck;
   - `tools/lint/go.mod`: golangci-lint (for the lint self-test and the Commands table);
-  - `tools/release/go.mod`: GoReleaser.
+  - `tools/release/go.mod`: GoReleaser and changie.
 
   golangci-lint is separate because sharing a module with gitleaks pulls `x/ansi` to a version that breaks
   gitleaks's build (SL-2). **No tool module's `go` line may be newer than the root `toolchain` line**, because
@@ -1419,6 +1419,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
   list.
 - **ShellCheck** stays in the hook set for any future script. CI and tooling logic is Go (`internal/tools/*`),
   so it runs on Windows (B-14).
+- **Change notes** (§13): a local `change-notes` hook runs `go run ./internal/tools/relnotes -check` when
+  `.changes/`, `.changie.yaml`, `CHANGELOG.md` or relnotes itself changes, and on every `--all-files` run.
+  It builds the pinned changie, so the generated `CHANGELOG.md` and version files are also kept to what
+  rumdl and the whitespace fixers accept.
 - **Commands** have one home: the Commands table in `AGENTS.md`. There is no Makefile, because Git for Windows
   ships no `make`. The README links to that table.
 
@@ -1479,10 +1483,10 @@ its run tests exactly the tree the squash merge produces.
 
 | Job | Runner(s) | Does |
 |---|---|---|
-| `lint` | `ubuntu-24.04` | prek via `j178/prek-action` with `prek-version: 0.5.5`. The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
+| `lint` | `ubuntu-24.04` | `fetch-depth: 0`. prek via `j178/prek-action` with `prek-version: 0.5.5`, including the `change-notes` hook (`relnotes -check`: the notes parse and fit one Debian changelog line, `CHANGELOG.md` is `changie merge`'s output, every release tag has its `.changes/vX.Y.Z.md`). The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). `relnotes -since origin/main`: a branch that changes a non-test file under `cmd/` or `internal/` (test-only packages aside) adds a change note or carries a `Changelog: none` trailer (AGENTS.md). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
-| `build` | `ubuntu-24.04` | GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, checks every archive's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
+| `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR`; GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, checks every archive's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
 | `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. |
 | `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
@@ -1493,7 +1497,16 @@ its run tests exactly the tree the squash merge produces.
    of the same name from another app is ignored). A tag pushed right after its merge arrives before `main`'s
    CI run has finished, so a missing or pending `ci-ok` is waited out, for up to 45 minutes; any other
    result fails at once. (v0.2.0's first release run failed on exactly that race.)
-2. **`build`** (`contents: read`, no OIDC). `goreleaser release --clean --skip=publish`, then the size gate,
+2. **`build`** (`contents: read`, no OIDC). First the release notes: `internal/tools/relnotes -version vX.Y.Z`
+   writes `notes.md` (the release body), `CHANGELOG.md` and `changelog.yml` (nFPM's chglog format, for the
+   `.deb` and `.rpm` changelogs) into `build/notes`, which `.gitignore` keeps out of the tree GoReleaser
+   needs clean. GoReleaser's templates find it through `WOPR_NOTES_DIR`; `nfpms.changelog` takes no
+   template (GoReleaser v2.18.2), so it names `build/notes/changelog.yml`. `notes.md` is uploaded for
+   `publish`. They
+   come from the release pull request's `.changes/vX.Y.Z.md`, or, if it did not batch the notes, from
+   `.changes/unreleased` batched in a temporary copy, dated by the tagged commit, with a warning; relnotes
+   refuses when an earlier tag has no `.changes/vX.Y.Z.md`, whose notes would repeat (AGENTS.md,
+   "Releasing"). Then `goreleaser release --clean --skip=publish`, the size gate,
    then `stage -archives -assets dist/release`, which checks that every archive contains `LICENSE`,
    `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), and collects every file the release
    publishes into `dist/release`: the six archives, the six bare binaries (a GoReleaser `binary`-format
@@ -1501,15 +1514,17 @@ its run tests exactly the tree the squash merge produces.
    GoReleaser writes over all of them (`checksum.extra_files` adds the documents). Each file must match its
    checksum line. The staged files and `dist/release` are uploaded.
 3. **`smoke`**: the reusable workflow, run on the staged release binaries.
-4. **`rebuild`** runs beside `build`, not after it: GoReleaser again from a fresh checkout on
-   `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. **`repro`** then diffs the two
+4. **`rebuild`** runs beside `build`, not after it: relnotes and GoReleaser again from a fresh checkout on
+   `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. relnotes takes every date from a
+   version header or a commit, so both jobs package the same notes. **`repro`** then diffs the two
    `checksums.txt` files. Any difference fails the release.
 5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`), on a tag push only, and only
    when every earlier job succeeded.
    1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt`, so every published file is
       attested.
-   2. `gh release create vX.Y.Z --draft --verify-tag --generate-notes` with every file from `dist/release`.
-      GoReleaser's own changelog is disabled (CR-8).
+   2. `gh release create vX.Y.Z --draft --verify-tag --notes-file notes.md` with every file from
+      `dist/release`. GitHub's generated notes stand in, with a warning, only if `notes.md` is empty.
+      GoReleaser's own changelog is disabled (CR-8): the notes are the change notes, not commit subjects.
    3. `gh release edit vX.Y.Z --draft=false`.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
@@ -1639,9 +1654,19 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - how to add a game: catalog entry, package, testkit test, definition of done;
   - goldens and `WOPR_UPDATE_GOLDEN`; provenance tags;
   - the size budget and platforms; repository settings;
+  - change notes (how to add one, the style, when `Changelog: none` applies) and how to release;
   - the milestone checklist: dependency updates, runner labels, re-enabling schedules, `prek update`.
 
   `CLAUDE.md` contains exactly `@AGENTS.md`.
+- **Change notes and `CHANGELOG.md`** (owner decision 2026-10-07, after v0.2.0). Every change a player could
+  notice adds a note to `.changes/unreleased/` with changie (pinned in `tools/release/go.mod`; config in
+  `.changie.yaml`). The style is the owner's: plain words at an 8th-grade reading level, what changed for
+  the player and not why, and a deep fix described only by what the player saw ("Fixed a crash in some
+  cases"); one line of at most 76 characters, so that it fits a Debian changelog line. A release pull
+  request batches the notes into `.changes/vX.Y.Z.md` and merges `CHANGELOG.md`, which is never edited by
+  hand; `release.yml` turns the same files into the GitHub Release notes and the package changelogs
+  (§11.3). v0.1.0 and v0.2.0 were written afterwards from their pull requests, in the same style. The
+  owner's part of a release is to merge that pull request and push the tag (AGENTS.md, "Releasing").
 - **Screens**: Appendix C holds the target mockups. The real screens are goldens, kept current by the tests:
   `internal/ui/testdata/gtw_screens.golden` and `card_screens.golden` (Hearts, Gin Rummy, Bridge at 80×24).
 - **This plan** is updated at milestone boundaries. Superseded text is deleted.
