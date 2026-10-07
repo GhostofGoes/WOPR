@@ -29,14 +29,17 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
 | Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
-| Release build (local dry run) | `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
+| Add a change note | `go tool -modfile=tools/release/go.mod changie new` (see [Change notes](#change-notes)) |
+| Check the change notes and `CHANGELOG.md` | `go run ./internal/tools/relnotes -check` (a prek hook) |
+| A release's notes | `go run ./internal/tools/relnotes -version X.Y.Z -out build/notes` (or `-snapshot`) |
+| Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
 
 Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
 fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:
 `tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint) and `tools/release/go.mod`
-(GoReleaser). They are separate because their dependency graphs conflict. No tool module's `go` line may be
+(GoReleaser, changie). They are separate because their dependency graphs conflict. No tool module's `go` line may be
 newer than the root `toolchain` line (a test checks): bump the toolchain first, then the tool.
 
 ## Rules that tests enforce
@@ -103,9 +106,65 @@ drawn and exempt from the capitals rule), `original` or `prompt`. Do not copy te
 without a licence and a `NOTICE.md` entry that credits the source. Lines tagged `prompt` stay out of builds until the brother's
 licence is recorded.
 
+## Change notes
+
+Every change a player could notice gets a change note: a small file in `.changes/unreleased/`, kept with
+[changie](https://changie.dev). A release collects the notes into `CHANGELOG.md`, the GitHub Release, and the
+`.deb` and `.rpm` changelogs.
+
+- **Add one** with `go tool -modfile=tools/release/go.mod changie new`. It asks for the kind and the text;
+  `--kind Fixed --body "..."` skips the questions. The kinds are Keep a Changelog's: Added, Changed,
+  Deprecated, Removed, Fixed and Security. Write one note per change; edit the file to fix a note.
+- **Write it for players**, at an 8th-grade reading level:
+  - Use short, plain words, on one line of at most 76 characters (changie and CI enforce the length).
+  - Say what changed. Do not explain why, or how the code does it.
+  - For a deep technical fix, say only what the player saw that is now fixed: "Fixed a crash in some
+    cases", "Fixed an issue with the Chess game".
+  - Start a fix with "Fixed". Name games as `LIST GAMES` does. Put commands and flags in backticks
+    (`` `--seed` ``). No links.
+  - For example: "`WOPR_SEED` sets the seed, as `--seed` does." or "The chess board is now square."
+- **When a note is not needed.** Tests, CI, tooling, refactoring and contributor docs need none. CI's
+  `relnotes -since origin/main` asks for a note when a branch changes a file under `cmd/` or `internal/`
+  that is not a test, test data, or in a test-only package (`internal/tools`, `archtest`, `e2e`, `golden`,
+  `games/testkit`, `games/gamestest`). If players will notice nothing, add the trailer `Changelog: none`
+  to a commit message on the branch, after a blank line, as the last line.
+- **Never edit `CHANGELOG.md` by hand.** It is `changie merge`'s output, and the `change-notes` hook
+  (`relnotes -check`) fails when it differs, when a note does not parse or is too long, or when a release
+  tag has no `.changes/vX.Y.Z.md`.
+
+## Releasing
+
+The owner merges the release pull request, then pushes the tag. Everything else is prepared in the pull
+request or done by `release.yml`.
+
+1. **The release pull request**, titled `vX.Y.Z` (the version from `docs/PLAN.md` §15), batches the notes
+   and rebuilds the changelog:
+
+   ```sh
+   go tool -modfile=tools/release/go.mod changie batch vX.Y.Z
+   go tool -modfile=tools/release/go.mod changie merge
+   ```
+
+   The notes move from `.changes/unreleased/` into `.changes/vX.Y.Z.md`, and `CHANGELOG.md` gains the
+   version. Read them once more as a player would; to change one, edit `.changes/vX.Y.Z.md` and run
+   `changie merge` again. Every CI run's `build` job shows the notes the next release would get, in its
+   summary.
+2. **The owner merges it**, then tags the merge commit and pushes the tag:
+   `git fetch origin && git tag vX.Y.Z origin/main && git push origin vX.Y.Z`.
+3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file, and publishes
+   the GitHub Release with `.changes/vX.Y.Z.md` as its notes (`internal/tools/relnotes` adds a footer).
+   The packages' changelogs carry the same notes.
+
+If the pull request did not batch the notes, the release still gets them: the workflow batches
+`.changes/unreleased/` itself, dated by the tagged commit, and warns. `main` then lags behind the release,
+so CI fails on every branch until one pull request runs `go run ./internal/tools/relnotes -catch-up`. It
+writes the missing `.changes/vX.Y.Z.md` from the tag, removes those notes from `.changes/unreleased/`,
+and merges `CHANGELOG.md`; commit the result.
+
 ## Pull requests
 
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
+- A change players can notice adds a change note ([Change notes](#change-notes)).
 - CI (`ci.yml`) runs on every branch push, so a branch is checked before its PR; a PR from a branch here is
   checked by that branch's push run (its `pull_request` run skips every job), and a PR from a fork runs in
   full. The push run tests the branch as it is, not merged with `main`, so the ruleset requires branches to

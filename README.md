@@ -19,7 +19,8 @@ Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds f
 and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
 `wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
 licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
-`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.)
+`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) What changed
+in each version is on its release page and in [CHANGELOG.md](CHANGELOG.md).
 
 **Verify before you run.** Every file in a release carries a build-provenance attestation. With the
 [GitHub CLI](https://cli.github.com/):

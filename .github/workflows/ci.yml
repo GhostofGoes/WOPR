@@ -34,6 +34,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # main and the tags, for the change-note checks
       # No GOTOOLCHAIN before setup-go: with GOTOOLCHAIN=local set, setup-go ignores
       # go.mod's toolchain line. setup-go exports GOTOOLCHAIN=local itself afterwards.
       # Each job's cache is keyed on the modules it builds: jobs sharing one key race to save
@@ -41,7 +42,8 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          # The hooks run `go mod tidy -diff` in every module; the self-test builds golangci-lint.
+          # The hooks run `go mod tidy -diff` in every module and build changie (relnotes -check); the
+          # self-test builds golangci-lint.
           cache-dependency-path: |
             go.sum
             tools/go.sum
@@ -54,6 +56,11 @@ jobs:
         env:
           WOPR_LINT_SELFTEST: "1"
         run: go test -run 'TestLintRulesFire' -v ./internal/archtest
+      # A branch that changes code players use (cmd/, internal/ but tests, test data and tools) must add
+      # a change note, or say "Changelog: none" in a commit trailer (AGENTS.md, "Change notes").
+      # On main, and on a fork's pull request merged with it, the base is main itself.
+      - name: Change note for user-visible changes
+        run: go run ./internal/tools/relnotes -since origin/main
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}
@@ -105,9 +112,10 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go.mod
-          cache-dependency-path: | # the module and govulncheck
+          cache-dependency-path: | # the module, govulncheck, and changie for relnotes's tests
             go.sum
             tools/go.sum
+            tools/release/go.sum
       - name: go test -race
         if: runner.os != 'Windows'
         run: go test -race ./...
@@ -161,7 +169,17 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      # The release notes for this commit's snapshot version, as release.yml makes them for a tag; the
+      # job summary shows them.
+      - name: Release notes (snapshot)
+        env:
+          WOPR_NOTES_DIR: build/notes
+        run: |
+          go run ./internal/tools/relnotes -snapshot -out "${WOPR_NOTES_DIR}"
+          { echo "## Release notes for this snapshot"; echo; cat "${WOPR_NOTES_DIR}/notes.md"; } >> "${GITHUB_STEP_SUMMARY}"
       - name: GoReleaser snapshot (all six targets)
+        env:
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6

@@ -70,5 +70,10 @@ report_sizes: true
 release:
   disable: true                      # publishing is release.yml's publish job (gh + attest)
 
+# Release notes come from changie's notes in .changes/: internal/tools/relnotes writes notes.md (the
+# release body, published by release.yml), CHANGELOG.md and changelog.yml (nFPM's chglog format) into
+# $WOPR_NOTES_DIR, build/notes in the workflows, before GoReleaser runs. nfpms.changelog is not
+# templated, so it names build/notes/changelog.yml itself. GoReleaser's own changelog, built from
+# commits, stays off.
 changelog:
-  disable: true # release notes come from `gh release create --generate-notes`
+  disable: true

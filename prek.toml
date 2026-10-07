@@ -87,6 +87,9 @@ hooks = [
   { id = "go-mod-tidy-tools", name = "go mod tidy -diff (tools)", language = "system", entry = "go -C tools mod tidy -diff", files = '^tools/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
   { id = "go-mod-tidy-lint-tools", name = "go mod tidy -diff (lint tools)", language = "system", entry = "go -C tools/lint mod tidy -diff", files = '^tools/lint/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
   { id = "go-mod-tidy-release-tools", name = "go mod tidy -diff (release tools)", language = "system", entry = "go -C tools/release mod tidy -diff", files = '^tools/release/go\.(mod|sum)$', pass_filenames = false, priority = "lint" },
+  # The change notes parse and are short, CHANGELOG.md is changie merge's output, and every release
+  # tag has its .changes/vX.Y.Z.md (AGENTS.md, "Change notes"). It builds changie on first use.
+  { id = "change-notes", name = "change notes and CHANGELOG.md", language = "system", entry = "go run ./internal/tools/relnotes -check", files = '^(\.changes/|\.changie\.yaml$|CHANGELOG\.md$|internal/tools/relnotes/)', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
 ]
