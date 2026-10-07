@@ -303,6 +303,9 @@ internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage
 tools/go.mod                 Go tools: gitleaks, govulncheck
 tools/lint/go.mod            Go tool: golangci-lint (separate: its dependencies break gitleaks's build, SL-2)
 tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3)
+tools/docs/go.mod            Go tool: Hugo, standard edition (the docs site, §13)
+site/                        the docs site (§13): Hugo config, pages, layouts, game data; no Go packages
+  go.mod                     a Hugo module file, not Go code: pins the Hextra theme
 ```
 
 ### 4.2 Runtime flow and state ownership
@@ -1388,11 +1391,12 @@ before the classified address it leads to; v2.1's provisional table had it in th
     line above it, because `prek update` rewrites the comment after `rev` (TO-9).
   - `[update] freeze = true, cooldown_days = 14` makes a plain `prek update` (formerly `auto-update`) keep that
     form.
-- **Go tools** (T-4, T-11, decision 20). Three tool modules, pinned and checksummed by their `go.sum`, run as
+- **Go tools** (T-4, T-11, decision 20). Four tool modules, pinned and checksummed by their `go.sum`, run as
   `go tool -modfile=<module> <tool>`:
   - `tools/go.mod`: gitleaks and govulncheck;
   - `tools/lint/go.mod`: golangci-lint (for the lint self-test and the Commands table);
-  - `tools/release/go.mod`: GoReleaser and changie.
+  - `tools/release/go.mod`: GoReleaser and changie;
+  - `tools/docs/go.mod`: Hugo, for the docs site (§13). Its own module because its graph is large.
 
   golangci-lint is separate because sharing a module with gitleaks pulls `x/ansi` to a version that breaks
   gitleaks's build (SL-2). **No tool module's `go` line may be newer than the root `toolchain` line**, because
@@ -1488,7 +1492,8 @@ its run tests exactly the tree the squash merge produces.
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12). |
 | `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR`; GoReleaser snapshot of all six targets; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, checks every archive's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
 | `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. |
-| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
+| `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`: a deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. |
+| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke, docs]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
 
@@ -1558,7 +1563,8 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     reachable;
   - outdated **direct** requirements of the main module (`go list -m -u` with a template); indirect upgrades are
     left to govulncheck and the manual cadence, or the report would never be empty;
-  - outdated **tools**, selected by each tool module's `tool` pattern (they are indirect requirements there);
+  - outdated **tools**, selected by each tool module's `tool` pattern (they are indirect requirements there),
+    and a newer **docs theme** than `site/go.mod` pins;
   - `prek update --check`: "would update" is a finding, "update failed" an error;
   - the third-party-notices check.
 
@@ -1639,7 +1645,7 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 ## 13. Documentation
 
 - **README.md** (basic in M0, completed in M5):
-  - what this is;
+  - what this is, and a link to the docs site (below);
   - install per OS, **verify first** (§12), then Gatekeeper and SmartScreen notes, then `go install …@latest`;
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
@@ -1667,6 +1673,29 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   hand; `release.yml` turns the same files into the GitHub Release notes and the package changelogs
   (§11.3). v0.1.0 and v0.2.0 were written afterwards from their pull requests, in the same style. The
   owner's part of a release is to merge that pull request and push the tag (AGENTS.md, "Releasing").
+- **Docs site** (owner decision 2026-10-07): <https://ghostofgoes.github.io/WOPR/>, built from `site/` with
+  Hugo (the standard edition, pinned in `tools/docs/go.mod`; no Node, no Sass) and the Hextra theme (a Hugo
+  module pinned in `site/go.mod`, MIT; credited in NOTICE.md and on the site's credits page). Pages: home,
+  quickstart, installation, usage, accessibility, games (an index and one page per game), movie scenes,
+  contributing with the code of conduct, changelog, and credits.
+  - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
+    adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
+    the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
+    requests sections are mounted and rendered, not copied; so are `docs/screenshots/` and the manual page.
+    The download commands name the latest version from `CHANGELOG.md`. Tests in `internal/cli` check that
+    the usage page lists every option and environment variable and the movie page every scene.
+  - **Strict build.** `--panicOnWarning` (deprecations included) and `--printPathWarnings`; an internal link
+    to no page or file, a missing screenshot or a game file without its required fields is an error. CI's
+    `docs` job builds it on every push (§11.2).
+  - **Deploy.** `docs.yml` builds and deploys to GitHub Pages (`actions/configure-pages`,
+    `actions/upload-pages-artifact`, `actions/deploy-pages`) on pushes to `main` that touch what the site
+    shows, and on `workflow_dispatch`. The build job has `contents: read` and `pages: read`, the deploy job
+    `pages: write` and `id-token: write`, in the `github-pages` environment; concurrency group `pages`,
+    never cancelling a deployment in progress; no build cache. Pages must be set to deploy from GitHub
+    Actions (AGENTS.md, repository settings).
+  - **Third-party files at build time.** Hextra's search fetches FlexSearch (Apache-2.0) from jsDelivr at
+    the version Hextra pins; the theme's own stylesheet and scripts come from the module. Nothing else is
+    fetched, and no page loads anything from another site.
 - **Screens**: Appendix C holds the target mockups. The real screens are goldens, kept current by the tests:
   `internal/ui/testdata/gtw_screens.golden` and `card_screens.golden` (Hearts, Gin Rummy, Bridge at 80×24).
 - **This plan** is updated at milestone boundaries. Superseded text is deleted.

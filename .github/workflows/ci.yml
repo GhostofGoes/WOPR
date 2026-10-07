@@ -49,6 +49,7 @@ jobs:
             tools/go.sum
             tools/lint/go.sum
             tools/release/go.sum
+            tools/docs/go.sum
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
         with:
           prek-version: 0.5.5
@@ -236,6 +237,30 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
+  # The documentation site (site/), built as docs.yml builds it for GitHub Pages: a warning, a
+  # broken link or a missing screenshot fails it. docs.yml deploys it from main.
+  docs:
+    name: docs
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: | # Hugo, and the Hextra theme (a Hugo module)
+            tools/docs/go.sum
+            site/go.sum
+      - name: Build the site
+        run: |
+          go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
+            --minify --destination "${RUNNER_TEMP}/site"
+
   smoke:
     name: smoke
     needs: build
@@ -251,7 +276,7 @@ jobs:
     # the name must stay an expression and never become plain "ci-ok".
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
-    needs: [lint, secrets, test, build, smoke]
+    needs: [lint, secrets, test, build, smoke, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}

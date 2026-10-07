@@ -1,0 +1,11 @@
+{{- /*
+  A link to the manual page, wopr.6: the copy this site serves (docs/man/wopr.6, mounted at
+  man/wopr.6; see hugo.yaml) when the repository has one, otherwise the file on GitHub.
+*/ -}}
+{{- $text := .Get "text" | default "wopr.6" -}}
+{{- $url := printf "%s/docs/man/wopr.6" site.Params.repoBlob -}}
+{{- with resources.Get "man/wopr.6" -}}
+  {{- $url = .RelPermalink -}}
+{{- end -}}
+<a href="{{ $url }}">{{ $text }}</a>
+{{- /* chomp */ -}}

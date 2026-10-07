@@ -39,6 +39,11 @@ go.work.sum
 /wopr
 /wopr.exe
 
+# The docs site's build output and Hugo's lock and cache (hugo --source site)
+/site/public/
+/site/resources/
+/site/.hugo_build.lock
+
 # Keys and certificates never belong in the tree
 *.pem
 *.key

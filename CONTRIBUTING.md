@@ -17,7 +17,9 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Set up
 
 You need Git and Go. The repository pins its Go toolchain in `go.mod`. With Go's default
-`GOTOOLCHAIN=auto`, any Go 1.21 or newer downloads the right version on first use.
+`GOTOOLCHAIN=auto`, any Go 1.21 or newer downloads the right version on first use. The docs site's
+[Contributing page](https://ghostofgoes.github.io/WOPR/contributing/) shows how to install Git, Go, prek
+and a C compiler on Linux, macOS and Windows, and how to preview the site itself.
 
 ```sh
 git clone https://github.com/GhostofGoes/WOPR.git

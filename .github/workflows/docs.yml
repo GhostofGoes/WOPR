@@ -1,0 +1,74 @@
+# Publishes the documentation site (site/: Hugo with the Hextra theme) to GitHub Pages, at
+# https://ghostofgoes.github.io/WOPR/, whenever main changes a file the site shows. ci.yml's docs
+# job builds the same site on every push, so this workflow only builds and deploys. It needs the
+# repository's Pages source set to GitHub Actions (AGENTS.md, "Repository settings").
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - tools/docs/**
+      - docs/man/**
+      - docs/screenshots/**
+      - AGENTS.md # its Commands and Pull requests sections
+      - CHANGELOG.md
+      - CODE_OF_CONDUCT.md
+      - NOTICE.md
+      - .github/workflows/docs.yml
+  workflow_dispatch:
+
+permissions: {}
+
+# One deployment at a time. A newer run waits for the one in progress instead of cancelling it,
+# so a deployment is never cut off halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: read # configure-pages reads the site's address
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false # what is published is built without a restored cache
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # Hugo is built from tools/docs/go.mod, and the theme comes from site/go.mod. The address
+      # comes from Pages, so that a custom domain needs no change here.
+      - name: Build the site
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
+            --minify --baseURL "${BASE_URL%/}/" --destination "${RUNNER_TEMP}/site"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: deploy
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write # deploy-pages publishes the uploaded site
+      id-token: write # deploy-pages proves the artifact came from this workflow
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

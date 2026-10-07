@@ -292,7 +292,8 @@ func TestToolchainMatchesGoMod(t *testing.T) {
 }
 
 // CI runs every tool module with GOTOOLCHAIN=local and the root toolchain, so no tool
-// module may declare a newer go line. Bump the toolchain first, then the tool.
+// module may declare a newer go line. Bump the toolchain first, then the tool. The same holds
+// for site/go.mod, the docs site's Hugo module, which Hugo reads with the same Go.
 func TestToolModulesFitTheToolchain(t *testing.T) {
 	root := moduleRoot(t)
 	toolchain := goModLine(t, filepath.Join(root, "go.mod"), "toolchain")
@@ -305,9 +306,10 @@ func TestToolModulesFitTheToolchain(t *testing.T) {
 		t.Fatal(err)
 	}
 	mods = append(mods, nested...)
-	if len(mods) < 3 {
-		t.Fatalf("found %d tool modules, want tools/, tools/lint/ and tools/release/", len(mods))
+	if len(mods) < 4 {
+		t.Fatalf("found %d tool modules, want tools/, tools/lint/, tools/release/ and tools/docs/", len(mods))
 	}
+	mods = append(mods, filepath.Join(root, "site", "go.mod"))
 	for _, mod := range mods {
 		goLine := "go" + goModLine(t, mod, "go")
 		if version.Compare(goLine, toolchain) > 0 {

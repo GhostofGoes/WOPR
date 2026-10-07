@@ -34,12 +34,16 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
 | Size gate | `go run ./internal/tools/sizegate -expect 6` |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
+| Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
+| Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
 
 Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
-fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:
-`tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint) and `tools/release/go.mod`
-(GoReleaser, changie). They are separate because their dependency graphs conflict. No tool module's `go` line may be
-newer than the root `toolchain` line (a test checks): bump the toolchain first, then the tool.
+fine (CI checks the exact version). Tools are pinned in four modules, never `go run …@latest`:
+`tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod`
+(GoReleaser, changie) and `tools/docs/go.mod` (Hugo, the standard edition). They are separate because their
+dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module pinned in `site/go.mod`. No tool
+module's `go` line, nor `site/go.mod`'s, may be newer than the root `toolchain` line (a test checks): bump the
+toolchain first, then the tool.
 
 ## Rules that tests enforce
 
@@ -151,6 +155,25 @@ so CI fails on every branch until one pull request runs `go run ./internal/tools
 writes the missing `.changes/vX.Y.Z.md` from the tag, removes those notes from `.changes/unreleased/`,
 and merges `CHANGELOG.md`; commit the result.
 
+## Docs site
+
+`site/` is the documentation site: Hugo with the Hextra theme, published to
+<https://ghostofgoes.github.io/WOPR/> by `docs.yml` whenever `main` changes something it shows. CI's `docs`
+job builds it on every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a
+missing screenshot fails the build.
+
+- Pages are Markdown in `site/content/`, written for players in plain, direct prose.
+- Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
+  which documents the schema; the manual page reads the same files. Change a game's text there.
+- Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
+  Commands and Pull requests sections are mounted and rendered by the `repo-file` shortcode; the README's
+  screenshots and the manual page are mounted too (`site/hugo.yaml`).
+- A screenshot goes in with the `screenshot` shortcode and a caption that says what the screen shows. PNGs
+  are 960×564, made smaller with `optipng -o2`. One that shows the big board's map gets the map's credit
+  line.
+- Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
+  Movie scenes page every scene.
+
 ## Pull requests
 
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
@@ -178,9 +201,11 @@ recognises (not a GitHub-supported token pattern, which push protection blocks),
 If a rights holder asks for material to be removed:
 
 1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
-   `internal/assets/`, `internal/movie/scenes/`, and the games' film text), and the README's screenshots
-   in `docs/screenshots/`, which show some of it.
-2. Remove or replace it in one pull request, and release a patch version.
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text); the README's screenshots in
+   `docs/screenshots/` and the docs site's in `site/static/img/` show some of it, and the docs site's
+   pages (`site/content/`, `site/data/games/`) and the manual page (`docs/man/`) quote some.
+2. Remove or replace it in one pull request, and release a patch version. Merging it also redeploys the
+   docs site (`docs.yml`).
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).
 4. Reply to the requester saying what was done. Copies remain in git history and in the Go module mirror,
@@ -203,13 +228,18 @@ These live in GitHub settings, not in files. Check them at each milestone:
   - Require approval for workflow runs from all external contributors.
 - **Dependabot:** off (owner decision). The weekly `scheduled.yml` report covers updates and
   vulnerabilities.
+- **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. `docs.yml` then
+  deploys the docs site to <https://ghostofgoes.github.io/WOPR/> through the `github-pages` environment,
+  which GitHub creates and limits to deployments from `main`.
 
 ## Milestone checklist
 
 At every milestone boundary:
 
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/`, `tools/lint/` and `tools/release/`.
+   `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
+   docs theme with `go -C site get github.com/imfing/hextra@latest`. Build the docs site: a new Hugo can
+   deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
 3. Bump action SHAs from their release tags.
 4. Regenerate the notices.

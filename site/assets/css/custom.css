@@ -1,0 +1,29 @@
+/* The site's few additions to Hextra's styles. */
+
+/* Screenshots (the screenshot shortcode): a terminal window's corners, and a caption below. */
+.wopr-shot {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.wopr-shot img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.wopr-shot figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* A screenshot on the home page sits between the hero and the cards. */
+.hextra-feature-grid {
+  margin-top: 2rem;
+}
+
+/* Short commands in tables (the games' controls, the options) stay on one line. */
+.content td code {
+  white-space: nowrap;
+}

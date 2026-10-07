@@ -1,0 +1,9 @@
+{{- /*
+  A licence's text, as a plain text block, from a file under assets/ (a theme's LICENSE is
+  mounted at licenses/; see hugo.yaml): {{< license-text "licenses/hextra.txt" >}}
+*/ -}}
+{{- with resources.Get (.Get 0) -}}
+  {{- highlight (trim .Content "\n") "text" "" -}}
+{{- else -}}
+  {{- errorf "%s: license-text: no file %q under assets/" .Page.String (.Get 0) -}}
+{{- end -}}

@@ -1,0 +1,5 @@
+{{- /*
+  Plain text from site/data/games, escaped for Markdown: every character Markdown could read as
+  markup gets a backslash, so "[]", "*" and "E2-E4" show as typed.
+*/ -}}
+{{- return replaceRE "([\\[\\]\\\\`*_{}<>()#+.!|~-])" "\\${1}" (string .) -}}

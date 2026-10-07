@@ -1,0 +1,30 @@
+{
+  "slug": "maze",
+  "number": 1,
+  "name": "Falken's Maze",
+  "launch": "wopr maze",
+  "aliases": ["1", "falkens-maze"],
+  "summary": "A maze under fog: you see only where you have been. WOPR watches which way you turn and moves walls you have not seen yet.",
+  "howToPlay": [
+    "Walk the @ from START at the top left to the [] EXIT at the bottom right.",
+    "Each key press moves one cell. A wall stops you.",
+    "Every 6 moves WOPR moves a wall you have not seen. Walls you have seen never change, and the exit always stays reachable.",
+    "Press Q to give up. WOPR tells you how far away the exit was."
+  ],
+  "controls": [
+    {"input": "Arrow keys", "does": "move one cell up, down, left or right"},
+    {"input": "W A S D", "does": "move up, left, down or right"},
+    {"input": "Q", "does": "give up"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "WOPR blocks the turn you take most often, so mix your left and right turns.",
+    "WOPR moves at most 12 walls in a game. After that the maze stays put.",
+    "Dead ends you have seen stay dead ends, so search only the fog."
+  ],
+  "screenshots": [
+    {"file": "maze-1.png", "caption": "The start: all fog except the first cell, with the exit at the bottom right."},
+    {"file": "maze-2.png", "caption": "WOPR has moved 8 walls and says which way you like to turn."},
+    {"file": "maze-3.png", "caption": "Out: the exit found in 52 moves."}
+  ]
+}

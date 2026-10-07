@@ -61,12 +61,17 @@ jobs:
             if [[ -n "${out}" ]]; then echo "${out}"; found=1; fi
 
             echo "## Outdated tools"
-            for modfile in tools/go.mod tools/lint/go.mod tools/release/go.mod; do
+            for modfile in tools/go.mod tools/lint/go.mod tools/release/go.mod tools/docs/go.mod; do
               mapfile -t mods < <(go list -modfile="${modfile}" -f '{{.Module.Path}}' tool | sort -u)
               if [[ ${#mods[@]} -eq 0 ]]; then errors=1; continue; fi
               out="$(go list -modfile="${modfile}" -m -u -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' "${mods[@]}")" || errors=1
               if [[ -n "${out}" ]]; then echo "${out}"; found=1; fi
             done
+
+            # The docs site's theme, a Hugo module pinned in site/go.mod.
+            echo "## Outdated docs theme"
+            out="$(go -C site list -m -u -f '{{if .Update}}{{.Path}} {{.Version}} -> {{.Update.Version}}{{end}}' github.com/imfing/hextra)" || errors=1
+            if [[ -n "${out}" ]]; then echo "${out}"; found=1; fi
 
             echo "## Outdated hooks"
             out="$(prek update --check 2>&1)"

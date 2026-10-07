@@ -1,0 +1,39 @@
+{{- /*
+  A screenshot with its caption, which is also its text alternative.
+
+    {{< screenshot src="img/games/chess-1.png" caption="..." >}}
+    {{< screenshot src="screenshots/logon.png" caption="..." >}}
+
+  src is a file under static/ (img/...) or under assets/ (the README's screenshots, mounted at
+  screenshots/). A missing file fails the build. credit adds a line under the caption, for art
+  whose licence asks to be named beside it.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- $caption := .Get "caption" | default "" -}}
+{{- $credit := .Get "credit" | default "" -}}
+{{- $url := "" -}}
+{{- $w := 0 -}}
+{{- $h := 0 -}}
+{{- with resources.Get $src -}}
+  {{- $url = .RelPermalink -}}
+  {{- with .Width }}{{ $w = . }}{{ end -}}
+  {{- with .Height }}{{ $h = . }}{{ end -}}
+{{- else -}}
+  {{- $file := path.Join "static" $src -}}
+  {{- if not (fileExists $file) -}}
+    {{- errorf "%s: screenshot %q: no such file under static/ or assets/" .Page.String $src -}}
+  {{- end -}}
+  {{- $url = relURL $src -}}
+  {{- with images.Config $file -}}
+    {{- $w = .Width -}}
+    {{- $h = .Height -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $caption -}}
+  {{- errorf "%s: screenshot %q needs a caption" .Page.String $src -}}
+{{- end -}}
+<figure class="wopr-shot">
+  <img src="{{ $url }}" alt="{{ $caption | markdownify | plainify }}" loading="lazy" decoding="async"{{ with $w }} width="{{ . }}"{{ end }}{{ with $h }} height="{{ . }}"{{ end }}>
+  <figcaption>{{ $caption | markdownify }}{{ with $credit }}<br><small>{{ . | markdownify }}</small>{{ end }}</figcaption>
+</figure>
+{{- /* chomp */ -}}

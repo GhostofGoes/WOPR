@@ -1,0 +1,12 @@
+{{- /* Hextra's footer hook: the licence and the not-affiliated note, on every page. */ -}}
+{{- $credits := site.GetPage "/credits" -}}
+{{- if not $credits }}{{ errorf "footer: the credits page is missing" }}{{ end -}}
+<div class="hx:pt-8 hx:text-xs hx:leading-relaxed">
+  <p>
+    The <code>wopr</code> code is MIT licensed. The film's text and third-party art are not; see
+    <a class="hx:underline" href="{{ $credits.RelPermalink }}">credits and notices</a>.
+  </p>
+  <p class="hx:mt-2">
+    A fan-made homage. Not affiliated with or endorsed by the makers or owners of <i>WarGames</i>.
+  </p>
+</div>

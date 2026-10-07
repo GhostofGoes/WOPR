@@ -1,0 +1,60 @@
+{{- /*
+  The body of a game's page, as Markdown, from its site/data/games/<slug>.json (the schema is in
+  content/games/_content.gotmpl). Markdown rather than HTML, so that the headings make the
+  page's table of contents and the text is searchable.
+*/ -}}
+{{- $g := . -}}
+{{- $t := "games/md-text.html" -}}
+{{- $c := "games/md-code.html" -}}
+{{- $md := slice -}}
+
+{{- $md = $md | append (partial $t $g.summary) -}}
+
+{{- $md = $md | append "## Start it" -}}
+{{- $md = $md | append (printf "```sh\n%s\n```" $g.launch) -}}
+{{- $start := "" -}}
+{{- if ne $g.number nil -}}
+  {{- $start = printf "Or log on, type %s, and pick number %d from the list." (partial $c "LIST GAMES") (int $g.number) -}}
+{{- else -}}
+  {{- $start = printf "It is not on %s: once logged on, ask WOPR for it by name." (partial $c "LIST GAMES") -}}
+{{- end -}}
+{{- with $g.aliases -}}
+  {{- $names := slice -}}
+  {{- range . }}{{ $names = $names | append (partial $c .) }}{{ end -}}
+  {{- $start = printf "%s It also answers to %s." $start (delimit $names ", " " and ") -}}
+{{- end -}}
+{{- $md = $md | append $start -}}
+
+{{- $md = $md | append "## How to play" -}}
+{{- $list := slice -}}
+{{- range $g.howToPlay }}{{ $list = $list | append (printf "- %s" (partial $t .)) }}{{ end -}}
+{{- $md = $md | append (delimit $list "\n") -}}
+
+{{- $md = $md | append "## Controls" -}}
+{{- $rows := slice "| You type | What it does |" "|---|---|" -}}
+{{- range $g.controls -}}
+  {{- $rows = $rows | append (printf "| %s | %s |" (partial $c .input) (partial $t .does)) -}}
+{{- end -}}
+{{- $md = $md | append (delimit $rows "\n") -}}
+
+{{- $md = $md | append "## Tips" -}}
+{{- $list = slice -}}
+{{- range $g.tips }}{{ $list = $list | append (printf "- %s" (partial $t .)) }}{{ end -}}
+{{- $md = $md | append (delimit $list "\n") -}}
+
+{{- with $g.screenshots -}}
+  {{- $md = $md | append "## Screenshots" -}}
+  {{- range . -}}
+    {{- if strings.Contains .caption "`" -}}
+      {{- errorf "site/data/games/%s.json: a screenshot caption may not contain a backtick" $g.slug -}}
+    {{- end -}}
+    {{- $credit := "" -}}
+    {{- if eq $g.slug "gtw" -}}
+      {{- /* The big board's map, whose licence asks for this line wherever it appears (NOTICE.md). */ -}}
+      {{- $credit = ` credit="The big board's map: Map (C) 1998 Matthew Thomas. Freely usable if this line is included."` -}}
+    {{- end -}}
+    {{- $md = $md | append (printf "{{< screenshot src=\"img/games/%s\" caption=`%s`%s >}}" .file .caption $credit) -}}
+  {{- end -}}
+{{- end -}}
+
+{{- return delimit $md "\n\n" -}}

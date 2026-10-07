@@ -1,0 +1,32 @@
+{
+  "slug": "chess",
+  "number": 7,
+  "name": "Chess",
+  "launch": "wopr chess",
+  "aliases": ["7"],
+  "summary": "Chess against WOPR. You play White and move first, and WOPR answers with its move as squares, such as WOPR: D7D5.",
+  "howToPlay": [
+    "Checkmate WOPR's king. Stalemate and too few pieces to mate are draws.",
+    "At YOUR MOVE: type a move as squares (E2E4, E2-E4 or E2 E4) or in algebraic notation (NF3, EXD5, O-O).",
+    "To promote a pawn, type E7E8Q or E8=Q. E7E8 alone makes a queen.",
+    "A move that is not legal gets ILLEGAL MOVE. Type RESIGN to give up."
+  ],
+  "controls": [
+    {"input": "E2E4", "does": "move by squares, from then to (E2-E4 and E2 E4 work too)"},
+    {"input": "NF3", "does": "move in algebraic notation; EXD5 is a pawn capture"},
+    {"input": "O-O or O-O-O", "does": "castle on the king's side or the queen's side"},
+    {"input": "E7E8Q or E8=Q", "does": "promote a pawn"},
+    {"input": "RESIGN", "does": "give up the game"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "WOPR takes loose pieces. Before each move, check that every piece you have is defended.",
+    "WOPR looks only a few moves ahead, so a slow plan can get past it.",
+    "Start with a seed (wopr chess -s 1) and WOPR plays the same way every time, which helps you practise."
+  ],
+  "screenshots": [
+    {"file": "chess-1.png", "caption": "After E2E4 D7D5 and EXD5, WOPR's queen takes back on D5."},
+    {"file": "chess-2.png", "caption": "NC3 attacks the queen, and WOPR answers D5E6 with check."},
+    {"file": "chess-3.png", "caption": "Both sides have castled or brought out their knights."}
+  ]
+}

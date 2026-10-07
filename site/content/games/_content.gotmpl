@@ -1,0 +1,43 @@
+{{- /*
+  The games' pages: one page per site/data/games/<slug>.json, at /games/<slug>/, ordered as on
+  LIST GAMES. layouts/_partials/games/page.html writes the page's body; the section's own page
+  (_index.md) lists them with the games-list shortcode. internal/tools/manpage reads the same
+  files for the manual page, so nothing else repeats their text.
+
+  A file holds one game:
+
+    slug         the name "wopr --games" shows, also the file's name and the page's address
+    number       its place on LIST GAMES, or null for a game not on it (tic-tac-toe)
+    name         the game's name in title case, the page's title
+    launch       the command that starts it: "wopr <slug>"
+    aliases      other names it answers to
+    summary      one or two sentences: what the game is
+    howToPlay    three to six short paragraphs, shown as a list
+    controls     what to type or press: [{"input": "E2E4", "does": "..."}]
+    tips         at least three tips for playing well (the manual page shows the first three)
+    screenshots  [{"file": "chess-1.png", "caption": "..."}], files in static/img/games/
+
+  Text is plain: Markdown characters show as typed.
+*/ -}}
+{{- range $slug, $g := hugo.Data.games -}}
+  {{- if ne $slug $g.slug -}}
+    {{- errorf "site/data/games/%s.json: its slug is %q; the file must be named after it" $slug $g.slug -}}
+  {{- end -}}
+  {{- range slice "name" "launch" "summary" "howToPlay" "controls" "tips" -}}
+    {{- if not (index $g .) -}}
+      {{- errorf "site/data/games/%s.json: %q is missing or empty" $slug . -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $weight := 100 -}}
+  {{- with $g.number }}{{ $weight = int . }}{{ end -}}
+  {{- $.AddPage (dict
+    "path" $slug
+    "title" $g.name
+    "weight" $weight
+    "params" (dict
+      "description" $g.summary
+      "editURL" (printf "%s/site/data/games/%s.json" site.Params.repoEdit $slug)
+    )
+    "content" (dict "mediaType" "text/markdown" "value" (partial "games/page.html" $g))
+  ) -}}
+{{- end -}}

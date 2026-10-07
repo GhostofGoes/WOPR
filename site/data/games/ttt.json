@@ -1,0 +1,29 @@
+{
+  "slug": "ttt",
+  "number": null,
+  "name": "Tic-Tac-Toe",
+  "launch": "wopr ttt",
+  "aliases": ["tic-tac-toe", "tictactoe", "noughts and crosses"],
+  "summary": "Tic-tac-toe, the game that ends the film. WOPR never loses, so the best you can do is a draw.",
+  "howToPlay": [
+    "At PLEASE LIST NUMBER OF PLAYERS: type 1 to play WOPR, 2 for two people at one keyboard, or 0 to watch WOPR play itself.",
+    "You are X and move first. Type a square from 1 to 9, numbered left to right from the top row.",
+    "Three in a row wins. A full board with no line is a draw."
+  ],
+  "controls": [
+    {"input": "1, 2 or 0", "does": "at the players prompt: play WOPR, play a friend, or let WOPR play itself"},
+    {"input": "5", "does": "take square 5, the centre"},
+    {"input": "A1", "does": "take the top-left square; columns A to C, rows 1 to 3"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Before each move, check whether WOPR has two in a row, and block it.",
+    "Open in a corner. The only safe answer is the centre.",
+    "Try 0 players to see what WOPR learns from playing itself."
+  ],
+  "screenshots": [
+    {"file": "ttt-1.png", "caption": "The empty board shows each square's number."},
+    {"file": "ttt-2.png", "caption": "Square 3 is taken, so WOPR asks again. A1 names the top-left square."},
+    {"file": "ttt-3.png", "caption": "A full board with no line: WINNER: NONE."}
+  ]
+}

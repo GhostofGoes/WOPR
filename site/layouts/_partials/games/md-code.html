@@ -1,0 +1,7 @@
+{{- /*
+  What a player types, from site/data/games, as a Markdown code span that can sit in a table
+  cell ("|" is escaped there, as tables require).
+*/ -}}
+{{- $s := string . -}}
+{{- $fence := cond (strings.Contains $s "`") "``" "`" -}}
+{{- return printf "%s %s %s" $fence (replace $s "|" "\\|") $fence -}}

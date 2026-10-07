@@ -1,0 +1,109 @@
+# The wopr documentation site, published at https://ghostofgoes.github.io/WOPR/ by
+# .github/workflows/docs.yml. Hugo is pinned in tools/docs/go.mod (the standard edition: no
+# Node, no Sass) and the Hextra theme, a Hugo module, in site/go.mod. From the repository root:
+#
+#   go tool -modfile=tools/docs/go.mod hugo server --source site     (preview)
+#   go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning
+#
+# The site repeats nothing kept elsewhere in the repository: the changelog, the code of conduct,
+# the notices, the README's screenshots and the manual page are mounted from where they live
+# (module.mounts below), and every game's page is built from site/data/games/<slug>.json.
+
+baseURL: https://ghostofgoes.github.io/WOPR/
+locale: en-US
+title: WOPR
+enableRobotsTXT: true
+disableKinds: [taxonomy, term, rss]
+# Internal links that do not resolve fail the build (see also layouts/_markup/render-link.html).
+refLinksErrorLevel: ERROR
+
+module:
+  hugoVersion:
+    extended: false
+    min: "0.167.0"
+  imports:
+    - path: github.com/imfing/hextra
+      # The theme's static/ holds only its own logo, icons and web manifest, so it is left out:
+      # the site has its own (static/, layouts/_partials/favicons.html). Its LICENSE is mounted
+      # so that the credits page can show it.
+      mounts:
+        - { source: layouts, target: layouts }
+        - { source: assets, target: assets }
+        - { source: i18n, target: i18n }
+        - { source: data, target: data }
+        - { source: LICENSE, target: assets/licenses/hextra.txt }
+  mounts:
+    - { source: content, target: content }
+    - { source: data, target: data }
+    - { source: layouts, target: layouts }
+    - { source: static, target: static }
+    - { source: assets, target: assets }
+    - { source: i18n, target: i18n }
+    # Files kept elsewhere in the repository. Under assets/, each is published only where a page
+    # uses it, and a page that names a missing one fails the build. The repo-file shortcode
+    # renders the Markdown files; the manual page is internal/tools/manpage's output.
+    - { source: ../AGENTS.md, target: assets/repo/AGENTS.md }
+    - { source: ../CHANGELOG.md, target: assets/repo/CHANGELOG.md }
+    - { source: ../CODE_OF_CONDUCT.md, target: assets/repo/CODE_OF_CONDUCT.md }
+    - { source: ../NOTICE.md, target: assets/repo/NOTICE.md }
+    - { source: ../docs/screenshots, target: assets/screenshots }
+    - { source: ../docs/man, target: assets/man }
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: false # no raw HTML in content: shortcodes do what Markdown cannot
+  highlight:
+    noClasses: false
+
+menu:
+  main:
+    - { name: Install, pageRef: /install, weight: 1 }
+    - { name: Games, pageRef: /games, weight: 2 }
+    - { name: Movie scenes, pageRef: /movie, weight: 3 }
+    - { name: Changelog, pageRef: /changelog, weight: 4 }
+    - { name: Search, weight: 5, params: { type: search } }
+    - name: GitHub
+      weight: 6
+      url: https://github.com/GhostofGoes/WOPR
+      params: { icon: github }
+
+params:
+  description: >-
+    wopr is a terminal recreation of the WOPR computer from the 1983 film WarGames: log on, talk to
+    WOPR and play the games on its list. One program for Linux, macOS and Windows.
+  navbar:
+    displayTitle: true
+    displayLogo: true
+    logo:
+      path: images/logo.svg
+      dark: images/logo.svg
+      width: 24
+      height: 24
+  page:
+    width: normal
+  theme:
+    default: system
+    displayToggle: true
+  footer:
+    enable: true
+    displayCopyright: true
+    displayPoweredBy: true
+  displayUpdatedDate: false
+  editURL:
+    enable: true
+    base: https://github.com/GhostofGoes/WOPR/edit/main/site/content
+  search:
+    enable: true
+    type: flexsearch
+    flexsearch:
+      index: content
+      tokenize: forward
+  highlight:
+    copy:
+      enable: true
+      display: hover
+  # Repository links used by the pages and shortcodes.
+  repo: https://github.com/GhostofGoes/WOPR
+  repoBlob: https://github.com/GhostofGoes/WOPR/blob/main
+  repoEdit: https://github.com/GhostofGoes/WOPR/edit/main

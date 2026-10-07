@@ -1,0 +1,176 @@
+---
+title: Installation
+weight: 2
+description: Download wopr for Linux, macOS or Windows, verify it, and put it on your PATH. Or build it from source.
+tabs:
+  sync: true
+---
+
+`wopr` is one program with nothing else to install. It runs on:
+
+- **Linux**, any distribution, on amd64 (x86-64) or arm64.
+- **macOS** 26 Tahoe, on Apple silicon (arm64) or Intel (amd64).
+- **Windows** 11, on amd64 or arm64, in Windows Terminal.
+
+It needs a terminal at least 80 columns wide and 24 rows tall. It never uses the network and collects no
+data.
+
+## What to download
+
+Every [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has these files for each platform.
+The latest release is **v{{< version >}}**.
+
+| File | What it is |
+|---|---|
+| `wopr_<version>_<os>_<arch>` (`.exe` on Windows) | The program itself, ready to run. |
+| `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows) | An archive of the program with the README, the licence and the notices. On Linux and macOS it also holds the manual page, `wopr.6`. |
+| `checksums.txt` | The SHA-256 checksum of every file. |
+
+`<os>` is `linux`, `darwin` (macOS) or `windows`, and `<arch>` is `amd64` or `arm64`. Not sure which you
+have? Run `uname -m` on Linux or macOS (`x86_64` is amd64; `aarch64` or `arm64` is arm64), or
+`$env:PROCESSOR_ARCHITECTURE` in PowerShell.
+
+<!-- LINUX PACKAGES: the .deb and .rpm section goes here, when the release builds them. -->
+
+## Verify before you run
+
+Every file in a release carries a build-provenance attestation: a signed record of the commit and the
+GitHub workflow that built it. Check it with the [GitHub CLI](https://cli.github.com/) before you run
+anything you downloaded. Log in first with `gh auth login` if you have not.
+
+```sh
+gh attestation verify wopr_{{< version >}}_linux_amd64 --repo GhostofGoes/WOPR \
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+  --source-ref refs/tags/v{{< version >}} --deny-self-hosted-runners
+```
+
+Use the name of the file you downloaded. `Verification succeeded!` means the file was built from this
+repository's tagged source by its release workflow, on GitHub's own machines. Anything else means: do not
+run it.
+
+{{< screenshot src="img/install-verify.png" caption="`gh attestation verify` on a Linux archive: the repository, the workflow and the tag all match." >}}
+
+## Install
+
+{{< tabs >}}
+
+{{< tab name="Linux" >}}
+Download, verify, and install the program as `wopr` in `~/.local/bin` (use `arm64` on an ARM computer):
+
+```sh
+VERSION={{< version >}}
+curl -LO "https://github.com/GhostofGoes/WOPR/releases/download/v${VERSION}/wopr_${VERSION}_linux_amd64"
+gh attestation verify "wopr_${VERSION}_linux_amd64" --repo GhostofGoes/WOPR \
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+  --source-ref "refs/tags/v${VERSION}" --deny-self-hosted-runners
+mkdir -p ~/.local/bin
+install -m 755 "wopr_${VERSION}_linux_amd64" ~/.local/bin/wopr
+wopr --version
+```
+
+Most distributions put `~/.local/bin` on your `PATH` once it exists; you may need to open a new terminal.
+If `wopr` is still not found, add `export PATH="$HOME/.local/bin:$PATH"` to your `~/.bashrc` or
+`~/.zshrc`. To install it for every user instead, use `sudo install -m 755 ... /usr/local/bin/wopr`.
+
+A downloaded program is not executable until `install` or `chmod +x` makes it so. The archive keeps the
+executable bit: `tar xzf wopr_${VERSION}_linux_amd64.tar.gz` and run `./wopr`.
+{{< /tab >}}
+
+{{< tab name="macOS" >}}
+Download, verify, and install the program as `wopr` in `/usr/local/bin` (use `amd64` on an Intel Mac):
+
+```sh
+VERSION={{< version >}}
+curl -LO "https://github.com/GhostofGoes/WOPR/releases/download/v${VERSION}/wopr_${VERSION}_darwin_arm64"
+gh attestation verify "wopr_${VERSION}_darwin_arm64" --repo GhostofGoes/WOPR \
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
+  --source-ref "refs/tags/v${VERSION}" --deny-self-hosted-runners
+sudo mkdir -p /usr/local/bin
+sudo install -m 755 "wopr_${VERSION}_darwin_arm64" /usr/local/bin/wopr
+wopr --version
+```
+
+**Gatekeeper.** The program is not signed by Apple. A file you download with a web browser is
+quarantined, and macOS refuses to run it. After you have verified it, clear the quarantine:
+
+```sh
+xattr -d com.apple.quarantine /usr/local/bin/wopr
+```
+
+Files downloaded with `curl`, as above, are not quarantined.
+{{< /tab >}}
+
+{{< tab name="Windows" >}}
+In PowerShell, download, verify, and install the program as `wopr.exe` in a folder of your own (use
+`arm64` on an ARM computer):
+
+```powershell
+$VERSION = "{{< version >}}"
+curl.exe -LO "https://github.com/GhostofGoes/WOPR/releases/download/v$VERSION/wopr_${VERSION}_windows_amd64.exe"
+gh attestation verify "wopr_${VERSION}_windows_amd64.exe" --repo GhostofGoes/WOPR `
+  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml `
+  --source-ref "refs/tags/v$VERSION" --deny-self-hosted-runners
+$dir = "$env:LOCALAPPDATA\Programs\wopr"
+New-Item -ItemType Directory -Force $dir | Out-Null
+Move-Item "wopr_${VERSION}_windows_amd64.exe" "$dir\wopr.exe"
+```
+
+Then add that folder to your `PATH`, once, and open a new terminal:
+
+```powershell
+[Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:LOCALAPPDATA\Programs\wopr", "User")
+```
+
+Run `wopr` in **Windows Terminal**. mintty (Git Bash's default terminal) without ConPTY is not supported.
+
+**SmartScreen.** The program is not signed, so Windows may warn that it does not recognise it. After you
+have verified the file, choose *More info*, then *Run anyway*. A file downloaded with a web browser can
+also be cleared with `Unblock-File "$env:LOCALAPPDATA\Programs\wopr\wopr.exe"`.
+{{< /tab >}}
+
+{{< /tabs >}}
+
+## From source
+
+With [Go](https://go.dev/dl/) installed (any version from 1.21 on downloads the right Go for you), build
+and install the latest release:
+
+```sh
+go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
+```
+
+The program goes into Go's `bin` folder: `~/go/bin` on Linux and macOS, `%USERPROFILE%\go\bin` on
+Windows (`go env GOPATH` prints the folder above it). Add that folder to your `PATH` if `wopr` is not
+found. [Contributing](/contributing) explains how to build from a clone of the repository.
+
+## The manual page
+
+On Linux and macOS, `man wopr` can show every option, every game with how to play it and tips, and
+movie mode. The archives hold the page as `wopr.6`; you can also download {{< man-page >}} on its own.
+Read it in place with `man ./wopr.6`, or install it so that `man wopr` finds it:
+
+```sh
+# for everyone
+sudo install -d /usr/local/share/man/man6
+sudo install -m 644 wopr.6 /usr/local/share/man/man6/
+# or just for you
+mkdir -p ~/.local/share/man/man6
+cp wopr.6 ~/.local/share/man/man6/
+```
+
+`man` looks in `~/.local/share/man` when `~/.local/bin` is on your `PATH`; if it does not, add the
+folder to `MANPATH`.
+
+## Development builds
+
+Every CI run on `main` builds all six targets. Open a
+[CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+and download your platform's file under **Artifacts**. It is the bare program: `chmod +x` it on Linux and
+macOS. Development builds are for testing; they carry no attestation.
+
+## Uninstall
+
+Delete the program (`~/.local/bin/wopr`, `/usr/local/bin/wopr`, or the `wopr` folder under
+`%LOCALAPPDATA%\Programs` on Windows) and the manual page if you installed it. `wopr` keeps no settings.
+If you ever ran it with `WOPR_DEBUG`, also delete its debug log; [Usage](/usage#debug-log) says where it
+is.
