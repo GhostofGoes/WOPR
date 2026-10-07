@@ -1,0 +1,74 @@
+==== dialling, part revealed (80x24) ====
+CONNECTING.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 11, row 0
+==== too small (60x20) ====
+
+
+
+
+
+
+
+
+
+                     TERMINAL TOO SMALL
+                   NEED 80x24, HAVE 60x20
+
+
+
+
+
+
+
+
+
+cursor: hidden
+==== resumed and settled (80x24) ====
+CONNECTING...
+CONNECTED.
+
+LOGON:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 7, row 3

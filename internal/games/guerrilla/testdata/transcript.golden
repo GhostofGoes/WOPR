@@ -1,0 +1,293 @@
+              _.--._                          -------------+-------------
+         _.--'      '--._        _.--._             _______|______
+    _.--'                '--.__.'      '--._       /  []  []  |   \________+
+_.-'                                       '--._   \._________|___/        '
+   _.-\ /-._                   _.-\ /-._                         _.-\ /-._
+  '  .-|-.  '    .-.    .-.   '  .-|-.  '   .-.        .-.      '  .-|-.  '
+    '  |  '     (   )  (   )    '  |  '    (   )      (   )       '  |  '
+       |         '-'    '-'        |        '-'        '-'           |
+       |     O    |      | O       |    O    |          |            |
+____________/|\___________/|\__________/|\_____________________________________
+GUERRILLA ENGAGEMENT. YOUR CELLS ARE HIDDEN IN THE HILLS (MARKED ~ ON THE MAP).
+A HIDDEN CELL CANNOT BE ATTACKED, AND ITS AMBUSH STRIKES TWICE AS HARD.
+ATTACKING GIVES IT AWAY, AND SO MAY A PATROL NEARBY.
+RAIDS THAT HURT WOPR WIN SUPPORT; LOSSES COST IT. RECRUIT SPENDS 3 SUPPORT.
+SUPPORT 10 OR THE CAPITAL WINS, AND SO DOES A CELL ALIVE AFTER TWELVE TURNS.
+TYPE HELP FOR ORDERS.
+GUERRILLA ENGAGEMENT   TURN 1 OF 12   SUPPORT 3
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ====~(1)========~~(2)==========(3)==========(4)<<========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1~              
+ 2 JUNGLE               ROUGH  YOU  GUE2~,3~           
+ 3 HIGHLANDS            ROUGH  -                       
+ 4 RIVER VALLEY         OPEN   WOPR                    PAT1,2
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1~ IN BORDER CAMPS: HELP
+
+ORDERS: MOVE, ATTACK, HOLD, HIDE, RECRUIT.
+STATUS SHOWS THE MAP; END HOLDS THE REST OF THIS TURN'S UNITS.
+  MOVE <REGION>: AS FAR AS THE UNIT'S MOVE, NOT THROUGH THE ENEMY.
+  ATTACK <REGION>: AN ENEMY IN RANGE.
+  HOLD: STAY PUT.
+  HIDE: GO TO GROUND (NO MOVE, NO ATTACK).
+  RECRUIT: SPEND 3 SUPPORT ON A NEW CELL HERE.
+RESULTS: NE NO EFFECT; AE THE ATTACKER LOSES A STEP; EX BOTH DO;
+DR THE DEFENDER FALLS BACK (OR LOSES A STEP); DE THE DEFENDER LOSES A STEP.
+GUE1~ IN BORDER CAMPS: RECRUIT
+
+GUE2~ IN JUNGLE: HOLD
+
+GUE3~ IN JUNGLE: HOLD
+
+A NEW CELL FORMS AT BORDER CAMPS.
+A SUPPLY DROP REACHES THE HILLS.
+A PATROL FINDS GUE1.
+A PATROL FINDS GUE2.
+A PATROL FINDS GUE3.
+A PATROL FINDS GUE4.
+GUERRILLA ENGAGEMENT   TURN 2 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ===>>(1)========>>(2)<<========(3)==========(4)==========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1,4             
+ 2 JUNGLE               ROUGH  YOU  GUE2,3             PAT1,2
+ 3 HIGHLANDS            ROUGH  -                       
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1 IN BORDER CAMPS: HIDE
+
+GUE2 IN JUNGLE: HIDE
+
+GUE3 IN JUNGLE: HIDE
+
+GUE4 IN BORDER CAMPS: HIDE
+
+WOPR'S PAT1 ATTACKS GUE1 AT BORDER CAMPS: NE.
+WOPR'S PAT2 ATTACKS GUE1 AT BORDER CAMPS: DR.
+GUE1 GOES TO GROUND.
+GUE2 GOES TO GROUND.
+GUE3 GOES TO GROUND.
+GUE4 GOES TO GROUND.
+A HEAVY-HANDED SWEEP. SUPPORT RISES BY ONE.
+A PATROL FINDS GUE3.
+A PATROL FINDS GUE4.
+GUERRILLA ENGAGEMENT   TURN 3 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ===~>(1)========~>(2)<<========(3)==========(4)==========(5)<=========(6)<====
+ <--------- YOU ---------->             <--------------- WOPR ---------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*~,4           
+ 2 JUNGLE               ROUGH  YOU  GUE2~,3            PAT1,2
+ 3 HIGHLANDS            ROUGH  -                       
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1*~ IN BORDER CAMPS: HOLD
+
+GUE2~ IN JUNGLE: ATTACK 2
+
+GUE3 IN JUNGLE: HIDE
+
+GUE4 IN BORDER CAMPS: HIDE
+
+GUE2~ ATTACKS WOPR'S PAT1 AT JUNGLE: DR.
+WOPR'S PAT2 ATTACKS GUE4 AT BORDER CAMPS: AE.
+GUE3 GOES TO GROUND.
+GUE4 GOES TO GROUND.
+THE RAINS COME. PATROLS FIND NOTHING THIS TURN.
+GUERRILLA ENGAGEMENT   TURN 4 OF 12   SUPPORT 1
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ===~~(1)========~>(2)<=========(3)<=========(4)==========(5)<=========(6)<====
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*~,4~          
+ 2 JUNGLE               ROUGH  YOU  GUE2,3~            PAT2*
+ 3 HIGHLANDS            ROUGH  WOPR                    PAT1
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1*~ IN BORDER CAMPS: ATTACK 2
+
+GUE2 IN JUNGLE: HIDE
+
+GUE3~ IN JUNGLE: ATTACK 2
+
+GUE4~ IN BORDER CAMPS: ATTACK 2
+
+GUE1*~ ATTACKS WOPR'S PAT2* AT JUNGLE: NE.
+GUE3~ ATTACKS WOPR'S PAT2* AT JUNGLE: EX.
+WOPR'S PAT2 IS DESTROYED.
+GUE4 STANDS FAST: NO ENEMY THERE IN RANGE.
+WOPR'S PAT1 ATTACKS GUE2 AT JUNGLE: NE.
+GUE2 GOES TO GROUND.
+A QUIET WEEK.
+GUERRILLA ENGAGEMENT   TURN 5 OF 12   SUPPORT 1
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ===~>(1)========~>(2)==========(3)<=========(4)==========(5)<=========(6)<====
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*,4~           
+ 2 JUNGLE               ROUGH  YOU  GUE2~,3*           
+ 3 HIGHLANDS            ROUGH  WOPR                    PAT1
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1* IN BORDER CAMPS: HIDE
+
+GUE2~ IN JUNGLE: ATTACK 3
+
+GUE3* IN JUNGLE: HIDE
+
+GUE4~ IN BORDER CAMPS: HOLD
+
+GUE2~ ATTACKS WOPR'S PAT1 AT HIGHLANDS: AE.
+WOPR'S PAT1 ATTACKS GUE3* AT JUNGLE: DR.
+GUE1 GOES TO GROUND.
+GUE3 GOES TO GROUND.
+FRESH TROOPS REACH THE CAPITAL.
+GUERRILLA ENGAGEMENT   TURN 6 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ==~~~(1)=========>(2)==========(3)<=========(4)==========(5)<=========(6)<<===
+ <--------- YOU ----------><---------------------- WOPR ---------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*~,3*~,4~      
+ 2 JUNGLE               ROUGH  YOU  GUE2*              
+ 3 HIGHLANDS            ROUGH  WOPR                    PAT1
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1 PAT3
+GUE1*~ IN BORDER CAMPS: HOLD
+
+GUE2* IN JUNGLE: HIDE
+
+GUE3*~ IN BORDER CAMPS: HOLD
+
+GUE4~ IN BORDER CAMPS: HOLD
+
+WOPR'S PAT1 ATTACKS GUE2* AT JUNGLE: DR.
+GUE2 GOES TO GROUND.
+THE VILLAGES SHELTER YOUR CELLS. ALL GO TO GROUND.
+GUERRILLA ENGAGEMENT   TURN 7 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ =~~~~(1)==========(2)<=========(3)==========(4)<=========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*~,2*~,3*~,4~  
+ 2 JUNGLE               ROUGH  WOPR                    PAT1
+ 3 HIGHLANDS            ROUGH  WOPR                    
+ 4 RIVER VALLEY         OPEN   WOPR                    PAT3
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1*~ IN BORDER CAMPS: HOLD
+
+GUE2*~ IN BORDER CAMPS: HOLD
+
+GUE3*~ IN BORDER CAMPS: HOLD
+
+GUE4~ IN BORDER CAMPS: ATTACK 2
+
+GUE4~ ATTACKS WOPR'S PAT3 AT JUNGLE: EX.
+AN INFORMER TALKS.
+GUE4 IS EXPOSED.
+A PATROL FINDS GUE1.
+A PATROL FINDS GUE2.
+A PATROL FINDS GUE3.
+GUERRILLA ENGAGEMENT   TURN 8 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ =>>>>(1)<=========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE1*,2*,3*,4*     PAT1
+ 2 JUNGLE               ROUGH  WOPR                    PAT3*
+ 3 HIGHLANDS            ROUGH  WOPR                    
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE1* IN BORDER CAMPS: HIDE
+
+GUE2* IN BORDER CAMPS: HIDE
+
+GUE3* IN BORDER CAMPS: HIDE
+
+GUE4* IN BORDER CAMPS: HIDE
+
+WOPR'S PAT1 ATTACKS GUE1* AT BORDER CAMPS: EX.
+GUE1 IS DESTROYED.
+WOPR'S PAT3* ATTACKS GUE2* AT BORDER CAMPS: NE.
+GUE2 GOES TO GROUND.
+GUE3 GOES TO GROUND.
+GUE4 GOES TO GROUND.
+A CURFEW IN THE TOWNS.
+A PATROL FINDS GUE2.
+A PATROL FINDS GUE3.
+A PATROL FINDS GUE4.
+GUERRILLA ENGAGEMENT   TURN 9 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ==>>>(1)<=========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE2*,3*,4*        PAT1*
+ 2 JUNGLE               ROUGH  WOPR                    PAT3*
+ 3 HIGHLANDS            ROUGH  WOPR                    
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE2* IN BORDER CAMPS: HIDE
+
+GUE3* IN BORDER CAMPS: HIDE
+
+GUE4* IN BORDER CAMPS: HIDE
+
+WOPR'S PAT1* ATTACKS GUE2* AT BORDER CAMPS: EX.
+WOPR'S PAT1 IS DESTROYED.
+GUE2 IS DESTROYED.
+WOPR'S PAT3* ATTACKS GUE3* AT BORDER CAMPS: DR.
+GUE3 IS DESTROYED.
+GUE4 GOES TO GROUND.
+A CURFEW IN THE TOWNS.
+A PATROL FINDS GUE4.
+GUERRILLA ENGAGEMENT   TURN 10 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ ====>(1)==========(2)<=========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU  GUE4*              
+ 2 JUNGLE               ROUGH  WOPR                    PAT3*
+ 3 HIGHLANDS            ROUGH  WOPR                    
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+GUE4* IN BORDER CAMPS: HIDE
+
+WOPR'S PAT3* ATTACKS GUE4* AT BORDER CAMPS: EX.
+WOPR'S PAT3 IS DESTROYED.
+GUE4 IS DESTROYED.
+THE VILLAGES SHELTER YOUR CELLS. ALL GO TO GROUND.
+GUERRILLA ENGAGEMENT   TURN 10 OF 12   SUPPORT 0
+    /\  /\     _\|/_ _\|/_    /\  /\      .  .  .       _ [] _       _ [] _
+   /__\/__\    @@|@@@@|@@    /  \/  \    _.-'-._.-'    |#|##|#|     |#|##|#|
+ =====(1)==========(2)==========(3)==========(4)==========(5)<=========(6)<====
+ <--- YOU ---><---------------------------- WOPR ----------------------------->
+   REGION               GROUND HELD YOUR UNITS         WOPR'S UNITS
+ 1 BORDER CAMPS         ROUGH  YOU                     
+ 2 JUNGLE               ROUGH  WOPR                    
+ 3 HIGHLANDS            ROUGH  WOPR                    
+ 4 RIVER VALLEY         OPEN   WOPR                    
+ 5 PROVINCE TOWN        CITY   WOPR                    GAR2
+ 6 CAPITAL              CITY   WOPR                    GAR1
+THE LAST CELL IS GONE.

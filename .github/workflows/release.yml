@@ -1,0 +1,175 @@
+# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish.
+# workflow_dispatch runs everything but verify and publish as a dry run, and never publishes.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: verify
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Tag is semver, on main, and CI passed for its commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          [[ "${TAG}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::tag ${TAG} is not vMAJOR.MINOR.PATCH"; exit 1; }
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main || { echo "::error::${TAG} is not on main"; exit 1; }
+          # Every ci-ok that GitHub Actions posted on the commit must have passed; a check run with
+          # the same name from another app does not count. A run still in progress reads "pending".
+          result="$(gh api "repos/${REPO}/commits/${GITHUB_SHA}/check-runs?check_name=ci-ok" --jq '
+            [.check_runs[] | select(.app.slug == "github-actions") | .conclusion]
+            | if length == 0 then "missing"
+              elif all(. == "success") then "success"
+              else map(select(. != "success")) | first // "pending" end')"
+          [[ "${result}" == "success" ]] || { echo "::error::ci-ok is ${result} for ${GITHUB_SHA}"; exit 1; }
+
+  build:
+    name: build
+    needs: verify
+    # A dry run skips verify; without an explicit condition every later job would be skipped too.
+    if: ${{ !cancelled() && (needs.verify.result == 'success' || (github.event_name == 'workflow_dispatch' && needs.verify.result == 'skipped')) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false # never restore a cache into a release build
+      - name: GoReleaser (no publish)
+        env:
+          SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
+        run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
+      - name: Size gate
+        run: go run ./internal/tools/sizegate -expect 6
+      - name: Stage binaries and check archive contents
+        run: go run ./internal/tools/stage -archives
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-stage
+          path: stage/
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-dist
+          path: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/checksums.txt
+          retention-days: 7
+          if-no-files-found: error
+
+  smoke:
+    name: smoke
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    permissions: {}
+    uses: $/.github/workflows/smoke.yml
+    with:
+      artifact: release-stage
+
+  rebuild:
+    name: rebuild
+    needs: verify
+    # The same condition as build, which it runs beside rather than after.
+    if: ${{ !cancelled() && (needs.verify.result == 'success' || (github.event_name == 'workflow_dispatch' && needs.verify.result == 'skipped')) }}
+    runs-on: ubuntu-24.04-arm # a different host architecture must give identical archives
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Rebuild
+        env:
+          SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
+        run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rebuild-checksums
+          path: dist/checksums.txt
+          retention-days: 7
+          if-no-files-found: error
+
+  repro:
+    name: reproducible
+    needs: [build, rebuild]
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.rebuild.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dist
+          path: first
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rebuild-checksums
+          path: second
+      - name: Compare checksums
+        run: diff -u first/checksums.txt second/checksums.txt
+
+  publish:
+    name: publish
+    needs: [verify, build, smoke, repro]
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
+      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dist
+          path: dist
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: dist/checksums.txt
+      - name: Create the release as a draft, upload, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag --generate-notes \
+            dist/*.tar.gz dist/*.zip dist/checksums.txt
+          gh release edit "${TAG}" --repo "${REPO}" --draft=false

@@ -1,0 +1,25 @@
+         /\/|                a  b  c  d  e  f  g  h
+       _/   '-.            .------------------------.
+     _/  O     \         8 | r :n: b :q: k :b: n :r:| 8   WOPR   BLACK
+    /           |        7 |:p: p :p: p :p: p :p: p | 7
+   (__.--.      |        6 |   :::   :::   :::   :::| 6
+         /      |        5 |:::   :::   :::   :::   | 5   MOVE   1
+        /       |        4 |   :::   :::   :::   :::| 4
+       /________\        3 |:::   :::   :::   :::   | 3
+      (__________)       2 | P :P: P :P: P :P: P :P:| 2
+                         1 |:R: N :B: Q :K: B :N: R | 1   YOU    WHITE
+      C H E S S            '------------------------'
+                             a  b  c  d  e  f  g  h
+
+.........dddd................d..d..d..d..d..d..d..d
+.......dd...ddd............dddddddddddddddddddddddddd
+.....dd..d.....d.........d.d.t.dtd.t.dtd.t.dtd.t.dtdd.d...LLLL...ttttt
+....d...........d........d.ddtd.t.dtd.t.dtd.t.dtd.t.d.d
+...ddddddd......d........d.d...ddd...ddd...ddd...dddd.d
+.........d......d........d.dddd...ddd...ddd...ddd...d.d...dddd...t
+........d.......d........d.d...ddd...ddd...ddd...dddd.d
+.......dddddddddd........d.dddd...ddd...ddd...ddd...d.d
+......dddddddddddd.......d.d.b.dbd.b.dbd.b.dbd.b.dbdd.d
+.........................d.ddbd.b.dbd.b.dbd.b.dbd.b.d.d...LLL....ttttt
+......L.L.L.L.L............dddddddddddddddddddddddddd
+.............................d..d..d..d..d..d..d..d

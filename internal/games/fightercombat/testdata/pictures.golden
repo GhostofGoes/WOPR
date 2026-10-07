@@ -1,0 +1,90 @@
+==== aspect -1, range 1, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU <==/             <==/ WOPR
+   LOW :
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
+==== aspect -1, range 1, energy [0 6], hits [1 1] ====
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE CLOSE. WOPR IS ON YOUR TAIL. -----------------
+==== aspect -1, range 2, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU <==/                             <==/ WOPR
+   LOW :
+       '--------------- RANGE MEDIUM. WOPR IS ON YOUR TAIL. ----------------
+==== aspect -1, range 2, energy [0 6], hits [1 1] ====
+  HIGH :                                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '--------------- RANGE MEDIUM. WOPR IS ON YOUR TAIL. ----------------
+==== aspect -1, range 3, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU <==/                                             <==/ WOPR
+   LOW :
+       '---------------- RANGE LONG. WOPR IS ON YOUR TAIL. -----------------
+==== aspect -1, range 3, energy [0 6], hits [1 1] ====
+  HIGH :                                                      <==/~~ WOPR
+   MID :
+   LOW : YOU <==/~~
+       '---------------- RANGE LONG. WOPR IS ON YOUR TAIL. -----------------
+==== aspect 0, range 1, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>             <==/ WOPR
+   LOW :
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
+==== aspect 0, range 1, energy [0 6], hits [1 1] ====
+  HIGH :                      <==/~~ WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '----------------- RANGE CLOSE. NEUTRAL, HEAD-ON. -------------------
+==== aspect 0, range 2, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>                             <==/ WOPR
+   LOW :
+       '----------------- RANGE MEDIUM. NEUTRAL, HEAD-ON. ------------------
+==== aspect 0, range 2, energy [0 6], hits [1 1] ====
+  HIGH :                                      <==/~~ WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '----------------- RANGE MEDIUM. NEUTRAL, HEAD-ON. ------------------
+==== aspect 0, range 3, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>                                             <==/ WOPR
+   LOW :
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
+==== aspect 0, range 3, energy [0 6], hits [1 1] ====
+  HIGH :                                                      <==/~~ WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '------------------ RANGE LONG. NEUTRAL, HEAD-ON. -------------------
+==== aspect 1, range 1, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>             \==> WOPR
+   LOW :
+       '---------------- RANGE CLOSE. YOU ARE ON ITS TAIL. -----------------
+==== aspect 1, range 1, energy [0 6], hits [1 1] ====
+  HIGH :                    ~~\==> WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '---------------- RANGE CLOSE. YOU ARE ON ITS TAIL. -----------------
+==== aspect 1, range 2, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>                             \==> WOPR
+   LOW :
+       '--------------- RANGE MEDIUM. YOU ARE ON ITS TAIL. -----------------
+==== aspect 1, range 2, energy [0 6], hits [1 1] ====
+  HIGH :                                    ~~\==> WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '--------------- RANGE MEDIUM. YOU ARE ON ITS TAIL. -----------------
+==== aspect 1, range 3, energy [3 3], hits [0 0] ====
+  HIGH :
+   MID : YOU \==>                                             \==> WOPR
+   LOW :
+       '---------------- RANGE LONG. YOU ARE ON ITS TAIL. ------------------
+==== aspect 1, range 3, energy [0 6], hits [1 1] ====
+  HIGH :                                                    ~~\==> WOPR
+   MID :
+   LOW : YOU ~~\==>
+       '---------------- RANGE LONG. YOU ARE ON ITS TAIL. ------------------

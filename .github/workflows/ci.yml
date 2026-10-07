@@ -1,0 +1,245 @@
+# CI for every branch push and for pull requests from forks. The only required check is ci-ok
+# (see AGENTS.md). A pull request from a branch of this repository is checked by that branch's
+# push run, which reports ci-ok on the same head commit, so its pull_request run skips every
+# job rather than run the same work twice. A fork's pushes never reach this repository, so its
+# pull requests run in full.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["**"] # every branch; tags go to release.yml
+
+permissions: {}
+
+# Pull requests share a group per PR, and other branches a group per branch; both cancel
+# superseded runs. Pushes to main get a group per commit: a shared group would let a newer
+# pending run replace an older pending one, leaving a merged commit without ci-ok.
+concurrency:
+  group: >-
+    ${{ github.event_name == 'pull_request' && format('ci-pr-{0}', github.ref)
+    || github.ref == 'refs/heads/main' && format('ci-{0}', github.sha)
+    || format('ci-branch-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
+
+jobs:
+  lint:
+    name: lint
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # No GOTOOLCHAIN before setup-go: with GOTOOLCHAIN=local set, setup-go ignores
+      # go.mod's toolchain line. setup-go exports GOTOOLCHAIN=local itself afterwards.
+      # Each job's cache is keyed on the modules it builds: jobs sharing one key race to save
+      # it, and the first to finish (often the smallest) wins for everyone.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          # The hooks run `go mod tidy -diff` in every module; the self-test builds golangci-lint.
+          cache-dependency-path: |
+            go.sum
+            tools/go.sum
+            tools/lint/go.sum
+            tools/release/go.sum
+      - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        with:
+          prek-version: 0.5.5
+      - name: Lint rules still fire
+        env:
+          WOPR_LINT_SELFTEST: "1"
+        run: go test -run 'TestLintRulesFire' -v ./internal/archtest
+      - name: zizmor online audits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: prek run zizmor --all-files
+
+  secrets:
+    name: secrets
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: tools/go.sum # gitleaks only
+      - name: gitleaks (full history)
+        shell: bash
+        # Scans the checked-out commit's history (a branch, or a fork's PR merged with main), not
+        # every branch: a stale branch must not block every PR. gitleaks exits 0 when git fails, so
+        # errors and an empty scan are caught from the log, which --no-color keeps greppable.
+        run: |
+          set -o pipefail
+          go tool -modfile=tools/go.mod gitleaks git --redact --no-color --no-banner --exit-code 1 \
+            --log-opts="--full-history HEAD" . 2>&1 | tee gitleaks.log
+          if grep -q ' ERR ' gitleaks.log; then echo "::error::gitleaks reported an error"; exit 1; fi
+          if grep -q ' 0 commits scanned' gitleaks.log; then echo "::error::gitleaks scanned no commits"; exit 1; fi
+
+  test:
+    name: test
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, macos-26, windows-2025]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: | # the module and govulncheck
+            go.sum
+            tools/go.sum
+      - name: go test -race
+        if: runner.os != 'Windows'
+        run: go test -race ./...
+      - name: go test (Windows; the race detector needs a C toolchain)
+        if: runner.os == 'Windows'
+        run: go test ./...
+      - name: Fuzz smoke (every Fuzz target, 10s each)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          go test -list '^Fuzz' ./... |
+            awk '/^Fuzz/ { t[++n] = $1 } /^ok/ { for (i = 1; i <= n; i++) print t[i], $2; n = 0 }' > fuzz-targets.txt
+          test -s fuzz-targets.txt
+          while read -r target pkg; do
+            go test -run '^$' -fuzz "^${target}\$" -fuzztime=10s "$pkg"
+          done < fuzz-targets.txt
+      - name: Upload crashing fuzz inputs
+        if: failure() && runner.os == 'Linux'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: fuzz-crashers
+          path: internal/**/testdata/fuzz/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: govulncheck
+        if: runner.os == 'Linux'
+        run: go tool -modfile=tools/go.mod govulncheck ./...
+      - name: Third-party notices are current
+        if: runner.os == 'Linux'
+        run: go run ./internal/tools/notices -check
+
+  build:
+    name: build
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      # How long the platform downloads are kept: 30 days on main, 7 on other branches, 3 on PRs.
+      RETENTION_DAYS: ${{ github.event_name == 'pull_request' && 3 || github.ref == 'refs/heads/main' && 30 || 7 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: GoReleaser snapshot (all six targets)
+        run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
+      - name: Size gate
+        run: go run ./internal/tools/sizegate -expect 6
+      - name: Stage binaries and end-to-end tests
+        run: go run ./internal/tools/stage -archives
+      # One download per platform: GoReleaser's archive for it (the binary, the README, the licence
+      # and the notices; the tar.gz keeps the binary executable), uploaded as-is rather than zipped
+      # again. Each artifact is named after its file, e.g. wopr_0.0.1-snapshot.1a2b3c4_linux_amd64.tar.gz.
+      - name: Upload linux_amd64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_linux_amd64.tar.gz
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - name: Upload linux_arm64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_linux_arm64.tar.gz
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - name: Upload darwin_amd64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_darwin_amd64.tar.gz
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - name: Upload darwin_arm64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_darwin_arm64.tar.gz
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - name: Upload windows_amd64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_windows_amd64.zip
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - name: Upload windows_arm64
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          path: dist/wopr_*_windows_arm64.zip
+          archive: false
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      # Every staged binary with its e2e test, for this run's smoke jobs only.
+      - name: Upload the smoke bundle
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: smoke-bundle
+          path: stage/
+          retention-days: 1
+          if-no-files-found: error
+
+  smoke:
+    name: smoke
+    needs: build
+    permissions: {}
+    uses: $/.github/workflows/smoke.yml
+    with:
+      artifact: smoke-bundle
+
+  ci-ok:
+    # Skipped on a pull request from this repository, like the rest. A skipped job counts as
+    # passed, so a skipped check named "ci-ok" could stand in for a failed push run. GitHub does
+    # not evaluate a skipped job's name, so that check is listed under this expression's text;
+    # the name must stay an expression and never become plain "ci-ok".
+    name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    needs: [lint, secrets, test, build, smoke]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: All required jobs succeeded
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped')
+        run: exit 1
+      - name: OK
+        run: echo "all required jobs passed"

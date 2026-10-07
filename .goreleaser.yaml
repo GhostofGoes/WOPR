@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+project_name: wopr
+
+builds:
+  - id: wopr
+    main: ./cmd/wopr
+    binary: wopr
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]           # the default would add 386
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X github.com/GhostofGoes/WOPR/internal/version.Version={{ .Version }}
+      - -X github.com/GhostofGoes/WOPR/internal/version.Commit={{ .FullCommit }}
+      - -X github.com/GhostofGoes/WOPR/internal/version.Date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: wopr
+    ids: [wopr]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    builds_info:                     # pin the binary's archive entry too
+      mtime: "{{ .CommitDate }}"
+      owner: root
+      group: root
+      mode: 0755
+    files:
+      - src: LICENSE
+        info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
+      - src: README.md
+        info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
+      - src: NOTICE.md
+        info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
+      - src: THIRD_PARTY_NOTICES.txt
+        info: { mtime: "{{ .CommitDate }}", owner: root, group: root, mode: 0644 }
+
+checksum:
+  name_template: checksums.txt       # the default would be wopr_<version>_checksums.txt
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-snapshot.{{ .ShortCommit }}"
+
+report_sizes: true
+
+release:
+  disable: true                      # publishing is release.yml's publish job (gh + attest)
+
+changelog:
+  disable: true # release notes come from `gh release create --generate-notes`

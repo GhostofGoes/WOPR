@@ -1,0 +1,7 @@
+# LF everywhere: goldens, scripts and embedded text compare byte-for-byte on every OS,
+# including Windows runners that check out with core.autocrlf=true.
+* text=auto eol=lf
+
+*.png binary
+*.gif binary
+*.jpg binary

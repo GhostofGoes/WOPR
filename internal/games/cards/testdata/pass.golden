@@ -1,0 +1,45 @@
+==== to WEST
+
+              NORTH
+                     .-.-.---.
+  WEST <------------ |/|/|/\/|           EAST
+              SOUTH  '-'-'---'
+
+
+
+..............LLLLL
+.....................ddddddddd
+..LLLL.AAAAAAAAAAAAA.ddddddddd...........LLLL
+..............LLLLL..ddddddddd
+
+
+==== to NORTH
+                       ^
+              NORTH    |
+                     .-.-.---.
+  WEST               |/|/|/\/|           EAST
+              SOUTH  '-'-'---'
+
+
+.......................A
+..............LLLLL....A
+.....................ddddddddd
+..LLLL...............ddddddddd...........LLLL
+..............LLLLL..ddddddddd
+
+
+==== to EAST
+
+              NORTH
+                     .-.-.---.
+  WEST               |/|/|/\/| --------> EAST
+              SOUTH  '-'-'---'
+
+
+
+..............LLLLL
+.....................ddddddddd
+..LLLL...............ddddddddd.AAAAAAAAA.LLLL
+..............LLLLL..ddddddddd
+
+

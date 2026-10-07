@@ -1,0 +1,156 @@
+==== console, no panel (80x24) ====
+GREETINGS PROFESSOR FALKEN.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 0, row 2
+==== panel layout, no panel (80x24) ====
+STUB BOARD
+
+
+
+STUB READY.
+MOVE:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cursor: col 6, row 5
+==== full layout, no panel (80x24) ====
+STUB BOARD
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+STUB READY.
+MOVE: FULL
+
+MOVE:
+cursor: col 6, row 23
+==== console, panel (80x24) ====
+GREETINGS PROFESSOR FALKEN.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 0, row 2
+==== panel layout, panel (80x24) ====
+STUB BOARD
+
+
+
+STUB READY.
+MOVE:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 6, row 5
+==== full layout, panel (80x24) ====
+STUB BOARD
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+STUB READY.
+MOVE: FULL
+
+MOVE:
+ W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
+cursor: col 6, row 22

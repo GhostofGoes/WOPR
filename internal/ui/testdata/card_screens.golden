@@ -1,0 +1,104 @@
+==== hearts (80x24) ====
+HEARTS                                            YOU 0  WEST 0  NORTH 0  EAST 0
+
+                      NORTH
+                                           .---.
+          WEST               . - .         |2C | EAST
+                        YOU  :   :         '---'
+                             ' - '
+.---.---.---.---.---.---.---.---.---.---.---.---.---.
+|QS |KH |8H |4H |AD |KD |JD |10D|8D |4D |AC |QC |9C |         YOUR HAND
+  1   2   3   4   5   6   7   8   9  10  11  12  13
+      /     \ /     \         .-----.
+     |       V       |        |QS   |       H E A R T S
+      \             /         |  S  |       = = = = = =
+       '.         .'          |    Q|       TAKE NONE, OR TAKE THEM ALL.
+         '.     .'            '-----'
+           '. .'
+             V
+HEARTS. YOU ARE SOUTH; WOPR PLAYS WEST, NORTH AND EAST.
+EACH HEART IS A POINT AND THE QUEEN OF SPADES 13. TAKE ALL 26 TO SHOOT THE MOON.
+LOWEST SCORE WINS WHEN SOMEONE REACHES 100. NAME CARDS AS 7H OR BY POSITION.
+PASS THREE CARDS TO WEST: 1 2 3
+
+YOU RECEIVE QS KH AD.
+YOUR PLAY:
+cursor: col 11, row 23
+==== gin-rummy (80x24) ====
+GIN RUMMY                                                YOU 0   WOPR 0   TO 100
+       .-.-.-.-.-.-.-.-.-.---.                  .---.                     .---.
+WOPR   |/|/|/|/|/|/|/|/|/|/\/| 10 CARDS   STOCK |/\/| 31          DISCARD |10C|
+       '-'-'-'-'-'-'-'-'-'---'                  '---'                     '---'
+
+.---.---.---.---.---.---.---.---.---.---.                     YOUR HAND
+|AD |AH |2S |3C |4H |6D |8C |10H|10S|JS |                     DEADWOOD: 55
+  1   2   3   4   5   6   7   8   9  10
+                                              \
+                                           .___\_____.
+                                            \~~~(O)~/       G I N   R U M M Y
+   .---.---.---.-----.    .---.---.-----.    \     /        = = = = = = = = =
+   |4H |5H |6H |7H   |    |9C |9D |9S   |     \   /
+   |   |   |   |  H  |    |   |   |  S  |      \ /          WOPR TAKES ITS GIN
+   |   |   |   |    7|    |   |   |    9|       |           STRAIGHT.
+   '---'---'---'-----'    '---'---'-----'     __|__
+GIN RUMMY TO 100. TEN CARDS EACH; ACES ARE LOW.
+DRAW FROM THE STOCK OR TAKE THE DISCARD, THEN DISCARD. KNOCK WITH 10 OR LESS
+DEADWOOD (KNOCK 7H DISCARDS THE 7H AND KNOCKS); GIN WITH NONE.
+WOPR DEALS.
+STOCK OR DISCARD?
+
+
+
+cursor: col 18, row 20
+==== bridge (80x24) ====
+BRIDGE                                     CONTRACT 3NT BY NORTH    N-S 0  E-W 0
+NORTH           S Q J 8 6  H 10  D A Q 7  C K Q J 6 2
+
+                      NORTH
+                                           .---.
+          WEST               . - .         |4S | EAST
+                      SOUTH  :   :         '---'
+                             ' - '
+SOUTH (DUMMY) > S 10  H A K Q J 6 4  D 5 4 2  C 7 5 4
+AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
+               .-N-.
+       .---.   |AS |   .---.          B R I D G E
+     W |AH |   '---'   |AD | E        = = = = = =
+       '---'   .---.   '---'          FOUR HANDS. THIRTEEN TRICKS.
+               |AC |
+               '-S-'
+BRIDGE. WOPR BIDS ALL FOUR HANDS BY POINT COUNT.
+YOUR SIDE DECLARES: YOU PLAY YOUR HAND AND DUMMY'S, AND WOPR DEFENDS.
+NAME CARDS AS 7H. ONE DEAL IS A GAME: MAKE THE CONTRACT TO WIN.
+WOPR TURNS THE TABLE SO THAT YOUR SIDE DECLARES.
+AUCTION, WEST DEALING: PASS 1NT PASS 3NT PASS PASS PASS
+CONTRACT: 3NT BY NORTH. EAST LEADS.
+DUMMY (SOUTH) PLAYS:
+
+cursor: col 21, row 22
+==== falkens-maze (80x24) ====
+.------------------------------[ FALKEN'S MAZE ]-------------------------------.
+|          +--+                                                                |
+| START -> |@ |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|          +  +                                                                |
+|          |  |.  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|          +  +                                                                |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .            |
+|                                                                              |
+|           .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  .  []  <- EXIT  |
+|                                                                              |
+'-- MOVES 0 ---- YOUR TURNS: 0 LEFT  0 STRAIGHT  0 RIGHT ----- WALLS MOVED 0 --'
+FIND THE EXIT. WOPR IS WATCHING HOW YOU TURN.
+ARROW KEYS OR WASD TO MOVE. Q GIVES UP.
+
+
+
+
+
+
+
+
+
+cursor: hidden

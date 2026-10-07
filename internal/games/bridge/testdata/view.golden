@@ -1,0 +1,21 @@
+BRIDGE                                      CONTRACT 3S BY SOUTH    N-S 0  E-W 0
+NORTH (DUMMY)   S A 10 8 4  H J  D K 10 9 7  C 10 9 7
+                             .---.
+                      NORTH  |5C |
+               .---.         '---'         .---.
+          WEST |2C |         . - .         |6C | EAST
+               '---'  SOUTH  :   :         '---'
+                             ' - '
+SOUTH         > S K Q 7 6  H Q 8 3  D Q J 4  C K Q J
+AUCTION, SOUTH DEALING: 1S PASS 3S PASS PASS PASS
+
+LLLLLL......................................tttttttt.tt.tt.ttttt....ttt.t..ttt.t
+LLLLL.LLLLLLL...k.t.tt.t.t..r.t..r.t.tt.t.t..k.tt.t.t
+.............................bbbbb
+......................LLLLL..bkk.b
+...............bbbbb.........bbbbb.........bbbbb
+..........LLLL.bkk.b.........d.d.d.........bkk.b.LLLL
+...............bbbbb..LLLLL..d...d.........bbbbb
+.............................d.d.d
+LLLLL.........b.k.b.b.b.b..r.b.b.b..r.b.b.b..k.b.b.b
+dddddddd.ddddd.dddddddd.dd.dddd.dd.dddd.dddd.dddd

@@ -31,3 +31,24 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Build output (GoReleaser, local builds)
+/dist/
+/stage/
+/wopr
+/wopr.exe
+
+# Keys and certificates never belong in the tree
+*.pem
+*.key
+
+# Tool caches
+.rumdl_cache/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Claude Code: temporary agent worktrees and personal settings (shared config in .claude/ is kept)
+/.claude/worktrees/
+/.claude/settings.local.json

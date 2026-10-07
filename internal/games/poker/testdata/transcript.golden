@@ -1,0 +1,178 @@
+         .------------------------------------------------------------.
+      .-'  .---.---.---.---.-----.                              ___    '-.
+    .'     |10S|JS |QS |KS |AS   |    P O K E R                (___) ___  '.
+   |       |   |   |   |   |  S  |    = = = = =            ___ (___)(___)   |
+   |       |   |   |   |   |    A|    WOPR HAS NO TELLS.  (___)(___)(___)   |
+    '.     '---'---'---'---'-----'                        (___)(___)(___) .'
+      '-.                                                              .-'
+         '------------------------------------------------------------'
+FIVE-CARD DRAW, HEADS UP. EACH HAND COSTS AN ANTE OF 1.
+BETS ARE 5 BEFORE THE DRAW AND 10 AFTER; A BET AND THREE RAISES A ROUND.
+DISCARD UP TO THREE CARDS. TYPE LEAVE BETWEEN HANDS TO CASH OUT.
+WOPR DEALS. ANTE 1 EACH.
+YOUR HAND: KING HIGH
+.-----. .-----. .-----. .-----. .-----.
+|KD   | |5H   | |QC   | |4H   | |3C   |
+|  D  | |  H  | |  C  | |  H  | |  C  |
+|    K| |    5| |    Q| |    4| |    3|
+'-----' '-----' '-----' '-----' '-----'
+   1       2       3       4       5
+POT 2. CHECK OR BET? bet
+
+WOPR CALLS 5.
+DISCARD (1-5, OR NONE): 1 2
+
+YOU DRAW 2.
+YOUR HAND: KING HIGH
+.-----. .-----. .-----. .-----. .-----.
+|7H   | |KC   | |QC   | |4H   | |3C   |
+|  H  | |  C  | |  C  | |  H  | |  C  |
+|    7| |    K| |    Q| |    4| |    3|
+'-----' '-----' '-----' '-----' '-----'
+WOPR DRAWS 3.
+POT 12. CHECK OR BET? c
+
+WOPR BETS 10.
+POT 22. CALL 10, RAISE OR FOLD? c
+
+WOPR SHOWS: THREE SIXES
+.-----. .-----. .-----. .-----. .-----.
+|6D   | |3S   | |6H   | |2C   | |6C   |
+|  D  | |  S  | |  H  | |  C  | |  C  |
+|    6| |    3| |    6| |    2| |    6|
+'-----' '-----' '-----' '-----' '-----'
+YOU SHOW: KING HIGH
+.-----. .-----. .-----. .-----. .-----.
+|7H   | |KC   | |QC   | |4H   | |3C   |
+|  H  | |  C  | |  C  | |  H  | |  C  |
+|    7| |    K| |    Q| |    4| |    3|
+'-----' '-----' '-----' '-----' '-----'
+WOPR WINS THE POT OF 32.
+YOU HAVE 84 CHIPS. WOPR HAS 116.
+
+ANOTHER HAND? y
+
+YOUR DEAL. ANTE 1 EACH.
+YOUR HAND: A PAIR OF FIVES
+.-----. .-----. .-----. .-----. .-----.
+|5C   | |3C   | |5H   | |KH   | |QS   |
+|  C  | |  C  | |  H  | |  H  | |  S  |
+|    5| |    3| |    5| |    K| |    Q|
+'-----' '-----' '-----' '-----' '-----'
+   1       2       3       4       5
+WOPR CHECKS.
+POT 2. CHECK OR BET? c
+
+WOPR DRAWS 3.
+DISCARD (1-5, OR NONE): 1 2
+
+YOU DRAW 2.
+YOUR HAND: KING HIGH
+.-----. .-----. .-----. .-----. .-----.
+|6H   | |10D  | |5H   | |KH   | |QS   |
+|  H  | |  D  | |  H  | |  H  | |  S  |
+|    6| |   10| |    5| |    K| |    Q|
+'-----' '-----' '-----' '-----' '-----'
+WOPR CHECKS.
+POT 2. CHECK OR BET? c
+
+WOPR SHOWS: A PAIR OF ACES
+.-----. .-----. .-----. .-----. .-----.
+|QD   | |AS   | |3H   | |10S  | |AD   |
+|  D  | |  S  | |  H  | |  S  | |  D  |
+|    Q| |    A| |    3| |   10| |    A|
+'-----' '-----' '-----' '-----' '-----'
+YOU SHOW: KING HIGH
+.-----. .-----. .-----. .-----. .-----.
+|6H   | |10D  | |5H   | |KH   | |QS   |
+|  H  | |  D  | |  H  | |  H  | |  S  |
+|    6| |   10| |    5| |    K| |    Q|
+'-----' '-----' '-----' '-----' '-----'
+WOPR WINS THE POT OF 2.
+YOU HAVE 83 CHIPS. WOPR HAS 117.
+
+ANOTHER HAND? y
+
+WOPR DEALS. ANTE 1 EACH.
+YOUR HAND: A PAIR OF TWOS
+.-----. .-----. .-----. .-----. .-----.
+|6D   | |8S   | |2S   | |QS   | |2C   |
+|  D  | |  S  | |  S  | |  S  | |  C  |
+|    6| |    8| |    2| |    Q| |    2|
+'-----' '-----' '-----' '-----' '-----'
+   1       2       3       4       5
+POT 2. CHECK OR BET? c
+
+WOPR CHECKS.
+DISCARD (1-5, OR NONE): 1 2
+
+YOU DRAW 2.
+YOUR HAND: TWO PAIR, QUEENS AND TWOS
+.-----. .-----. .-----. .-----. .-----.
+|QD   | |AH   | |2S   | |QS   | |2C   |
+|  D  | |  H  | |  S  | |  S  | |  C  |
+|    Q| |    A| |    2| |    Q| |    2|
+'-----' '-----' '-----' '-----' '-----'
+WOPR DRAWS 3.
+POT 2. CHECK OR BET? c
+
+WOPR CHECKS.
+WOPR SHOWS: A PAIR OF JACKS
+.-----. .-----. .-----. .-----. .-----.
+|JD   | |5S   | |4H   | |JH   | |KC   |
+|  D  | |  S  | |  H  | |  H  | |  C  |
+|    J| |    5| |    4| |    J| |    K|
+'-----' '-----' '-----' '-----' '-----'
+YOU SHOW: TWO PAIR, QUEENS AND TWOS
+.-----. .-----. .-----. .-----. .-----.
+|QD   | |AH   | |2S   | |QS   | |2C   |
+|  D  | |  H  | |  S  | |  S  | |  C  |
+|    Q| |    A| |    2| |    Q| |    2|
+'-----' '-----' '-----' '-----' '-----'
+YOU WIN THE POT OF 2.
+YOU HAVE 84 CHIPS. WOPR HAS 116.
+
+ANOTHER HAND? y
+
+YOUR DEAL. ANTE 1 EACH.
+YOUR HAND: A PAIR OF SIXES
+.-----. .-----. .-----. .-----. .-----.
+|6S   | |6H   | |AH   | |8C   | |2D   |
+|  S  | |  H  | |  H  | |  C  | |  D  |
+|    6| |    6| |    A| |    8| |    2|
+'-----' '-----' '-----' '-----' '-----'
+   1       2       3       4       5
+WOPR CHECKS.
+POT 2. CHECK OR BET? c
+
+WOPR DRAWS 3.
+DISCARD (1-5, OR NONE): 1 2
+
+YOU DRAW 2.
+YOUR HAND: A PAIR OF ACES
+.-----. .-----. .-----. .-----. .-----.
+|AC   | |KS   | |AH   | |8C   | |2D   |
+|  C  | |  S  | |  H  | |  C  | |  D  |
+|    A| |    K| |    A| |    8| |    2|
+'-----' '-----' '-----' '-----' '-----'
+WOPR BETS 10.
+POT 12. CALL 10, RAISE OR FOLD? c
+
+WOPR SHOWS: TWO PAIR, NINES AND FIVES
+.-----. .-----. .-----. .-----. .-----.
+|5C   | |9C   | |5S   | |3H   | |9D   |
+|  C  | |  C  | |  S  | |  H  | |  D  |
+|    5| |    9| |    5| |    3| |    9|
+'-----' '-----' '-----' '-----' '-----'
+YOU SHOW: A PAIR OF ACES
+.-----. .-----. .-----. .-----. .-----.
+|AC   | |KS   | |AH   | |8C   | |2D   |
+|  C  | |  S  | |  H  | |  C  | |  D  |
+|    A| |    K| |    A| |    8| |    2|
+'-----' '-----' '-----' '-----' '-----'
+WOPR WINS THE POT OF 22.
+YOU HAVE 73 CHIPS. WOPR HAS 127.
+
+ANOTHER HAND? leave
+
+YOU LEAVE WITH 73 CHIPS.

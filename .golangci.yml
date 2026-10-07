@@ -1,0 +1,42 @@
+version: "2"
+run:
+  build-tags: [e2e]            # lint the end-to-end tests too
+linters:
+  default: standard            # errcheck, govet, ineffassign, staticcheck, unused
+  enable: [revive, gocritic, misspell, forbidigo, depguard]
+  settings:
+    forbidigo:
+      analyze-types: true      # match text is "<declared pkg name>.<func>", even via alias or dot import
+      forbid:
+        - pattern: '^tea\.(Tick|Every|Sequence)$'
+          pkg: '^charm\.land/bubbletea/v2$'
+          msg: use the single clock in internal/ui/clock.go
+        - pattern: '^rand\.(Int|IntN|Int32|Int32N|Int64|Int64N|Uint|UintN|Uint32|Uint32N|Uint64|Uint64N|Float32|Float64|ExpFloat64|NormFloat64|Perm|Shuffle|N)$'
+          pkg: '^math/rand/v2$'
+          msg: use proto.NewRand(seed, streamID); top-level math/rand/v2 functions cannot be seeded
+        - pattern: '^rand\..*$'
+          pkg: '^math/rand$'
+          msg: math/rand (v1) is not used; use proto.NewRand from math/rand/v2
+        - pattern: '^time\.(Sleep|After|AfterFunc|Tick|NewTicker|NewTimer)$'
+          pkg: '^time$'
+          msg: timing goes through the single clock or a context deadline
+    depguard:
+      rules:
+        bubbletea-only-in-ui:
+          list-mode: lax
+          files: ["$all", "!${base-path}/internal/ui/**"]
+          deny:
+            - pkg: charm.land/bubbletea/v2
+              desc: only internal/ui may import Bubble Tea
+  exclusions:
+    warn-unused: true
+    rules:
+      - path: ^internal/ui/clock\.go$
+        linters: [forbidigo]
+      - path: _test\.go$
+        linters: [forbidigo]
+        text: 'time\.'
+formatters:
+  enable: [gofmt, goimports, gofumpt]
+issues:
+  max-same-issues: 0           # the default of 3 hid identical depguard hits
