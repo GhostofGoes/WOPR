@@ -41,9 +41,13 @@ prek run --all-files   # run everything on demand
    runs each binary natively.
 2. Keep each change focused. Add or update tests with the change. Regenerate golden files with
    `WOPR_UPDATE_GOLDEN=1 go test ./...`, and review the resulting diff.
-3. Run `prek run --all-files` and `go test ./...` before pushing. On Linux and macOS, also run
+3. If players will notice the change, add a change note with
+   `go tool -modfile=tools/release/go.mod changie new`: one short, plain line that says what changed for
+   them, such as "Fixed an issue with the Chess game". [AGENTS.md](AGENTS.md#change-notes) has the rules.
+   Do not edit `CHANGELOG.md`; releases build it from the notes.
+4. Run `prek run --all-files` and `go test ./...` before pushing. On Linux and macOS, also run
    `go test -race ./...`.
-4. Write commit messages that say what changed and why. PRs are squash-merged, so the PR title and
+5. Write commit messages that say what changed and why. PRs are squash-merged, so the PR title and
    description become the commit on `main`.
 
 ## Film text and other third-party content
