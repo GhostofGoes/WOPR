@@ -12,7 +12,8 @@
 //
 //   - notes.md, the GitHub Release body: that version's notes and a footer;
 //   - CHANGELOG.md, the whole changelog, that version included;
-//   - changelog.yml, every version in nFPM's chglog format, for the .deb and .rpm changelogs.
+//   - changelog.yml, every version in nFPM's chglog format, for the .deb and .rpm changelogs,
+//     each under its package version (X.Y.Z-1) and dated by its tagged commit.
 //
 // A release pull request batches the notes into .changes/vX.Y.Z.md. When it did not, relnotes
 // batches them itself in a temporary copy, dated with HEAD's commit date (-date overrides it), and
@@ -33,9 +34,10 @@ import (
 	"time"
 )
 
-// defaultPackager signs each entry of the package changelogs. Debian wants "name <address>"; the
-// project page stands in for an address, so no one's mailbox is published.
-const defaultPackager = "GhostofGoes <https://github.com/GhostofGoes/WOPR>"
+// defaultPackager signs each entry of the package changelogs. It is the packages' maintainer, as
+// .goreleaser.yaml's nfpms name it (a test checks): Debian wants "name <email address>", and
+// GitHub's no-reply address for the owner's account stands in, so no one's mailbox is published.
+const defaultPackager = "GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>"
 
 // errCheck marks a failed check (exit 1), as against a failure to run (exit 2).
 var errCheck = errors.New("check failed")
@@ -224,7 +226,11 @@ func (r *runner) release(version string, snapshot bool, date, packager, out stri
 	if i+1 < len(sections) {
 		prev = sections[i+1].version.String()
 	}
-	yml, err := chglog(sections, packager)
+	times, err := releaseTimes(r.root, v)
+	if err != nil {
+		return err
+	}
+	yml, err := chglog(sections, packager, times)
 	if err != nil {
 		return err
 	}

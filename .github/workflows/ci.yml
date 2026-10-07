@@ -178,13 +178,13 @@ jobs:
         run: |
           go run ./internal/tools/relnotes -snapshot -out "${WOPR_NOTES_DIR}"
           { echo "## Release notes for this snapshot"; echo; cat "${WOPR_NOTES_DIR}/notes.md"; } >> "${GITHUB_STEP_SUMMARY}"
-      - name: GoReleaser snapshot (all six targets)
+      - name: GoReleaser snapshot (all six targets, and the Linux packages)
         env:
           WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
       - name: Size gate
-        run: go run ./internal/tools/sizegate -expect 6
-      - name: Stage binaries and end-to-end tests
+        run: go run ./internal/tools/sizegate -expect 6 -packages 4
+      - name: Stage binaries, end-to-end tests and Linux packages
         run: go run ./internal/tools/stage -archives -assets dist/release
       # One download per platform: the bare binary, uploaded as-is rather than zipped, so the download
       # is the program itself (it prints its licences with --licenses). Each artifact is named after
@@ -231,7 +231,7 @@ jobs:
           archive: false
           retention-days: ${{ env.RETENTION_DAYS }}
           if-no-files-found: error
-      # Every staged binary with its e2e test, for this run's smoke jobs only.
+      # Every staged binary with its e2e test, and the .deb and .rpm, for this run's smoke jobs only.
       - name: Upload the smoke bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

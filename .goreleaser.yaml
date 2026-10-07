@@ -2,6 +2,13 @@
 version: 2
 project_name: wopr
 
+# The .deb and .rpm carry the manual page and some documents compressed, as `gzip -9n` writes them
+# (Debian Policy §12): internal/tools/pkgdocs makes them in build/pkg, from the tree and from the
+# release notes that internal/tools/relnotes wrote into $WOPR_NOTES_DIR first.
+before:
+  hooks:
+    - go run ./internal/tools/pkgdocs -notes "{{ .Env.WOPR_NOTES_DIR }}" -out build/pkg
+
 builds:
   - id: wopr
     main: ./cmd/wopr
@@ -53,6 +60,116 @@ archives:
     ids: [wopr]
     formats: [binary]
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+
+# Linux packages for amd64 and arm64: a .deb for Debian and Ubuntu, an .rpm for Fedora, RHEL and
+# openSUSE. Both are named by their format's convention (dpkg-name; name-version-release.arch), take
+# Debian revision / RPM release 1 (a snapshot becomes X.Y.Z~snapshot.<commit>-1, which sorts before
+# X.Y.Z-1), have no dependencies (the binary is static), and are byte-reproducible: every time is
+# the commit's, the RPM build host is fixed, and the documents come from pkgdocs. Their changelogs
+# come from changie's notes: relnotes writes build/notes/changelog.yml, which the workflows also
+# pass as WOPR_NOTES_DIR; nfpms.changelog takes no template, so it names the path.
+nfpms:
+  # Debian Policy §11.11 puts a game's program in /usr/games (on the PATH of every Debian and
+  # Ubuntu login) and its manual page in section 6; §12.5 wants the copyright file uncompressed;
+  # §12.7 wants changelog.Debian.gz (nFPM writes it from the changelog) and the upstream release
+  # notes as NEWS.gz.
+  - id: deb
+    ids: [wopr]
+    formats: [deb]
+    package_name: wopr
+    file_name_template: "{{ .ConventionalFileName }}"
+    bindir: /usr/games
+    release: "1"
+    section: games
+    priority: optional
+    maintainer: GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>
+    homepage: https://github.com/GhostofGoes/WOPR
+    # The synopsis (its first line) and the extended description.
+    description: '{{ mustReadFile "packaging/description.txt" }}'
+    changelog: build/notes/changelog.yml
+    mtime: "{{ .CommitDate }}"
+    deb:
+      compression: xz
+      # Go links the program statically on purpose (CGO_ENABLED=0), so it runs on any distribution.
+      # lintian knows Go binaries are static only when it can see a golang build dependency in
+      # a Debian source package, which a package built by GoReleaser has not.
+      lintian_overrides:
+        - statically-linked-binary [usr/games/wopr]
+    contents:
+      - src: build/pkg/wopr.6.gz
+        dst: /usr/share/man/man6/wopr.6.gz
+        file_info: { mode: 0644 }
+      - src: packaging/debian/copyright
+        dst: /usr/share/doc/wopr/copyright
+        file_info: { mode: 0644 }
+      - src: build/pkg/NEWS.gz
+        dst: /usr/share/doc/wopr/NEWS.gz
+        file_info: { mode: 0644 }
+      - src: build/pkg/README.md.gz
+        dst: /usr/share/doc/wopr/README.md.gz
+        file_info: { mode: 0644 }
+      - src: build/pkg/NOTICE.md.gz
+        dst: /usr/share/doc/wopr/NOTICE.md.gz
+        file_info: { mode: 0644 }
+
+  # Fedora's packaging guidelines put games in /usr/bin like every other program (Games SIG:
+  # "Binaries go in %{_bindir} and not /usr/games"), the licence texts in /usr/share/licenses as
+  # %license and the documents in /usr/share/doc as %doc; the package owns both directories.
+  # The manual page is compressed, as rpmbuild would leave it. Group is left unset, as Fedora asks.
+  - id: rpm
+    ids: [wopr]
+    formats: [rpm]
+    package_name: wopr
+    file_name_template: "{{ .ConventionalFileName }}"
+    bindir: /usr/bin
+    release: "1"
+    maintainer: GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>
+    vendor: GhostofGoes
+    homepage: https://github.com/GhostofGoes/WOPR
+    # The binary links Go modules under the BSD-3-Clause licence; NOTICE.md's transcription is
+    # BSD-2-Clause. The film's text is not licensed at all (NOTICE.md).
+    license: MIT AND BSD-2-Clause AND BSD-3-Clause
+    # The extended description: description.txt without its first line, which is the summary.
+    description: >-
+      {{ $d := mustReadFile "packaging/description.txt" }}{{ trimprefix $d (printf "%s\n" (index (split $d "\n") 0)) }}
+    changelog: build/notes/changelog.yml
+    mtime: "{{ .CommitDate }}"
+    rpm:
+      summary: Fan-made terminal recreation of the computer from the film WarGames # description.txt, line 1
+      compression: xz
+      buildhost: reproducible # the default, the build machine's name, would differ between builds
+    contents:
+      - src: build/pkg/wopr.6.gz
+        dst: /usr/share/man/man6/wopr.6.gz
+        type: doc
+        file_info: { mode: 0644 }
+      - dst: /usr/share/doc/wopr
+        type: dir
+        file_info: { mode: 0755 }
+      - src: README.md
+        dst: /usr/share/doc/wopr/README.md
+        type: doc
+        file_info: { mode: 0644 }
+      - src: "{{ .Env.WOPR_NOTES_DIR }}/CHANGELOG.md"
+        dst: /usr/share/doc/wopr/CHANGELOG.md
+        type: doc
+        file_info: { mode: 0644 }
+      - dst: /usr/share/licenses/wopr
+        type: dir
+        file_info: { mode: 0755 }
+      - src: LICENSE
+        dst: /usr/share/licenses/wopr/LICENSE
+        type: license
+        file_info: { mode: 0644 }
+      # NOTICE.md holds licence texts too (the transcription's BSD licence, the map's terms).
+      - src: NOTICE.md
+        dst: /usr/share/licenses/wopr/NOTICE.md
+        type: license
+        file_info: { mode: 0644 }
+      - src: THIRD_PARTY_NOTICES.txt
+        dst: /usr/share/licenses/wopr/THIRD_PARTY_NOTICES.txt
+        type: license
+        file_info: { mode: 0644 }
 
 checksum:
   name_template: checksums.txt       # the default would be wopr_<version>_checksums.txt

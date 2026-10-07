@@ -60,15 +60,45 @@ func releaseTags(root string) ([]tag, error) {
 
 // commitDate is the UTC date (YYYY-MM-DD) of a commit, or of the commit a tag points at.
 func commitDate(root, rev string) (string, error) {
-	out, err := git(root, "log", "-1", "--format=%ct", rev+"^{commit}", "--")
+	t, err := commitTime(root, rev)
 	if err != nil {
 		return "", err
 	}
+	return t.Format(time.DateOnly), nil
+}
+
+// commitTime is the time, in UTC, of a commit, or of the commit a tag points at.
+func commitTime(root, rev string) (time.Time, error) {
+	out, err := git(root, "log", "-1", "--format=%ct", rev+"^{commit}", "--")
+	if err != nil {
+		return time.Time{}, err
+	}
 	secs, err := strconv.ParseInt(strings.TrimSpace(out), 10, 64)
 	if err != nil {
-		return "", fmt.Errorf("commit time of %s: %w", rev, err)
+		return time.Time{}, fmt.Errorf("commit time of %s: %w", rev, err)
 	}
-	return time.Unix(secs, 0).UTC().Format(time.DateOnly), nil
+	return time.Unix(secs, 0).UTC(), nil
+}
+
+// releaseTimes maps every release tag that HEAD contains to its commit's time, and head, the
+// version being built, to HEAD's. The package changelogs date each version by it: a version file
+// holds only a day, and a Debian changelog's newest entry must be dated after the one below it,
+// which two releases on the same day would not be.
+func releaseTimes(root string, head semver) (map[semver]time.Time, error) {
+	tags, err := releaseTags(root)
+	if err != nil {
+		return nil, err
+	}
+	times := make(map[semver]time.Time, len(tags)+1)
+	for _, t := range tags {
+		if times[t.version], err = commitTime(root, t.name); err != nil {
+			return nil, err
+		}
+	}
+	if times[head], err = commitTime(root, "HEAD"); err != nil {
+		return nil, err
+	}
+	return times, nil
 }
 
 // snapshotVersion is the version GoReleaser gives a snapshot build with .goreleaser.yaml's

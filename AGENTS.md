@@ -27,14 +27,15 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
-| Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
+| Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`); CI runs it with `-check` |
 | Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
 | Add a change note | `go tool -modfile=tools/release/go.mod changie new` (see [Change notes](#change-notes)) |
 | Check the change notes and `CHANGELOG.md` | `go run ./internal/tools/relnotes -check` (a prek hook) |
 | A release's notes | `go run ./internal/tools/relnotes -version X.Y.Z -out build/notes` (or `-snapshot`) |
 | Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
-| Size gate | `go run ./internal/tools/sizegate -expect 6` |
-| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
+| Size gate | `go run ./internal/tools/sizegate -expect 6 -packages 4` |
+| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and the Linux packages, and collects every release file) |
+| Lint the Linux packages (after a release build; Linux, tools not pinned) | `lintian --pedantic dist/*.deb` and `rpmlint dist/*.rpm` with Fedora's rpmlint configuration; see `docs/PLAN.md` §8 for what they report |
 | Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
 | Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
 
@@ -59,7 +60,17 @@ toolchain first, then the tool.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
-- **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
+- **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
+  copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
+  quote the film from their provenance tags, so regenerate it when film text moves. It files each linked
+  module under Expat or Go's BSD-3-clause only when the module's licence has the same words, so a module
+  under any other licence stops the tool until it is added there.
+- **Linux packages.** `.goreleaser.yaml`'s `nfpms` build a `.deb` (Debian Policy: the program in
+  `/usr/games`, the manual page in section 6, the documents in `/usr/share/doc/wopr`) and an `.rpm`
+  (Fedora: `/usr/bin`, `%license`, `%doc`) for each Linux build (`docs/PLAN.md` §8). `stage -archives`
+  checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
+  changelogs it writes, so change both together. `pkgdocs`'s tests hold `packaging/description.txt`, both
+  packages' description, to both formats' rules. The smoke jobs install, run and remove both packages.
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
   `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
@@ -155,9 +166,9 @@ request or done by `release.yml`.
    summary.
 2. **The owner merges it**, then tags the merge commit and pushes the tag:
    `git fetch origin && git tag vX.Y.Z origin/main && git push origin vX.Y.Z`.
-3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file, and publishes
-   the GitHub Release with `.changes/vX.Y.Z.md` as its notes (`internal/tools/relnotes` adds a footer).
-   The packages' changelogs carry the same notes.
+3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
+   `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
+   (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes.
 
 If the pull request did not batch the notes, the release still gets them: the workflow batches
 `.changes/unreleased/` itself, dated by the tagged commit, and warns. `main` then lags behind the release,
@@ -217,7 +228,8 @@ If a rights holder asks for material to be removed:
    `internal/assets/`, `internal/movie/scenes/`, and the games' film text); the README's screenshots in
    `docs/screenshots/` and the docs site's in `site/static/img/` (game screenshots in
    `site/static/img/games/`) show some of it, and the docs site's pages (`site/content/`,
-   `site/data/games/`) quote some, which the manual page (`docs/man/wopr.6`) repeats.
+   `site/data/games/`) quote some, which the manual page (`docs/man/wopr.6`) repeats. The `.deb`'s
+   copyright file (`packaging/debian/copyright`) names the files; regenerate it afterwards.
 2. Remove or replace it in one pull request, and release a patch version. Merging it also redeploys the
    docs site (`docs.yml`).
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
@@ -256,7 +268,8 @@ At every milestone boundary:
    (`params.gallery.base`) to its newest 5.x release, the major version Hextra's script is written for.
    Build the docs site: a new Hugo can deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
-3. Bump action SHAs from their release tags.
+3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
+   Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
 4. Regenerate the notices.
 5. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.
 6. Re-enable `scheduled.yml` if GitHub disabled it after 60 quiet days.

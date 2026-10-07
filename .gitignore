@@ -32,7 +32,7 @@ go.work.sum
 # .idea/
 # .vscode/
 
-# Build output (GoReleaser, local builds; build/notes for a local release dry run's notes)
+# Build output (GoReleaser, local builds; build/notes and build/pkg: release notes and package documents)
 /build/
 /dist/
 /stage/

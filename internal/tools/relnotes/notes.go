@@ -236,6 +236,24 @@ func releaseNotes(s section, prev, ref string) string {
 	return b.String()
 }
 
+// packageRelease is the Debian revision and RPM release of every package: .goreleaser.yaml's
+// nfpms set release to the same (a test checks).
+const packageRelease = "1"
+
+// packageVersion is a version as the .deb and .rpm spell it, which their changelogs repeat: a
+// prerelease follows a tilde, which sorts before the release in dpkg and rpm alike, and the
+// package release follows a hyphen. nFPM spells GoReleaser's version the same way: 0.2.1 becomes
+// 0.2.1-1, and 0.2.1-snapshot.abc1234 becomes 0.2.1~snapshot.abc1234-1. (In an rpm it would also
+// turn a hyphen inside the prerelease into an underscore; this project's only prereleases, the
+// snapshots, have none.)
+func packageVersion(v semver) string {
+	s := fmt.Sprintf("%d.%d.%d", v.major, v.minor, v.patch)
+	if v.pre != "" {
+		s += "~" + v.pre
+	}
+	return s + "-" + packageRelease
+}
+
 // chglog is nFPM's changelog format (github.com/goreleaser/chglog), which it turns into the .deb's
 // changelog.Debian.gz and the .rpm's %changelog. It is YAML; JSON is YAML too, so encoding/json
 // writes it.
@@ -256,15 +274,21 @@ type chglogChange struct {
 	Note string `json:"note"`
 }
 
-// chglog lists every version, newest first. A Security note makes the Debian urgency high, as
-// Debian does for security fixes; otherwise it is medium, dch's default. Notes lose their Markdown
-// code marks, which a package changelog would show as they are.
-func chglog(sections []section, packager string) ([]byte, error) {
+// chglog lists every version, newest first, under its package version. Each is dated by its time
+// in times (its tagged commit's), or else at midnight UTC on its version file's date. A Security
+// note makes the Debian urgency high, as Debian does for security fixes; otherwise it is medium,
+// dch's default. Notes lose their Markdown code marks, which a package changelog would show as
+// they are.
+func chglog(sections []section, packager string, times map[semver]time.Time) ([]byte, error) {
 	entries := make([]chglogEntry, 0, len(sections))
 	for _, s := range sections {
+		date := s.date + "T00:00:00Z"
+		if t, ok := times[s.version]; ok {
+			date = t.UTC().Format(time.RFC3339)
+		}
 		e := chglogEntry{
-			Semver:   s.version.String(),
-			Date:     s.date + "T00:00:00Z",
+			Semver:   packageVersion(s.version),
+			Date:     date,
 			Packager: packager,
 			Deb:      chglogDeb{Urgency: "medium", Distributions: []string{"stable"}},
 		}
