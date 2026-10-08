@@ -9,8 +9,8 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
-The **[documentation site](https://ghostofgoes.github.io/WOPR/)** covers installing and verifying `wopr`,
-every option, how to play each game with tips for winning, movie mode, and contributing.
+The **[documentation site](https://ghostofgoes.github.io/WOPR/)** covers installing `wopr`, every option,
+how to play each game with tips for winning, movie mode, and contributing.
 
 > **Status: under construction.** Every game on the list is playable as of v0.1.0, and movie mode
 > (`--movie`) replays the film's terminal scenes. A pass over the film's text against the film is still to
@@ -18,64 +18,17 @@ every option, how to play each game with tips for winning, movie mode, and contr
 
 ## Install
 
-Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds for Linux, macOS (26 Tahoe)
-and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
-`wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
-licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
-`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) Releases after
-v0.3.0 also have Linux packages: a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and RHEL. What changed
-in each version is on its release page and in [CHANGELOG.md](CHANGELOG.md).
-
-**Verify before you run.** Every file in a release carries a build-provenance attestation. With the
-[GitHub CLI](https://cli.github.com/) (use the name of the file you downloaded, such as a package):
-
-```sh
-gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
-  --signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml \
-  --source-ref refs/tags/v<version> --deny-self-hosted-runners
-```
-
-Then run it. On Linux and macOS a downloaded binary is not executable yet:
-`chmod +x wopr_<version>_<os>_<arch>`, then `./wopr_<version>_<os>_<arch>` (rename it to `wopr` if you
-like). An archive keeps the executable bit: unpack it and run `./wopr`.
-
-- **macOS:** the binary is not signed, so Gatekeeper quarantines it. After verifying it, run
-  `xattr -d com.apple.quarantine` on it.
-- **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
-  *More info → Run anyway*.
-
-**Linux packages.** Download the package for your machine (`amd64` or `arm64` for the `.deb`, `x86_64` or
-`aarch64` for the `.rpm`), verify it as above, and install it:
-
-```sh
-sudo apt install ./wopr_<version>-1_amd64.deb     # Debian, Ubuntu
-sudo dnf install ./wopr-<version>-1.x86_64.rpm    # Fedora, RHEL
-```
-
-Then run `wopr`, and read `man wopr`. The package needs nothing else. The `.deb` puts `wopr` in
-`/usr/games`, which Debian and Ubuntu put on every user's `PATH`; the `.rpm` puts it in `/usr/bin`. Each
-package also holds the changelog, the licences and the notices. Remove it with `sudo apt remove wopr` or
-`sudo dnf remove wopr`.
-
-**Manual page.** `wopr.6` is the manual page: the options, every game with how to play it and tips, and
-movie mode. The Linux and macOS archives hold it from the release after v0.3.0, and
-[docs/man/wopr.6](docs/man/wopr.6) has it too. Read it in place with `man ./wopr.6`, or install it so that
-`man wopr` finds it, for everyone or just for you:
-
-```sh
-sudo install -d /usr/local/share/man/man6 && sudo install -m 644 wopr.6 /usr/local/share/man/man6/
-mkdir -p ~/.local/share/man/man6 && cp wopr.6 ~/.local/share/man/man6/
-```
-
-`man` searches `~/.local/share/man` when `~/.local/bin` is on your `PATH`. Otherwise add
-`export MANPATH="$HOME/.local/share/man:"` to your shell's startup file: the colon at the end keeps the
-system's manual pages too.
-
-With Go installed, you can instead build from source:
+The [installation guide](https://ghostofgoes.github.io/WOPR/install/) has one line to copy for Windows,
+macOS or Linux that downloads `wopr` and installs it. Or download the program for your system from the
+[latest release](https://github.com/GhostofGoes/WOPR/releases/latest), or build it with Go:
 
 ```sh
 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
 ```
+
+From the release after v0.3.0, Linux also has `.deb` and `.rpm` packages, which install the manual page
+too (`man wopr`). Every release file can be checked with its build-provenance attestation: see
+[Verifying binaries](https://ghostofgoes.github.io/WOPR/install/#verifying-binaries-attestation).
 
 ## Quick start
 
@@ -226,7 +179,11 @@ The full-screen interface has not yet been tried with a screen reader. Reports a
   VTE-based ones) turn the wheel into ↑ and ↓, which step through the lines you have typed. Scroll back with
   PgUp and PgDn. wopr leaves mouse reporting off so that you can select and copy text as usual.
 - **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
-  path when it exits; attach it to the issue, with `--seed` (or `WOPR_SEED`) if you used one.
+  path when it exits; attach it to a [bug report](https://github.com/GhostofGoes/WOPR/issues/new/choose),
+  with `--seed` (or `WOPR_SEED`) if you used one. Ask questions in
+  [Discussions](https://github.com/GhostofGoes/WOPR/discussions/categories/q-a).
+
+The docs site's [Troubleshooting](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/) page has more.
 
 ## Development builds
 

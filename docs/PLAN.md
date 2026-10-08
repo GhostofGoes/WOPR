@@ -1340,9 +1340,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
     `invalid-license` for the map's LicenseRef, which no list of licences has (the License tag gained it
     after that run, so this filter is not yet confirmed against Fedora's rpmlint). The
     packages carry no GPG signature (there is no signing key, only `GITHUB_TOKEN`); like every release file
-    they are attested and checked with `gh attestation verify` (§12). zypper refuses an unsigned local
-    package unless given `--allow-unsigned-rpm`, which the install page says to use only after
-    `gh attestation verify` has passed.
+    they are attested and can be checked with `gh attestation verify` (§12). zypper refuses an unsigned
+    package unless given `--allow-unsigned-rpm`, so the Linux (RPM) install tab's openSUSE line passes it;
+    checking the package first is optional, in the Installation page's "Verifying binaries (attestation)".
   - **Looking inside an `.rpm`.** nFPM's RPM writer (google/rpmpack) stores the payload's paths as absolute
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
     and verify the packages correctly, but `rpm2cpio X.rpm | cpio -idm` writes into the live `/` from any
@@ -1354,7 +1354,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - Keyboard enhancements stay off.
   - conhost resize events may report the buffer height (9001). Clamp to the window rect and check in the M2 QA
     pass.
-  - Ship unsigned. Document SmartScreen, and verify before running (§13).
+  - Ship unsigned. The one-line install downloads with `curl.exe`, which sets no Mark of the Web, so
+    SmartScreen does not ask; the Installation page's "Verifying binaries (attestation)" documents
+    SmartScreen for files downloaded with a browser, and verifying as optional (§12, §13).
 - **Panics**: no custom `recover` around `p.Run()`. Bubble Tea restores the terminal, recovers `Cmd` goroutine
   panics too, and prints the stack to stderr. The model returned on panic is nil and is not used.
 - **Debug log** (S-5, `internal/debuglog`): `WOPR_DEBUG=1` writes `os.UserCacheDir()/wopr/debug.log`. It
@@ -1598,14 +1600,16 @@ its run tests exactly the tree the squash merge produces.
    `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. relnotes takes every date from a
    version header or a commit, so both jobs package the same notes. **`repro`** then diffs the two
    `checksums.txt` files. Any difference fails the release.
-5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`), on a tag push only, and only
-   when every earlier job succeeded.
+5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`, `discussions: write`), on a tag
+   push only, and only when every earlier job succeeded.
    1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt`, so every published file is
       attested.
    2. `gh release create vX.Y.Z --draft --verify-tag --notes-file notes.md` with every file from
       `dist/release`. GitHub's generated notes stand in, with a warning, only if `notes.md` is empty.
       GoReleaser's own changelog is disabled (CR-8): the notes are the change notes, not commit subjects.
-   3. `gh release edit vX.Y.Z --draft=false`.
+   3. `gh release edit vX.Y.Z --draft=false --discussion-category Announcements`, which also starts the
+      release's discussion (the job has `discussions: write`). If that fails, as when the category does not
+      exist, it publishes without a discussion and warns.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
 6. **`docs`** (`actions: write` only), after a successful `publish`, runs
@@ -1688,6 +1692,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     **Immutable releases** are enabled before v0.1.0.
   - **Secret scanning** and **push protection** must be enabled at repository level; an audit on 2026-10-06
     found both off. Also **private vulnerability reporting**, which `SECURITY.md` sends reporters to.
+  - **Issues and Discussions**: issue forms for bug reports and feature requests (`.github/ISSUE_TEMPLATE/`,
+    blank issues off, with links to Discussions, a private security report and the docs site). Discussions
+    must be turned on: the forms, the docs site's Troubleshooting page and the README send questions there.
   - **Actions**:
     - allow only listed actions (`actions/*`, `j178/prek-action`);
     - require actions pinned to a full-length commit SHA;
@@ -1697,11 +1704,13 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - **Dependabot**: off (owner decision). govulncheck covers the Go graph.
 - **The app.** No network code before M7, no telemetry, no transcripts. External text is sanitised. wopr's
   debug log holds no typed input (§8).
-- **Releases.** Users verify before running:
+- **Releases.** Every file is attested. Verifying is optional, for those who want proof, in the Installation
+  page's last section, "Verifying binaries (attestation)", which the README and each release's notes link:
   - Command: `gh attestation verify <file> --repo GhostofGoes/WOPR`, plus
     `--signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml`,
     `--source-ref refs/tags/vX.Y.Z` and `--deny-self-hosted-runners`.
-  - Only after that: `xattr -d com.apple.quarantine`, or the SmartScreen prompt.
+  - For a file downloaded with a browser, after verifying: `xattr -d com.apple.quarantine`, or the
+    SmartScreen prompt. The one-line installs download with tools that set no such mark.
   - Signing and notarisation are post-1.0 options. There is no Homebrew tap: casks need signing, third-party
     taps need `brew trust`, and a tap needs a token beyond `GITHUB_TOKEN`.
 - **Licensing** (L-1, L-4, L-5, B-11).
@@ -1726,8 +1735,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 
 - **README.md** (basic in M0, completed in M5):
   - what this is, and a link to the docs site (below);
-  - install per OS (on Linux, the `.deb` or `.rpm` first), **verify first** (§12), then Gatekeeper and
-    SmartScreen notes, then `go install …@latest`;
+  - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
+    …@latest`, a note that the `.deb` and `.rpm` install the manual page, and a link to the verifying section
+    (§12);
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
   - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
@@ -1757,8 +1767,14 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 - **Docs site** (owner decision 2026-10-07): <https://ghostofgoes.github.io/WOPR/>, built from `site/` with
   Hugo (the standard edition, pinned in `tools/docs/go.mod`; no Node, no Sass) and the Hextra theme (a Hugo
   module pinned in `site/go.mod`, MIT; credited in NOTICE.md and on the site's credits page). Pages: home,
-  quickstart, installation, usage, accessibility, games (an index and one page per game), movie scenes,
-  contributing with the code of conduct, changelog, and credits.
+  quickstart, installation, usage (with accessibility and troubleshooting under it), games (an index and one
+  page per game), movie scenes, contributing with the code of conduct, changelog, and credits.
+  - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
+    Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
+    terminal, with only the tools each system installs by default (the Go tab needs Go). The lines download
+    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one Markdown file per tab in
+    `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an attestation is the
+    Installation page's last section, for those who want it; the README links there and to the guide.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull

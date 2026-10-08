@@ -1,7 +1,9 @@
 ---
 title: Accessibility
-weight: 4
+weight: 1
 description: Meaning in characters as well as colour, reduced motion, instant text, plain ASCII and tested contrast.
+aliases: [/accessibility/]
+prev: /usage
 ---
 
 `wopr` is meant to be playable without colour, without motion and without waiting for text to type out.
@@ -61,5 +63,5 @@ palette.
 ## Screen readers
 
 The full-screen interface has not yet been tried with a screen reader.
-[Reports are welcome](https://github.com/GhostofGoes/WOPR/issues). The printing options (`--help`,
+[Reports are welcome](/usage/troubleshooting#getting-help). The printing options (`--help`,
 `--games`, `--scenes`, `--licenses`) write plain text and work anywhere.

@@ -2,6 +2,7 @@
 title: Movie scenes
 weight: 6
 description: Movie mode replays the film's six scenes at WOPR's terminal, typed and paced as on screen.
+prev: /usage/troubleshooting
 ---
 
 Movie mode replays the film's scenes at WOPR's terminal as a show that runs itself. David's lines type
