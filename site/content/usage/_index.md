@@ -1,7 +1,10 @@
 ---
 title: Usage
 weight: 3
-description: Every option and environment variable, the logon, what WOPR understands, the keys, the themes, seeds, the debug log, and troubleshooting.
+description: Every option and environment variable, the logon, what WOPR understands, the keys, the themes and seeds.
+# The pager would skip this section (Hextra pages within a section), so the chain is given.
+prev: /install
+next: /usage/accessibility
 ---
 
 ```text
@@ -12,9 +15,12 @@ wopr --movie [--only] [scene]
 With no game, `wopr` dials in and waits at `LOGON:`. With a game, it starts that game at once, without the
 dial, the logon and the greeting: `wopr chess`, `wopr 7` and `wopr --play chess` all do the same.
 
-`wopr --help` prints a short summary of the options. On Linux and macOS, `man wopr` shows the manual
-page: every option, every game with how to play it and tips, and movie mode.
-[Installation](/install#the-manual-page) says how to install it.
+`wopr --help` prints a short summary of the options. The manual page, {{< man-page >}}, has every option,
+every game with how to play it and tips, and movie mode; on Linux and macOS, read a downloaded copy with
+`man ./wopr.6`.{{% if-packages %}} The Linux packages install it, so `man wopr` shows it.{{% /if-packages %}}
+
+[Accessibility](/usage/accessibility) covers playing without colour or motion, and
+[Troubleshooting](/usage/troubleshooting) what to do when something goes wrong.
 
 ## Options
 
@@ -44,8 +50,8 @@ Every option has a one-letter form, and options can come before or after the gam
 | `WOPR_REDUCE_MOTION` | Set to `1` for `--reduce-motion`. |
 | `WOPR_SEED` | The seed, as `--seed` sets it. The option wins if you give both. |
 | `WOPR_PANEL` | `1` shows the front panel, a status line along the bottom, in any theme; `0` hides it. Unset or empty, only the `norad` theme shows it. |
-| `WOPR_DEBUG` | Set to `1` to write a [debug log](#debug-log). |
-| `NO_COLOR` | Set to any value but an empty one to turn colour off. See [Accessibility](/accessibility). |
+| `WOPR_DEBUG` | Set to `1` to write a [debug log](/usage/troubleshooting#debug-log). |
+| `NO_COLOR` | Set to any value but an empty one to turn colour off. See [Accessibility](/usage/accessibility). |
 
 For the on and off variables, `0`, `false`, `no` and `off` mean off, and any other value means on. An
 empty value counts as unset.
@@ -117,7 +123,7 @@ wopr --theme amber
 
 `wopr` uses as many colours as your terminal has: full colour, 256 colours, or the basic 16. With
 `NO_COLOR`, or on a terminal without colour, every theme uses bold, dim, underline and reverse instead,
-and nothing is lost: see [Accessibility](/accessibility).
+and nothing is lost: see [Accessibility](/usage/accessibility).
 
 ## Seeds
 
@@ -131,40 +137,3 @@ wopr poker --seed 1983
 The same seed deals the same cards, builds the same maze and gives the same replies from WOPR: with a
 seed, WOPR's searches stop at a fixed depth rather than when time runs out. A seed is a whole number from
 0 up. Movie mode ignores seeds: every replay is the same anyway.
-
-## Debug log
-
-If something goes wrong, run `wopr` with `WOPR_DEBUG=1`. It writes a debug log and prints the log's path
-when it exits. The log records the session's seed, the terminal's size and the slow work; it never records
-what you type. It is kept in your user cache folder:
-
-| System | Debug log |
-|---|---|
-| Linux | `~/.cache/wopr/debug.log` (or `$XDG_CACHE_HOME/wopr/debug.log`) |
-| macOS | `~/Library/Caches/wopr/debug.log` |
-| Windows | `%LOCALAPPDATA%\wopr\debug.log` |
-
-Each session adds to the end of the log. Attach it to a
-[bug report](https://github.com/GhostofGoes/WOPR/issues), with the seed if you used one.
-
-## Troubleshooting
-
-**"standard output is not a terminal".** Run `wopr` straight in a terminal, not through a pipe or a
-redirect. On Windows, use Windows Terminal: mintty without ConPTY is not supported.
-
-**"TERM=dumb".** The terminal says it cannot draw a full screen. Use another terminal. `wopr --games` and
-the other printing options still work.
-
-**"TERMINAL TOO SMALL".** WOPR needs at least 80 columns and 24 rows. Make the window bigger, and the
-session carries on where it was.
-
-**Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
-
-**The mouse wheel changes what I typed.** Some terminals (GNOME Terminal and others built on VTE) turn the
-wheel into the Up and Down keys on a full screen, and those step through the lines you typed. Scroll back
-with PgUp and PgDn. `wopr` leaves mouse reporting off so that you can still select and copy text.
-
-**Text types too slowly.** Press any key to show the rest at once, or run with `--instant`.
-
-**Something else.** Run with `WOPR_DEBUG=1` and [open an issue](https://github.com/GhostofGoes/WOPR/issues)
-with the [debug log](#debug-log).

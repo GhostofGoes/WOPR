@@ -206,6 +206,7 @@ jobs:
       contents: write
       id-token: write
       attestations: write
+      discussions: write # the release's discussion
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -221,11 +222,16 @@ jobs:
       # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
       # THIRD_PARTY_NOTICES.txt, checksums.txt.
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
-      - name: Create the release as a draft, upload, then publish
+      # Publishing also starts a discussion of the release in the Announcements category, which
+      # GitHub creates with Discussions; if that fails (the category was renamed, say), the release is
+      # published without one and the run warns, since a release matters more than its discussion. The
+      # run's summary links the discussion.
+      - name: Create the release as a draft, upload, then publish with a discussion
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
+          DISCUSSION_CATEGORY: Announcements
         run: |
           notes=(--notes-file notes/notes.md)
           if [[ ! -s notes/notes.md ]]; then
@@ -233,7 +239,16 @@ jobs:
             notes=(--generate-notes)
           fi
           gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag "${notes[@]}" assets/*
-          gh release edit "${TAG}" --repo "${REPO}" --draft=false
+          if ! gh release edit "${TAG}" --repo "${REPO}" --draft=false --discussion-category "${DISCUSSION_CATEGORY}"; then
+            echo "::warning::publishing ${TAG} with a discussion in ${DISCUSSION_CATEGORY} failed (see the error above); publishing it without one"
+            gh release edit "${TAG}" --repo "${REPO}" --draft=false
+          fi
+          discussion="$(gh api "repos/${REPO}/releases/tags/${TAG}" --jq '.discussion_url // ""' || true)"
+          if [[ -n "${discussion}" ]]; then
+            echo "Published ${TAG}, with its discussion: ${discussion}" >> "${GITHUB_STEP_SUMMARY}"
+          else
+            echo "::warning::${TAG} is published with no discussion; start one from the release's Edit page"
+          fi
 
   # docs.yml publishes the docs site from main, naming the latest published release in its download
   # commands; it ran when the release pull request merged, before this release existed, so it runs

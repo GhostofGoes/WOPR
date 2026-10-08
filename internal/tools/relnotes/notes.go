@@ -17,6 +17,9 @@ import (
 
 const (
 	repoURL = "https://github.com/GhostofGoes/WOPR"
+	// installURL is the docs site's Installation page, whose last section shows how to check a
+	// file's attestation.
+	installURL = "https://ghostofgoes.github.io/WOPR/install/"
 
 	// maxNote keeps a note on one line of a Debian changelog, which shows it as "  * <note>" and
 	// keeps to 80 columns. .changie.yaml's body.maxLength says the same to `changie new`.
@@ -248,15 +251,16 @@ func combine(into section, parts []section, kinds []string) section {
 	return out
 }
 
-// releaseNotes is the GitHub Release body: the version's notes, a pointer to the attestation check,
-// and the comparison with the previous version (prev is "" for the first release). ref is what to
-// compare against: the tag, or a commit for a snapshot.
+// releaseNotes is the GitHub Release body: the version's notes, pointers to the install commands and
+// the attestation check, and the comparison with the previous version (prev is "" for the first
+// release). ref is what to compare against: the tag, or a commit for a snapshot.
 func releaseNotes(s section, prev, ref string) string {
 	var b strings.Builder
 	b.WriteString(s.body())
 	b.WriteString("\n---\n\n")
-	b.WriteString("**Verify before you run.** Every file in this release has a signed record of how it was built. ")
-	fmt.Fprintf(&b, "[Install](%s#install) shows how to check it with `gh attestation verify`.\n\n", repoURL)
+	fmt.Fprintf(&b, "**Install** with one line on Windows, macOS or Linux: see [Installation](%s).\n\n", installURL)
+	b.WriteString("**Verify.** Every file in this release has a signed record of how it was built. ")
+	fmt.Fprintf(&b, "[Verifying binaries](%s#verifying-binaries-attestation) shows how to check it with `gh attestation verify`.\n\n", installURL)
 	if prev == "" {
 		fmt.Fprintf(&b, "**Full changelog:** %s/commits/%s\n", repoURL, ref)
 	} else {

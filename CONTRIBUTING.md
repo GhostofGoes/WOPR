@@ -7,8 +7,10 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Before you start
 
-- **Bugs and ideas:** open an issue first for anything larger than a small fix, so we can agree on the
-  approach before you spend time on it.
+- **Bugs and ideas:** open an issue with the
+  [bug report or feature request form](https://github.com/GhostofGoes/WOPR/issues/new/choose) first for
+  anything larger than a small fix, so we can agree on the approach before you spend time on it. Questions
+  go to [Discussions](https://github.com/GhostofGoes/WOPR/discussions).
 - **Security problems:** do not open a public issue. Follow [SECURITY.md](SECURITY.md).
 - **Design:** the architecture, scope and milestones are in [docs/PLAN.md](docs/PLAN.md). The day-to-day
   conventions (package rules, the single clock, how to add a game, golden files) are in

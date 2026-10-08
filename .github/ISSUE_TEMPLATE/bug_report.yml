@@ -1,0 +1,147 @@
+name: Bug report
+description: Something in wopr does not work, crashes, or looks wrong.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please check the
+        [issues](https://github.com/GhostofGoes/WOPR/issues?q=is%3Aissue) first, and the
+        [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/), which has fixes
+        for common problems. Security problems go in a
+        [private report](https://github.com/GhostofGoes/WOPR/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong, in your own words? Paste any error message in the box further down.
+      placeholder: After I typed LIST GAMES, the screen went blank.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen?
+      description: The steps that lead to the problem, from starting wopr (or from installing it). Include what you typed.
+      placeholder: |
+        1. Run `wopr`
+        2. Log on as Joshua
+        3. Type `LIST GAMES`
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: wopr version
+      description: >-
+        What `wopr --version` prints. If wopr will not install or run, write "not installed" and put the
+        command you ran under "How can we make it happen?".
+      placeholder: wopr v0.3.0 (commit 3eb36c3, built 2026-10-07, go1.27.1)
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system version
+      description: >-
+        Windows: Settings > System > About. macOS: Apple menu > About This Mac. Linux: the distribution and
+        its version.
+      placeholder: Windows 11 24H2, macOS 26.1, Ubuntu 24.04
+    validations:
+      required: false
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install wopr?
+      description: The tab you used on the Installation or Quickstart page, or another way.
+      options:
+        - Installation page, Windows tab
+        - Installation page, macOS tab
+        - Installation page, Linux tab
+        - Linux (apt) tab, or a .deb package
+        - Linux (RPM) tab, or an .rpm package
+        - go install (the Go tab)
+        - Downloaded a file by hand from the Releases page
+        - Built it myself from the source
+        - A development build from CI
+        - Other or not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: terminal
+    attributes:
+      label: Terminal
+      description: The program wopr ran in.
+      options:
+        - Windows Terminal
+        - A PowerShell or Command Prompt window
+        - macOS Terminal
+        - iTerm2
+        - GNOME Terminal, Console or Ptyxis
+        - Konsole
+        - VS Code's terminal
+        - kitty
+        - WezTerm
+        - Ghostty
+        - Alacritty
+        - Other
+        - Not sure
+    validations:
+      required: false
+  - type: input
+    id: command
+    attributes:
+      label: Command and settings
+      description: >-
+        How you started wopr, with any options, and any WOPR_... or NO_COLOR setting you set (for example
+        WOPR_THEME=amber). Add the seed if you used one.
+      placeholder: wopr --theme green --seed 1983 chess
+    validations:
+      required: false
+  - type: textarea
+    id: error-output
+    attributes:
+      label: Error message or crash report
+      description: If wopr printed an error or a crash report when it stopped, paste all of it here.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Debug log and screenshots
+      description: |
+        Run wopr again with `WOPR_DEBUG=1` set and make the problem happen. When wopr exits, it prints where
+        it saved debug.log (the
+        [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/#debug-log) says
+        where too). Drag that file here; the log never records what you type. A screenshot of the problem
+        helps a lot too: crop out anything private, such as your name or other windows.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the issues and did not find this problem.
+          required: true
+        - label: I am using the [latest release](https://github.com/GhostofGoes/WOPR/releases/latest).
+          required: false

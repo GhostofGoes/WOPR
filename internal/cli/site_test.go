@@ -15,21 +15,21 @@ import (
 
 func TestSiteUsageListsEveryOption(t *testing.T) {
 	t.Parallel()
-	page := sitePage(t, "usage.md")
+	page := sitePage(t, "usage/_index.md")
 	for _, f := range flagPairs {
 		for _, want := range []string{"`--" + f.long, "`-" + f.short + "`"} {
 			if !strings.Contains(page, want) {
-				t.Errorf("site/content/usage.md does not list %s", strings.Trim(want, "`"))
+				t.Errorf("site/content/usage/_index.md does not list %s", strings.Trim(want, "`"))
 			}
 		}
 		if f.env != "" && !strings.Contains(page, "`"+f.env+"`") {
-			t.Errorf("site/content/usage.md does not list %s", f.env)
+			t.Errorf("site/content/usage/_index.md does not list %s", f.env)
 		}
 	}
 	// Read by cmd/wopr and the ui rather than by Parse.
 	for _, env := range []string{"WOPR_DEBUG", "WOPR_PANEL", "NO_COLOR"} {
 		if !strings.Contains(page, "`"+env+"`") {
-			t.Errorf("site/content/usage.md does not list %s", env)
+			t.Errorf("site/content/usage/_index.md does not list %s", env)
 		}
 	}
 }
@@ -51,4 +51,15 @@ func sitePage(t *testing.T, name string) string {
 		t.Fatal(err)
 	}
 	return string(b)
+}
+
+// The release notes (internal/tools/relnotes) and the README link to the Installation page's
+// verifying section by its anchor, which Hugo makes from the heading.
+func TestSiteInstallHasVerifyingSection(t *testing.T) {
+	t.Parallel()
+	page := sitePage(t, "install.md")
+	if !strings.Contains(page, "\n## Verifying binaries (attestation)\n") {
+		t.Error("site/content/install.md has no \"## Verifying binaries (attestation)\" heading, " +
+			"the target of #verifying-binaries-attestation in the release notes and the README")
+	}
 }

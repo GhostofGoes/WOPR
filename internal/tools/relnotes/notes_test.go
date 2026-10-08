@@ -96,8 +96,9 @@ func TestReleaseNotes(t *testing.T) {
 	}
 	got := releaseNotes(s, "0.2.0", "v0.3.0")
 	want := "### Fixed\n\n- Fixed an issue with the Chess game.\n\n---\n\n" +
-		"**Verify before you run.** Every file in this release has a signed record of how it was built. " +
-		"[Install](https://github.com/GhostofGoes/WOPR#install) shows how to check it with `gh attestation verify`.\n\n" +
+		"**Install** with one line on Windows, macOS or Linux: see [Installation](https://ghostofgoes.github.io/WOPR/install/).\n\n" +
+		"**Verify.** Every file in this release has a signed record of how it was built. " +
+		"[Verifying binaries](https://ghostofgoes.github.io/WOPR/install/#verifying-binaries-attestation) shows how to check it with `gh attestation verify`.\n\n" +
 		"**Full changelog:** https://github.com/GhostofGoes/WOPR/compare/v0.2.0...v0.3.0\n"
 	if got != want {
 		t.Errorf("releaseNotes =\n%s\nwant\n%s", got, want)

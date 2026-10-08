@@ -1,0 +1,13 @@
+# The choices on the "New issue" page. Only the two forms open an issue; questions go to
+# Discussions, and security problems to a private report (SECURITY.md).
+blank_issues_enabled: false
+contact_links:
+  - name: Ask a question
+    url: https://github.com/GhostofGoes/WOPR/discussions/categories/q-a
+    about: How to play, how to install, or anything else you are not sure about.
+  - name: Report a security problem
+    url: https://github.com/GhostofGoes/WOPR/security/advisories/new
+    about: Report it privately, as SECURITY.md says. Please do not open a public issue.
+  - name: Read the documentation
+    url: https://ghostofgoes.github.io/WOPR/
+    about: Installing, every option, how to play each game, and troubleshooting.
