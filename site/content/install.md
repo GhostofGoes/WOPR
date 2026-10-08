@@ -109,7 +109,9 @@ need it to install `wopr`.
 Every file in a [release](https://github.com/GhostofGoes/WOPR/releases) carries a build-provenance
 attestation: a signed record, kept by GitHub, of the commit and the workflow that built it. To check one:
 
-1. Install the [GitHub CLI](https://cli.github.com/), `gh`, and sign in once with `gh auth login`.
+1. Install the [GitHub CLI](https://cli.github.com/), `gh`, version 2.68 or newer, and sign in once with
+   `gh auth login` (a free GitHub account is enough). On Debian and Ubuntu, use the package repository
+   that cli.github.com describes: the `gh` in the distributions' own repositories is too old.
 2. Run `gh attestation verify` on the file. The command below names the latest release; for an older file,
    put in its version: the one in the file's name, or what `wopr --version` prints for the program you
    installed.
