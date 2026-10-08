@@ -9,8 +9,10 @@ tabs:
 Bug reports, fixes, new tests and improvements to the games are all welcome. By taking part you agree to
 follow the [Code of Conduct](/contributing/code-of-conduct).
 
-- **Bugs and ideas.** [Open an issue](https://github.com/GhostofGoes/WOPR/issues) first for anything
-  larger than a small fix, so that we can agree on the approach before you spend time on it.
+- **Bugs and ideas.** [Open an issue](https://github.com/GhostofGoes/WOPR/issues/new/choose) with the bug
+  report or feature request form first for anything larger than a small fix, so that we can agree on the
+  approach before you spend time on it. Questions go to
+  [Discussions](https://github.com/GhostofGoes/WOPR/discussions).
 - **Security problems.** Do not open a public issue. Follow the
   [security policy](https://github.com/GhostofGoes/WOPR/blob/main/SECURITY.md).
 - **Design and conventions.** The architecture, scope and milestones are in

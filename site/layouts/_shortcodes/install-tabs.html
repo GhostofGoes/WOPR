@@ -1,0 +1,36 @@
+{{- /*
+  The install commands, one tab for each way of installing, shared by the Quickstart and
+  Installation pages so that the two never differ. Each tab's text is Markdown in
+  assets/install/<file>.md, where @VERSION@ becomes the latest release's version (the version
+  shortcode's), so that every command names a file that exists. Until the latest release has the
+  Linux packages (the has-packages partial), their tabs show assets/install/packages-later.md, with
+  @PACKAGE@ as the package's kind. Hextra's tabs draw them, synced: a tab picked on one page is
+  picked on the other.
+
+    {{< install-tabs >}}
+*/ -}}
+{{- $version := partial "latest-version.html" . -}}
+{{- $hasPackages := partial "has-packages.html" . -}}
+{{- $items := slice
+  (dict "name" "Windows" "file" "windows")
+  (dict "name" "macOS" "file" "macos")
+  (dict "name" "Linux" "file" "linux")
+  (dict "name" "Linux (apt)" "file" "linux-apt" "package" ".deb")
+  (dict "name" "Linux (RPM)" "file" "linux-rpm" "package" ".rpm")
+  (dict "name" "Go" "file" "go")
+-}}
+{{- $tabs := slice -}}
+{{- range $i, $item := $items -}}
+  {{- $file := $item.file -}}
+  {{- if and $item.package (not $hasPackages) -}}
+    {{- $file = "packages-later" -}}
+  {{- end -}}
+  {{- with resources.Get (printf "install/%s.md" $file) -}}
+    {{- $text := replace .Content "@VERSION@" $version -}}
+    {{- $text = replace $text "@PACKAGE@" ($item.package | default "") -}}
+    {{- $tabs = $tabs | append (dict "id" $i "name" $item.name "icon" "" "content" $text "selected" false) -}}
+  {{- else -}}
+    {{- errorf "%s: install-tabs: assets/install/%s.md is missing" $.Position $file -}}
+  {{- end -}}
+{{- end -}}
+{{- partial "shortcodes/tabs" (dict "tabs" $tabs "enableSync" true "id" .Ordinal) -}}

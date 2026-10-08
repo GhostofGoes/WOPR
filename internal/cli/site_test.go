@@ -15,21 +15,21 @@ import (
 
 func TestSiteUsageListsEveryOption(t *testing.T) {
 	t.Parallel()
-	page := sitePage(t, "usage.md")
+	page := sitePage(t, "usage/_index.md")
 	for _, f := range flagPairs {
 		for _, want := range []string{"`--" + f.long, "`-" + f.short + "`"} {
 			if !strings.Contains(page, want) {
-				t.Errorf("site/content/usage.md does not list %s", strings.Trim(want, "`"))
+				t.Errorf("site/content/usage/_index.md does not list %s", strings.Trim(want, "`"))
 			}
 		}
 		if f.env != "" && !strings.Contains(page, "`"+f.env+"`") {
-			t.Errorf("site/content/usage.md does not list %s", f.env)
+			t.Errorf("site/content/usage/_index.md does not list %s", f.env)
 		}
 	}
 	// Read by cmd/wopr and the ui rather than by Parse.
 	for _, env := range []string{"WOPR_DEBUG", "WOPR_PANEL", "NO_COLOR"} {
 		if !strings.Contains(page, "`"+env+"`") {
-			t.Errorf("site/content/usage.md does not list %s", env)
+			t.Errorf("site/content/usage/_index.md does not list %s", env)
 		}
 	}
 }

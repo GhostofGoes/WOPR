@@ -176,8 +176,9 @@ request or done by `release.yml`.
    wait for the next one.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
    `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
-   (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes. Then it
-   publishes the docs site again (`docs.yml`), so that its download commands name the new release.
+   (`internal/tools/relnotes` adds a footer), and starts a discussion of it in the Discussions category
+   Announcements. The packages' changelogs carry the same notes. Then it publishes the docs site again
+   (`docs.yml`), so that its download commands name the new release.
 
 `relnotes` refuses a tag that does not name the batched version, and nothing is published: delete that
 tag and push the right one. It warns when the tagged commit has notes the release does not list. The `.deb` and `.rpm`
@@ -206,7 +207,14 @@ again by hand (after changing the Pages settings, say), run `docs.yml` on `main`
 site on every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a missing
 screenshot fails the build.
 
-- Pages are Markdown in `site/content/`, written for players in plain, direct prose.
+- Pages are Markdown in `site/content/`, written for players in plain, direct prose. Usage has two sub-pages,
+  `usage/accessibility.md` and `usage/troubleshooting.md`; a page that moves keeps its old address with an
+  `aliases` entry in its front matter.
+- The install commands are written once, for both Quickstart and Installation: one Markdown file per tab in
+  `site/assets/install/` (Windows, macOS, Linux, Linux (apt), Linux (RPM), Go), which the `install-tabs`
+  shortcode puts in synced tabs. `@VERSION@` in them becomes the latest release's version. Each tab is one
+  line to paste into a terminal, which a person who has never used one can follow, using only the tools each
+  system installs by default; verifying an attestation is for the Installation page's last section.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
   which documents the schema; the manual page reads the same files. Change a game's text there.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
@@ -223,8 +231,9 @@ screenshot fails the build.
 - Download commands use the `version` shortcode: the latest published release in `docs.yml`'s builds, the
   latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
   inside `{{% if-packages %}}`, which shows it only once the latest release has them (every release after
-  v0.3.0), so no build of the site names a file that does not exist yet.
-  Its content is Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
+  v0.3.0; the `has-packages` partial), so no build of the site names a file that does not exist yet; until
+  then the package tabs show `site/assets/install/packages-later.md`. Its content is Markdown only: a
+  shortcode inside it that writes HTML, such as `tabs`, is dropped.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 
@@ -278,6 +287,10 @@ These live in GitHub settings, not in files. Check them at each milestone:
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases
   before v0.1.0.
 - **Security:** secret scanning with push protection, private vulnerability reporting.
+- **Issues and Discussions:** issues on, with the bug report and feature request forms in
+  `.github/ISSUE_TEMPLATE/` (blank issues off); **Discussions on** (Settings → General → Features), since
+  the forms, the docs site and the README send questions there, with its default **Announcements**
+  category, where `release.yml` starts each release's discussion.
 - **Actions:**
   - Allow only `actions/*` and `j178/prek-action`, and require full-length commit-SHA pinning.
   - Set the default `GITHUB_TOKEN` to read-only. Workflows may not create or approve pull requests.

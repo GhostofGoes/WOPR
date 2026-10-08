@@ -6,20 +6,16 @@ description: Install wopr, log on, and play your first game in two minutes.
 
 ## 1. Get it
 
-Download the program for your computer from the
-[latest release](https://github.com/GhostofGoes/WOPR/releases/latest), or build it with Go:
+Pick your system, copy the line, and paste it into a terminal as the tab says. Most of the lines start
+`wopr` once it is installed; after that, start it as step 2 says.
 
-```sh
-go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
-```
+{{< install-tabs >}}
 
-[Installation](/install) has the details for Linux, macOS and Windows, including how to check that the
-download is genuine before you run it.{{% if-packages %}} On Debian, Ubuntu, Fedora or RHEL, you can
-install a [Linux package](/install#linux-packages) instead.{{% /if-packages %}}
+[Installation](/install) says how to remove it again, and how to check that a download is genuine.
 
 ## 2. Dial in
 
-Open a terminal at least 80 columns wide and 24 rows tall, and run:
+Open a terminal at least 80 columns wide and 24 rows tall, and type:
 
 ```sh
 wopr
@@ -63,4 +59,5 @@ Type `LOGOFF` to end the session. Ctrl+C quits at any time.
 
 - [Usage](/usage): every option, the themes, and what WOPR understands.
 - [Movie scenes](/movie): watch the film's terminal scenes replay themselves.
-- [Accessibility](/accessibility): reduced motion, instant text and running without colour.
+- [Accessibility](/usage/accessibility): reduced motion, instant text and running without colour.
+- [Troubleshooting](/usage/troubleshooting): what to do when something goes wrong, and where to ask.

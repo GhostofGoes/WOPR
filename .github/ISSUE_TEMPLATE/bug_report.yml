@@ -1,0 +1,120 @@
+name: Bug report
+description: Something in wopr does not work, crashes, or looks wrong.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please check the
+        [open issues](https://github.com/GhostofGoes/WOPR/issues) first, and the
+        [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/), which has fixes
+        for common problems. Security problems go in a
+        [private report](https://github.com/GhostofGoes/WOPR/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What went wrong? Copy any error message exactly.
+      placeholder: After I typed LIST GAMES, the screen went blank.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen?
+      description: The steps that lead to the problem, from starting wopr. Include what you typed.
+      placeholder: |
+        1. Run `wopr`
+        2. Log on as Joshua
+        3. Type `LIST GAMES`
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: wopr version
+      description: What `wopr --version` prints.
+      placeholder: wopr 0.3.0 (commit 3eb36c3, built 2026-10-07, go1.27.1)
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: Operating system version
+      placeholder: Windows 11 24H2, macOS 26.1, Ubuntu 24.04
+    validations:
+      required: false
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install wopr?
+      options:
+        - The install line from the documentation
+        - Downloaded from a GitHub release
+        - Linux package (.deb or .rpm)
+        - go install
+        - Built from a clone of the repository
+        - A development build from CI
+        - Other
+    validations:
+      required: false
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal
+      description: The terminal program wopr ran in, and its size if you know it.
+      placeholder: Windows Terminal, macOS Terminal, GNOME Terminal, iTerm2, kitty; 120x30
+    validations:
+      required: false
+  - type: input
+    id: command
+    attributes:
+      label: Command and options
+      description: How you started wopr, with any options and WOPR_ settings. Add the seed if you used one.
+      placeholder: wopr --theme green --seed 1983 chess
+    validations:
+      required: false
+  - type: textarea
+    id: debug-log
+    attributes:
+      label: Debug log
+      description: |
+        Run wopr again with `WOPR_DEBUG=1` set, make the problem happen, and paste the log here. wopr
+        prints the log's path when it exits; the
+        [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/#debug-log) says
+        where it is. The log never records what you type.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: A screenshot of the problem helps a lot. Drag the image here.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues and did not find this problem.
+          required: true

@@ -1598,14 +1598,16 @@ its run tests exactly the tree the squash merge produces.
    `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. relnotes takes every date from a
    version header or a commit, so both jobs package the same notes. **`repro`** then diffs the two
    `checksums.txt` files. Any difference fails the release.
-5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`), on a tag push only, and only
-   when every earlier job succeeded.
+5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`, `discussions: write`), on a tag
+   push only, and only when every earlier job succeeded.
    1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt`, so every published file is
       attested.
    2. `gh release create vX.Y.Z --draft --verify-tag --notes-file notes.md` with every file from
       `dist/release`. GitHub's generated notes stand in, with a warning, only if `notes.md` is empty.
       GoReleaser's own changelog is disabled (CR-8): the notes are the change notes, not commit subjects.
-   3. `gh release edit vX.Y.Z --draft=false`.
+   3. `gh release edit vX.Y.Z --draft=false --discussion-category Announcements`, which also starts the
+      release's discussion (the job has `discussions: write`). If that fails, as when the category does not
+      exist, it publishes without a discussion and warns.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
 6. **`docs`** (`actions: write` only), after a successful `publish`, runs
@@ -1688,6 +1690,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     **Immutable releases** are enabled before v0.1.0.
   - **Secret scanning** and **push protection** must be enabled at repository level; an audit on 2026-10-06
     found both off. Also **private vulnerability reporting**, which `SECURITY.md` sends reporters to.
+  - **Issues and Discussions**: issue forms for bug reports and feature requests (`.github/ISSUE_TEMPLATE/`,
+    blank issues off, with links to Discussions, a private security report and the docs site). Discussions
+    must be turned on: the forms, the docs site's Troubleshooting page and the README send questions there.
   - **Actions**:
     - allow only listed actions (`actions/*`, `j178/prek-action`);
     - require actions pinned to a full-length commit SHA;
@@ -1757,8 +1762,14 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 - **Docs site** (owner decision 2026-10-07): <https://ghostofgoes.github.io/WOPR/>, built from `site/` with
   Hugo (the standard edition, pinned in `tools/docs/go.mod`; no Node, no Sass) and the Hextra theme (a Hugo
   module pinned in `site/go.mod`, MIT; credited in NOTICE.md and on the site's credits page). Pages: home,
-  quickstart, installation, usage, accessibility, games (an index and one page per game), movie scenes,
-  contributing with the code of conduct, changelog, and credits.
+  quickstart, installation, usage (with accessibility and troubleshooting under it), games (an index and one
+  page per game), movie scenes, contributing with the code of conduct, changelog, and credits.
+  - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
+    Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
+    terminal, with only the tools each system installs by default. The lines download the latest release's
+    file, put the program on the `PATH` and start it. The text is one Markdown file per tab in
+    `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an attestation is the
+    Installation page's last section, for those who want it; the README links there and to the guide.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull

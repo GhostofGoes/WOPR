@@ -1,0 +1,65 @@
+name: Feature request
+description: Ask for something new, a change, or something that differs from the film.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea. Please check the [open issues](https://github.com/GhostofGoes/WOPR/issues)
+        first. For a question, or an idea you would like to talk over, start a
+        [discussion](https://github.com/GhostofGoes/WOPR/discussions) instead.
+  - type: dropdown
+    id: area
+    attributes:
+      label: What is it about?
+      options:
+        - A game
+        - A new game
+        - Talking to WOPR
+        - Something that differs from the film
+        - Movie mode
+        - Themes and display
+        - Accessibility
+        - Installing wopr
+        - The documentation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: request
+    attributes:
+      label: What would you like?
+      description: Describe what you would like wopr to do, as you would see it on screen.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why?
+      description: What would it let you do, or what problem would it solve?
+    validations:
+      required: false
+  - type: textarea
+    id: film
+    attributes:
+      label: In the film
+      description: |
+        If this is about something in WarGames (1983), say which scene and what happens in it. A
+        timestamp helps. Please describe it in your own words rather than pasting the film's script.
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Other ideas
+      description: Any other way to do this that you thought about.
+    validations:
+      required: false
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the open issues and did not find this request.
+          required: true

@@ -57,7 +57,7 @@ cascade:
   {{< hextra/feature-card
     title="Accessible"
     subtitle="Meaning never rests on colour alone. Reduced motion, instant text, plain ASCII."
-    link="accessibility/"
+    link="usage/accessibility/"
     icon="eye"
   >}}
   {{< hextra/feature-card
