@@ -181,7 +181,7 @@ The full-screen interface has not yet been tried with a screen reader. Reports a
 - **Reporting a bug**: run with `WOPR_DEBUG=1`. wopr writes a debug log (never what you type) and prints its
   path when it exits; attach it to a [bug report](https://github.com/GhostofGoes/WOPR/issues/new/choose),
   with `--seed` (or `WOPR_SEED`) if you used one. Ask questions in
-  [Discussions](https://github.com/GhostofGoes/WOPR/discussions).
+  [Discussions](https://github.com/GhostofGoes/WOPR/discussions/categories/q-a).
 
 The docs site's [Troubleshooting](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/) page has more.
 

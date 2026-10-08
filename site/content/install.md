@@ -4,6 +4,7 @@ weight: 2
 description: Install wopr on Windows, macOS or Linux with one line, remove it, or check that a download is genuine.
 tabs:
   sync: true
+next: /usage
 ---
 
 ## Install
@@ -18,7 +19,8 @@ the network and collects no data.
 
 ## Uninstall
 
-`wopr` keeps no settings, so removing the program removes it all.
+`wopr` keeps no settings: removing the program removes everything except a debug log, if you ever made one
+([Troubleshooting](/usage/troubleshooting#debug-log) says where it is; delete its `wopr` folder).
 
 {{< tabs >}}
 
@@ -26,7 +28,7 @@ the network and collects no data.
 In PowerShell, delete its folder and take the folder off your `PATH`:
 
 ```powershell
-$d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d; [Environment]::SetEnvironmentVariable('Path', ((([Environment]::GetEnvironmentVariable('Path', 'User')) -split ';' | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'User')
+$d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue; $k = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment'); $p = $k.GetValue('Path', '', 'DoNotExpandEnvironmentNames'); $k.SetValue('Path', ((@($p -split ';') | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'ExpandString'); $k.Close(); [Environment]::SetEnvironmentVariable('WOPR_PATH_REFRESH', $null, 'User')
 ```
 
 {{< /tab >}}
@@ -42,42 +44,55 @@ sudo rm /usr/local/bin/wopr
 {{< tab name="Linux" >}}
 
 ```sh
-sudo rm /usr/local/bin/wopr
+sudo rm -f /usr/local/bin/wopr ~/.local/bin/wopr
 ```
 
+An earlier version of this page put `wopr` in `~/.local/bin`; this removes that copy too.
 {{< /tab >}}
 
 {{< tab name="Linux (apt)" >}}
+{{< if-packages >}}
 
 ```sh
 sudo apt remove wopr
 ```
 
+{{< /if-packages >}}
+{{< if-packages "not" >}}
+There is no package yet; see the **Linux** tab.
+{{< /if-packages >}}
 {{< /tab >}}
 
 {{< tab name="Linux (RPM)" >}}
+{{< if-packages >}}
 
 ```sh
 sudo dnf remove wopr
 ```
 
 On openSUSE: `sudo zypper remove wopr`.
+{{< /if-packages >}}
+{{< if-packages "not" >}}
+There is no package yet; see the **Linux** tab.
+{{< /if-packages >}}
 {{< /tab >}}
 
 {{< tab name="Go" >}}
-Delete `wopr` (`wopr.exe` on Windows) from Go's `bin` folder, which `go env GOPATH` prints the parent of.
-On Linux and macOS:
+Delete `wopr` from Go's `bin` folder, `~/go/bin` on Linux and macOS:
 
 ```sh
 rm "$(go env GOPATH)/bin/wopr"
 ```
 
+On Windows, in PowerShell:
+
+```powershell
+Remove-Item "$(go env GOPATH)\bin\wopr.exe"
+```
+
 {{< /tab >}}
 
 {{< /tabs >}}
-
-If you ever ran it with `WOPR_DEBUG`, also delete its debug log;
-[Troubleshooting](/usage/troubleshooting#debug-log) says where it is.
 
 ## Development builds
 
@@ -95,7 +110,9 @@ Every file in a [release](https://github.com/GhostofGoes/WOPR/releases) carries 
 attestation: a signed record, kept by GitHub, of the commit and the workflow that built it. To check one:
 
 1. Install the [GitHub CLI](https://cli.github.com/), `gh`, and sign in once with `gh auth login`.
-2. Run `gh attestation verify` on the file, with the tag of its version (`wopr --version` prints it):
+2. Run `gh attestation verify` on the file. The command below names the latest release; for an older file,
+   put in its version: the one in the file's name, or what `wopr --version` prints for the program you
+   installed.
 
    ```sh
    gh attestation verify FILE --repo GhostofGoes/WOPR \
@@ -105,10 +122,12 @@ attestation: a signed record, kept by GitHub, of the commit and the workflow tha
 
    `FILE` is a file you downloaded, such as `wopr_{{< version >}}_linux_amd64`, or the program you
    installed: `"$(command -v wopr)"` on Linux and macOS, `(Get-Command wopr).Source` in PowerShell. The
-   check compares the file's contents, so its name does not matter.
+   check compares the file's contents, so its name does not matter. A program installed with
+   `go install` was built on your computer, not by the release workflow, so it has no attestation and this
+   check fails; Go has already checked its source against the Go checksum database.
 
 `Verification succeeded!` means the file was built from this repository's tagged source by its release
-workflow, on GitHub's own machines. Anything else means: do not run it.
+workflow, on GitHub's own machines. For a file from a release, anything else means: do not run it.
 
 {{< screenshot src="img/install-verify.png" caption="`gh attestation verify` on a Linux archive: the repository, the workflow and the tag all match." >}}
 
@@ -122,8 +141,9 @@ it. Each release has, for each system:
 - `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows): the program with the README, the licence and
   the notices.{{% if-packages %}} On Linux and macOS it also holds the manual page, `wopr.6`.{{% /if-packages %}}
 {{% if-packages %}}
-- `wopr_<version>-1_<arch>.deb` and `wopr-<version>-1.<arch>.rpm`: the Linux packages. Install a file
-  you downloaded with `sudo apt install ./FILE` or `sudo dnf install ./FILE`.
+- `wopr_<version>-1_<arch>.deb` (`<arch>` as above: `amd64` or `arm64`) and `wopr-<version>-1.<arch>.rpm`
+  (here `<arch>` is `x86_64` or `aarch64`, as `uname -m` prints): the Linux packages. Install a file you
+  downloaded with `sudo apt install ./FILE` or `sudo dnf install ./FILE`.
 {{% /if-packages %}}
 - `checksums.txt`: the SHA-256 checksum of every file.
 
@@ -135,5 +155,6 @@ Once you have verified it:
 - **Windows** SmartScreen may say it does not recognise the program. Choose *More info*, then
   *Run anyway*, or clear the mark with `Unblock-File FILE` in PowerShell.
 
-The install commands above download with `curl`, `wget`, `dnf` or `apt`, which do not mark files, so this
-does not come up.
+The install lines above download with `curl`, `wget` or `dnf`, which do not mark files, so this does not
+come up. Windows' Smart App Control is different: when it is on, it blocks every program that is not
+signed, however it was downloaded ([Troubleshooting](/usage/troubleshooting) says more).

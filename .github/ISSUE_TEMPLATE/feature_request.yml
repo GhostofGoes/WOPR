@@ -6,9 +6,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for the idea. Please check the [open issues](https://github.com/GhostofGoes/WOPR/issues)
-        first. For a question, or an idea you would like to talk over, start a
-        [discussion](https://github.com/GhostofGoes/WOPR/discussions) instead.
+        Thanks for the idea. Please check the [issues](https://github.com/GhostofGoes/WOPR/issues?q=is%3Aissue)
+        first. For a question, ask in [Q&A](https://github.com/GhostofGoes/WOPR/discussions/categories/q-a);
+        to talk an idea over first, start a discussion in
+        [Ideas](https://github.com/GhostofGoes/WOPR/discussions/categories/ideas).
   - type: dropdown
     id: area
     attributes:
@@ -61,5 +62,5 @@ body:
     attributes:
       label: Before you submit
       options:
-        - label: I searched the open issues and did not find this request.
+        - label: I searched the issues and did not find this request.
           required: true

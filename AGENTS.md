@@ -212,9 +212,10 @@ screenshot fails the build.
   `aliases` entry in its front matter.
 - The install commands are written once, for both Quickstart and Installation: one Markdown file per tab in
   `site/assets/install/` (Windows, macOS, Linux, Linux (apt), Linux (RPM), Go), which the `install-tabs`
-  shortcode puts in synced tabs. `@VERSION@` in them becomes the latest release's version. Each tab is one
-  line to paste into a terminal, which a person who has never used one can follow, using only the tools each
-  system installs by default; verifying an attestation is for the Installation page's last section.
+  shortcode puts in synced tabs. `@VERSION@` in them becomes the latest release's version (shortcodes do
+  not run there). Each tab is a line to paste into a terminal, which a person who has never used one can
+  follow, using only the tools each system installs by default (the Go tab needs Go); verifying an
+  attestation is for the Installation page's last section.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
   which documents the schema; the manual page reads the same files. Change a game's text there.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
@@ -228,12 +229,13 @@ screenshot fails the build.
   `site/assets/vendor/`, exactly as their npm packages publish them (never edit them; `.gitattributes`
   and `prek.toml` leave them alone), and `site/hugo.yaml` names them. The credits page shows the
   licences, so the build needs no network beyond the Go module proxy.
-- Download commands use the `version` shortcode: the latest published release in `docs.yml`'s builds, the
-  latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
+- Download commands in pages use the `version` shortcode, and those in `site/assets/install/` use
+  `@VERSION@`: the latest published release in `docs.yml`'s builds, the latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
   inside `{{% if-packages %}}`, which shows it only once the latest release has them (every release after
   v0.3.0; the `has-packages` partial), so no build of the site names a file that does not exist yet; until
   then the package tabs show `site/assets/install/packages-later.md`. Its content is Markdown only: a
-  shortcode inside it that writes HTML, such as `tabs`, is dropped.
+  shortcode inside it that writes HTML, such as `tabs`, is dropped. Inside a Hextra `tab`, write it as
+  `{{< if-packages >}}`: the tab renders the Markdown, and the `%` form fails the build there.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 

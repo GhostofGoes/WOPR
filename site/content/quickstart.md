@@ -6,8 +6,8 @@ description: Install wopr, log on, and play your first game in two minutes.
 
 ## 1. Get it
 
-Pick your system, copy the line, and paste it into a terminal as the tab says. Most of the lines start
-`wopr` once it is installed; after that, start it as step 2 says.
+Pick your system, copy the line, and paste it into a terminal as the tab says. Every line except Go's
+also starts `wopr` once it is installed, so WOPR starts dialing right away.
 
 {{< install-tabs >}}
 
@@ -15,7 +15,8 @@ Pick your system, copy the line, and paste it into a terminal as the tab says. M
 
 ## 2. Dial in
 
-Open a terminal at least 80 columns wide and 24 rows tall, and type:
+If step 1 started it, WOPR is already dialing. If not (the Go tab), or to play again later, open a terminal
+at least 80 columns wide and 24 rows tall, and type:
 
 ```sh
 wopr

@@ -3,6 +3,7 @@ title: Accessibility
 weight: 1
 description: Meaning in characters as well as colour, reduced motion, instant text, plain ASCII and tested contrast.
 aliases: [/accessibility/]
+prev: /usage
 ---
 
 `wopr` is meant to be playable without colour, without motion and without waiting for text to type out.

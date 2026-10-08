@@ -3,7 +3,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Ask a question
-    url: https://github.com/GhostofGoes/WOPR/discussions
+    url: https://github.com/GhostofGoes/WOPR/discussions/categories/q-a
     about: How to play, how to install, or anything else you are not sure about.
   - name: Report a security problem
     url: https://github.com/GhostofGoes/WOPR/security/advisories/new

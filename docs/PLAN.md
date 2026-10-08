@@ -1340,9 +1340,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
     `invalid-license` for the map's LicenseRef, which no list of licences has (the License tag gained it
     after that run, so this filter is not yet confirmed against Fedora's rpmlint). The
     packages carry no GPG signature (there is no signing key, only `GITHUB_TOKEN`); like every release file
-    they are attested and checked with `gh attestation verify` (§12). zypper refuses an unsigned local
-    package unless given `--allow-unsigned-rpm`, which the install page says to use only after
-    `gh attestation verify` has passed.
+    they are attested and can be checked with `gh attestation verify` (§12). zypper refuses an unsigned
+    package unless given `--allow-unsigned-rpm`, so the Linux (RPM) install tab's openSUSE line passes it;
+    checking the package first is optional, in the Installation page's "Verifying binaries (attestation)".
   - **Looking inside an `.rpm`.** nFPM's RPM writer (google/rpmpack) stores the payload's paths as absolute
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
     and verify the packages correctly, but `rpm2cpio X.rpm | cpio -idm` writes into the live `/` from any
@@ -1354,7 +1354,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - Keyboard enhancements stay off.
   - conhost resize events may report the buffer height (9001). Clamp to the window rect and check in the M2 QA
     pass.
-  - Ship unsigned. Document SmartScreen, and verify before running (§13).
+  - Ship unsigned. The one-line install downloads with `curl.exe`, which sets no Mark of the Web, so
+    SmartScreen does not ask; the Installation page's "Verifying binaries (attestation)" documents
+    SmartScreen for files downloaded with a browser, and verifying as optional (§12, §13).
 - **Panics**: no custom `recover` around `p.Run()`. Bubble Tea restores the terminal, recovers `Cmd` goroutine
   panics too, and prints the stack to stderr. The model returned on panic is nil and is not used.
 - **Debug log** (S-5, `internal/debuglog`): `WOPR_DEBUG=1` writes `os.UserCacheDir()/wopr/debug.log`. It
@@ -1702,11 +1704,13 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - **Dependabot**: off (owner decision). govulncheck covers the Go graph.
 - **The app.** No network code before M7, no telemetry, no transcripts. External text is sanitised. wopr's
   debug log holds no typed input (§8).
-- **Releases.** Users verify before running:
+- **Releases.** Every file is attested. Verifying is optional, for those who want proof, in the Installation
+  page's last section, "Verifying binaries (attestation)", which the README and each release's notes link:
   - Command: `gh attestation verify <file> --repo GhostofGoes/WOPR`, plus
     `--signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml`,
     `--source-ref refs/tags/vX.Y.Z` and `--deny-self-hosted-runners`.
-  - Only after that: `xattr -d com.apple.quarantine`, or the SmartScreen prompt.
+  - For a file downloaded with a browser, after verifying: `xattr -d com.apple.quarantine`, or the
+    SmartScreen prompt. The one-line installs download with tools that set no such mark.
   - Signing and notarisation are post-1.0 options. There is no Homebrew tap: casks need signing, third-party
     taps need `brew trust`, and a tap needs a token beyond `GITHUB_TOKEN`.
 - **Licensing** (L-1, L-4, L-5, B-11).
@@ -1731,8 +1735,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 
 - **README.md** (basic in M0, completed in M5):
   - what this is, and a link to the docs site (below);
-  - install per OS (on Linux, the `.deb` or `.rpm` first), **verify first** (§12), then Gatekeeper and
-    SmartScreen notes, then `go install …@latest`;
+  - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
+    …@latest`, a note that the `.deb` and `.rpm` install the manual page, and a link to the verifying section
+    (§12);
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
   - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
@@ -1766,8 +1771,8 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   page per game), movie scenes, contributing with the code of conduct, changelog, and credits.
   - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
     Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
-    terminal, with only the tools each system installs by default. The lines download the latest release's
-    file, put the program on the `PATH` and start it. The text is one Markdown file per tab in
+    terminal, with only the tools each system installs by default (the Go tab needs Go). The lines download
+    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one Markdown file per tab in
     `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an attestation is the
     Installation page's last section, for those who want it; the README links there and to the guide.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
