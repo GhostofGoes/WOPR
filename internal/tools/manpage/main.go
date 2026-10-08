@@ -391,7 +391,7 @@ func writeEnd(p *page) {
 // Where the project lives. The URLs are plain text: a man(7) link (.UR) would print them
 // twice.
 const (
-	siteURL   = "https://ghostofgoes.github.io/WOPR/"
+	siteURL   = cli.DocsURL
 	repoURL   = "https://github.com/GhostofGoes/WOPR"
 	issuesURL = repoURL + "/issues"
 )
