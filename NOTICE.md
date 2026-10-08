@@ -97,3 +97,23 @@ contact details on their GitHub profile. The material will be removed or replace
 The `wopr` binary is built with Go and links third-party Go modules. Their licences are reproduced in
 [THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt), which ships in every release archive and is
 printed by `wopr --licenses`.
+
+## Documentation site
+
+The documentation site at <https://ghostofgoes.github.io/WOPR/>, built from `site/` in this repository,
+is not part of the `wopr` program. Its own text and its icon are this project's, under the MIT License;
+the film text it quotes and its screenshots, which show film text and the map credited above, are
+covered by the sections above. It is built with [Hugo](https://gohugo.io/), and the pages it serves
+include:
+
+- the [Hextra](https://github.com/imfing/hextra) theme's stylesheet and scripts, Copyright (c) 2023 Xin,
+  under the MIT License; the stylesheet is built with [Tailwind CSS](https://tailwindcss.com/),
+  Copyright (c) Tailwind Labs, Inc., also under the MIT License. The site's credits page reproduces
+  Hextra's licence;
+- [FlexSearch](https://github.com/nextapps-de/flexsearch), Copyright Thomas Wilkerling, under the Apache
+  License 2.0, for the search box. The site's credits page reproduces its licence;
+- [PhotoSwipe](https://photoswipe.com/), Copyright (c) 2014-2022 Dmitry Semenov, under the MIT License,
+  which shows a screenshot full size. The site's credits page reproduces its licence.
+
+The site's copies of FlexSearch and PhotoSwipe, with their licences, are in `site/assets/vendor/`,
+unchanged from their npm packages.

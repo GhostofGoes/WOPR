@@ -1,0 +1,37 @@
+{
+  "slug": "biotoxic",
+  "number": 14,
+  "name": "Theaterwide Biotoxic and Chemical Warfare",
+  "launch": "wopr biotoxic",
+  "aliases": ["14", "chemical", "theaterwide-biotoxic-and-chemical-warfare"],
+  "summary": "Infantry and chemical troops on a six-region front, where an agent released on a region spreads with the wind. Nobody can win: every game ends WINNER: NONE.",
+  "howToPlay": [
+    "There is no winning. The game ends when every region is contaminated, when either side has no units left, or after eight turns. The kill ratios then count the units and civilians each side lost.",
+    "Each turn WOPR asks for one order per unit (CHM1 IN FARMLAND:). Then both sides' orders take effect, an event card is drawn (the wind can turn, rain can wash some away), and the contamination spreads.",
+    "RELEASE must be typed in full. Only chemical troops (CHM) can release, on a region up to two away, and it raises that region's contamination by two levels. A region at ~~ or more spreads one region downwind each turn.",
+    "DECON cleans the unit's own region by one level. Units in contaminated ground may lose a step each turn. The map shows each region's level as ~, ~~ or ~~~ after its name.",
+    "Infantry (INF) and chemical troops move one region and attack next door. Name a region by number or by name: MOVE 3, MOVE DELTA, ATTACK 4."
+  ],
+  "controls": [
+    {"input": "RELEASE 4 or RELEASE INDUSTRIAL", "does": "chemical troops only: put an agent on a region up to two away (typed in full)"},
+    {"input": "DECON", "does": "clean the unit's own region by one level"},
+    {"input": "MOVE 3 or MOVE DELTA", "does": "move to that region, not through the enemy"},
+    {"input": "ATTACK 4", "does": "attack an enemy next door"},
+    {"input": "HOLD (or an empty line)", "does": "stay put"},
+    {"input": "END (or DONE)", "does": "hold every unit not yet ordered and play the turn"},
+    {"input": "STATUS (or MAP)", "does": "show the map again"},
+    {"input": "HELP", "does": "list the orders and the combat results"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "The best move is not to release at all. WOPR releases only after its own half of the front is contaminated, so if you hold back, the ground stays clean unless an event card leaks an agent.",
+    "Move units out of contaminated ground. Each turn, a unit there loses a step one time in four for each ~ on its region.",
+    "Watch the wind. It starts blowing east, toward WOPR, but an event card can turn it west and blow your own agent onto your units.",
+    "Civilian losses grow fast: each turn a region costs its side 1 for ~, 4 for ~~ and 9 for ~~~. DECON the worst region first."
+  ],
+  "screenshots": [
+    {"file": "biotoxic-1.png", "caption": "The opening: the title art, the rules, and the six-region map, with CHM1 asked for its first order."},
+    {"file": "biotoxic-2.png", "caption": "After RELEASE 4 the wind turns west: the INDUSTRIAL BELT is at ~~, the RIVER DELTA at ~, and WOPR's units sicken."},
+    {"file": "biotoxic-3.png", "caption": "Turn 3: WOPR has released on the FARMLAND, the wind has turned east again, and WOPR's INF2 and CHM1 are destroyed. CONTAMINATED: 4 OF 6 REGIONS."}
+  ]
+}

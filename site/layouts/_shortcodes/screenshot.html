@@ -1,0 +1,61 @@
+{{- /*
+  A screenshot with its caption, which is also its text alternative.
+
+    {{< screenshot src="img/games/chess-1.png" caption="..." >}}
+    {{< screenshot src="screenshots/logon.png" caption="..." >}}
+
+  src is a file under static/ (img/...) or under assets/ (the README's screenshots, mounted at
+  screenshots/). A missing file fails the build. credit adds a line under the caption, for art
+  whose licence asks to be named beside it.
+
+  Clicking a screenshot opens it full size in Hextra's lightbox (PhotoSwipe, vendored in
+  assets/vendor and named in hugo.yaml, params.gallery), with the caption and the credit under it. Screenshots inside a
+  screenshots shortcode open as one set that the arrow keys or a swipe step through; any other
+  screenshot opens alone. Without JavaScript, the link opens the image file.
+*/ -}}
+{{- $src := .Get "src" -}}
+{{- $caption := .Get "caption" | default "" -}}
+{{- $credit := .Get "credit" | default "" -}}
+{{- $url := "" -}}
+{{- $w := 0 -}}
+{{- $h := 0 -}}
+{{- with resources.Get $src -}}
+  {{- $url = .RelPermalink -}}
+  {{- with .Width }}{{ $w = . }}{{ end -}}
+  {{- with .Height }}{{ $h = . }}{{ end -}}
+{{- else -}}
+  {{- $file := path.Join "static" $src -}}
+  {{- if not (fileExists $file) -}}
+    {{- errorf "%s: screenshot %q: no such file under static/ or assets/" .Page.String $src -}}
+  {{- end -}}
+  {{- $url = relURL $src -}}
+  {{- with images.Config $file -}}
+    {{- $w = .Width -}}
+    {{- $h = .Height -}}
+  {{- end -}}
+{{- end -}}
+{{- if not $caption -}}
+  {{- errorf "%s: screenshot %q needs a caption" .Page.String $src -}}
+{{- end -}}
+{{- if not (and $w $h) -}}
+  {{- errorf "%s: screenshot %q: could not read its size" .Page.String $src -}}
+{{- end -}}
+{{- /* Hextra's gallery script, which opens the lightbox, is loaded only on pages that ask. */ -}}
+{{- .Page.Store.Set "hasGallery" true -}}
+{{- /* A set of one, unless a screenshots shortcode around it makes the set. */ -}}
+{{- $alone := "" -}}
+{{- with .Parent -}}
+  {{- if ne .Name "screenshots" -}}
+    {{- $alone = printf "wopr-shot-%d-%d" .Ordinal $.Ordinal -}}
+  {{- end -}}
+{{- else -}}
+  {{- $alone = printf "wopr-shot-%d" .Ordinal -}}
+{{- end -}}
+<figure class="wopr-shot"{{ with $alone }} id="{{ . }}" data-pswp-gallery{{ end }}>
+  <a href="{{ $url }}" data-pswp-width="{{ $w }}" data-pswp-height="{{ $h }}">
+    <img src="{{ $url }}" alt="{{ $caption | markdownify | plainify }}" loading="lazy" decoding="async" width="{{ $w }}" height="{{ $h }}">
+  </a>
+  {{- /* The class is the one Hextra's lightbox copies its caption from; custom.css styles it. */}}
+  <figcaption class="hextra-gallery__caption">{{ $caption | markdownify }}{{ with $credit }}<br><small>{{ . | markdownify }}</small>{{ end }}</figcaption>
+</figure>
+{{- /* chomp */ -}}

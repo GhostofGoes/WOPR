@@ -17,7 +17,11 @@ By taking part you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
 ## Set up
 
 You need Git and Go. The repository pins its Go toolchain in `go.mod`. With Go's default
-`GOTOOLCHAIN=auto`, any Go 1.21 or newer downloads the right version on first use.
+`GOTOOLCHAIN=auto`, any Go 1.21 or newer downloads the right version on first use. Some Linux
+distributions set their Go to `GOTOOLCHAIN=local`; if `go` says `go.mod` needs a newer Go, run
+`go env -w GOTOOLCHAIN=auto` once, or install Go from [go.dev](https://go.dev/doc/install). The docs site's
+[Contributing page](https://ghostofgoes.github.io/WOPR/contributing/) shows how to install Git, Go, prek
+and a C compiler on Linux, macOS and Windows, and how to preview the site itself.
 
 ```sh
 git clone https://github.com/GhostofGoes/WOPR.git
@@ -37,13 +41,18 @@ prek run --all-files   # run everything on demand
 ## Making a change
 
 1. Branch from `main`. `main` only accepts pull requests, and every PR needs the `ci-ok` check to pass.
-   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets, and
-   runs each binary natively.
+   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets and the
+   Linux packages, runs each binary natively (and installs the packages on Linux), and builds the docs
+   site.
 2. Keep each change focused. Add or update tests with the change. Regenerate golden files with
    `WOPR_UPDATE_GOLDEN=1 go test ./...`, and review the resulting diff.
-3. Run `prek run --all-files` and `go test ./...` before pushing. On Linux and macOS, also run
+3. If players will notice the change, add a change note with
+   `go tool -modfile=tools/release/go.mod changie new`: one short, plain line that says what changed for
+   them, such as "Fixed an issue with the Chess game". [AGENTS.md](AGENTS.md#change-notes) has the rules.
+   Do not edit `CHANGELOG.md`; releases build it from the notes.
+4. Run `prek run --all-files` and `go test ./...` before pushing. On Linux and macOS, also run
    `go test -race ./...`.
-4. Write commit messages that say what changed and why. PRs are squash-merged, so the PR title and
+5. Write commit messages that say what changed and why. PRs are squash-merged, so the PR title and
    description become the commit on `main`.
 
 ## Film text and other third-party content

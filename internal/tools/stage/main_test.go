@@ -1,9 +1,12 @@
 package main
 
 import (
+	"archive/tar"
 	"archive/zip"
+	"compress/gzip"
 	"crypto/sha256"
 	"encoding/hex"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -44,6 +47,42 @@ func TestCheckArchive(t *testing.T) {
 	if err := checkArchive(bad); err == nil || !strings.Contains(err.Error(), "NOTICE.md") {
 		t.Errorf("archive without notices accepted: %v", err)
 	}
+	man := write("man.zip", "wopr.exe", "LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt", "wopr.6")
+	if err := checkArchive(man); err == nil || !strings.Contains(err.Error(), "wopr.6") {
+		t.Errorf("Windows archive with the manual page accepted: %v", err)
+	}
+
+	tgz := func(name string, files ...string) string {
+		p := filepath.Join(dir, name)
+		f, err := os.Create(p)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gz := gzip.NewWriter(f)
+		tw := tar.NewWriter(gz)
+		for _, n := range files {
+			if err := tw.WriteHeader(&tar.Header{Name: n, Mode: 0o644, Size: int64(len(n))}); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := tw.Write([]byte(n)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		for _, c := range []io.Closer{tw, gz, f} {
+			if err := c.Close(); err != nil {
+				t.Fatal(err)
+			}
+		}
+		return p
+	}
+	unix := tgz("good.tar.gz", "wopr", "LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt", "wopr.6")
+	if err := checkArchive(unix); err != nil {
+		t.Errorf("complete tarball rejected: %v", err)
+	}
+	noMan := tgz("noman.tar.gz", "wopr", "LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt")
+	if err := checkArchive(noMan); err == nil || !strings.Contains(err.Error(), "missing wopr.6") {
+		t.Errorf("tarball without the manual page accepted: %v", err)
+	}
 }
 
 func TestAssemble(t *testing.T) {
@@ -67,8 +106,10 @@ func TestAssemble(t *testing.T) {
 	}
 	bin := write("wopr", "binary")
 	arc := write("wopr_1.0.0_linux_amd64.tar.gz", "archive")
+	deb := write("wopr_1.0.0-1_amd64.deb", "package")
 	lines.WriteString(sum("binary") + "  wopr_1.0.0_linux_amd64\n")
 	lines.WriteString(sum("archive") + "  wopr_1.0.0_linux_amd64.tar.gz\n")
+	lines.WriteString(sum("package") + "  wopr_1.0.0-1_amd64.deb\n")
 	sums := write("checksums.txt", lines.String())
 	bare := artifact{Name: "wopr_1.0.0_linux_amd64", Path: bin, Type: "Binary"}
 	bare.Extra.Format = "binary"
@@ -77,6 +118,7 @@ func TestAssemble(t *testing.T) {
 		bare,
 		{Name: "wopr_1.0.0_linux_amd64.tar.gz", Path: arc, Type: "Archive"},
 		{Name: "checksums.txt", Path: sums, Type: "Checksum"},
+		{Name: "wopr_1.0.0-1_amd64.deb", Path: deb, Type: linuxPackage},
 	}
 
 	dir := filepath.Join(root, "release")
@@ -90,8 +132,14 @@ func TestAssemble(t *testing.T) {
 	case runtime.GOOS != "windows" && fi.Mode().Perm()&0o100 == 0: // Windows has no executable bit
 		t.Errorf("bare binary not executable: %v", fi.Mode())
 	}
+	if _, err := os.Stat(filepath.Join(dir, "wopr_1.0.0-1_amd64.deb")); err != nil {
+		t.Errorf("package missing: %v", err)
+	}
 	if err := assemble(arts, dir, root); err != nil {
 		t.Errorf("a second run must replace the first: %v", err)
+	}
+	if err := assemble(arts[:len(arts)-1], dir, root); err == nil || !strings.Contains(err.Error(), "wopr_1.0.0-1_amd64.deb") {
+		t.Errorf("a release without its package accepted: %v", err)
 	}
 
 	// A file that changed after GoReleaser summed it must not be published.

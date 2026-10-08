@@ -9,6 +9,9 @@ list. That includes Global Thermonuclear War, which cannot be won.
 It is a single static binary for Linux, macOS and Windows. It needs no network connection and collects
 no data.
 
+The **[documentation site](https://ghostofgoes.github.io/WOPR/)** covers installing and verifying `wopr`,
+every option, how to play each game with tips for winning, movie mode, and contributing.
+
 > **Status: under construction.** Every game on the list is playable as of v0.1.0, and movie mode
 > (`--movie`) replays the film's terminal scenes. A pass over the film's text against the film is still to
 > come. See [docs/PLAN.md](docs/PLAN.md) for the plan and milestones.
@@ -19,10 +22,12 @@ Each [GitHub Release](https://github.com/GhostofGoes/WOPR/releases) has builds f
 and Windows 11, on amd64 and arm64. For each platform there is the bare binary, such as
 `wopr_<version>_linux_amd64` or `wopr_<version>_windows_amd64.exe`, and an archive of it with the README,
 licence and notices (`.tar.gz`, or `.zip` for Windows). `LICENSE`, `README.md`, `NOTICE.md`,
-`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.)
+`THIRD_PARTY_NOTICES.txt` and `checksums.txt` are attached too. (v0.1.0 has the archives only.) Releases after
+v0.3.0 also have Linux packages: a `.deb` for Debian and Ubuntu and an `.rpm` for Fedora and RHEL. What changed
+in each version is on its release page and in [CHANGELOG.md](CHANGELOG.md).
 
 **Verify before you run.** Every file in a release carries a build-provenance attestation. With the
-[GitHub CLI](https://cli.github.com/):
+[GitHub CLI](https://cli.github.com/) (use the name of the file you downloaded, such as a package):
 
 ```sh
 gh attestation verify wopr_<version>_<os>_<arch> --repo GhostofGoes/WOPR \
@@ -38,6 +43,33 @@ like). An archive keeps the executable bit: unpack it and run `./wopr`.
   `xattr -d com.apple.quarantine` on it.
 - **Windows:** SmartScreen may warn about an unrecognised app. After verifying the file, choose
   *More info → Run anyway*.
+
+**Linux packages.** Download the package for your machine (`amd64` or `arm64` for the `.deb`, `x86_64` or
+`aarch64` for the `.rpm`), verify it as above, and install it:
+
+```sh
+sudo apt install ./wopr_<version>-1_amd64.deb     # Debian, Ubuntu
+sudo dnf install ./wopr-<version>-1.x86_64.rpm    # Fedora, RHEL
+```
+
+Then run `wopr`, and read `man wopr`. The package needs nothing else. The `.deb` puts `wopr` in
+`/usr/games`, which Debian and Ubuntu put on every user's `PATH`; the `.rpm` puts it in `/usr/bin`. Each
+package also holds the changelog, the licences and the notices. Remove it with `sudo apt remove wopr` or
+`sudo dnf remove wopr`.
+
+**Manual page.** `wopr.6` is the manual page: the options, every game with how to play it and tips, and
+movie mode. The Linux and macOS archives hold it from the release after v0.3.0, and
+[docs/man/wopr.6](docs/man/wopr.6) has it too. Read it in place with `man ./wopr.6`, or install it so that
+`man wopr` finds it, for everyone or just for you:
+
+```sh
+sudo install -d /usr/local/share/man/man6 && sudo install -m 644 wopr.6 /usr/local/share/man/man6/
+mkdir -p ~/.local/share/man/man6 && cp wopr.6 ~/.local/share/man/man6/
+```
+
+`man` searches `~/.local/share/man` when `~/.local/bin` is on your `PATH`. Otherwise add
+`export MANPATH="$HOME/.local/share/man:"` to your shell's startup file: the colon at the end keeps the
+system's manual pages too.
 
 With Go installed, you can instead build from source:
 
@@ -164,31 +196,23 @@ film's lines are still to be checked one by one against the film.
 | `-s`, `--seed <n>` | deterministic run; env `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations); env `WOPR_REDUCE_MOTION=1` |
 
-`NO_COLOR` (any value) turns colour off.
+`NO_COLOR` (any value but an empty one) turns colour off.
 
 ## Accessibility
 
-- **Colour is never the only signal.** With `NO_COLOR`, or on a monochrome terminal, every theme falls back to
-  bold, faint, underline and reverse, and what colour adds is in the characters too: outgoing tracks on the
-  big board are `+` and incoming `*`, the current DEFCON level is pointed at with `>`, every card shows its
-  suit letter, the card winning a trick is edged `.===.`, Gin Rummy names your melds by position, and chess
-  and checkers mark the last move with brackets.
-- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking (the cursor's and DEFCON 1's),
-  keeps the front panel's lights and the `PROCESSING` dots still, and plays the ending at a steady pace
-  instead of speeding up. It does not stop the animations: the typing, the big board's missile tracks and
-  the ending's self-play and scrolling scenarios still play. Add `--instant` to skip them. With or without
-  either, nothing flashes more than three times a second.
-- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows each line at once instead of typing it out, draws each
-  strike on the big board at once, and skips the ending's self-play and scrolling scenarios. Without it,
-  any key shows the rest of what is being typed, and what you type is kept.
-- **Text.** Everything on screen is plain ASCII. Every prompt with words ends in a question or a colon, and
-  the cursor sits at the end of the line you are typing. WOPR's conversation, as in the film, has no prompt
-  text: what WOPR said last usually asks, but after a list (`HELP`, `LIST GAMES`) the list's last line comes
-  just before the empty prompt. WOPR's moves are written out in the console as well as drawn on the boards,
-  and in Hearts and Bridge the console says the cards already in the trick before you play
-  (`WEST LEADS 7H. NORTH PLAYS KH.`).
-- **Contrast.** In every theme's full colours, text meets WCAG AA contrast (4.5:1) against the background,
-  and the deliberately faint text 3:1. In 16-colour mode every style keeps at least 3:1 on xterm's palette.
+- **Meaning in characters, not just colour.** Outgoing missiles are `+` and incoming `*`, `>` marks the
+  current DEFCON level, every card shows its suit letter, an edged card (`.===.`) is winning the trick,
+  Gin Rummy names your melds, and chess and checkers bracket the last move. Set `NO_COLOR` to turn colour
+  off.
+- **`--reduce-motion`** (`-r`, or `WOPR_REDUCE_MOTION=1`) stops blinking, holds the front-panel lights
+  still and keeps the ending at a steady pace. Nothing ever flashes more than three times a second.
+- **`--instant`** (`-i`, or `WOPR_INSTANT=1`) shows text and board moves at once instead of typing them
+  out. Any key also finishes the line being typed.
+- **Plain text.** Everything on screen is plain ASCII. Prompts end with a question or a colon, the cursor
+  sits where you type, WOPR's moves are written out in words, and Hearts and Bridge say which cards are
+  already in the trick before you play.
+- **Contrast.** Text meets WCAG AA contrast (4.5:1) in every theme, dim text 3:1, and every style keeps at
+  least 3:1 in 16-colour terminals.
 
 The full-screen interface has not yet been tried with a screen reader. Reports are welcome.
 

@@ -1,0 +1,35 @@
+{
+  "slug": "dogfight",
+  "number": 9,
+  "name": "Fighter Combat",
+  "launch": "wopr dogfight",
+  "aliases": ["9", "fighter-combat"],
+  "summary": "A turn-based dogfight, one on one. Each turn you and WOPR choose a manoeuvre at the same time, and a side view shows height, range and who is on whose tail.",
+  "howToPlay": [
+    "Two hits bring an aircraft down: bring WOPR's down to win. DISENGAGE at long range ends the fight even, and so does running out of fuel after 15 turns.",
+    "At MANOEUVRE: type PRESS to close in, EXTEND to open the range, CLIMB to build energy, BREAK to turn hard, FIRE to shoot, or DISENGAGE to leave.",
+    "FIRE uses a missile at medium or long range (you have two), unless you are on the defensive, and guns at close range, but only from WOPR's tail. A shot you do not have is refused with NO SHOT: and a reason, and costs no turn.",
+    "Shots happen first, then both manoeuvres. Each turn WOPR prints both moves, the range, your position (ON ITS TAIL, NEUTRAL or ON THE DEFENSIVE), and each side's energy and missiles.",
+    "CLIMB adds 2 energy and EXTEND 1; PRESS costs 1 and BREAK 2. Energy runs from 0 to 6. A damaged aircraft trails smoke (~~) in the picture."
+  ],
+  "controls": [
+    {"input": "PRESS (or P, CLOSE)", "does": "close the range; costs 1 energy"},
+    {"input": "EXTEND (or E, RUN)", "does": "open the range; gains 1 energy"},
+    {"input": "CLIMB (or C, ZOOM)", "does": "gain 2 energy, up to 6"},
+    {"input": "BREAK (or B, TURN, EVADE)", "does": "turn hard: spoils a shot at you and may shake a pursuer; costs 2 energy"},
+    {"input": "FIRE (or F, SHOOT, GUNS, MISSILE)", "does": "a missile at medium or long range, or guns close in from behind"},
+    {"input": "DISENGAGE (or D, LEAVE, RTB)", "does": "end the fight even; only at long range"},
+    {"input": "Esc, Esc", "does": "leave the fight and go back to WOPR"}
+  ],
+  "tips": [
+    "Keep your energy at 4 or more. WOPR fires a missile most turns it has a shot, and a missile hits about one time in two against a slow aircraft but one time in six against one with 4 energy or more. A BREAK spoils a shot just as well, but costs 2 energy.",
+    "Climb early. A climb that leaves you 3 energy above WOPR moves you a step toward its tail, and so does pressing in with more energy than WOPR, unless it breaks.",
+    "Once you are on WOPR's tail, close in and use guns: they hit harder than missiles and never run out, and you have only two missiles.",
+    "If the fight turns against you, EXTEND to long range and DISENGAGE. The fight ends even."
+  ],
+  "screenshots": [
+    {"file": "dogfight-1.png", "caption": "The gunsight title, the rules, and turn 1: both aircraft head-on at long range, with 3 energy and two missiles each."},
+    {"file": "dogfight-2.png", "caption": "After CLIMB you are high with 5 energy and WOPR points away: RANGE MEDIUM. YOU ARE ON ITS TAIL."},
+    {"file": "dogfight-3.png", "caption": "YOU FIRE GUNS: A HIT. WOPR's aircraft goes down: the SPLASH ONE burst, WINNER: PROFESSOR FALKEN and the kill ratios."}
+  ]
+}

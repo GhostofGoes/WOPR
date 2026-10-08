@@ -1,0 +1,89 @@
+# Publishes the documentation site (site/: Hugo with the Hextra theme) to GitHub Pages, at
+# https://ghostofgoes.github.io/WOPR/, from every push to main. Its download commands and package
+# instructions name the latest published release, which this workflow looks up: a release pull
+# request puts its version in CHANGELOG.md before the release exists. release.yml starts it again
+# once a release is published, so that the site names the new one. Run it by hand on main to publish
+# again (after changing the Pages settings, say). It needs the repository's Pages source set to
+# GitHub Actions (AGENTS.md, "Repository settings").
+name: Docs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+# One run per branch at a time; deploy also waits for any other deployment (below).
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read # the checkout, and the latest release
+      pages: read # configure-pages reads the site's address
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # GitHub's latest release: published, not a draft or a prerelease. A release is
+      # vMAJOR.MINOR.PATCH, as release.yml publishes it.
+      - name: Find the latest release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          tag="$(gh api "repos/${REPO}/releases/latest" --jq .tag_name)"
+          if [[ ! "${tag}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::the latest release is ${tag:-missing}, not a tag such as v0.3.0"
+            exit 1
+          fi
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "The docs site from ${GITHUB_SHA}, naming the release ${tag}." >> "${GITHUB_STEP_SUMMARY}"
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false # what is published is built without a restored cache
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      # Hugo is built from tools/docs/go.mod, and the theme comes from site/go.mod. The address
+      # comes from Pages, so that a custom domain needs no change here. The release goes to the
+      # latest-version partial, which otherwise reads CHANGELOG.md.
+      - name: Build the site
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+          HUGO_PARAMS_LATESTRELEASE: ${{ steps.release.outputs.tag }}
+        run: |
+          go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
+            --minify --baseURL "${BASE_URL%/}/" --destination "${RUNNER_TEMP}/site"
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ runner.temp }}/site
+
+  deploy:
+    name: deploy
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write # deploy-pages publishes the uploaded site
+      id-token: write # deploy-pages proves the artifact came from this workflow
+    # One deployment at a time. A newer one waits for the one in progress instead of cancelling
+    # it, so a deployment is never cut off halfway. Only main's runs reach this group, so a run
+    # on another branch never replaces a deployment that is waiting.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

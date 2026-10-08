@@ -5,3 +5,7 @@
 *.png binary
 *.gif binary
 *.jpg binary
+
+# The docs site's third-party scripts, styles and licences, byte for byte as their npm packages
+# publish them (some with CRLF line ends), so they can be checked against the packages' hashes.
+site/assets/vendor/** -text linguist-vendored

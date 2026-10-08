@@ -1,0 +1,17 @@
+{{- /*
+  A set of screenshots that the lightbox steps through together (a game's page uses one):
+
+    {{< screenshots >}}
+    {{< screenshot src="img/games/chess-1.png" caption="..." >}}
+    {{< screenshot src="img/games/chess-2.png" caption="..." >}}
+    {{< /screenshots >}}
+
+  Each one still shows at full width with its caption under it.
+*/ -}}
+{{- if not (strings.Contains .Inner "wopr-shot") -}}
+  {{- errorf "%s: screenshots: holds no screenshot shortcode" .Page.String -}}
+{{- end -}}
+<div class="wopr-shots" id="wopr-shots-{{ .Ordinal }}" data-pswp-gallery>
+  {{- .Inner -}}
+</div>
+{{- /* chomp */ -}}

@@ -1,10 +1,12 @@
 // Command sizegate enforces the binary size budget on GoReleaser output.
 //
-//	go run ./internal/tools/sizegate [-expect 6] [dist/artifacts.json]
+//	go run ./internal/tools/sizegate [-expect 6] [-packages 4] [dist/artifacts.json]
 //
-// It reads GoReleaser's artifact list, checks every Binary artifact against the budget
-// (warn above 10 MB, fail above 15 MB; decimal megabytes), writes a Markdown table to
-// $GITHUB_STEP_SUMMARY when set, and fails when no binaries are listed.
+// It reads GoReleaser's artifact list, checks every Binary artifact, and every Linux package
+// (.deb and .rpm, which hold one binary each), against the budget (warn above 10 MB, fail
+// above 15 MB; decimal megabytes), writes a Markdown table to $GITHUB_STEP_SUMMARY when set,
+// and fails when no binaries are listed, or when -expect or -packages is set and the number of
+// binaries or packages differs.
 package main
 
 import (
@@ -34,22 +36,27 @@ type artifact struct {
 }
 
 type row struct {
-	target string
+	target string // goos/goarch, and the format for a package ("linux/amd64 deb")
 	path   string
 	size   int64
+	pkg    bool // a Linux package rather than a binary
 }
+
+// linuxPackage is GoReleaser's artifact type for nFPM's .deb and .rpm.
+const linuxPackage = "Linux Package"
 
 func main() { os.Exit(realMain()) }
 
 func realMain() int {
 	expect := flag.Int("expect", 0, "fail unless exactly this many binaries are listed (0 = any, at least one)")
+	packages := flag.Int("packages", 0, "fail unless exactly this many Linux packages are listed (0 = any)")
 	flag.Parse()
 	path := "dist/artifacts.json"
 	if flag.NArg() > 0 {
 		path = flag.Arg(0)
 	}
 	var out, summary strings.Builder
-	err := run(path, *expect, &out, &summary, statSize)
+	err := run(path, *expect, *packages, &out, &summary, statSize)
 	fmt.Print(out.String())
 	if p := os.Getenv("GITHUB_STEP_SUMMARY"); p != "" && summary.Len() > 0 {
 		if werr := appendFile(p, summary.String()); werr != nil {
@@ -84,7 +91,7 @@ func statSize(p string) (int64, error) {
 	return fi.Size(), nil
 }
 
-func run(path string, expect int, out, summary *strings.Builder, size func(string) (int64, error)) error {
+func run(path string, expect, packages int, out, summary *strings.Builder, size func(string) (int64, error)) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -95,25 +102,41 @@ func run(path string, expect int, out, summary *strings.Builder, size func(strin
 	}
 	var rows []row
 	for _, a := range arts {
-		// A binary-format archive lists a built binary again, under its release name.
-		if a.Type != "Binary" || a.Extra.Format == "binary" {
+		var r row
+		switch {
+		case a.Type == "Binary" && a.Extra.Format != "binary":
+			r = row{target: a.Goos + "/" + a.Goarch, path: a.Path}
+		case a.Type == linuxPackage:
+			r = row{target: a.Goos + "/" + a.Goarch + " " + a.Extra.Format, path: a.Path, pkg: true}
+		default: // a binary-format archive lists a built binary again, under its release name
 			continue
 		}
 		n, err := size(a.Path)
 		if err != nil {
 			return err
 		}
-		rows = append(rows, row{target: a.Goos + "/" + a.Goarch, path: a.Path, size: n})
+		r.size = n
+		rows = append(rows, r)
 	}
-	return gate(rows, expect, out, summary)
+	return gate(rows, expect, packages, out, summary)
 }
 
-func gate(rows []row, expect int, out, summary *strings.Builder) error {
-	if len(rows) == 0 {
+func gate(rows []row, expect, packages int, out, summary *strings.Builder) error {
+	pkgs := 0
+	for _, r := range rows {
+		if r.pkg {
+			pkgs++
+		}
+	}
+	bins := len(rows) - pkgs
+	if bins == 0 {
 		return errors.New("no Binary artifacts listed; refusing to pass an empty build")
 	}
-	if expect > 0 && len(rows) != expect {
-		return fmt.Errorf("expected %d binaries, found %d", expect, len(rows))
+	if expect > 0 && bins != expect {
+		return fmt.Errorf("expected %d binaries, found %d", expect, bins)
+	}
+	if packages > 0 && pkgs != packages {
+		return fmt.Errorf("expected %d Linux packages, found %d", packages, pkgs)
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].target < rows[j].target })
 	fmt.Fprintln(summary, "| target | bytes | MB | budget |")
@@ -130,7 +153,7 @@ func gate(rows []row, expect int, out, summary *strings.Builder) error {
 			status = "warn (> 10 MB target)"
 			fmt.Fprintf(out, "::warning::%s is %d bytes (> 10 MB target)\n", r.path, r.size)
 		default:
-			fmt.Fprintf(out, "%-14s %10d bytes  ok\n", r.target, r.size)
+			fmt.Fprintf(out, "%-16s %10d bytes  ok\n", r.target, r.size)
 		}
 		fmt.Fprintf(summary, "| %s | %d | %.2f | %s |\n", r.target, r.size, float64(r.size)/1e6, status)
 	}

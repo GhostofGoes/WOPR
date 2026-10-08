@@ -27,16 +27,25 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
-| Third-party notices | `go run ./internal/tools/notices`; CI runs it with `-check` |
-| Release build (local dry run) | `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
-| Size gate | `go run ./internal/tools/sizegate -expect 6` |
-| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and collects every release file) |
+| Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`); CI runs it with `-check` |
+| Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
+| Add a change note | `go tool -modfile=tools/release/go.mod changie new` (see [Change notes](#change-notes)) |
+| Check the change notes and `CHANGELOG.md` | `go run ./internal/tools/relnotes -check` (a prek hook) |
+| A release's notes | `go run ./internal/tools/relnotes -version X.Y.Z -out build/notes` (or `-snapshot`) |
+| Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
+| Size gate | `go run ./internal/tools/sizegate -expect 6 -packages 4` |
+| Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and the Linux packages, and collects every release file) |
+| Lint the Linux packages (after a release build; Linux, tools not pinned) | `lintian --pedantic dist/*.deb` and, with Fedora's rpmlint configuration, `rpmlint -r packaging/rpmlintrc dist/*.rpm`; see `docs/PLAN.md` §8 for what they report. List an `.rpm`'s files with `rpm -qlvp`, or unpack it with `bsdtar -xf X.rpm -C dir`; never pipe `rpm2cpio` into a plain `cpio -idm`, which writes into `/` (the payload's paths are absolute) |
+| Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
+| Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
 
 Go 1.27.1 is pinned in `go.mod` (`toolchain go1.27.1`); `GOTOOLCHAIN=auto` fetches it, and a newer local Go is
-fine (CI checks the exact version). Tools are pinned in three modules, never `go run …@latest`:
-`tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint) and `tools/release/go.mod`
-(GoReleaser). They are separate because their dependency graphs conflict. No tool module's `go` line may be
-newer than the root `toolchain` line (a test checks): bump the toolchain first, then the tool.
+fine (CI checks the exact version). Tools are pinned in four modules, never `go run …@latest`:
+`tools/go.mod` (gitleaks, govulncheck), `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod`
+(GoReleaser, changie) and `tools/docs/go.mod` (Hugo, the standard edition). They are separate because their
+dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module pinned in `site/go.mod`. No tool
+module's `go` line, nor `site/go.mod`'s, may be newer than the root `toolchain` line (a test checks): bump the
+toolchain first, then the tool.
 
 ## Rules that tests enforce
 
@@ -51,7 +60,26 @@ newer than the root `toolchain` line (a test checks): bump the toolchain first, 
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
-- **Notices.** `THIRD_PARTY_NOTICES.txt` must match `go run ./internal/tools/notices` for all six targets.
+- **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
+  copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
+  quote the film from their provenance tags, so regenerate it when film text moves. It files each linked
+  module under Expat or Go's BSD-3-clause only when the module's licence has the same words, so a module
+  under any other licence stops the tool until it is added there.
+- **Linux packages.** `.goreleaser.yaml`'s `nfpms` build a `.deb` (Debian Policy: the program in
+  `/usr/games`, the manual page in section 6, the documents in `/usr/share/doc/wopr`) and an `.rpm`
+  (Fedora: `/usr/bin`, `%license`, `%doc`) for each Linux build (`docs/PLAN.md` §8). `stage -archives`
+  checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
+  changelogs it writes, so change both together. `pkgdocs` writes the packages' documents and their
+  `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
+  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. The smoke
+  jobs install, run and remove both packages.
+- **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
+  `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
+  `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
+  repeats them. `internal/tools/manpage`'s tests check each file against the catalog, and check that
+  `docs/man/wopr.6` is what the tool generates. The page takes its version and date from the newest
+  `.changes/vX.Y.Z.md`, so regenerate it after batching a release. The archives and packages carry it
+  with the version being built in its header instead (`pkgdocs`).
 - **Accessibility** (`docs/PLAN.md` §4.5). `internal/ui/access_test.go` plays every game in the catalog from a
   playbook (every playable game must have one) and checks each screen: printable ASCII only, a prompt's text
   ends in `:` or `?`, the cursor at the end of the input line, a hint in key mode, no colour codes under
@@ -83,6 +111,9 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
    testkit transcript, a quality test, fits 80×24, README line, provenance tags.
 4. Add a playbook for it in `internal/ui/access_test.go` that reaches its main screens, with `want` naming
    what they must show, so the accessibility sweeps check them (`TestEveryGameHasAPlaybook` fails without one).
+5. Write its page, `site/data/games/<slug>.json`, from the code: how to play, the controls, and tips that
+   are true of its AI. Add two or three 80×24 screenshots as `site/static/img/games/<slug>-<n>.png`, each with
+   a caption that says what it shows. Then run `go run ./internal/tools/manpage`.
 
 ## Film text and provenance
 
@@ -93,9 +124,114 @@ drawn and exempt from the capitals rule), `original` or `prompt`. Do not copy te
 without a licence and a `NOTICE.md` entry that credits the source. Lines tagged `prompt` stay out of builds until the brother's
 licence is recorded.
 
+## Change notes
+
+Every change a player could notice gets a change note: a small file in `.changes/unreleased/`, kept with
+[changie](https://changie.dev). A release collects the notes into `CHANGELOG.md`, the GitHub Release, and the
+`.deb` and `.rpm` changelogs.
+
+- **Add one** with `go tool -modfile=tools/release/go.mod changie new`. It asks for the kind and the text;
+  `--kind Fixed --body "..."` skips the questions. The kinds are Keep a Changelog's: Added, Changed,
+  Deprecated, Removed, Fixed and Security. Write one note per change; edit the file to fix a note.
+- **Write it for players**, at an 8th-grade reading level:
+  - Use short, plain words, on one line of at most 76 characters (changie and CI enforce the length).
+  - Say what changed. Do not explain why, or how the code does it.
+  - For a deep technical fix, say only what the player saw that is now fixed: "Fixed a crash in some
+    cases", "Fixed an issue with the Chess game".
+  - Start a fix with "Fixed". Name games as `LIST GAMES` does. Put commands and flags in backticks
+    (`` `--seed` ``). No links.
+  - For example: "`WOPR_SEED` sets the seed, as `--seed` does." or "The chess board is now square."
+- **When a note is not needed.** Tests, CI, tooling, refactoring and contributor docs need none. CI's
+  `relnotes -since origin/main` asks for a note when a branch changes a file under `cmd/` or `internal/`
+  that is not a test, test data, or in a test-only package (`internal/tools`, `archtest`, `e2e`, `golden`,
+  `games/testkit`, `games/gamestest`), or a file that decides what the downloads hold: `.goreleaser.yaml`,
+  `packaging/` or the manual page in `docs/man/`. If players will notice nothing, add `Changelog: none`
+  as a trailer to a commit message on the branch: a line in the message's last paragraph, next to any
+  `Co-Authored-By:` lines. A line higher up in the message is not a trailer.
+- **Never edit `CHANGELOG.md` by hand.** It is `changie merge`'s output, and the `change-notes` hook
+  (`relnotes -check`) fails when it differs, when a note does not parse or is too long, or when a release
+  tag has no `.changes/vX.Y.Z.md`.
+
+## Releasing
+
+The owner merges the release pull request, then pushes the tag. Everything else is prepared in the pull
+request or done by `release.yml`.
+
+1. **The release pull request**, titled `vX.Y.Z` (the version from `docs/PLAN.md` §15), batches the notes
+   and rebuilds the changelog and the manual page:
+
+   ```sh
+   go tool -modfile=tools/release/go.mod changie batch vX.Y.Z
+   go tool -modfile=tools/release/go.mod changie merge
+   go run ./internal/tools/manpage
+   ```
+
+   The notes move from `.changes/unreleased/` into `.changes/vX.Y.Z.md`, `CHANGELOG.md` gains the
+   version, and the manual page's header names it (CI fails until it does). Read the notes once more as
+   a player would; to change one, edit `.changes/vX.Y.Z.md` and run `changie merge` again. Every CI
+   run's `build` job shows the notes the next release would get, in its summary.
+2. **The owner merges it**, then tags its merge commit, by the commit's hash, and pushes the tag:
+   `git fetch origin && git tag vX.Y.Z <merge commit> && git push origin vX.Y.Z`. Tag that commit even
+   if other pull requests merged after it: their notes are not in this release's notes, so their changes
+   wait for the next one.
+3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
+   `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
+   (`internal/tools/relnotes` adds a footer). The packages' changelogs carry the same notes. Then it
+   publishes the docs site again (`docs.yml`), so that its download commands name the new release.
+
+`relnotes` refuses a tag that does not name the batched version, and nothing is published: delete that
+tag and push the right one. It warns when the tagged commit has notes the release does not list. The `.deb` and `.rpm`
+changelogs date a release by its tagged commit, and `CHANGELOG.md` by the day it was batched. If the pull
+request merges on a later day (UTC), they differ, and `relnotes` warns; to keep one date, set the date in
+`.changes/vX.Y.Z.md`'s header to the merge day before merging, and run `changie merge` and the manpage tool
+again.
+
+If the pull request did not batch the notes, the release still gets them: the workflow batches
+`.changes/unreleased/` itself, dated by the tagged commit, and warns. `main` then lags behind the release,
+so CI fails on every later commit (the tagged one still passes) until one pull request runs
+`go run ./internal/tools/relnotes -catch-up`. It writes the missing `.changes/vX.Y.Z.md` from the tag,
+removes those notes from `.changes/unreleased/`, and merges `CHANGELOG.md`; run
+`go run ./internal/tools/manpage` too, and commit the result. That release's manual page names its own
+version, as every build's does, but keeps the previous release's date. Only `vX.Y.Z` tags are releases:
+`release.yml` publishes no other, and `relnotes` ignores the rest, such as `v0.3.0-rc.1`.
+
+## Docs site
+
+`site/` is the documentation site: Hugo with the Hextra theme, published to
+<https://ghostofgoes.github.io/WOPR/> by `docs.yml` on every push to `main`, so a change to the site goes
+live when its pull request merges. Its download commands and package instructions name the latest
+published release, which `docs.yml` looks up (a release pull request puts its version in `CHANGELOG.md`
+before the release exists); `release.yml` starts `docs.yml` again after it publishes a release. To publish
+again by hand (after changing the Pages settings, say), run `docs.yml` on `main`. CI's `docs` job builds the
+site on every push with `--panicOnWarning`, so a deprecated setting, a broken internal link or a missing
+screenshot fails the build.
+
+- Pages are Markdown in `site/content/`, written for players in plain, direct prose.
+- Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
+  which documents the schema; the manual page reads the same files. Change a game's text there.
+- Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
+  Commands and Pull requests sections are mounted and rendered by the `repo-file` shortcode; the README's
+  screenshots and the manual page are mounted too (`site/hugo.yaml`).
+- A screenshot goes in with the `screenshot` shortcode and a caption that says what the screen shows; the
+  caption is also its alt text and shows in the lightbox. PNGs are 960×564, made smaller with
+  `optipng -o2`. One that shows the big board's map gets the map's credit line. Wrap several in the
+  `screenshots` shortcode to open them as one set, as each game's page does.
+- The lightbox is Hextra's, PhotoSwipe, and the search is FlexSearch. Their files and licences are in
+  `site/assets/vendor/`, exactly as their npm packages publish them (never edit them; `.gitattributes`
+  and `prek.toml` leave them alone), and `site/hugo.yaml` names them. The credits page shows the
+  licences, so the build needs no network beyond the Go module proxy.
+- Download commands use the `version` shortcode: the latest published release in `docs.yml`'s builds, the
+  latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
+  inside `{{% if-packages %}}`, which shows it only once the latest release has them (every release after
+  v0.3.0), so no build of the site names a file that does not exist yet.
+  Its content is Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped.
+- Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
+  Movie scenes page every scene.
+
 ## Pull requests
 
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
+- A change players can notice adds a change note ([Change notes](#change-notes)).
 - CI (`ci.yml`) runs on every branch push, so a branch is checked before its PR; a PR from a branch here is
   checked by that branch's push run (its `pull_request` run skips every job), and a PR from a fork runs in
   full. The push run tests the branch as it is, not merged with `main`, so the ruleset requires branches to
@@ -119,9 +255,13 @@ recognises (not a GitHub-supported token pattern, which push protection blocks),
 If a rights holder asks for material to be removed:
 
 1. Find every copy: the provenance tags name each line's source (`internal/wopr/lines.go`,
-   `internal/assets/`, `internal/movie/scenes/`, and the games' film text), and the README's screenshots
-   in `docs/screenshots/`, which show some of it.
-2. Remove or replace it in one pull request, and release a patch version.
+   `internal/assets/`, `internal/movie/scenes/`, and the games' film text); the README's screenshots in
+   `docs/screenshots/` and the docs site's in `site/static/img/` (game screenshots in
+   `site/static/img/games/`) show some of it, and the docs site's pages (`site/content/`,
+   `site/data/games/`) quote some, which the manual page (`docs/man/wopr.6`) repeats. The `.deb`'s
+   copyright file (`packaging/debian/copyright`) names the files; regenerate it afterwards.
+2. Remove or replace it in one pull request, and release a patch version. Merging it republishes the
+   docs site (`docs.yml`).
 3. Add a `retract` directive to `go.mod` for the affected versions, and delete the affected GitHub
    releases (immutable releases can be deleted, not edited; their tags cannot be reused).
 4. Reply to the requester saying what was done. Copies remain in git history and in the Go module mirror,
@@ -144,15 +284,27 @@ These live in GitHub settings, not in files. Check them at each milestone:
   - Require approval for workflow runs from all external contributors.
 - **Dependabot:** off (owner decision). The weekly `scheduled.yml` report covers updates and
   vulnerabilities.
+- **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. `docs.yml` then
+  deploys the docs site to <https://ghostofgoes.github.io/WOPR/> through the `github-pages` environment,
+  which GitHub creates and limits to deployments from `main`. The first deployment comes with the first
+  push to `main` after this setting.
 
 ## Milestone checklist
 
 At every milestone boundary:
 
 1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/`, `tools/lint/` and `tools/release/`.
+   `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
+   docs theme with `go -C site get github.com/imfing/hextra@latest`. Re-vendor PhotoSwipe (its newest
+   5.x, the major version Hextra's script is written for) and FlexSearch (the version the new Hextra
+   defaults to, in its `layouts/_partials/scripts/search.html`): download each npm tarball from
+   `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, check its SHA-512 against the
+   registry's `dist.integrity`, copy the same files and `LICENSE` into `site/assets/vendor/<name>/`,
+   and update the versions and hashes in `site/hugo.yaml`. Build the docs site: a new Hugo can
+   deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
-3. Bump action SHAs from their release tags.
+3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
+   Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
 4. Regenerate the notices.
 5. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.
 6. Re-enable `scheduled.yml` if GitHub disabled it after 60 quiet days.

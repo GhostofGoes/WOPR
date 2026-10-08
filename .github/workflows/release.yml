@@ -1,5 +1,8 @@
-# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish.
-# workflow_dispatch runs everything but verify and publish as a dry run, and never publishes.
+# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish → docs.
+# workflow_dispatch runs everything but verify, publish and docs as a dry run, and never publishes.
+# The release notes come from .changes/ (AGENTS.md, "Releasing"): build and rebuild both write them
+# with internal/tools/relnotes into build/notes (WOPR_NOTES_DIR), which .gitignore keeps out of the
+# tree that GoReleaser needs clean.
 name: Release
 
 on:
@@ -78,14 +81,29 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false # never restore a cache into a release build
+      # notes.md (the release body), CHANGELOG.md, and changelog.yml (the .deb and .rpm changelogs),
+      # from .changes/vX.Y.Z.md, or batched here from .changes/unreleased, with a warning, when the
+      # release pull request did not.
+      - name: Release notes
+        env:
+          WOPR_NOTES_DIR: build/notes
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            go run ./internal/tools/relnotes -snapshot -out "${WOPR_NOTES_DIR}"
+          else
+            go run ./internal/tools/relnotes -version "${TAG}" -out "${WOPR_NOTES_DIR}"
+          fi
       - name: GoReleaser (no publish)
         env:
           SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - name: Size gate
-        run: go run ./internal/tools/sizegate -expect 6
+        run: go run ./internal/tools/sizegate -expect 6 -packages 4
       # dist/release gets every published file, each checked against checksums.txt.
-      - name: Stage binaries, check archive contents, collect the release files
+      - name: Stage binaries, check archive and package contents, collect the release files
         run: go run ./internal/tools/stage -archives -assets dist/release
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -97,6 +115,12 @@ jobs:
         with:
           name: release-dist
           path: dist/release/
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-notes
+          path: build/notes/
           retention-days: 7
           if-no-files-found: error
 
@@ -127,9 +151,22 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      # The same notes as build's, so that the packages that carry them come out byte-identical.
+      - name: Release notes
+        env:
+          WOPR_NOTES_DIR: build/notes
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [[ "${DRY_RUN}" == "true" ]]; then
+            go run ./internal/tools/relnotes -snapshot -out "${WOPR_NOTES_DIR}"
+          else
+            go run ./internal/tools/relnotes -version "${TAG}" -out "${WOPR_NOTES_DIR}"
+          fi
       - name: Rebuild
         env:
           SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
+          WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -174,15 +211,45 @@ jobs:
         with:
           name: release-dist
           path: assets
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-notes
+          path: notes
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: assets/checksums.txt
-      # Archives, bare binaries, LICENSE, README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt, checksums.txt.
+      # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
+      # THIRD_PARTY_NOTICES.txt, checksums.txt.
+      # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
       - name: Create the release as a draft, upload, then publish
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
         run: |
-          gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag --generate-notes assets/*
+          notes=(--notes-file notes/notes.md)
+          if [[ ! -s notes/notes.md ]]; then
+            echo "::warning::notes.md is empty, so the release uses GitHub's generated notes"
+            notes=(--generate-notes)
+          fi
+          gh release create "${TAG}" --repo "${REPO}" --draft --verify-tag "${notes[@]}" assets/*
           gh release edit "${TAG}" --repo "${REPO}" --draft=false
+
+  # docs.yml publishes the docs site from main, naming the latest published release in its download
+  # commands; it ran when the release pull request merged, before this release existed, so it runs
+  # again now. A run started with GITHUB_TOKEN through workflow_dispatch is the one kind such a token
+  # may start.
+  docs:
+    name: docs
+    needs: publish
+    if: ${{ !cancelled() && needs.publish.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: write # gh workflow run starts docs.yml
+    steps:
+      - name: Publish the docs site again
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: gh workflow run docs.yml --repo "${REPO}" --ref main

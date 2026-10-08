@@ -1,0 +1,28 @@
+{{- /*
+  Links in Markdown. Replaces Hextra's hook so that a broken internal link fails the build: a
+  link without a scheme must name a page ("/install", "/usage#themes", "install.md"), a file
+  under assets/ (published when linked, such as "/man/wopr.6") or a file under static/. External
+  links open in a new tab, as in Hextra.
+*/ -}}
+{{- $dest := .Destination -}}
+{{- $u := urls.Parse $dest -}}
+{{- $external := or $u.IsAbs (hasPrefix $dest "mailto:") -}}
+{{- if and (not $external) $u.Path -}}
+  {{- $fragment := cond (ne $u.Fragment "") (printf "#%s" $u.Fragment) "" -}}
+  {{- $file := strings.TrimPrefix "/" $u.Path -}}
+  {{- with .PageInner.GetPage (strings.TrimSuffix ".md" $u.Path) -}}
+    {{- $dest = printf "%s%s" .RelPermalink $fragment -}}
+  {{- else with resources.Get $file -}}
+    {{- $dest = printf "%s%s" .RelPermalink $fragment -}}
+  {{- else -}}
+    {{- if fileExists (path.Join "static" $file) -}}
+      {{- $dest = printf "%s%s" (relURL $file) $fragment -}}
+    {{- else -}}
+      {{- errorf "%s: the link %q leads to no page or file" .PageInner.String .Destination -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+<a href="{{ $dest | safeURL }}"{{ with .Title }} title="{{ . }}"{{ end }}{{ if $external }} target="_blank" rel="noopener"{{ end }}>
+  {{- .Text | safeHTML -}}
+</a>
+{{- /* chomp */ -}}

@@ -2,15 +2,20 @@
 //
 //	stage/<goos>_<goarch>/wopr[.exe]       the binary from dist/
 //	stage/<goos>_<goarch>/e2e.test[.exe]   internal/e2e, cross-compiled for that target
+//	stage/linux_<goarch>/<package>         the .deb and the .rpm, which the smoke job installs
 //
 //	go run ./internal/tools/stage [-archives] [-assets dir] [-dist dist] [-out stage]
 //
 // With -archives it also checks that every release archive contains the files the
-// licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md.
+// licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md, and that
+// the Linux and macOS archives (tar.gz) carry the manual page, wopr.6, which the Windows
+// ones (zip) leave out; and that every Linux build has one .deb and one .rpm, named and
+// laid out as their formats expect (packages.go).
 //
 // With -assets it also collects every file a release publishes into one flat directory:
-// the archives, the bare binaries under their release names, those four files and
-// checksums.txt. Each one must match its line in checksums.txt, which the release attests.
+// the archives, the bare binaries under their release names, the Linux packages, those
+// four files and checksums.txt. Each one must match its line in checksums.txt, which the
+// release attests.
 package main
 
 import (
@@ -47,8 +52,13 @@ type artifact struct {
 // release name. Its Path is the built binary's.
 func (a artifact) bare() bool { return a.Type == "Binary" && a.Extra.Format == "binary" }
 
-// requiredInArchives are the files every release archive must contain.
+// requiredInArchives are the files every release archive must contain. The release also
+// publishes each of them on its own.
 var requiredInArchives = []string{"LICENSE", "NOTICE.md", "README.md", "THIRD_PARTY_NOTICES.txt"}
+
+// manPage is the manual page (docs/man/wopr.6, with the build's version from pkgdocs), at the
+// root of every Linux and macOS archive (tar.gz) and of no Windows one (zip): Windows has no man.
+const manPage = "wopr.6"
 
 func main() {
 	dist := flag.String("dist", "dist", "GoReleaser output directory")
@@ -85,10 +95,23 @@ func run(dist, out string, checkArchives bool, assets string) error {
 				return fmt.Errorf("%s: %w", a.Name, err)
 			}
 			fmt.Println("archive ok:", a.Name)
+		case a.pkg():
+			dir := filepath.Join(out, a.Goos+"_"+a.Goarch)
+			if err := os.MkdirAll(dir, 0o755); err != nil {
+				return err
+			}
+			if err := copyFile(a.Path, filepath.Join(dir, a.Name), 0o644); err != nil {
+				return err
+			}
 		}
 	}
 	if staged == 0 {
 		return errors.New("no binaries in artifacts.json")
+	}
+	if checkArchives {
+		if err := checkPackages(arts); err != nil {
+			return err
+		}
 	}
 	if assets != "" {
 		if err := assemble(arts, assets, "."); err != nil {
@@ -99,8 +122,9 @@ func run(dist, out string, checkArchives bool, assets string) error {
 }
 
 // assemble copies every file a release publishes into dir, which must be new or hold only
-// files from an earlier run: the archives, the bare binaries, checksums.txt, and the four
-// documents from root. Then it checks them all against checksums.txt.
+// files from an earlier run: the archives, the bare binaries, the Linux packages,
+// checksums.txt, and the four documents from root. Then it checks them all against
+// checksums.txt.
 func assemble(arts []artifact, dir, root string) error {
 	if err := emptyFlatDir(dir); err != nil {
 		return err
@@ -114,7 +138,7 @@ func assemble(arts []artifact, dir, root string) error {
 			err = copyFile(a.Path, filepath.Join(dir, a.Name), 0o755)
 		case a.Type == "Binary":
 			built++
-		case a.Type == "Archive", a.Type == "Checksum":
+		case a.Type == "Archive", a.Type == "Checksum", a.pkg():
 			err = copyFile(a.Path, filepath.Join(dir, a.Name), 0o644)
 		}
 		if err != nil {
@@ -288,8 +312,14 @@ func checkArchive(path string) error {
 	default:
 		return fmt.Errorf("unknown archive type")
 	}
+	required := requiredInArchives
+	if strings.HasSuffix(path, ".tar.gz") {
+		required = append(slices.Clone(required), manPage)
+	} else if slices.Contains(names, manPage) {
+		return fmt.Errorf("has %s, which only the Linux and macOS archives carry (has %v)", manPage, names)
+	}
 	var missing []string
-	for _, req := range requiredInArchives {
+	for _, req := range required {
 		if !slices.Contains(names, req) {
 			missing = append(missing, req)
 		}

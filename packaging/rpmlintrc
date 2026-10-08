@@ -1,0 +1,21 @@
+# rpmlint's filters for the wopr .rpm, as lintian_overrides in .goreleaser.yaml are lintian's:
+#
+#   rpmlint -r packaging/rpmlintrc dist/*.rpm
+#
+# Each filter is a regular expression for a report that is expected, with the reason. Anything else
+# rpmlint reports is a problem to fix. docs/PLAN.md section 8 records what rpmlint reports without
+# these filters.
+
+# Go links the program statically on purpose (CGO_ENABLED=0), so one binary runs on every
+# distribution. That is also why it is not a position-independent executable.
+addFilter("statically-linked-binary")
+addFilter("position-independent-executable-suggested")
+
+# The description names the film's Falken's Maze and tic-tac-toe, which the en_US dictionary splits
+# into words it does not know.
+addFilter("spelling-error .*Falken's")
+addFilter("spelling-error .*'tac'")
+
+# The License tag names Matthew Thomas's terms for the big board's map (NOTICE.md), which have no
+# SPDX identifier, as a LicenseRef; no list of valid licences has it.
+addFilter("invalid-license LicenseRef-Matthew-Thomas-map")

@@ -1,0 +1,38 @@
+{
+  "slug": "air-to-ground",
+  "number": 12,
+  "name": "Air-to-Ground Actions",
+  "launch": "wopr air-to-ground",
+  "aliases": ["12", "air-to-ground-actions"],
+  "summary": "A six-sortie air campaign: twelve aircraft against six defended targets. Each sortie sends one package at one target, while WOPR scrambles interceptors, fires its SAM sites and hides a mobile SAM battery where it expects your next raid.",
+  "howToPlay": [
+    "Destroy targets worth 10 points within six sorties to win; 6 to 9 points is a draw, and fewer is a loss. Lost aircraft are not replaced, and losing all twelve loses the campaign.",
+    "At PACKAGE: set the package, then type GO. TARGET, STRIKE, SEAD and ESCORT can go on one line (TARGET 5 STRIKE 4 SEAD 2 ESCORT 2), and the line may end with GO. Anything you leave out keeps its last value.",
+    "A sortie goes in order: each escort ties up one interceptor, the other interceptors attack your strike and SEAD aircraft, SEAD aircraft attack the target's SAM sites, the sites left fire at the strike aircraft, and the strike aircraft that get through bomb the target.",
+    "The table shows each target's VALUE, its DAMAGE against the hits it needs (0/2), and its SAM sites. Destroying the RADAR halves SAM fire, the AIRFIELD grounds the interceptors, and the FUEL DEPOT stops WOPR replacing them.",
+    "STATUS shows the targets again, HELP the commands, and END calls off the campaign."
+  ],
+  "controls": [
+    {"input": "TARGET 5 or TARGET RADAR", "does": "choose the target by number or by a word of its name"},
+    {"input": "STRIKE 4", "does": "strike aircraft, which bomb the target (at least one)"},
+    {"input": "SEAD 2", "does": "aircraft that attack the target's SAM sites"},
+    {"input": "ESCORT 2", "does": "fighters that tie up WOPR's interceptors"},
+    {"input": "GO (or FLY, LAUNCH)", "does": "fly the package; it may end a line that sets it"},
+    {"input": "STATUS (or MAP, TARGETS)", "does": "show the targets and the target-area map"},
+    {"input": "HELP (or an empty line)", "does": "show the commands"},
+    {"input": "END (or STOP, RTB)", "does": "call off the campaign and score it"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Send one escort for each interceptor WOPR has (the status shows how many). Each interceptor left free knocks out almost one of your strike or SEAD aircraft, and when your last escort outnumbered them, WOPR usually keeps them on the ground.",
+    "Send one SEAD aircraft for each SAM site at the target, and one more if the mobile battery may be there. Each site left firing stops almost one strike aircraft.",
+    "Hit the RADAR first. It needs only one hit, and once it is gone every SAM site fires at half strength.",
+    "The MARSHALLING YARD has no SAM sites, so strike aircraft there hit two times in three, but it needs three hits.",
+    "The mobile SAM battery usually waits at the target you raided last, if it still stands, and otherwise at the most valuable target left. Change targets to dodge it."
+  ],
+  "screenshots": [
+    {"file": "air-to-ground-1.png", "caption": "The opening status: six targets with their value, damage and SAM sites, the target-area map, WOPR's 4 interceptors and the default package."},
+    {"file": "air-to-ground-2.png", "caption": "Sortie 1 at the radar: SEAD destroyed both its SAM sites, two strike aircraft scored two hits, and the map reads DIRECT HIT ON 5."},
+    {"file": "air-to-ground-3.png", "caption": "Sortie 2: the mobile SAM battery was waiting at the command bunker, but three strike aircraft got through and destroyed it for 4 more points, 6 of the 10 needed."}
+  ]
+}

@@ -1,0 +1,35 @@
+# Change notes, kept with changie (pinned in tools/release/go.mod). AGENTS.md ("Change notes" and
+# "Releasing") says how to add one and how a release uses them.
+#
+# Each change adds a note to .changes/unreleased/. A release batches the notes into .changes/vX.Y.Z.md
+# and merges every version into CHANGELOG.md. internal/tools/relnotes turns the same files into the
+# GitHub Release notes and the .deb and .rpm changelogs.
+changesDir: .changes
+unreleasedDir: unreleased
+headerPath: header.tpl.md
+changelogPath: CHANGELOG.md
+versionExt: md
+# Always vX.Y.Z, whether batch was given 0.3.0 or v0.3.0.
+versionFileFormat: "v{{.VersionNoPrefix}}.md"
+# The date is today's in UTC, unless CHANGIE_DATE (YYYY-MM-DD) gives it: relnotes sets that to the
+# tagged commit's date, so a release builds the same notes every time.
+versionFormat: '## v{{.VersionNoPrefix}} - {{if .Env.DATE}}{{.Env.DATE}}{{else}}{{.Time.UTC.Format "2006-01-02"}}{{end}}'
+kindFormat: "### {{.Kind}}"
+changeFormat: "- {{.Body}}"
+# One line each: the .deb changelog shows a note as "  * <note>", and Debian keeps lines to 80 columns.
+body:
+  minLength: 3
+  maxLength: 76
+kinds: # Keep a Changelog's six
+  - label: Added
+  - label: Changed
+  - label: Deprecated
+  - label: Removed
+  - label: Fixed
+  - label: Security
+newlines: # one blank line between blocks, as rumdl wants
+  beforeChangelogVersion: 1
+  beforeKind: 1
+  afterKind: 1
+  endOfVersion: 1
+envPrefix: CHANGIE_

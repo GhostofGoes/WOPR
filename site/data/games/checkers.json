@@ -1,0 +1,33 @@
+{
+  "slug": "checkers",
+  "number": 6,
+  "name": "Checkers",
+  "launch": "wopr checkers",
+  "aliases": ["6", "draughts"],
+  "summary": "Checkers (English draughts) on an 8 by 8 board. You play Black and move first; WOPR plays White and looks several moves ahead before each reply.",
+  "howToPlay": [
+    "Win by leaving WOPR with no legal move, usually by taking all its pieces. If 40 moves each go by with no capture and no man moving, the game is a draw.",
+    "Men move one square diagonally forward. At YOUR MOVE: type the start and end squares: C3-D4 or C3D4. WOPR answers with a line such as WOPR: B6-C5.",
+    "Jumps are compulsory. Type C3XE5 to jump, and C3XE5XG7 to jump twice. When a jump can go on more than one way, WOPR lists the ways after THE JUMP GOES ON:.",
+    "A man that reaches the far row becomes a king, shown as a capital B or W, and moves both ways. Crowning ends the move.",
+    "The board brackets the last move's squares and marks each man it jumped with x. Type RESIGN to give up."
+  ],
+  "controls": [
+    {"input": "C3-D4 or C3D4", "does": "move from C3 to D4 (a space between the squares works too)"},
+    {"input": "C3XE5 or C3E5", "does": "jump from C3 over D4 to E5"},
+    {"input": "C3XE5XG7", "does": "jump twice; the first hop alone is enough when the jump can go on only one way"},
+    {"input": "RESIGN", "does": "give up the game"},
+    {"input": "Esc, Esc", "does": "leave the game and go back to WOPR"}
+  ],
+  "tips": [
+    "Keep the men on your back row (row 1) at home as long as you can. WOPR's men must reach that row to become kings, and your men there block the squares.",
+    "Use forced jumps. WOPR must jump when it can, just as you must, so you can offer a man to pull a white piece onto a square that sets up a double jump for you.",
+    "When you are ahead, trade men. With fewer pieces on the board, your extra man counts for more.",
+    "For an easier game, start it with a seed (wopr checkers -s 1). WOPR then looks 6 moves ahead, counting both sides' moves, instead of up to 10."
+  ],
+  "screenshots": [
+    {"file": "checkers-1.png", "caption": "WOPR takes back with A7XC5: the move's squares are bracketed, and the man it jumped on B6 is marked x."},
+    {"file": "checkers-2.png", "caption": "G3-H4 is refused: A JUMP IS AVAILABLE. YOU MUST TAKE IT."},
+    {"file": "checkers-3.png", "caption": "After C3XE5, G7-F6, E5XG7 and H8XF6, Black is a man up: 10 men against 9."}
+  ]
+}

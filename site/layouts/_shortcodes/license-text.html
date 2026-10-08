@@ -1,0 +1,18 @@
+{{- /*
+  A licence's text, as a plain text block, from a file under assets/:
+
+    {{< license-text "licenses/hextra.txt" >}}           the theme's LICENSE (mounted; see hugo.yaml)
+    {{< license-text "vendor/photoswipe/LICENSE" >}}     a vendored package's LICENSE, kept beside
+                                                          its files, so the two always match
+*/ -}}
+{{- $name := .Get 0 -}}
+{{- $text := "" -}}
+{{- with resources.Get $name -}}
+  {{- $text = .Content -}}
+{{- else -}}
+  {{- errorf "%s: license-text: no file %q under assets/" .Page.String $name -}}
+{{- end -}}
+{{- if not (strings.Contains $text "Copyright") -}}
+  {{- errorf "%s: license-text: %q gave no licence text" .Page.String $name -}}
+{{- end -}}
+{{- highlight (trim (replace $text "\r\n" "\n") "\n") "text" "" -}}

@@ -1,0 +1,44 @@
+{{- /*
+  The Markdown of a file kept elsewhere in the repository and mounted under assets/repo/ (see
+  hugo.yaml), so that the site shows it without a copy. Call it with % delimiters, so that its
+  headings join the page's table of contents:
+
+    {{% repo-file "CHANGELOG.md" "intro" %}}
+    {{% repo-file "AGENTS.md" "section:Commands" %}}
+
+  The second argument says what to show: "title" (the default) drops the first heading, which
+  the page's own title replaces; "intro" drops everything before the first second-level heading;
+  "section:<heading>" shows only the second-level section with that heading. Relative links and
+  links within the file point at the file and its neighbours on GitHub.
+*/ -}}
+{{- $name := .Get 0 -}}
+{{- $show := .Get 1 | default "title" -}}
+{{- $blob := site.Params.repoBlob -}}
+{{- with resources.Get (path.Join "repo" $name) -}}
+  {{- $md := .Content -}}
+  {{- if eq $show "intro" -}}
+    {{- $md = replaceRE `(?s)\A.*?\n(## )` "${1}" $md 1 -}}
+  {{- else if eq $show "title" -}}
+    {{- $md = replaceRE `\A# [^\n]*\n+` "" $md 1 -}}
+  {{- else if hasPrefix $show "section:" -}}
+    {{- $heading := strings.TrimPrefix "section:" $show -}}
+    {{- $found := "" -}}
+    {{- range split $md "\n## " -}}
+      {{- if hasPrefix . (printf "%s\n" $heading) -}}
+        {{- $found = printf "## %s" . -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if not $found -}}
+      {{- errorf "%s: repo-file: %s has no section %q" $.Page.String $name $heading -}}
+    {{- end -}}
+    {{- $md = $found -}}
+  {{- else -}}
+    {{- errorf "%s: repo-file: unknown argument %q (use title, intro or section:<heading>)" $.Page.String $show -}}
+  {{- end -}}
+  {{- $md = replaceRE `\]\(([^)#:\s]+)(#[^)\s]*)?\)` (printf "](%s/${1}${2})" $blob) $md -}}
+  {{- $md = replaceRE `\]\((#[^)\s]+)\)` (printf "](%s/%s${1})" $blob $name) $md -}}
+  {{- /* Markdown, not HTML: unescaped, so that code blocks keep their < > & and quotes. */ -}}
+  {{- $md | safeHTML -}}
+{{- else -}}
+  {{- errorf "%s: repo-file: %q is not mounted under assets/repo (see hugo.yaml)" $.Page.String $name -}}
+{{- end -}}
