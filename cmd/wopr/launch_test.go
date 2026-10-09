@@ -18,9 +18,10 @@ func TestRelaunch(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		l      launch
-		status int   // open's exit status
+		status []int // open's exit status, run by run (0 after the last)
 		err    error // or open could not run
 		want   []string
+		runs   int // how many times it runs open, when it is not once
 		code   int
 		stderr string
 	}{
@@ -32,7 +33,15 @@ func TestRelaunch(t *testing.T) {
 			l:    launch{ppid: 1, exe: "/private/var/folders/x1/T/AppTranslocation/0A1B/d/WOPR.app/Contents/MacOS/wopr"},
 			want: opened("/private/var/folders/x1/T/AppTranslocation/0A1B/d/WOPR.app/Contents/MacOS/wopr"),
 		},
-		{name: "open fails", l: launch{ppid: 1, exe: appExe}, status: 1, want: opened(appExe), code: exitError, stderr: "wopr: cannot open Terminal: /usr/bin/open -b com.apple.Terminal " + appExe + " exited with status 1\n"},
+		{
+			name: "open fails, then works", l: launch{ppid: 1, exe: appExe}, status: []int{1, 0}, want: opened(appExe), runs: 2,
+			stderr: "wopr: /usr/bin/open -b com.apple.Terminal " + appExe + " exited with status 1; trying again\n",
+		},
+		{
+			name: "open fails twice", l: launch{ppid: 1, exe: appExe}, status: []int{1, 1}, want: opened(appExe), runs: 2, code: exitError,
+			stderr: "wopr: /usr/bin/open -b com.apple.Terminal " + appExe + " exited with status 1; trying again\n" +
+				"wopr: cannot open Terminal: /usr/bin/open -b com.apple.Terminal " + appExe + " exited with status 1\n",
+		},
 		{name: "open is missing", l: launch{ppid: 1, exe: appExe}, err: errors.New("no such file"), want: opened(appExe), code: exitError, stderr: "wopr: cannot open Terminal: no such file\n"},
 
 		// Everything else starts as before.
@@ -56,17 +65,26 @@ func TestRelaunch(t *testing.T) {
 		{name: "a shell, with -psn_", l: launch{ppid: 4321, exe: appExe, args: []string{"-psn_0_1234567"}}},
 	} {
 		var ran []string
+		runs := 0
 		run := func(name string, args ...string) (int, error) {
-			if ran != nil {
-				t.Errorf("%s: ran a second command", tc.name)
+			cmd := append([]string{name}, args...)
+			if ran != nil && !slices.Equal(ran, cmd) {
+				t.Errorf("%s: ran %q, then %q", tc.name, ran, cmd)
 			}
-			ran = append([]string{name}, args...)
-			return tc.status, tc.err
+			ran = cmd
+			runs++
+			if runs <= len(tc.status) {
+				return tc.status[runs-1], tc.err
+			}
+			return 0, tc.err
 		}
 		var stderr strings.Builder
 		code, relaunched := relaunch(tc.l, run, &stderr)
 		if !slices.Equal(ran, tc.want) {
 			t.Errorf("%s: ran %q, want %q", tc.name, ran, tc.want)
+		}
+		if want := max(tc.runs, min(len(tc.want), 1)); runs != want {
+			t.Errorf("%s: ran open %d times, want %d", tc.name, runs, want)
 		}
 		if relaunched != (tc.want != nil) || code != tc.code {
 			t.Errorf("%s: relaunch = %d, %v; want %d, %v", tc.name, code, relaunched, tc.code, tc.want != nil)

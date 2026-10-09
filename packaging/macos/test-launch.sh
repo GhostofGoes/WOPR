@@ -22,6 +22,8 @@ fail() {
   for pid in $(pgrep -f 'WOPR\.app|Terminal' || true); do
     ps -o pid=,ppid=,tty=,command= -p "${pid}" >&2 || true
   done
+  echo "--- what the run started by launchd wrote on stderr" >&2
+  cat "${errlog}" >&2 || true
   echo "--- Terminal's log, last 3 minutes" >&2
   log show --last 3m --style compact --predicate 'process == "Terminal"' 2>&1 | tail -n 80 >&2 || true
   if [[ -n "${DIAG_DIR:-}" ]]; then
@@ -33,6 +35,8 @@ fail() {
 
 # Copied out of the image first, as a user drags it to Applications.
 dest="$(mktemp -d)"
+# The first run's stderr (open --stderr), where it says why when open fails.
+errlog="$(mktemp)"
 mnt="$(mktemp -d)"
 hdiutil attach "${dmg}" -readonly -nobrowse -noautoopen -mountpoint "${mnt}"
 ditto "${mnt}/WOPR.app" "${dest}/WOPR.app"
@@ -55,7 +59,7 @@ runs() {
 
 # Terminal's first start on a busy runner can be slow (the Intel runners especially), so allow two
 # minutes; on a person's Mac it takes a second or two.
-open "${dest}/WOPR.app"
+open --stderr "${errlog}" "${dest}/WOPR.app"
 found=
 for _ in $(seq 120); do
   list="$(runs)"
@@ -68,6 +72,10 @@ done
 [[ -n "${found}" ]] || fail "Terminal did not run ${dest}/WOPR.app/Contents/MacOS/wopr within 120 seconds"
 echo "Terminal runs the program with a terminal:"
 echo "${list}"
+if [[ -s "${errlog}" ]]; then
+  echo "The run started by launchd said:"
+  cat "${errlog}"
+fi
 
 # The first run, started by launchd with no terminal, has exited.
 gone=

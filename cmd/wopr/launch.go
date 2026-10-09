@@ -35,7 +35,7 @@ var openInTerminal = []string{"/usr/bin/open", "-b", "com.apple.Terminal"}
 // pass. Terminal then runs the same program again with a terminal, and that run starts as usual.
 // In every other case relaunch does nothing and returns false: a shell pipeline or a test that
 // runs the bundle's program without a terminal gets today's "not a terminal" error. Otherwise it
-// returns exitOK, or exitError when open fails, after saying why on stderr.
+// returns exitOK, or exitError when open fails twice, after saying why on stderr.
 //
 // A quarantined app run from Downloads or the disk image runs from a randomised, read-only copy
 // (App Translocation), which macOS may remove when this process exits. Terminal is given that
@@ -46,6 +46,13 @@ func relaunch(l launch, run runFunc, stderr io.Writer) (code int, relaunched boo
 	}
 	argv := append(slices.Clone(openInTerminal), l.exe)
 	status, err := run(argv[0], argv[1:]...)
+	if err == nil && status != 0 {
+		// Terminal may still be starting: when it starts slowly (seen on a busy Intel Mac), open
+		// can give up before Terminal takes the file. Terminal has usually started by now, so ask
+		// once more.
+		warn(stderr, "%s exited with status %d; trying again", strings.Join(argv, " "), status)
+		status, err = run(argv[0], argv[1:]...)
+	}
 	switch {
 	case err != nil:
 		warn(stderr, "cannot open Terminal: %v", err)
