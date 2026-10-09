@@ -283,7 +283,7 @@ func plistEntries(version, minOS string) []entry {
 		// (cmd/wopr/launch_darwin.go), so without this its icon would flash in the Dock. The game
 		// runs in Terminal, whose icon the Dock shows instead.
 		{"LSUIElement", true},
-		{"NSHumanReadableCopyright", "Copyright (c) 2026 GhostofGoes. The code is under the MIT License; see NOTICE.md."},
+		{"NSHumanReadableCopyright", "Copyright (c) 2026 Christopher Goes. The code is under the MIT License; see NOTICE.md."},
 	}
 }
 

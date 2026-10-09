@@ -108,7 +108,7 @@ func TestRenderCopyright(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("LICENSE", "MIT License\n\nCopyright (c) 2026 GhostofGoes\n\n"+mitText+"\n")
+	write("LICENSE", "MIT License\n\nCopyright (c) 2026 Christopher Goes\n\n"+mitText+"\n")
 	write("NOTICE.md", noticeMD)
 	write("go/LICENSE", "Copyright 2009 The Go Authors.\n\n"+bsd3Text+"\n")
 	write("cmd/wopr/main.go", "package main\n")
@@ -136,11 +136,11 @@ func TestRenderCopyright(t *testing.T) {
 	s := string(got)
 	for _, want := range []string{
 		"Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/\nUpstream-Name: wopr\n",
-		"\nFiles: *\nCopyright: 2026 GhostofGoes\nLicense: Expat\n\n",
-		"\nFiles: internal/games/gtw/film.go\nCopyright: 2026 GhostofGoes\nLicense: Expat\nComment: Besides code",
+		"\nFiles: *\nCopyright: 2026 Christopher Goes\nLicense: Expat\n\n",
+		"\nFiles: internal/games/gtw/film.go\nCopyright: 2026 Christopher Goes\nLicense: Expat\nComment: Besides code",
 		"\nFiles: docs/man/wopr.6\n docs/screenshots/*\n",
-		"\nFiles: internal/wopr/lines.go\nCopyright: 2026 GhostofGoes\n 2012 A Person\nLicense: Expat and BSD-2-clause\n",
-		"\nFiles: internal/assets/gtwmap.go\nCopyright: 2026 GhostofGoes\n 1998 Matthew Thomas\nLicense: Expat and Matthew-Thomas-map\n",
+		"\nFiles: internal/wopr/lines.go\nCopyright: 2026 Christopher Goes\n 2012 A Person\nLicense: Expat and BSD-2-clause\n",
+		"\nFiles: internal/assets/gtwmap.go\nCopyright: 2026 Christopher Goes\n 1998 Matthew Thomas\nLicense: Expat and Matthew-Thomas-map\n",
 		"\nFiles: std/*\nCopyright: 2009 The Go Authors.\nLicense: BSD-3-clause\nComment: The Go standard library and runtime, go1.27.1.\n",
 		"\nFiles: example.com/a/*\nCopyright: 2016 Someone\nLicense: Expat\n",
 		"\nFiles: example.com/b/*\nCopyright: 2009 The Go Authors.\nLicense: BSD-3-clause\n",

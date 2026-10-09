@@ -233,7 +233,7 @@ func TestInfoPlist(t *testing.T) {
 			t.Errorf("unexpected key %s", k)
 		}
 	}
-	if c, _ := values["NSHumanReadableCopyright"].(string); !strings.HasPrefix(c, "Copyright (c) 2026 GhostofGoes.") {
+	if c, _ := values["NSHumanReadableCopyright"].(string); !strings.HasPrefix(c, "Copyright (c) 2026 Christopher Goes.") {
 		t.Errorf("NSHumanReadableCopyright = %q", c)
 	}
 	if !slices.IsSorted(keys) {

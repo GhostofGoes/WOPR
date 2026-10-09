@@ -36,7 +36,7 @@ AppPublisher=GhostofGoes
 AppPublisherURL=https://github.com/GhostofGoes/WOPR
 AppSupportURL=https://github.com/GhostofGoes/WOPR/issues
 AppUpdatesURL=https://github.com/GhostofGoes/WOPR/releases
-AppCopyright=Copyright (c) 2026 GhostofGoes
+AppCopyright=Copyright (c) 2026 Christopher Goes
 AppComments={#Description}
 ; The version information of setup.exe itself. Company, product name and copyright come from
 ; AppPublisher, AppName and AppCopyright.
