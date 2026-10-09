@@ -1,0 +1,3 @@
+kind: Fixed
+body: Fixed a crash in CHESS and AIR-TO-GROUND ACTIONS on some typed moves.
+time: 2026-10-09T23:31:41.802527535Z
