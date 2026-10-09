@@ -1,8 +1,9 @@
 {{- /*
-  Shows its content only when the latest release has the Windows installer and the Mac app (the
-  has-installers partial); with "not", only when it has neither. So no page names a file that does
-  not exist yet. Call it as if-packages is called: with % delimiters, so that its Markdown joins the
-  page, and with < > inside a Hextra tab.
+  Shows its content only when the latest release has the Windows installer and the Mac app, and
+  Linux packages that put WOPR in the app menu (the has-installers partial); with "not", only when it
+  has none of them. So no page names a file, or a menu entry, that does not exist yet. Call it as
+  if-packages is called: with % delimiters, so that its Markdown joins the page, and with < > inside
+  a Hextra tab.
 
     {{% if-installers %}}Run the installer.{{% /if-installers %}}
     {{% if-installers "not" %}}Paste the line into PowerShell.{{% /if-installers %}}

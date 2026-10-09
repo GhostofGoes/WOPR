@@ -78,7 +78,9 @@ An earlier version of this page put `wopr` in `~/.local/bin`; this removes that 
 sudo apt remove wopr
 ```
 
+{{< if-installers >}}
 This also takes WOPR out of your app menu.
+{{< /if-installers >}}
 {{< /if-packages >}}
 {{< if-packages "not" >}}
 There is no package yet; see the **Linux** tab.
@@ -92,7 +94,7 @@ There is no package yet; see the **Linux** tab.
 sudo dnf remove wopr
 ```
 
-On openSUSE: `sudo zypper remove wopr`. This also takes WOPR out of your app menu.
+On openSUSE: `sudo zypper remove wopr`.{{< if-installers >}} This also takes WOPR out of your app menu.{{< /if-installers >}}
 {{< /if-packages >}}
 {{< if-packages "not" >}}
 There is no package yet; see the **Linux** tab.

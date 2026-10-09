@@ -90,11 +90,33 @@ func icoBMP(img *image.NRGBA) []byte {
 	return b
 }
 
+// isPNG reports whether data starts with PNG's signature.
+func isPNG(data []byte) bool {
+	return bytes.HasPrefix(data, []byte("\x89PNG\r\n\x1a\n"))
+}
+
+// toNRGBA returns a picture as an *image.NRGBA whose rows start at (0, 0) and follow each other,
+// as plane and icoBMP read it, converting it if need be.
+func toNRGBA(img image.Image) *image.NRGBA {
+	if m, ok := img.(*image.NRGBA); ok && m.Rect.Min == (image.Point{}) && m.Stride == 4*m.Rect.Dx() {
+		return m
+	}
+	b := img.Bounds()
+	m := image.NewNRGBA(image.Rect(0, 0, b.Dx(), b.Dy()))
+	for y := range b.Dy() {
+		for x := range b.Dx() {
+			m.Set(x, y, img.At(b.Min.X+x, b.Min.Y+y))
+		}
+	}
+	return m
+}
+
 // icoEntry is one picture read back from an icon file.
 type icoEntry struct {
 	size  int
 	isPNG bool
 	img   image.Image
+	raw   []byte // the picture's bytes, as stored in the file
 }
 
 // decodeICO reads an icon file written by encodeICO (or any 32-bit or PNG icon).
@@ -119,8 +141,8 @@ func decodeICO(data []byte) ([]icoEntry, error) {
 			return nil, fmt.Errorf("ico: entry %d lies outside the file", i)
 		}
 		pic := data[offset : offset+length]
-		ent := icoEntry{size: size}
-		if bytes.HasPrefix(pic, []byte("\x89PNG\r\n\x1a\n")) {
+		ent := icoEntry{size: size, raw: pic}
+		if isPNG(pic) {
 			img, err := png.Decode(bytes.NewReader(pic))
 			if err != nil {
 				return nil, fmt.Errorf("ico: entry %d: %w", i, err)
@@ -159,4 +181,59 @@ func decodeICOBMP(b []byte) (*image.NRGBA, error) {
 		}
 	}
 	return img, nil
+}
+
+// canonicalICO is the icon file encodeICO writes from the entries' own pictures, keeping PNG
+// pictures' bytes as they are. It involves no floating point and no compression, so it is the
+// same on every machine.
+func canonicalICO(es []icoEntry) ([]byte, error) {
+	imgs := make([]*image.NRGBA, len(es))
+	blobs := map[*image.NRGBA][]byte{}
+	for i, e := range es {
+		if !e.isPNG {
+			imgs[i] = toNRGBA(e.img)
+			continue
+		}
+		// encodeICO reads only the size of a picture it stores as PNG.
+		imgs[i] = image.NewNRGBA(image.Rect(0, 0, e.img.Bounds().Dx(), e.img.Bounds().Dy()))
+		blobs[imgs[i]] = e.raw
+	}
+	return encodeICO(imgs, func(m *image.NRGBA) ([]byte, error) {
+		if b, ok := blobs[m]; ok {
+			return b, nil
+		}
+		return nil, fmt.Errorf("its %d px picture is a bitmap, and the tool writes PNG", m.Rect.Dx())
+	})
+}
+
+// icoPart names the part of an icon file written by encodeICO that holds byte i.
+func icoPart(data []byte, i int) string {
+	le := binary.LittleEndian
+	count := int(le.Uint16(data[4:]))
+	switch {
+	case i < 6:
+		return "its header"
+	case i < 6+16*count:
+		return fmt.Sprintf("its directory's entry %d", (i-6)/16)
+	}
+	for j := range count {
+		e := data[6+16*j:]
+		length, offset := int(le.Uint32(e[8:])), int(le.Uint32(e[12:]))
+		if i < offset || i >= offset+length {
+			continue
+		}
+		n, rel := int(e[0]), i-offset
+		if n == 0 {
+			return "the 256 px PNG" // encodeICO stores only that size as PNG
+		}
+		switch {
+		case rel < 40:
+			return fmt.Sprintf("the %d px bitmap's header", n)
+		case rel < 40+4*n*n:
+			return fmt.Sprintf("the %d px bitmap's pixels", n)
+		default:
+			return fmt.Sprintf("the %d px bitmap's mask", n)
+		}
+	}
+	return "the end of the file"
 }

@@ -104,8 +104,12 @@ type listed struct {
 
 // releaseGOOS are the systems the release builds for. go list sees only the files one GOOS
 // builds, so the DAG is checked for each: cmd/wopr's darwin-only relaunch imports os/exec, which a
-// Linux or Windows run would never see.
+// Linux or Windows run would never see. The architecture is pinned to listGOARCH, which every one of
+// them has: the host's own may have no darwin or windows port (linux/386, riscv64, ...), and go list
+// then fails. The import lists do not depend on the architecture, since no file is built for only some.
 var releaseGOOS = []string{"linux", "darwin", "windows"}
+
+const listGOARCH = "amd64"
 
 func TestImportDAG(t *testing.T) {
 	root := moduleRoot(t)
@@ -120,12 +124,12 @@ func TestImportDAG(t *testing.T) {
 	for _, goos := range releaseGOOS {
 		cmd := exec.Command("go", "list", "-tags=e2e", "-json=ImportPath,Standard,Imports,TestImports,XTestImports", "./...")
 		cmd.Dir = root
-		cmd.Env = append(os.Environ(), "GOOS="+goos)
+		cmd.Env = append(os.Environ(), "GOOS="+goos, "GOARCH="+listGOARCH) // the last of a repeated variable wins
 		var stderr bytes.Buffer
 		cmd.Stderr = &stderr
 		out, err := cmd.Output()
 		if err != nil {
-			t.Fatalf("GOOS=%s go list: %v\n%s", goos, err, stderr.String())
+			t.Fatalf("GOOS=%s GOARCH=%s go list: %v\n%s", goos, listGOARCH, err, stderr.String())
 		}
 		dec := json.NewDecoder(bytes.NewReader(out))
 		for {

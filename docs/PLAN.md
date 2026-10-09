@@ -210,7 +210,7 @@ art (L-4).
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
 | 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the other targets a list may name are placed the same way and may share a city's cell; the assets tests pin every place's cell). | U |
-| 27 | Installers | A per-user Inno Setup installer for Windows and a universal `WOPR.app` in a `.dmg` for macOS, both release files; a menu entry, icons and AppStream metadata in the `.deb` and `.rpm`; an MSIX bundle for the Microsoft Store and snaps for the Snap Store, built and tested but not published. One app ID, `io.github.ghostofgoes.wopr`. Every launcher opens a terminal running `wopr`, with no start screen yet. Nothing is signed (the Mac app ad hoc only); issues track signing (§8). | U (2026-10-08) |
+| 27 | Installers | A per-user Inno Setup installer for Windows and a universal `WOPR.app` in a `.dmg` for macOS, both release files; a menu entry, icons and AppStream metadata in the `.deb` and `.rpm`; an MSIX bundle for the Microsoft Store and snaps for the Snap Store, built and tested but not published. One app ID, `io.github.ghostofgoes.wopr`. The main launchers open a terminal running `wopr` with no arguments, with no start screen yet; the Linux and snap menu entries add one right-click action, Movie Mode (`wopr --movie`), which the owner kept (2026-10-09). Nothing is signed (the Mac app ad hoc only); issues track signing (§8). | U (2026-10-08) |
 
 ---
 
@@ -1339,10 +1339,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
     - The menu entry (Desktop Entry 1.5) has `Terminal=true`, so the desktop opens its terminal running
       wopr, at the terminal's own size (wopr's too-small screen covers a small one). `Exec` is the
       program's full path in each package. `StartupNotify=true` hands the terminal its startup token, so
-      the busy cursor ends and, on Wayland, the terminal takes the focus. One action, "Movie Mode", runs
-      `wopr --movie`. Categories Game, BoardGame, CardGame and StrategyGame, and keywords such as
-      WarGames, Joshua and the games' names. There is no start screen yet (an issue tracks
-      `-w/--welcome`), so it starts at LOGON.
+      the busy cursor ends and, on Wayland, the terminal takes the focus. One right-click action, "Movie
+      Mode", runs `wopr --movie` (the owner kept it, 2026-10-09). Categories Game, BoardGame, CardGame
+      and StrategyGame, and keywords such as WarGames, Joshua and the games' names. There is no start
+      screen yet (an issue tracks `-w/--welcome`), so it starts at LOGON.
     - The metadata is a `desktop-application`, not AppStream's `console-application`, because GNOME
       Software never lists the latter (from its source, untested). Its summary and description are
       `description.txt`'s; six screenshots come from the docs site; OARS 1.1 rates `money-gambling` and
@@ -1400,9 +1400,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
   the release files that `checksums.txt` lists, checked against it first, so none compiles wopr again
   (§11). The app ID `io.github.ghostofgoes.wopr` names the Linux menu entry, icon and metadata, the snap's
   `common-id` and the Mac app's bundle identifier; the Microsoft Store assigns the MSIX identity itself.
-  Every launcher opens a terminal running `wopr` with no arguments, since there is no start screen yet (an
-  issue tracks `-w/--welcome`). Nothing is signed yet: issues track Windows signing and Apple's signing and
-  notarization.
+  The main launchers (the Start menu entries of the installer and the MSIX, the Mac app, and the Linux
+  and snap menu entries) open a terminal running `wopr` with no arguments, since there is no start
+  screen yet (an issue tracks `-w/--welcome`); the Linux and snap menu entries add one right-click
+  action, Movie Mode (`wopr --movie`). Nothing is signed yet: issues track Windows signing and Apple's
+  signing and notarization.
 - **Icon** (owner decision 2026-10-08: the owner picks one of five designs; the committed art is
   provisional and regenerates from its sources with one command).
   - Three sources in `packaging/icons/src/`: the master, `wopr.svg` (1024×1024, with a transparent margin,
@@ -1420,7 +1422,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
     (relikd/icns-archive's tests on macOS 10.0 to 26; Apple documents none of this).
   - The sources are a strict SVG subset, refused with the file and line otherwise. No output may pass
     512 KB. `-check` and the tests compare pixels within 2/255, because fused multiply-adds on arm64
-    change a few bytes. The icon is original work, so NOTICE.md needs no entry.
+    change a few bytes; the `.ico` and `.icns` around the pictures must be byte for byte what the tool
+    writes from those pixels, with their PNG data kept as it is. The icon is original work, so NOTICE.md
+    needs no entry.
 - **Windows installer**, `wopr_X.Y.Z_windows_setup.exe`, a release file: Inno Setup 7.1.0, pinned by URL,
   SHA-256 and its publisher's Authenticode signer and installed in portable mode on the runner, packs
   both Windows programs and the notices (`packaging/windows/wopr.iss`, `windows.yml`).
@@ -1962,9 +1966,10 @@ image may lack, so `test-snap.sh` installs it when missing.
 - **README.md** (basic in M0, completed in M5):
   - what this is, and a link to the docs site (below);
   - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
-    …@latest`, the Windows installer, the Mac app and the Linux packages (which put WOPR in the Start menu,
-    Applications or the app menu, and warn at first because they are unsigned), a note that the `.deb` and
-    `.rpm` install the manual page, and a link to the verifying section (§12);
+    …@latest`, the Linux packages (since v0.4.0; they install the manual page), and the Windows installer,
+    the Mac app and the packages' menu entry (from the release after v0.4.0), which put WOPR in the Start
+    menu, Applications or the app menu (the installer and the app warn at first because they are
+    unsigned), and a link to the verifying section (§12);
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
   - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
@@ -2011,20 +2016,25 @@ image may lack, so `test-snap.sh` installs it when missing.
     Gatekeeper's Done and Open Anyway in Privacy & Security on macOS. The line comes second, as the way to
     get the `wopr` command. They are `windows-installer.md` and `macos-app.md`, where `@COMMAND-LINE@`
     stands for the tab's own line, so each line is written once; every build reads and checks both. The
-    Linux (apt) and (RPM) tabs add the app menu and how to open a downloaded package in the desktop's
-    software app. The Installation page's uninstall steps, the troubleshooting page (SmartScreen, Smart App
-    Control, Gatekeeper, App Translocation, a missing menu entry) and the credits page (Inno Setup) show
-    their new parts only under the same gates (`if-installers`, `if-packages`). Nothing names the snap until
-    it is published.
+    Linux (apt) and (RPM) tabs say how to open a downloaded package in the desktop's software app. The
+    packages' menu entry first ships with the installers, in the release after v0.4.0 (v0.4.0's packages
+    have none), so `has-installers` gates it too: `@APP-MENU@` in `linux-apt.md` and `linux-rpm.md`
+    becomes `app-menu.md`'s sentence only then, and every build fails if either file lacks it or a tab
+    is left with a placeholder. The Installation page's uninstall steps, the troubleshooting page
+    (SmartScreen, Smart App Control, Gatekeeper, App Translocation, a missing menu entry) and the credits
+    page (Inno Setup) show their new parts only under the same gates: `if-installers` for the installers
+    and the menu entry, `if-packages` for the rest of the packages. Nothing names the snap until it is
+    published.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
     requests sections are mounted and rendered, not copied; so are `docs/screenshots/` and the manual page.
     The download commands name the latest release (below), and the `.deb` and `.rpm` instructions appear once
     that release has packages (any release after v0.3.0, which also has `wopr.6` in its archives; the
-    `if-packages` shortcode), as the installer and the Mac app do (`if-installers`). The site's favicons and
-    navbar logo are the program's icon, drawn by `internal/tools/icons` (§8). Tests in `internal/cli` check
-    that the usage page lists every option and environment variable and the movie page every scene.
+    `if-packages` shortcode), as the installer, the Mac app and the packages' menu entry do
+    (`if-installers`). The site's favicons and navbar logo are the program's icon, drawn by
+    `internal/tools/icons` (§8). Tests in `internal/cli` check that the usage page lists every option and
+    environment variable and the movie page every scene.
   - **Strict build.** `--panicOnWarning` (deprecations included) and `--printPathWarnings`; an internal link
     to no page or file, a missing screenshot or a game file without its required fields is an error. CI's
     `docs` job builds it on every push (§11.2).

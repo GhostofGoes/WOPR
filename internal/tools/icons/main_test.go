@@ -443,6 +443,144 @@ func sign(v byte) int {
 	return 1
 }
 
+// TestCheckContainers changes the .ico and the .icns around their pictures. A change that keeps
+// every pixel must fail the check, and a rewrite must restore the file; a change of the pixels
+// within maxDiff, with the file around them as the tool writes it, must pass and be left alone.
+func TestCheckContainers(t *testing.T) {
+	files := generatedFiles(t)
+	root := t.TempDir()
+	if code := apply(root, files, false, io.Discard, io.Discard); code != 0 {
+		t.Fatalf("write: %d", code)
+	}
+	const icoPath, icnsPath = "packaging/icons/wopr.ico", "packaging/icons/wopr.icns"
+	le := binary.LittleEndian
+	bmp16 := func(ico []byte) int { return int(le.Uint32(ico[6+12:])) } // the 16 px bitmap's offset
+	start, end := icnsSpan(t, fileData(t, files, icnsPath), "il32")
+	il32 := end - start
+	const icnsDiffers = "wopr.icns: il32: its data differs from what the tool writes from its pixels"
+	for _, tc := range []struct {
+		name, path string
+		want       string // in the check's report; "" if the check must pass
+		change     func(*testing.T, []byte) []byte
+	}{
+		{"a cleared mask bit", icoPath, "wopr.ico: the 16 px bitmap's mask differs from what the tool writes", func(_ *testing.T, b []byte) []byte {
+			// The top-left pixel is transparent: the first bit of the last mask row stored.
+			b[bmp16(b)+40+4*16*16+15*4] &^= 0x80
+			return b
+		}},
+		{"a changed BITMAPINFOHEADER field", icoPath, "wopr.ico: the 16 px bitmap's header differs", func(_ *testing.T, b []byte) []byte {
+			b[bmp16(b)+24] = 1 // horizontal resolution, which readers ignore
+			return b
+		}},
+		{"a changed directory entry", icoPath, "wopr.ico: its directory's entry 0 differs", func(_ *testing.T, b []byte) []byte {
+			b[6+1], b[6+6] = 99, 8 // the height and the bits per pixel, which decodeICO ignores
+			return b
+		}},
+		{"an extra byte after il32's data", icnsPath, fmt.Sprintf("%s (%d bytes, want %d)", icnsDiffers, il32+1, il32), func(t *testing.T, b []byte) []byte {
+			return editICNS(t, b, "il32", func(d []byte) []byte { return append(d, 0) })
+		}},
+		{"no spare byte after il32's data", icnsPath, fmt.Sprintf("%s (%d bytes, want %d)", icnsDiffers, il32-1, il32), func(t *testing.T, b []byte) []byte {
+			return editICNS(t, b, "il32", func(d []byte) []byte { return d[:len(d)-1] })
+		}},
+		{"an .ico pixel within maxDiff", icoPath, "", func(_ *testing.T, b []byte) []byte {
+			i := bmp16(b) + 40 + 4*(8*16+8) + 1 // green of pixel (8, 7); the mask stays as it is
+			b[i] = byte(int(b[i]) + sign(b[i]))
+			return b
+		}},
+		{"an .icns pixel within maxDiff", icnsPath, "", func(t *testing.T, b []byte) []byte {
+			es, err := decodeICNS(b)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, e := range es {
+				if e.typ == "il32" {
+					m := e.img.(*image.NRGBA)
+					i := m.PixOffset(16, 16) + 1
+					m.Pix[i] = byte(int(m.Pix[i]) + maxDiff*sign(m.Pix[i]))
+				}
+			}
+			canon, err := canonicalICNS(es) // il32 packed again from the changed pixels
+			if err != nil {
+				t.Fatal(err)
+			}
+			return icnsFile(canon)
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			orig := fileData(t, files, tc.path)
+			changed := tc.change(t, slices.Clone(orig))
+			if bytes.Equal(changed, orig) {
+				t.Fatal("the change changed nothing")
+			}
+			writeFile(t, root, tc.path, changed)
+			defer writeFile(t, root, tc.path, orig)
+			var stdout, stderr bytes.Buffer
+			code := apply(root, files, true, io.Discard, &stderr)
+			if tc.want == "" && code != 0 {
+				t.Errorf("check: %d, want 0\n%s", code, stderr.String())
+			}
+			if tc.want != "" && (code != 1 || !strings.Contains(stderr.String(), tc.want)) {
+				t.Errorf("check: %d, want 1 and %q\n%s", code, tc.want, stderr.String())
+			}
+			if code := apply(root, files, false, &stdout, io.Discard); code != 0 {
+				t.Fatalf("write: %d", code)
+			}
+			got, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(tc.path)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch {
+			case tc.want == "" && (stdout.Len() != 0 || !bytes.Equal(got, changed)):
+				t.Errorf("the write changed a file that passes the check: %q", stdout.String())
+			case tc.want != "" && (stdout.String() != "wrote "+tc.path+"\n" || !bytes.Equal(got, orig)):
+				t.Errorf("the write did not restore %s: %q", tc.path, stdout.String())
+			}
+		})
+	}
+}
+
+// TestToNRGBA checks that a mask read back as an alpha picture keeps every value, as the check's
+// rebuilt .icns needs, and that a picture not at (0, 0) is moved there.
+func TestToNRGBA(t *testing.T) {
+	a := image.NewAlpha(image.Rect(3, 5, 19, 21))
+	for i := range a.Pix {
+		a.Pix[i] = byte(i)
+	}
+	m := toNRGBA(a)
+	if m.Rect != image.Rect(0, 0, 16, 16) || !bytes.Equal(plane(m, 3), a.Pix) {
+		t.Errorf("an alpha picture becomes %v with alpha % x", m.Rect, plane(m, 3)[:8])
+	}
+	if n := image.NewNRGBA(image.Rect(0, 0, 4, 4)); toNRGBA(n) != n {
+		t.Error("an NRGBA picture at (0, 0) is copied")
+	}
+}
+
+// icnsSpan finds the data of element typ in an .icns file.
+func icnsSpan(t *testing.T, data []byte, typ string) (start, end int) {
+	t.Helper()
+	be := binary.BigEndian
+	for i := 8; i+8 <= len(data); i += int(be.Uint32(data[i+4:])) {
+		if string(data[i:i+4]) == typ {
+			return i + 8, i + int(be.Uint32(data[i+4:]))
+		}
+	}
+	t.Fatalf("the .icns has no %s", typ)
+	return 0, 0
+}
+
+// editICNS returns an .icns file with element typ's data changed by edit, and the element's and
+// the file's lengths to match.
+func editICNS(t *testing.T, data []byte, typ string, edit func([]byte) []byte) []byte {
+	t.Helper()
+	start, end := icnsSpan(t, data, typ)
+	body := edit(slices.Clone(data[start:end]))
+	out := slices.Concat(data[:start], body, data[end:])
+	be := binary.BigEndian
+	be.PutUint32(out[4:], uint32(len(out)))
+	be.PutUint32(out[start-4:], uint32(8+len(body)))
+	return out
+}
+
 // TestRun runs the command itself on a fixture, as a contributor would: it writes the icons,
 // then checks them. It compresses at the tool's own level, which is slow.
 func TestRun(t *testing.T) {
@@ -567,6 +705,13 @@ func TestDecoders(t *testing.T) {
 		if err := samePicture(e.img, render(d, e.img.Bounds().Dx())); err != nil && !strings.HasSuffix(e.typ, "mk") {
 			t.Errorf("%s: %v", e.typ, err)
 		}
+	}
+	// What the encoders write is what the check rebuilds from the pictures it holds.
+	if canon, err := canonicalICO(ico); err != nil || !bytes.Equal(canon, fileData(t, files, "packaging/icons/wopr.ico")) {
+		t.Errorf("wopr.ico is not rebuilt as it was written: %v", err)
+	}
+	if canon, err := canonicalICNS(icns); err != nil || !bytes.Equal(icnsFile(canon), fileData(t, files, "packaging/icons/wopr.icns")) {
+		t.Errorf("wopr.icns is not rebuilt as it was written: %v", err)
 	}
 	if _, err := decodeICNS([]byte("icns\x00\x00\x00\x09x")); err == nil {
 		t.Error("a truncated .icns decodes")

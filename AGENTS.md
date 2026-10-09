@@ -91,18 +91,20 @@ channel, and review-tools from `latest/stable`.
   `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
   tests hold `packaging/description.txt`, both packages' description, to both formats' rules. Both
   packages also put WOPR in the desktop's menu, in files named by the app ID `io.github.ghostofgoes.wopr`:
-  a menu entry that opens a terminal running `wopr` (with a "Movie Mode" action), the icon in every
-  hicolor size, and AppStream metadata. `pkgdocs` writes the menu entry for each package and the metadata
-  from their templates in `packaging/linux/`; its tests hold them to the Desktop Entry Specification and
-  AppStream's rules, and check that the screenshots and pages they link exist in `site/`. `stage -archives`
-  checks that the packages hold `build/pkg`'s files (by digest), that each menu entry starts that
-  package's own program, and every icon size. The sizes are also listed in the `.rpm`'s directories in
-  `.goreleaser.yaml` and in `smoke.yml`: change all three together. The smoke jobs install, run and
-  remove both packages, and validate the installed menu entry and metadata.
+  a menu entry that opens a terminal running `wopr` (with one right-click action, "Movie Mode", that
+  runs `wopr --movie`), the icon in every hicolor size, and AppStream metadata. `pkgdocs` writes the
+  menu entry for each package and the metadata from their templates in `packaging/linux/`; its tests
+  hold them to the Desktop Entry Specification and AppStream's rules, and check that the screenshots and
+  pages they link exist in `site/`. `stage -archives` checks that the packages hold `build/pkg`'s files
+  (by digest), that each menu entry starts that package's own program, and every icon size. The sizes
+  are also listed in the `.rpm`'s directories in `.goreleaser.yaml` and in `smoke.yml`: change all three
+  together. The smoke jobs install, run and remove both packages, and validate the installed menu entry
+  and metadata.
 - **Icons.** Everything in `packaging/icons/` except `src/`, and the docs site's `favicon.svg` (also its
   navbar logo), `favicon.ico` and `apple-touch-icon.png`, is drawn by `internal/tools/icons` from the SVG
   sources in `packaging/icons/src/`. Its tests and `-check` fail when a file is stale; pictures are
-  compared pixel by pixel within 2/255, because floating point differs between CPUs. The sources may use
+  compared pixel by pixel within 2/255, because floating point differs between CPUs, and the `.ico` and
+  `.icns` around them must be byte for byte what the tool writes from those pixels. The sources may use
   only the SVG subset listed in `internal/tools/icons/svg.go`, and the tool refuses a design that would
   make any file larger than 512 KB. The art is provisional until the owner picks a design.
 - **Windows installer and MSIX.** `windows.yml` checks the release files against `checksums.txt`, builds
@@ -277,8 +279,11 @@ screenshot fails the build.
   `macos-app.md`: the download, then each click and warning in order, with the line second.
   `@COMMAND-LINE@` in those two files stands for the tab's own `windows.md` or `macos.md`, so each line is
   still written once; every build reads both files and fails if one lacks it. The Linux (apt) and (RPM)
-  tabs also say how to open a downloaded package in the desktop's software app. Verifying an attestation
-  is for the Installation page's last section.
+  tabs also say how to open a downloaded package in the desktop's software app. The packages' menu entry
+  first ships in the same release as the installers (v0.4.0's packages have none), so `@APP-MENU@` in
+  `linux-apt.md` and `linux-rpm.md` becomes the sentence in `app-menu.md` only when `has-installers` is
+  true, and nothing before; every build fails if either file lacks it, or if a tab is left with any
+  `@NAME@` placeholder. Verifying an attestation is for the Installation page's last section.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
   which documents the schema; the manual page reads the same files. Change a game's text there.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
@@ -299,9 +304,9 @@ screenshot fails the build.
   then the package tabs show `site/assets/install/packages-later.md`. Its content is Markdown only: a
   shortcode inside it that writes HTML, such as `tabs`, is dropped. Inside a Hextra `tab`, write it as
   `{{< if-packages >}}`: the tab renders the Markdown, and the `%` form fails the build there. Text about
-  the Windows installer or the Mac app goes inside `{{% if-installers %}}` (the `has-installers` partial)
-  in the same way, and text for the releases before them inside `{{% if-installers "not" %}}`. Nothing
-  names the snap until it is published.
+  the Windows installer, the Mac app, or WOPR in the Linux app menu (the packages' menu entry) goes inside
+  `{{% if-installers %}}` (the `has-installers` partial) in the same way, and text for the releases before
+  them inside `{{% if-installers "not" %}}`. Nothing names the snap until it is published.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 

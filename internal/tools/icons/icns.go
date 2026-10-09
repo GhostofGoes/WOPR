@@ -37,37 +37,50 @@ var icnsTypes = []struct {
 // maskOf names the mask that goes with each RGB type.
 var maskOf = map[string]string{"is32": "s8mk", "il32": "l8mk"}
 
-// encodeICNS writes a macOS icon file: the "icns" magic and the file's length, then each
-// picture as its type, its length (counting this 8-byte header) and its data, all big-endian.
+// encodeICNS writes a macOS icon file holding icnsTypes, each drawn by pic at its size.
 func encodeICNS(pic func(size int) *image.NRGBA, encodePNG func(*image.NRGBA) ([]byte, error)) ([]byte, error) {
+	elems := make([]icnsElem, len(icnsTypes))
+	for i, t := range icnsTypes {
+		data, err := icnsData(t.kind, pic(t.size), encodePNG)
+		if err != nil {
+			return nil, err
+		}
+		elems[i] = icnsElem{typ: t.typ, raw: data}
+	}
+	return icnsFile(elems), nil
+}
+
+// icnsData is one element's data, of the kind icnsTypes gives it, from its picture.
+func icnsData(kind byte, img *image.NRGBA, encodePNG func(*image.NRGBA) ([]byte, error)) ([]byte, error) {
+	switch kind {
+	case 'p':
+		return encodePNG(img)
+	case 'r':
+		var data []byte
+		for ch := range 3 {
+			data = append(data, packBits(plane(img, ch))...)
+		}
+		// macOS on Apple silicon drops the last value of compressed RGB data in an app's icon; a
+		// spare zero byte after it is ignored everywhere (icns-archive, "Known issues").
+		return append(data, 0), nil
+	default: // 'm'
+		return plane(img, 3), nil
+	}
+}
+
+// icnsFile puts elements together as a macOS icon file: the "icns" magic and the file's length,
+// then each element as its type, its length (counting this 8-byte header) and its data, all
+// big-endian.
+func icnsFile(elems []icnsElem) []byte {
 	be := binary.BigEndian
 	var body []byte
-	for _, t := range icnsTypes {
-		img := pic(t.size)
-		var data []byte
-		switch t.kind {
-		case 'p':
-			var err error
-			if data, err = encodePNG(img); err != nil {
-				return nil, err
-			}
-		case 'r':
-			for ch := range 3 {
-				data = append(data, packBits(plane(img, ch))...)
-			}
-			// macOS on Apple silicon drops the last value of compressed RGB data in an app's
-			// icon; a spare zero byte after it is ignored everywhere (icns-archive, "Known
-			// issues").
-			data = append(data, 0)
-		case 'm':
-			data = plane(img, 3)
-		}
-		body = append(body, t.typ...)
-		body = be.AppendUint32(body, uint32(8+len(data)))
-		body = append(body, data...)
+	for _, e := range elems {
+		body = append(body, e.typ...)
+		body = be.AppendUint32(body, uint32(8+len(e.raw)))
+		body = append(body, e.raw...)
 	}
 	out := append([]byte("icns"), be.AppendUint32(nil, uint32(8+len(body)))...)
-	return append(out, body...), nil
+	return append(out, body...)
 }
 
 // plane returns one channel of a picture, row by row.
@@ -142,6 +155,7 @@ func unpackBits(src []byte, n int) ([]byte, int, error) {
 type icnsElem struct {
 	typ string
 	img image.Image
+	raw []byte // the element's data, as stored in the file
 }
 
 // decodeICNS reads an icon file holding the kinds of picture encodeICNS writes.
@@ -174,7 +188,7 @@ func decodeICNS(data []byte) ([]icnsElem, error) {
 		size, known := sizes[typ]
 		var img image.Image
 		switch {
-		case bytes.HasPrefix(d, []byte("\x89PNG\r\n\x1a\n")):
+		case isPNG(d):
 			var err error
 			if img, err = png.Decode(bytes.NewReader(d)); err != nil {
 				return nil, fmt.Errorf("icns: %s: %w", typ, err)
@@ -202,7 +216,39 @@ func decodeICNS(data []byte) ([]icnsElem, error) {
 		default:
 			return nil, fmt.Errorf("icns: cannot read element %q", typ)
 		}
-		out = append(out, icnsElem{typ, img})
+		out = append(out, icnsElem{typ: typ, img: img, raw: d})
+	}
+	return out, nil
+}
+
+// canonicalICNS returns the elements as encodeICNS writes them from their own pictures, keeping
+// PNG elements' bytes as they are. It involves no floating point and no compression, so it is
+// the same on every machine.
+func canonicalICNS(es []icnsElem) ([]icnsElem, error) {
+	kinds := map[string]byte{}
+	for _, t := range icnsTypes {
+		kinds[t.typ] = t.kind
+	}
+	out := make([]icnsElem, len(es))
+	for i, e := range es {
+		kind, ok := kinds[e.typ]
+		if !ok {
+			return nil, fmt.Errorf("the tool does not write %q", e.typ)
+		}
+		var img *image.NRGBA
+		if kind != 'p' {
+			img = toNRGBA(e.img)
+		}
+		data, err := icnsData(kind, img, func(*image.NRGBA) ([]byte, error) {
+			if !isPNG(e.raw) {
+				return nil, fmt.Errorf("%s is not PNG, as the tool writes it", e.typ)
+			}
+			return e.raw, nil
+		})
+		if err != nil {
+			return nil, err
+		}
+		out[i] = icnsElem{typ: e.typ, img: e.img, raw: data}
 	}
 	return out, nil
 }

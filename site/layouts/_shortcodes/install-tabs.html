@@ -7,14 +7,26 @@
   @PACKAGE@ as the package's kind. Once it has the Windows installer and the Mac app (the
   has-installers partial), those two tabs show assets/install/<installer>.md instead, which leads
   with the download and puts the command line after it: @COMMAND-LINE@ there stands for the tab's
-  own <file>.md, so each command is still written once. Hextra's tabs draw them, synced: a tab
-  picked on one page is picked on the other.
+  own <file>.md, so each command is still written once. The same release is the first whose
+  packages put WOPR in the app menu, so only then does @APP-MENU@ in the packages' tabs become the
+  sentence in assets/install/app-menu.md (and, before it, nothing). Every build reads and checks
+  each of these files, whichever it shows, and fails if a placeholder is missing from its file or
+  left in a tab. Hextra's tabs draw them, synced: a tab picked on one page is picked on the other.
 
     {{< install-tabs >}}
 */ -}}
 {{- $version := partial "latest-version.html" . -}}
 {{- $hasPackages := partial "has-packages.html" . -}}
 {{- $hasInstallers := partial "has-installers.html" . -}}
+{{- $appMenu := partial "inline/install-tab-file.html" (dict "file" "app-menu" "position" .Position) | strings.TrimSpace -}}
+{{- if not $appMenu -}}
+  {{- errorf "%s: install-tabs: assets/install/app-menu.md is empty" .Position -}}
+{{- end -}}
+{{- if $hasInstallers -}}
+  {{- $appMenu = printf " %s" $appMenu -}}
+{{- else -}}
+  {{- $appMenu = "" -}}
+{{- end -}}
 {{- $items := slice
   (dict "name" "Windows" "file" "windows" "installer" "windows-installer")
   (dict "name" "macOS" "file" "macos" "installer" "macos-app")
@@ -25,13 +37,17 @@
 -}}
 {{- $tabs := slice -}}
 {{- range $i, $item := $items -}}
-  {{- $file := $item.file -}}
-  {{- if and $item.package (not $hasPackages) -}}
-    {{- $file = "packages-later" -}}
+  {{- $text := partial "inline/install-tab-file.html" (dict "file" $item.file "position" $.Position) -}}
+  {{- with $item.package -}}
+    {{- if not (strings.Contains $text "@APP-MENU@") -}}
+      {{- errorf "%s: install-tabs: assets/install/%s.md has no @APP-MENU@" $.Position $item.file -}}
+    {{- end -}}
+    {{- $text = replace $text "@APP-MENU@" $appMenu -}}
+    {{- if not $hasPackages -}}
+      {{- $text = partial "inline/install-tab-file.html" (dict "file" "packages-later" "position" $.Position) -}}
+    {{- end -}}
   {{- end -}}
-  {{- $text := partial "inline/install-tab-file.html" (dict "file" $file "position" $.Position) -}}
   {{- with $item.installer -}}
-    {{- /* Read and checked in every build, so that a broken file fails before the release. */ -}}
     {{- $installer := partial "inline/install-tab-file.html" (dict "file" . "position" $.Position) -}}
     {{- if not (strings.Contains $installer "@COMMAND-LINE@") -}}
       {{- errorf "%s: install-tabs: assets/install/%s.md has no @COMMAND-LINE@" $.Position . -}}
@@ -42,6 +58,9 @@
   {{- end -}}
   {{- $text = replace $text "@VERSION@" $version -}}
   {{- $text = replace $text "@PACKAGE@" ($item.package | default "") -}}
+  {{- with findRE `@[A-Z][A-Z-]*@` $text 1 -}}
+    {{- errorf "%s: install-tabs: the %s tab has %s, which nothing fills" $.Position $item.name (index . 0) -}}
+  {{- end -}}
   {{- $tabs = $tabs | append (dict "id" $i "name" $item.name "icon" "" "content" $text "selected" false) -}}
 {{- end -}}
 {{- partial "shortcodes/tabs" (dict "tabs" $tabs "enableSync" true "id" .Ordinal) -}}

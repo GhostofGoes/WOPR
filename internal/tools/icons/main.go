@@ -18,8 +18,10 @@
 // it exists, never by shrinking a bigger picture. The same sources give the same bytes on one
 // machine. Pictures are compared by their pixels, allowing a difference of 2 in 255 per
 // channel, because floating point differs slightly between CPU architectures (Go fuses
-// multiply-adds on arm64): -check passes, and a rewrite leaves a file alone, when the
-// committed pictures match within that.
+// multiply-adds on arm64). The .ico and .icns files around them are compared byte for byte
+// with what the tool writes from their own pixels, keeping their PNG data as it is, which takes
+// no floating point: their directories, bitmap headers, masks and packed RGB data must be
+// exactly the tool's. -check passes, and a rewrite leaves a file alone, when both hold.
 package main
 
 import (
@@ -381,7 +383,9 @@ func compareAll(root string, files []file) []staleFile {
 	return stale
 }
 
-// same reports how a committed file differs from the generated one, or nil if it does not.
+// same reports how a committed file differs from the generated one, or nil if it does not. It
+// compares pictures by their pixels; an .ico or .icns around them must also be byte for byte
+// what the tool writes from the committed pixels, with the committed PNG data kept as it is.
 func same(f format, cur, want []byte) error {
 	switch f {
 	case fmtSVG:
@@ -419,6 +423,13 @@ func same(f format, cur, want []byte) error {
 				return fmt.Errorf("the %d px picture: %w", a[i].size, err)
 			}
 		}
+		canon, err := canonicalICO(a)
+		if err != nil {
+			return err
+		}
+		if i := firstDiff(cur, canon); i >= 0 {
+			return fmt.Errorf("%s differs from what the tool writes from its pictures (byte %d)", icoPart(canon, i), i)
+		}
 		return nil
 	default:
 		a, err := decodeICNS(cur)
@@ -444,8 +455,38 @@ func same(f format, cur, want []byte) error {
 				return fmt.Errorf("%s: %w", a[i].typ, err)
 			}
 		}
+		canon, err := canonicalICNS(a)
+		if err != nil {
+			return err
+		}
+		for i, e := range a {
+			if j := firstDiff(e.raw, canon[i].raw); j >= 0 {
+				where := fmt.Sprintf("byte %d", j)
+				if len(e.raw) != len(canon[i].raw) {
+					where = fmt.Sprintf("%d bytes, want %d", len(e.raw), len(canon[i].raw))
+				}
+				return fmt.Errorf("%s: its data differs from what the tool writes from its pixels (%s)", e.typ, where)
+			}
+		}
+		if !bytes.Equal(cur, icnsFile(canon)) {
+			return errors.New("its headers differ from what the tool writes")
+		}
 		return nil
 	}
+}
+
+// firstDiff is the first index at which a and b differ, or -1 if they are equal.
+func firstDiff(a, b []byte) int {
+	n := min(len(a), len(b))
+	for i := range n {
+		if a[i] != b[i] {
+			return i
+		}
+	}
+	if len(a) == len(b) {
+		return -1
+	}
+	return n
 }
 
 // samePicture compares premultiplied 8-bit pixels within maxDiff per channel.

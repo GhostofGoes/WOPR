@@ -26,11 +26,12 @@ macOS or Linux that downloads `wopr` and installs it. Or download the program fo
 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
 ```
 
-Each release also has `.deb` and `.rpm` packages for Linux, which install the manual page too
-(`man wopr`), and from the release after v0.4.0 a Windows installer and a Mac app (`WOPR.app` in a
-`.dmg`). They put WOPR in the Start menu, Applications or the app menu. The installer and the app
-are not signed yet, so Windows and macOS warn about them at first; the guide says what to click. Every
-release file can be checked with its build-provenance attestation: see
+Releases since v0.4.0 also have `.deb` and `.rpm` packages for Linux, which install the manual page too
+(`man wopr`). From the release after v0.4.0, there are also a Windows installer and a Mac app (`WOPR.app`
+in a `.dmg`), and the Linux packages add WOPR to the app menu, so that you can start it from the Start
+menu, Applications or the app menu. The installer and the app are not signed yet, so Windows and macOS
+warn about them at first; the guide says what to click. Every release file can be checked with its
+build-provenance attestation: see
 [Verifying binaries](https://ghostofgoes.github.io/WOPR/install/#verifying-binaries-attestation).
 
 ## Quick start

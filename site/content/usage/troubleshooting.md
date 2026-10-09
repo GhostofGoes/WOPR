@@ -63,10 +63,10 @@ which can disappear while WOPR hands itself to Terminal.
 To play in another, such as iTerm2, run `/Applications/WOPR.app/Contents/MacOS/wopr` in it, or install
 the `wopr` command with the Terminal line in the [install](/install) page's **macOS** tab.
 {{% /if-installers %}}
-{{% if-packages %}}
+{{% if-installers %}}
 **WOPR is not in the app menu after installing the `.deb` or the `.rpm`.** Log out and back in: some
 desktops notice a new app only then. The **Linux** tab's line adds no menu entry; only the packages do.
-{{% /if-packages %}}
+{{% /if-installers %}}
 
 **`sudo` says you are not in the sudoers file.** On Debian, when a root password was set during
 installation, your account cannot use `sudo` until it is in the `sudo` group. Add it with the root

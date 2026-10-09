@@ -6,7 +6,7 @@ One app for every Mac, Apple silicon or Intel. Then:
    **Applications** folder.
 2. Drag **WOPR** onto **Applications**. Do this before you open WOPR: it may not start from the
    Downloads folder or from the disk image. You can then eject the **WOPR** disk in Finder's sidebar.
-3. Open **WOPR** from your **Applications** folder, Launchpad or Spotlight.
+3. Open **WOPR** from your **Applications** folder, from **Apps** in the Dock, or with Spotlight.
 4. The first time, macOS says it could not verify that WOPR is free of malware, because WOPR is not
    signed by Apple yet. Click **Done**, then:
    1. Open the Apple menu, then **System Settings**, then **Privacy & Security** in the sidebar (you may
