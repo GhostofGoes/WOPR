@@ -340,7 +340,8 @@ func wellFormed(data []byte) error {
 
 // The AppStream metadata pkgdocs writes from the tree has what software centres need, agrees with
 // the menu entry and the packages, and links only to what the docs site and GitHub serve.
-// appstreamcli validate --pedantic and appstream-util validate-relax check the rest (docs/PLAN.md §8).
+// appstreamcli validate --pedantic and appstream-util validate-relax check the rest, where they are
+// installed (TestValidators; docs/PLAN.md §8).
 func TestMetainfo(t *testing.T) {
 	t.Parallel()
 	description, err := descriptionXML(readRepo(t, descriptionFile))

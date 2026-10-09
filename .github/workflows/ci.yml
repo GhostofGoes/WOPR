@@ -50,7 +50,16 @@ jobs:
             tools/lint/go.sum
             tools/release/go.sum
             tools/docs/go.sum
+      # For the desktop-files hook: the validators of the menu entries and the AppStream metadata,
+      # Ubuntu 24.04's (Linux tools, not pinned, as in smoke.yml). With WOPR_DESKTOP_VALIDATORS=1, its
+      # test fails instead of skipping when one is missing.
+      - name: Install the desktop file validators
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends desktop-file-utils appstream appstream-util
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        env:
+          WOPR_DESKTOP_VALIDATORS: "1"
         with:
           prek-version: 0.5.5
       - name: Lint rules still fire
