@@ -1,7 +1,7 @@
 {{- /*
   Whether the latest release (the latest-version partial's) has the Windows installer
   (wopr_<version>_windows_setup.exe) and the Mac app (wopr_<version>_macos.dmg): every release after
-  v0.3.0 does. The if-installers and install-tabs shortcodes use it, so that no page names a file
+  v0.4.0 does. The if-installers and install-tabs shortcodes use it, so that no page names a file
   that does not exist yet.
 */ -}}
-{{- return not (in (slice "0.1.0" "0.2.0" "0.3.0") (partial "latest-version.html" .)) -}}
+{{- return not (in (slice "0.1.0" "0.2.0" "0.3.0" "0.4.0") (partial "latest-version.html" .)) -}}

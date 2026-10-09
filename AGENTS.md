@@ -273,7 +273,7 @@ screenshot fails the build.
   (shortcodes do not run there). Each tab's command is a line to paste into a terminal, which a person who
   has never used one can follow, using only the tools each system installs by default (the Go tab needs
   Go). Once the latest release has the installers (the `has-installers` partial: every release after
-  v0.3.0), the Windows and macOS tabs lead with them instead, from `windows-installer.md` and
+  v0.4.0), the Windows and macOS tabs lead with them instead, from `windows-installer.md` and
   `macos-app.md`: the download, then each click and warning in order, with the line second.
   `@COMMAND-LINE@` in those two files stands for the tab's own `windows.md` or `macos.md`, so each line is
   still written once; every build reads both files and fails if one lacks it. The Linux (apt) and (RPM)

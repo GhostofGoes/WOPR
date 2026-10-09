@@ -2005,7 +2005,7 @@ image may lack, so `test-snap.sh` installs it when missing.
     attestation is the Installation page's last section, for those who want it; the README links there and
     to the guide.
   - **Installers first on Windows and macOS** (owner decision 2026-10-08). Once the latest release has the
-    installer and the Mac app (every release after v0.3.0; the `has-installers` partial), those two tabs
+    installer and the Mac app (every release after v0.4.0; the `has-installers` partial), those two tabs
     lead with the download and then each click in order, warnings included: the browser's, SmartScreen's
     More info and Run anyway, and Smart App Control's block on Windows; dragging to Applications first, then
     Gatekeeper's Done and Open Anyway in Privacy & Security on macOS. The line comes second, as the way to
