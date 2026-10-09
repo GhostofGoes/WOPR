@@ -117,8 +117,9 @@ channel, and review-tools from `latest/stable`.
 - **macOS app.** `macos.yml` checks the darwin programs against `checksums.txt`, joins them with `lipo`,
   writes `WOPR.app` with `internal/tools/macapp` (whose tests check the bundle on any OS), signs it ad hoc
   and makes `wopr_<V>_macos.dmg` (`packaging/macos/build-dmg.sh`). On Apple silicon and on Intel it then
-  checks the image, runs the e2e tests against the app's program, and opens the app as Finder does
-  (`test-dmg.sh`, `test-launch.sh`). Started from Finder, with no terminal, `wopr` reopens itself in
+  checks the image and runs the e2e tests against the app's program (`test-dmg.sh`); on Apple silicon it
+  also opens the app as Finder does (`test-launch.sh`: the Intel runner's Terminal runs nothing it is
+  given). Started from Finder, with no terminal, `wopr` reopens itself in
   Terminal (`cmd/wopr/launch*.go`, with table tests); started from a terminal, it runs as before.
 - **Snap.** `snap.yml` prepares each architecture's snap with `internal/tools/snapdir`, which checks the
   program and notices against `checksums.txt`, the metadata against snapd's limits, and turns the Linux

@@ -66,9 +66,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # launch: whether to open the app as Finder does. Not on macos-26-intel: on that image Terminal
+        # starts but runs nothing it is given, not even a plain .command script (test-launch.sh's
+        # control, 2026-10-09), so the check can only fail there. The hand-off is the same code on
+        # both architectures, and its decision has unit tests (cmd/wopr/launch_test.go).
         include:
-          - { runner: macos-26, target: darwin_arm64 }
-          - { runner: macos-26-intel, target: darwin_amd64 }
+          - { runner: macos-26, target: darwin_arm64, launch: true }
+          - { runner: macos-26-intel, target: darwin_amd64, launch: false }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 15
     permissions:
@@ -96,7 +100,7 @@ jobs:
         run: packaging/macos/test-dmg.sh "build/dmg/wopr_${VERSION}_macos.dmg" "${VERSION}" ${E2E:+"${E2E}"}
       # Opened as Finder opens it, the app must reopen its program in Terminal, with a terminal.
       - name: Open the app as Finder does
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && matrix.launch }}
         env:
           DIAG_DIR: ${{ runner.temp }}/test-launch
         run: packaging/macos/test-launch.sh "build/dmg/wopr_${VERSION}_macos.dmg"
