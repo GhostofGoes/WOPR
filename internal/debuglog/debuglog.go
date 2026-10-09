@@ -4,8 +4,10 @@
 package debuglog
 
 import (
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,15 +21,30 @@ type Log struct {
 	path string
 }
 
-// Open opens the log in dir (normally os.UserCacheDir()), appending.
+// Open opens the log in dir (normally os.UserCacheDir()), appending. It never follows a
+// symbolic link at the log's directory or file, and refuses a directory another user owns,
+// so a cache directory in a shared place ($XDG_CACHE_HOME=/tmp, say) cannot be used to
+// make wopr append to some other file.
 func Open(dir string) (*Log, error) {
 	d := filepath.Join(dir, "wopr")
 	if err := os.MkdirAll(d, 0o700); err != nil {
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
+	if err := checkDir(d); err != nil {
+		return nil, fmt.Errorf("debug log: %w", err)
+	}
 	path := filepath.Join(d, "debug.log")
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("debug log: %s is not a regular file", path)
+	} else if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return nil, fmt.Errorf("debug log: %w", err)
+	}
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|oNoFollow, 0o600)
 	if err != nil {
+		return nil, fmt.Errorf("debug log: %w", err)
+	}
+	if err := f.Chmod(0o600); err != nil { // a log left by an older build, or made by hand
+		_ = f.Close()
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
 	return &Log{l: log.New(f, "", log.LstdFlags|log.Lmicroseconds), c: f, path: path}, nil
