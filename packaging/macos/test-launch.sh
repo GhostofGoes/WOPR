@@ -14,12 +14,20 @@ if [[ $# -ne 1 ]]; then
 fi
 dmg=$1
 
+# On failure: the processes involved, Terminal's recent log, and a screenshot (in $DIAG_DIR, which
+# the workflow uploads), since what Terminal shows cannot be seen any other way on a runner.
 fail() {
   echo "test-launch: $*" >&2
   local pid
   for pid in $(pgrep -f 'WOPR\.app|Terminal' || true); do
     ps -o pid=,ppid=,tty=,command= -p "${pid}" >&2 || true
   done
+  echo "--- Terminal's log, last 3 minutes" >&2
+  log show --last 3m --style compact --predicate 'process == "Terminal"' 2>&1 | tail -n 80 >&2 || true
+  if [[ -n "${DIAG_DIR:-}" ]]; then
+    mkdir -p "${DIAG_DIR}"
+    screencapture -x "${DIAG_DIR}/test-launch.png" || echo "test-launch: no screenshot" >&2
+  fi
   exit 1
 }
 
@@ -45,9 +53,11 @@ runs() {
     awk -v exe="/${exe}" 'length($3) >= length(exe) && substr($3, length($3) - length(exe) + 1) == exe { print $1, $2 }'
 }
 
+# Terminal's first start on a busy runner can be slow (the Intel runners especially), so allow two
+# minutes; on a person's Mac it takes a second or two.
 open "${dest}/WOPR.app"
 found=
-for _ in $(seq 60); do
+for _ in $(seq 120); do
   list="$(runs)"
   if awk 'NF >= 2 && $2 != "??" { f = 1 } END { exit !f }' <<< "${list}"; then
     found=1
@@ -55,7 +65,7 @@ for _ in $(seq 60); do
   fi
   sleep 1
 done
-[[ -n "${found}" ]] || fail "Terminal did not run ${dest}/WOPR.app/Contents/MacOS/wopr within 60 seconds"
+[[ -n "${found}" ]] || fail "Terminal did not run ${dest}/WOPR.app/Contents/MacOS/wopr within 120 seconds"
 echo "Terminal runs the program with a terminal:"
 echo "${list}"
 
