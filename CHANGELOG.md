@@ -7,6 +7,15 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.4.0 - 2026-10-08
+
+### Added
+
+- Each release lists what changed, on its page and in `CHANGELOG.md`.
+- Linux and macOS downloads now include a manual page with tips for each game.
+- A new website shows how to install wopr and how to play every game.
+- You can now install wopr on Linux with a .deb or .rpm package.
+
 ## v0.3.0 - 2026-10-07
 
 ### Added
