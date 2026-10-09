@@ -7,6 +7,8 @@
 # Konsole and others) and runs wopr in it. StartupNotify=true hands that terminal a startup
 # notification token, which it uses to end the busy cursor and, on Wayland, to take the focus.
 # Exec names the program by its full path, so the desktop finds it whatever its PATH.
+# The actions, on the entry's right-click menu, start a game from the film or movie mode at once.
+# They share the entry's Terminal=true, and name each game by the slug `wopr --games` lists.
 [Desktop Entry]
 Type=Application
 Version=1.5
@@ -18,8 +20,24 @@ Exec=@BINDIR@/wopr
 Terminal=true
 StartupNotify=true
 Categories=Game;BoardGame;CardGame;StrategyGame;
-Keywords=WarGames;Joshua;Falken;chess;checkers;tic-tac-toe;blackjack;poker;hearts;bridge;gin rummy;retro;terminal;
-Actions=movie;
+Keywords=WarGames;war;Joshua;Falken;chess;checkers;tic-tac-toe;blackjack;poker;hearts;bridge;gin rummy;retro;terminal;
+Actions=chess;checkers;tic-tac-toe;global-thermonuclear-war;movie;
+
+[Desktop Action chess]
+Name=Chess
+Exec=@BINDIR@/wopr --play chess
+
+[Desktop Action checkers]
+Name=Checkers
+Exec=@BINDIR@/wopr --play checkers
+
+[Desktop Action tic-tac-toe]
+Name=Tic-Tac-Toe
+Exec=@BINDIR@/wopr --play ttt
+
+[Desktop Action global-thermonuclear-war]
+Name=Global Thermonuclear War
+Exec=@BINDIR@/wopr --play gtw
 
 [Desktop Action movie]
 Name=Movie Mode

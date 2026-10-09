@@ -44,7 +44,8 @@ out="$(/snap/bin/wopr --version)"
 # snapd's copy of meta/gui/wopr.desktop: Exec and Icon rewritten for the snap, the terminal kept,
 # and the app ID that ties the snap to the other packages' AppStream metadata.
 cat "${desktop}"
-for line in 'Exec=/snap/bin/wopr' 'Exec=/snap/bin/wopr --movie' 'Terminal=true' "Icon=${icon}" \
+for line in 'Exec=/snap/bin/wopr' 'Exec=/snap/bin/wopr --play chess' 'Exec=/snap/bin/wopr --play gtw' \
+  'Exec=/snap/bin/wopr --movie' 'Terminal=true' "Icon=${icon}" \
   "X-SnapCommonID=${app_id}"; do
   grep -Fxq -- "${line}" "${desktop}" || fail "${desktop} has no line ${line}"
 done
