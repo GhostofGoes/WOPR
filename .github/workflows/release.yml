@@ -196,7 +196,7 @@ jobs:
 
   publish:
     name: publish
-    needs: [verify, build, smoke, repro]
+    needs: [verify, build, rebuild, smoke, repro]
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
       && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success' }}
@@ -216,9 +216,23 @@ jobs:
         with:
           name: release-notes
           path: notes
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rebuild-checksums
+          path: rebuild
+      # What is attested is what was checked: the files match checksums.txt, and checksums.txt still
+      # matches the rebuild's, here in the job that publishes rather than only in repro.
+      - name: Check the files against both builds' checksums
+        run: |
+          diff -u rebuild/checksums.txt assets/checksums.txt
+          (cd assets && sha256sum --strict -c checksums.txt)
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: assets/checksums.txt
+      # checksums.txt is published too, so it is attested with the files it lists.
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: assets/checksums.txt
       # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
       # THIRD_PARTY_NOTICES.txt, checksums.txt.
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
