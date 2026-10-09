@@ -262,7 +262,7 @@ func TestRender(t *testing.T) {
 // FuzzParseSVG feeds the parser and renderer arbitrary documents: they may refuse one, but
 // never panic or hang.
 func FuzzParseSVG(f *testing.F) {
-	for _, src := range []string{srcMaster, srcSmall, srcFull} {
+	for _, src := range repoSources(f) {
 		data, err := os.ReadFile(filepath.Join(repoRoot, src))
 		if err != nil {
 			f.Fatal(err)

@@ -1347,7 +1347,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
       Software never lists the latter (from its source, untested). Its summary and description are
       `description.txt`'s; six screenshots come from the docs site; OARS 1.1 rates `money-gambling` and
       `violence-fantasy` moderate (play money in Black Jack and Poker; text-only war games), both
-      judgement calls for the owner to confirm; amber branding colours, to revisit with the final icon; the releases
+      judgement calls for the owner to confirm; amber branding colours, which suit the final icon; the releases
       come from `changelog.yml`, the newest three with their notes, a snapshot marked `type="snapshot"`.
     - Fedora: the `.rpm` owns the hicolor directories rather than requiring `hicolor-icon-theme`, as the
       guidelines' gtk-doc example does for directories of a package not needed to run. A `Requires`
@@ -1405,12 +1405,18 @@ before the classified address it leads to; v2.1's provisional table had it in th
   screen yet (an issue tracks `-w/--welcome`); the Linux and snap menu entries add one right-click
   action, Movie Mode (`wopr --movie`). Nothing is signed yet: issues track Windows signing and Apple's
   signing and notarization.
-- **Icon** (owner decision 2026-10-08: the owner picks one of five designs; the committed art is
-  provisional and regenerates from its sources with one command).
-  - Three sources in `packaging/icons/src/`: the master, `wopr.svg` (1024×1024, with a transparent margin,
-    for Windows, Linux and the MSIX); optional simpler art for 32 px and below, `wopr-small.svg`; and
-    `wopr-full.svg`, an opaque full-bleed square for macOS, which rounds icons itself, and the site's
-    `apple-touch-icon.png`.
+- **Icon** (owner decisions: 2026-10-08, one of five designs, regenerated from its sources with one
+  command; 2026-10-09, front-panel lamps: a gunmetal frame around a panel of indicator lamps, lit amber
+  along one diagonal, with one red lamp).
+  - The sources, in `packaging/icons/src/`: the master, `wopr.svg` (1024×1024, with a transparent
+    margin, for Windows, Linux and the MSIX, four by four lamps); optional simpler art for 32 px and below,
+    `wopr-small.svg` (three by three lamps on a 64-unit grid, whole pixels at 16 and 32 px); optional art
+    for exactly N px, `wopr-<N>.svg`, which wins at that size; and `wopr-full.svg`, an opaque full-bleed
+    square for macOS, which rounds icons itself, and the site's `apple-touch-icon.png`, at every size.
+    `wopr-24.svg` redraws the small art on a 24-unit grid for the Windows taskbar at 100% scale, where the
+    64-unit grid falls on half pixels; 20 and 30 px (125% scale) stay soft, since a redrawn 20 px needs
+    2 px lamps and reads no better, and the soft 30 px is close to whole pixels. The tool refuses a
+    `wopr-<N>.svg` for a size it never draws, and any other SVG file there.
   - `internal/tools/icons` draws every file from them with its own renderer (standard library only:
     oksvg and rasterx cannot draw `scale(s)`, even-odd fills or transformed gradients correctly), which
     matches Chromium to within 1/255 on average at 256 px and up. It writes `wopr.ico` (16 to 256 px, PNG
@@ -1454,7 +1460,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
   snapshot suffix) from `packaging/windows/winres.json` into `cmd/wopr/rsrc_windows_{amd64,arm64}.syso`, in
   a GoReleaser before hook. `--arch amd64,arm64` names both targets: the default, amd64 and 386, would leave
   the arm64 program bare. The files are byte-identical on every run, so the programs stay reproducible. The
-  provisional icon adds about 170 KB to each.
+  icon adds about 185 KB to each.
 - **MSIX** (owner decision 2026-10-08: built for a later Microsoft Store submission, never a release file).
   `windows.yml` builds `wopr_X.Y.Z_windows_{amd64,arm64}.msix` and `wopr_X.Y.Z_windows.msixbundle` with the
   Windows SDK's `makeappx` and `makepri`: a full-trust console app with a `wopr.exe` execution alias, as

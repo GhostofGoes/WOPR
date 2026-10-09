@@ -1,0 +1,30 @@
+<!--
+  WOPR application icon: front-panel lamps, drawn for 24 px. Provenance: original (drawn for
+  wopr). wopr-small.svg on a 24-unit grid, for the Windows taskbar at 100% scale and the other
+  24 px icons, where wopr-small.svg's 64-unit grid falls on half pixels: the same frame, panel,
+  lamps and colours, with every edge on a whole pixel. The tool draws only the 24 px outputs from
+  it. To change the icon, edit the sources (packaging/icons/README.md), then run:
+  go run ./internal/tools/icons
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <title>WOPR</title>
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b717b"/>
+      <stop offset="0.5" stop-color="#474c54"/>
+      <stop offset="1" stop-color="#2e3137"/>
+    </linearGradient>
+  </defs>
+  <!-- cabinet: frame and panel, 2 px apart; 4 px lamps 2 px apart, 1 px inside the panel -->
+  <rect x="1" y="1" width="22" height="22" rx="5" ry="5" fill="url(#frame)"/>
+  <rect x="3" y="3" width="18" height="18" rx="3" ry="3" fill="#111317"/>
+  <rect x="4" y="4" width="4" height="4" rx="1.75" ry="1.75" fill="#3f3a33"/>
+  <rect x="10" y="4" width="4" height="4" rx="1.75" ry="1.75" fill="#3f3a33"/>
+  <rect x="16" y="4" width="4" height="4" rx="1.75" ry="1.75" fill="#ffb000"/>
+  <rect x="4" y="10" width="4" height="4" rx="1.75" ry="1.75" fill="#ff3b2a"/>
+  <rect x="10" y="10" width="4" height="4" rx="1.75" ry="1.75" fill="#ffb000"/>
+  <rect x="16" y="10" width="4" height="4" rx="1.75" ry="1.75" fill="#3f3a33"/>
+  <rect x="4" y="16" width="4" height="4" rx="1.75" ry="1.75" fill="#ffb000"/>
+  <rect x="10" y="16" width="4" height="4" rx="1.75" ry="1.75" fill="#3f3a33"/>
+  <rect x="16" y="16" width="4" height="4" rx="1.75" ry="1.75" fill="#3f3a33"/>
+</svg>

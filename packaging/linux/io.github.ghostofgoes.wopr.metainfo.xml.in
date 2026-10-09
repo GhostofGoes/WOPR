@@ -80,8 +80,8 @@
   <supports>
     <control>keyboard</control>
   </supports>
-  <!-- The background behind the icon in software centres: the amber of its lamps. Revisit them
-       when the owner picks the final icon (packaging/icons/README.md). -->
+  <!-- The background behind the icon in software centres: the amber of its lamps, checked
+       against the front-panel lamps icon (packaging/icons/README.md). -->
   <branding>
     <color type="primary" scheme_preference="light">#f7d58b</color>
     <color type="primary" scheme_preference="dark">#5a3d0a</color>

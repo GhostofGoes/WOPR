@@ -14,14 +14,15 @@
 //
 // It draws with its own small SVG renderer, which accepts only the subset listed in svg.go and
 // rejects anything else, so a design that would draw differently here and in a browser fails
-// at once. Each size is drawn from the vector art, from wopr-small.svg at 32 px and below when
-// it exists, never by shrinking a bigger picture. The same sources give the same bytes on one
-// machine. Pictures are compared by their pixels, allowing a difference of 2 in 255 per
-// channel, because floating point differs slightly between CPU architectures (Go fuses
-// multiply-adds on arm64). The .ico and .icns files around them are compared byte for byte
-// with what the tool writes from their own pixels, keeping their PNG data as it is, which takes
-// no floating point: their directories, bitmap headers, masks and packed RGB data must be
-// exactly the tool's. -check passes, and a rewrite leaves a file alone, when both hold.
+// at once. Each size is drawn from the vector art, never by shrinking a bigger picture: from
+// wopr-<N>.svg at exactly N px when it exists, else from wopr-small.svg at 32 px and below when
+// it exists, else from wopr.svg. The same sources give the same bytes on one machine. Pictures
+// are compared by their pixels, allowing a difference of 2 in 255 per channel, because floating
+// point differs slightly between CPU architectures (Go fuses multiply-adds on arm64). The .ico
+// and .icns files around them are compared byte for byte with what the tool writes from their
+// own pixels, keeping their PNG data as it is, which takes no floating point: their
+// directories, bitmap headers, masks and packed RGB data must be exactly the tool's. -check
+// passes, and a rewrite leaves a file alone, when both hold.
 package main
 
 import (
@@ -33,10 +34,12 @@ import (
 	"image/png"
 	"io"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -45,12 +48,19 @@ import (
 const appID = "io.github.ghostofgoes.wopr"
 
 // The sources: the master, with the platforms' usual transparent margin; simplified art for
-// small sizes (optional); and a full-bleed, opaque square for macOS, which masks icons itself.
+// small sizes (optional); a full-bleed, opaque square for macOS, which masks icons itself; and,
+// also optional, art drawn for one size, wopr-<N>.svg (srcSized).
 const (
-	srcMaster = "packaging/icons/src/wopr.svg"
-	srcSmall  = "packaging/icons/src/wopr-small.svg"
-	srcFull   = "packaging/icons/src/wopr-full.svg"
+	srcDir    = "packaging/icons/src"
+	srcMaster = srcDir + "/wopr.svg"
+	srcSmall  = srcDir + "/wopr-small.svg"
+	srcFull   = srcDir + "/wopr-full.svg"
 )
+
+// srcSized is the source drawn for the transparent icon at exactly n×n pixels, in place of
+// wopr-small.svg or wopr.svg, so that its edges can land on whole pixels at a size where the
+// other sources' fall between them. Nothing else is drawn from it.
+func srcSized(n int) string { return fmt.Sprintf("%s/wopr-%d.svg", srcDir, n) }
 
 const (
 	smallMax    = 32        // the largest size drawn from wopr-small.svg
@@ -62,7 +72,7 @@ const (
 type art int
 
 const (
-	artIcon    art = iota // wopr.svg, or wopr-small.svg at 32 px and below
+	artIcon    art = iota // wopr-<N>.svg at N px, else wopr-small.svg at 32 px and below, else wopr.svg
 	artFull               // wopr-full.svg
 	artFavicon            // SVG output: wopr-small.svg if there is one, else wopr.svg
 )
@@ -120,6 +130,56 @@ func outputs() []output {
 		output{path: "site/static/favicon.ico", format: fmtICO, sizes: []int{16, 32, 48}},
 		output{path: "site/static/apple-touch-icon.png", art: artFull, sizes: []int{180}},
 	)
+}
+
+// iconSizes are the sizes at which the transparent icon is drawn as pixels: those an
+// exact-size source may have.
+func iconSizes() []int {
+	var sizes []int
+	for _, o := range outputs() {
+		if o.art == artIcon && o.format != fmtSVG {
+			sizes = append(sizes, o.sizes...)
+		}
+	}
+	slices.Sort(sizes)
+	return slices.Compact(sizes)
+}
+
+// sizedSources lists the exact-size sources under root by their size. Any other SVG file in
+// the sources' directory is an error, as is a size the icon is never drawn at: either would be
+// a source that nothing draws.
+func sizedSources(root string) (map[int]string, error) {
+	entries, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(srcDir)))
+	if err != nil {
+		return nil, err
+	}
+	sizes := iconSizes()
+	sized := map[int]string{}
+	for _, e := range entries {
+		path := srcDir + "/" + e.Name()
+		if e.IsDir() || !strings.EqualFold(filepath.Ext(path), ".svg") || slices.Contains([]string{srcMaster, srcSmall, srcFull}, path) {
+			continue
+		}
+		digits, ok := strings.CutPrefix(strings.TrimSuffix(e.Name(), ".svg"), "wopr-")
+		n, err := strconv.Atoi(digits)
+		if !ok || err != nil || strconv.Itoa(n) != digits {
+			return nil, fmt.Errorf("%s is not one of the sources (wopr.svg, wopr-small.svg, wopr-full.svg, or wopr-<N>.svg for the N px icon); rename or remove it", path)
+		}
+		if !slices.Contains(sizes, n) {
+			return nil, fmt.Errorf("%s: no icon is drawn at %d px; the sizes are %s", path, n, joinInts(sizes))
+		}
+		sized[n] = path
+	}
+	return sized, nil
+}
+
+// joinInts lists numbers as "1, 2, 3".
+func joinInts(ns []int) string {
+	s := make([]string, len(ns))
+	for i, n := range ns {
+		s[i] = strconv.Itoa(n)
+	}
+	return strings.Join(s, ", ")
 }
 
 // file is a generated file's contents.
@@ -215,6 +275,16 @@ func generate(root string, level png.CompressionLevel) ([]file, error) {
 	if err != nil {
 		return nil, err
 	}
+	paths, err := sizedSources(root)
+	if err != nil {
+		return nil, err
+	}
+	sized := map[int]*doc{}
+	for _, n := range slices.Sorted(maps.Keys(paths)) { // the first broken one, every time
+		if sized[n], err = read(paths[n], false); err != nil {
+			return nil, err
+		}
+	}
 	// The outputs are put together in parallel. Each picture is drawn, and each PNG encoded,
 	// once however many outputs share it (the unplated MSIX forms, the 256 px icons), and the
 	// result of each depends only on its inputs, so the order of the work does not matter.
@@ -234,6 +304,8 @@ func generate(root string, level png.CompressionLevel) ([]file, error) {
 		switch {
 		case a == artFull:
 			d = full
+		case sized[n] != nil:
+			d = sized[n]
 		case n <= smallMax && small != nil:
 			d = small
 		}

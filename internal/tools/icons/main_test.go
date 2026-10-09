@@ -18,12 +18,27 @@ import (
 // repoRoot is the repository, from this package's directory.
 const repoRoot = "../../.."
 
+// repoSources lists the repository's icon sources, the exact-size ones included.
+func repoSources(tb testing.TB) []string {
+	tb.Helper()
+	sized, err := sizedSources(repoRoot)
+	if err != nil {
+		tb.Fatal(err)
+	}
+	srcs := []string{srcMaster, srcSmall, srcFull}
+	for _, path := range sized {
+		srcs = append(srcs, path)
+	}
+	slices.Sort(srcs[3:])
+	return srcs
+}
+
 // fixture makes a tree holding the repository's icon sources (all but those dropped) and
 // returns its root.
 func fixture(t *testing.T, drop ...string) string {
 	t.Helper()
 	root := t.TempDir()
-	for _, src := range []string{srcMaster, srcSmall, srcFull} {
+	for _, src := range repoSources(t) {
 		if slices.Contains(drop, src) {
 			continue
 		}
@@ -274,14 +289,29 @@ func TestICOLayout(t *testing.T) {
 	}
 }
 
-// mustDoc parses the source the generator uses at size n for the transparent icon.
+// mustDoc parses the repository's source the generator uses at size n for the transparent
+// icon.
 func mustDoc(t *testing.T, n int) *doc {
 	t.Helper()
-	src := srcMaster
-	if n <= smallMax {
-		src = srcSmall
+	sized, err := sizedSources(repoRoot)
+	if err != nil {
+		t.Fatal(err)
 	}
-	data, err := os.ReadFile(filepath.Join(repoRoot, src))
+	src, ok := sized[n]
+	switch {
+	case ok:
+	case n <= smallMax:
+		src = srcSmall
+	default:
+		src = srcMaster
+	}
+	return mustParse(t, repoRoot, src)
+}
+
+// mustParse parses a source under root.
+func mustParse(t *testing.T, root, src string) *doc {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(src)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -636,7 +666,7 @@ func TestSources(t *testing.T) {
 	}
 	// With it, 32 px and below come from it and 48 px from the master.
 	files = generatedFiles(t)
-	for n, d := range map[int]*doc{32: mustDoc(t, 32), 48: master} {
+	for n, d := range map[int]*doc{32: mustParse(t, repoRoot, srcSmall), 48: master} {
 		img, err := png.Decode(bytes.NewReader(fileData(t, files, fmt.Sprintf("packaging/icons/hicolor/%dx%d/apps/%s.png", n, n, appID))))
 		if err != nil {
 			t.Fatal(err)
@@ -657,6 +687,106 @@ func TestSources(t *testing.T) {
 	writeFile(t, root, srcMaster, []byte("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 10 10\">\n<text>WOPR</text></svg>"))
 	if _, err := generate(root, png.BestSpeed); err == nil || !strings.Contains(err.Error(), "packaging/icons/src/wopr.svg:2: <text> is not supported") {
 		t.Errorf("a source with text: %v", err)
+	}
+}
+
+// TestSizedSources covers the exact-size sources, wopr-<N>.svg: each draws the transparent
+// icon at its own size only, in place of wopr-small.svg or wopr.svg, and nothing else.
+func TestSizedSources(t *testing.T) {
+	// Plain squares in four colours, which draw quickly and cannot be mistaken for each other:
+	// one drawn for 32 px, a size the .icns has too, and none for 24 px. Files that are not
+	// SVG, and directories, are not sources.
+	root := t.TempDir()
+	for src, body := range map[string]string{
+		srcMaster:    `<rect x="64" y="64" width="896" height="896" fill="#0000ff"/>`,
+		srcSmall:     `<rect x="64" y="64" width="896" height="896" fill="#ff0000"/>`,
+		srcFull:      `<rect width="1024" height="1024" fill="#ffffff"/>`,
+		srcSized(32): `<rect x="2" y="2" width="28" height="28" fill="#00ff00"/>`,
+	} {
+		size := 1024
+		if src == srcSized(32) {
+			size = 32
+		}
+		writeFile(t, root, src, []byte(svgDoc(size, body)))
+	}
+	writeFile(t, root, srcDir+"/notes.txt", []byte("wopr-25.svg is a draft"))
+	writeFile(t, root, srcDir+"/drafts/wopr-draft.svg", []byte("<svg/>"))
+	files, err := generate(root, png.BestSpeed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sized, small, master, full := mustParse(t, root, srcSized(32)), mustParse(t, root, srcSmall), mustParse(t, root, srcMaster), mustParse(t, root, srcFull)
+	hicolor := func(n int) string { return fmt.Sprintf("packaging/icons/hicolor/%dx%d/apps/%s.png", n, n, appID) }
+	pngs := map[string]*doc{
+		hicolor(32): sized,
+		"packaging/icons/msix/Square44x44Logo.targetsize-32.png":                       sized,
+		"packaging/icons/msix/Square44x44Logo.targetsize-32_altform-unplated.png":      sized,
+		"packaging/icons/msix/Square44x44Logo.targetsize-32_altform-lightunplated.png": sized,
+		hicolor(22): small,
+		hicolor(24): small, // without wopr-24.svg
+		hicolor(48): master,
+	}
+	for path, d := range pngs {
+		img, err := png.Decode(bytes.NewReader(fileData(t, files, path)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := samePicture(img, render(d, img.Bounds().Dx())); err != nil {
+			t.Errorf("%s is drawn from the wrong source: %v", path, err)
+		}
+	}
+	for _, path := range []string{"packaging/icons/wopr.ico", "site/static/favicon.ico"} {
+		entries, err := decodeICO(fileData(t, files, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, e := range entries {
+			want := master
+			switch {
+			case e.size == 32:
+				want = sized
+			case e.size < 32:
+				want = small
+			}
+			if err := samePicture(e.img, render(want, e.size)); err != nil {
+				t.Errorf("%s: the %d px picture is drawn from the wrong source: %v", path, e.size, err)
+			}
+		}
+	}
+	icns, err := decodeICNS(fileData(t, files, "packaging/icons/wopr.icns"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, e := range icns {
+		if (e.typ == "il32" || e.typ == "ic11") && samePicture(e.img, render(full, 32)) != nil {
+			t.Errorf("wopr.icns: %s is not drawn from wopr-full.svg", e.typ)
+		}
+	}
+	if got := string(fileData(t, files, "site/static/favicon.svg")); got != string(minify(small.root)) {
+		t.Error("favicon.svg is not wopr-small.svg minified")
+	}
+
+	// A source that nothing would draw is refused, naming the file.
+	for _, tc := range []struct{ name, want string }{
+		{"wopr-25.svg", "packaging/icons/src/wopr-25.svg: no icon is drawn at 25 px; the sizes are 16, 20, 22, 24,"},
+		{"wopr-1024.svg", "wopr-1024.svg: no icon is drawn at 1024 px"}, // the .icns only, from wopr-full.svg
+		{"wopr-180.svg", "wopr-180.svg: no icon is drawn at 180 px"},    // apple-touch-icon.png, likewise
+		{"wopr-024.svg", "packaging/icons/src/wopr-024.svg is not one of the sources"},
+		{"wopr-24px.svg", "wopr-24px.svg is not one of the sources"},
+		{"wopr-+24.svg", "wopr-+24.svg is not one of the sources"},
+		{"icon.svg", "icon.svg is not one of the sources"},
+	} {
+		root := fixture(t)
+		writeFile(t, root, srcDir+"/"+tc.name, []byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"/>`))
+		if _, err := generate(root, png.BestSpeed); err == nil || !strings.Contains(err.Error(), tc.want) {
+			t.Errorf("%s: %v, want %q", tc.name, err, tc.want)
+		}
+	}
+	// A broken one names itself and the line.
+	root = fixture(t)
+	writeFile(t, root, srcSized(48), []byte("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 48 48\">\n<image/></svg>"))
+	if _, err := generate(root, png.BestSpeed); err == nil || !strings.Contains(err.Error(), "packaging/icons/src/wopr-48.svg:2: <image> is not supported") {
+		t.Errorf("a broken wopr-48.svg: %v", err)
 	}
 }
 

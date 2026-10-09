@@ -106,7 +106,10 @@ channel, and review-tools from `latest/stable`.
   compared pixel by pixel within 2/255, because floating point differs between CPUs, and the `.ico` and
   `.icns` around them must be byte for byte what the tool writes from those pixels. The sources may use
   only the SVG subset listed in `internal/tools/icons/svg.go`, and the tool refuses a design that would
-  make any file larger than 512 KB. The art is provisional until the owner picks a design.
+  make any file larger than 512 KB. A size whose edges would fall between pixels can have its own source,
+  `wopr-<N>.svg`, drawn for that size only (`wopr-24.svg`, for the Windows taskbar); the tool refuses one
+  for a size it never draws, and any other SVG file there. The icon is the front-panel lamps design, the
+  owner's choice (2026-10-09).
 - **Windows installer and MSIX.** `windows.yml` checks the release files against `checksums.txt`, builds
   `wopr_<V>_windows_setup.exe` with Inno Setup (`packaging/windows/wopr.iss`: per user, no administrator
   prompt, both architectures in one file) and the MSIX packages for the Microsoft Store, then installs,
