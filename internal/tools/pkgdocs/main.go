@@ -1,9 +1,9 @@
 // Command pkgdocs writes the documents that the release archives and the .deb and .rpm packages
-// carry. The packages carry them compressed, as `gzip -9n` would: maximum compression, and no file
-// name or time stamp in the header, so the same input gives the same bytes on every host and the
-// packages stay reproducible. Debian Policy asks for manual pages (§12.1), longer documents
-// (§12.3) and release notes (§12.7) to be compressed that way; RPM packages carry their manual
-// pages compressed too.
+// carry, and the packages' menu entry and AppStream metadata. The packages carry the documents
+// compressed, as `gzip -9n` would: maximum compression, and no file name or time stamp in the
+// header, so the same input gives the same bytes on every host and the packages stay reproducible.
+// Debian Policy asks for manual pages (§12.1), longer documents (§12.3) and release notes (§12.7)
+// to be compressed that way; RPM packages carry their manual pages compressed too.
 //
 //	go run ./internal/tools/pkgdocs -version 0.3.0 -notes build/notes -out build/pkg
 //
@@ -17,6 +17,11 @@
 //	README.md.gz   README.md (the .deb)
 //	NOTICE.md.gz   NOTICE.md (the .deb)
 //	changelog.yml  changelog.yml from -notes, which nfpms.changelog reads (both packages)
+//	deb/io.github.ghostofgoes.wopr.desktop, rpm/io.github.ghostofgoes.wopr.desktop
+//	               the menu entry, naming the program where each package puts it (linux.go)
+//	io.github.ghostofgoes.wopr.metainfo.xml
+//	               the AppStream metadata for software centres, with the description from
+//	               packaging/description.txt and the releases from -notes (both packages)
 //
 // The manual page's header names the version of the newest .changes/vX.Y.Z.md, which a release
 // pull request batches. pkgdocs puts the version being built there instead, so every archive and
@@ -108,7 +113,7 @@ func run(root, notes, out, version string) error {
 		}
 		fmt.Printf("pkgdocs: %s -> %s\n", src, filepath.Join(out, d.name))
 	}
-	return nil
+	return writeLinux(root, notes, out, version)
 }
 
 // versionRE is a version as GoReleaser's {{ .Version }} gives it: no "v".

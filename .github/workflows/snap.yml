@@ -1,0 +1,171 @@
+# Packs wopr's snaps, wopr_<version>_amd64.snap and wopr_<version>_arm64.snap, from the release
+# files that GoReleaser made: internal/tools/snapdir prepares each one's directory and `snap pack`
+# packs it, with no snapcraft.yaml. The Snap Store's own review tools check them, then each is
+# installed, run and removed on its architecture (packaging/snap/test-snap.sh). It never compiles
+# wopr: every program it packs is one that checksums.txt lists. Called by ci.yml and release.yml
+# after their build job. The snaps, snaps, stay a workflow artifact and never become release files.
+#
+# The publish job uploads them to the Snap Store's stable channel. It runs only when the caller
+# passes publish (release.yml, for a tag) and the repository variable SNAP_PUBLISH is true, in the
+# snap-store environment, which holds SNAPCRAFT_STORE_CREDENTIALS and admits only v* tags. Until the
+# owner registers the name and sets these up (AGENTS.md), it is skipped.
+name: Snap
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: Name of the artifact that holds dist/release (the bare binaries, the notices and checksums.txt)
+        required: true
+        type: string
+      version:
+        description: GoReleaser's .Version of the build (1.2.3, or 1.2.4-snapshot.abc1234)
+        required: true
+        type: string
+      publish:
+        description: Upload the snaps to the Snap Store's stable channel, if the repository variable SNAP_PUBLISH is also true
+        required: false
+        type: boolean
+        default: false
+      stage-artifact:
+        description: Name of the staged artifact with the end-to-end tests (stage/linux_<arch>/e2e.test); empty skips them
+        required: false
+        type: string
+        default: ""
+    secrets:
+      # An environment secret reaches a called workflow only when the caller passes it.
+      SNAPCRAFT_STORE_CREDENTIALS:
+        description: The snap-store environment's login from snapcraft export-login; only publish reads it
+        required: false
+
+permissions: {}
+
+jobs:
+  build:
+    name: build (snaps)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+      # As long as ci.yml keeps its downloads; for a release, 90 days (the most GitHub keeps a public
+      # repository's artifacts), in case the snaps go to the Store by hand.
+      RETENTION_DAYS: ${{ github.event_name == 'pull_request' && 3 || startsWith(github.ref, 'refs/tags/') && 90 || github.ref == 'refs/heads/main' && 30 || 7 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # For internal/tools/snapdir, which uses the standard library only.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact }}
+          path: dist/release
+      # snapdir checks each program and the notices against checksums.txt, and the metadata against
+      # snapd's rules. snap pack, snapd's packer (the runner has snapd, and snapcraft calls the
+      # same command), validates the directory as snapd validates a snap, and packs it.
+      - name: Prepare and pack the snaps
+        run: |
+          mkdir -p build/snaps
+          for arch in amd64 arm64; do
+            go run ./internal/tools/snapdir -dist dist/release -version "${VERSION}" -arch "${arch}" \
+              -out "build/snap/${arch}"
+            snap pack "build/snap/${arch}" build/snaps
+            test -f "build/snaps/wopr_${VERSION}_${arch}.snap"
+          done
+          sha256sum build/snaps/*.snap
+      # The checks the Snap Store runs on an upload. An error or a warning there holds the upload
+      # for a person to review, so either fails this step (snap-review exits 0 only without both).
+      # review-tools is itself a snap, and snap-confine refuses to start one while / is not owned
+      # by root, as it has not always been on runner images.
+      - name: Review the snaps as the Snap Store does
+        run: |
+          if [[ "$(stat -c %u:%g /)" != 0:0 ]]; then sudo chown root:root /; fi
+          sudo snap install review-tools --channel=latest/stable
+          snap list review-tools
+          for s in build/snaps/*.snap; do
+            /snap/bin/review-tools.snap-review "${s}"
+          done
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: snaps
+          path: build/snaps/wopr_*.snap
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+
+  test:
+    name: test (${{ matrix.arch }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+      ARCH: ${{ matrix.arch }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: snaps
+          path: build/snaps
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: inputs.stage-artifact != ''
+        with:
+          name: ${{ inputs.stage-artifact }}
+          path: stage
+      - name: Install, check, run and remove the snap
+        env:
+          E2E: ${{ inputs.stage-artifact != '' && format('stage/linux_{0}/e2e.test', matrix.arch) || '' }}
+        run: packaging/snap/test-snap.sh "build/snaps/wopr_${VERSION}_${ARCH}.snap" "${VERSION}" ${E2E:+"${E2E}"}
+
+  publish:
+    name: publish (Snap Store)
+    needs: [build, test]
+    if: inputs.publish && vars.SNAP_PUBLISH == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: snap-store
+    permissions: {}
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: snaps
+          path: build/snaps
+      # snapcraft follows its 9.x track, so a new major version cannot change the upload unannounced.
+      # snap-confine starts it too, so / must be owned by root, as in the build job.
+      - name: Install snapcraft
+        run: |
+          if [[ "$(stat -c %u:%g /)" != 0:0 ]]; then sudo chown root:root /; fi
+          sudo snap install snapcraft --classic --channel=9.x/stable
+      # Each upload waits for the store's automated review, the one the build job ran, then releases
+      # the revision to stable. A strictly confined snap with no plugs needs no person's review.
+      - name: Upload and release to stable
+        env:
+          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
+        run: |
+          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::only a release's version, X.Y.Z, goes to the Snap Store, not ${VERSION}"
+            exit 1
+          fi
+          if [[ -z "${SNAPCRAFT_STORE_CREDENTIALS}" ]]; then
+            echo "::error::SNAPCRAFT_STORE_CREDENTIALS is empty: set it in the snap-store environment, and pass it from the caller"
+            exit 1
+          fi
+          for arch in amd64 arm64; do
+            snapcraft upload --release=stable "build/snaps/wopr_${VERSION}_${arch}.snap"
+          done

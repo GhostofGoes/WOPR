@@ -5,12 +5,16 @@ import (
 	"bufio"
 	"bytes"
 	"compress/gzip"
+	"crypto/md5"
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -18,7 +22,10 @@ import (
 // The Linux packages (.goreleaser.yaml's nfpms): one .deb and one .rpm for each Linux build.
 // With -archives, stage checks that each is named as its format names packages and installs what
 // it must, reading only what the standard library can: a .deb's control.tar.gz, and an .rpm's
-// header. The smoke jobs then install them with dpkg and rpm.
+// header. Their payloads are xz, which the standard library cannot read, but both record each
+// file's digest: stage checks that the menu entry and the AppStream metadata are the files pkgdocs
+// wrote into build/pkg, and reads the menu entry there. The smoke jobs then install the packages
+// with dpkg and rpm.
 
 const linuxPackage = "Linux Package"
 
@@ -31,10 +38,42 @@ var (
 	rpmArch = map[string]string{"amd64": "x86_64", "arm64": "aarch64"}
 )
 
+// appID names wopr's menu entry, icon and AppStream metadata (internal/tools/pkgdocs).
+const appID = "io.github.ghostofgoes.wopr"
+
+// pkgDir is where pkgdocs wrote what the packages carry (.goreleaser.yaml's before hook), from the
+// repository root, where stage runs: deb/ and rpm/ hold each package's menu entry.
+const pkgDir = "build/pkg"
+
+// hicolorSizes are the icon's sizes in the hicolor theme, as packaging/icons/hicolor has them (a
+// test checks): scalable is the SVG, the others PNGs.
+var hicolorSizes = []string{"16x16", "22x22", "24x24", "32x32", "48x48", "64x64", "128x128", "256x256", "512x512", "scalable"}
+
+// Where both packages install the menu entry and the AppStream metadata.
+const (
+	desktopEntry = "usr/share/applications/" + appID + ".desktop"
+	metainfo     = "usr/share/metainfo/" + appID + ".metainfo.xml"
+)
+
+// desktopFiles are the files that put wopr in the desktop's menu, which both packages install:
+// the menu entry, the AppStream metadata and the icon in every size.
+func desktopFiles() []string {
+	files := []string{desktopEntry, metainfo}
+	for _, size := range hicolorSizes {
+		ext := ".png"
+		if size == "scalable" {
+			ext = ".svg"
+		}
+		files = append(files, "usr/share/icons/hicolor/"+size+"/apps/"+appID+ext)
+	}
+	return files
+}
+
 // debFiles are the files every .deb installs: the program where Debian puts games (Policy
 // §11.11), its manual page (§12.1), and in /usr/share/doc/wopr the copyright file (§12.5), the
-// Debian changelog and the release notes (§12.7), the README and the notices.
-var debFiles = []string{
+// Debian changelog and the release notes (§12.7), the README and the notices; and the desktop
+// files.
+var debFiles = append([]string{
 	"usr/games/wopr",
 	"usr/share/man/man6/wopr.6.gz",
 	"usr/share/doc/wopr/copyright",
@@ -42,7 +81,7 @@ var debFiles = []string{
 	"usr/share/doc/wopr/NEWS.gz",
 	"usr/share/doc/wopr/README.md.gz",
 	"usr/share/doc/wopr/NOTICE.md.gz",
-}
+}, desktopFiles()...)
 
 // The RPM file flags that mark documentation (%doc) and licences (%license).
 const (
@@ -50,23 +89,38 @@ const (
 	rpmLicense = 1 << 7
 )
 
-// rpmFiles are the files every .rpm installs, with the flags it must mark them with, and the two
+// rpmFiles are the files every .rpm installs, with the flags it must mark them with, and the
 // directories it owns: the program in /usr/bin, as Fedora puts games, the manual page, the
-// documents in /usr/share/doc/wopr and the licences in /usr/share/licenses/wopr.
-var rpmFiles = map[string]uint32{
-	"/usr/bin/wopr":                                    0,
-	"/usr/share/man/man6/wopr.6.gz":                    rpmDoc,
-	"/usr/share/doc/wopr":                              0,
-	"/usr/share/doc/wopr/README.md":                    rpmDoc,
-	"/usr/share/doc/wopr/CHANGELOG.md":                 rpmDoc,
-	"/usr/share/licenses/wopr":                         0,
-	"/usr/share/licenses/wopr/LICENSE":                 rpmLicense,
-	"/usr/share/licenses/wopr/NOTICE.md":               rpmLicense,
-	"/usr/share/licenses/wopr/THIRD_PARTY_NOTICES.txt": rpmLicense,
-}
+// documents in /usr/share/doc/wopr and the licences in /usr/share/licenses/wopr; and the desktop
+// files, with the hicolor directories they go in, which Fedora asks it to own (.goreleaser.yaml).
+var rpmFiles = func() map[string]uint32 {
+	files := map[string]uint32{
+		"/usr/bin/wopr":                                    0,
+		"/usr/share/man/man6/wopr.6.gz":                    rpmDoc,
+		"/usr/share/doc/wopr":                              0,
+		"/usr/share/doc/wopr/README.md":                    rpmDoc,
+		"/usr/share/doc/wopr/CHANGELOG.md":                 rpmDoc,
+		"/usr/share/licenses/wopr":                         0,
+		"/usr/share/licenses/wopr/LICENSE":                 rpmLicense,
+		"/usr/share/licenses/wopr/NOTICE.md":               rpmLicense,
+		"/usr/share/licenses/wopr/THIRD_PARTY_NOTICES.txt": rpmLicense,
+		"/usr/share/icons/hicolor":                         0,
+	}
+	for _, f := range desktopFiles() {
+		files["/"+f] = 0
+	}
+	for _, size := range hicolorSizes {
+		files["/usr/share/icons/hicolor/"+size] = 0
+		files["/usr/share/icons/hicolor/"+size+"/apps"] = 0
+	}
+	return files
+}()
 
 // checkPackages checks that every Linux build has exactly one .deb and one .rpm, and checks each.
-func checkPackages(arts []artifact) error {
+func checkPackages(arts []artifact) error { return checkPackagesFrom(arts, pkgDir) }
+
+// checkPackagesFrom is checkPackages, with what pkgdocs wrote in pkgs.
+func checkPackagesFrom(arts []artifact, pkgs string) error {
 	have := map[string]int{} // "<arch> <format>" -> count
 	for _, a := range arts {
 		if !a.pkg() {
@@ -75,9 +129,9 @@ func checkPackages(arts []artifact) error {
 		var err error
 		switch a.Extra.Format {
 		case "deb":
-			err = checkDeb(a)
+			err = checkDeb(a, pkgs)
 		case "rpm":
-			err = checkRPM(a)
+			err = checkRPM(a, pkgs)
 		default:
 			err = fmt.Errorf("unexpected package format %q", a.Extra.Format)
 		}
@@ -101,8 +155,8 @@ func checkPackages(arts []artifact) error {
 }
 
 // checkDeb reads a .deb's control file and the list of files it installs (md5sums), from
-// control.tar.gz, and checks them and the package's file name.
-func checkDeb(a artifact) error {
+// control.tar.gz, and checks them, the package's file name, and its desktop files against pkgs.
+func checkDeb(a artifact, pkgs string) error {
 	members, err := readAr(a.Path)
 	if err != nil {
 		return err
@@ -142,15 +196,54 @@ func checkDeb(a artifact) error {
 	if name := fmt.Sprintf("wopr_%s_%s.deb", control["Version"], control["Architecture"]); a.Name != name {
 		return fmt.Errorf("named %s; Debian's convention (dpkg-name) is %s", a.Name, name)
 	}
+	sums := map[string]string{} // installed path, without the leading slash -> MD5
 	var installed []string
 	for line := range strings.Lines(string(files["md5sums"])) {
-		if _, path, ok := strings.Cut(strings.TrimSpace(line), "  "); ok {
+		if sum, path, ok := strings.Cut(strings.TrimSpace(line), "  "); ok {
 			installed = append(installed, path)
+			sums[path] = sum
 		}
 	}
 	for _, f := range debFiles {
 		if !slices.Contains(installed, f) {
 			return fmt.Errorf("does not install /%s (installs %v)", f, installed)
+		}
+	}
+	md5sum := func(b []byte) string { s := md5.Sum(b); return hex.EncodeToString(s[:]) }
+	return checkDesktop(pkgs, "deb", "/usr/games/wopr", func(f string) string { return sums[f] }, md5sum)
+}
+
+// checkDesktop checks that a package carries the menu entry pkgdocs wrote for its format into
+// pkgs, and the AppStream metadata, by the digests the package records for them (digest gives
+// one by installed path, sum makes one), and that every command in the menu entry starts the
+// package's program.
+func checkDesktop(pkgs, format, program string, digest func(string) string, sum func([]byte) string) error {
+	for _, f := range []struct{ installed, src string }{
+		{desktopEntry, filepath.Join(pkgs, format, appID+".desktop")},
+		{metainfo, filepath.Join(pkgs, appID+".metainfo.xml")},
+	} {
+		installed, src := f.installed, f.src
+		data, err := os.ReadFile(src)
+		if err != nil {
+			return err
+		}
+		if got, want := digest(installed), sum(data); got != want {
+			return fmt.Errorf("/%s is not %s: its digest is %q, want %q", installed, src, got, want)
+		}
+		if installed != desktopEntry {
+			continue
+		}
+		execs := 0
+		for line := range strings.Lines(string(data)) {
+			if cmd, ok := strings.CutPrefix(strings.TrimSpace(line), "Exec="); ok {
+				execs++
+				if prog, _, _ := strings.Cut(cmd, " "); prog != program {
+					return fmt.Errorf("its menu entry %s has Exec=%s, which does not start %s", src, cmd, program)
+				}
+			}
+		}
+		if execs == 0 {
+			return fmt.Errorf("its menu entry %s has no Exec", src)
 		}
 	}
 	return nil
@@ -239,16 +332,22 @@ const (
 	tagSummary       = 1004
 	tagLicense       = 1014
 	tagArch          = 1022
+	tagFileDigests   = 1035
 	tagFileFlags     = 1037
 	tagChangelogName = 1081
 	tagDirIndexes    = 1116
 	tagBaseNames     = 1117
 	tagDirNames      = 1118
+	tagDigestAlgo    = 5011
 )
 
+// rpmSHA256 is the file digest algorithm that marks SHA-256 (PGPHASHALGO_SHA256), which nFPM uses.
+const rpmSHA256 = 8
+
 // checkRPM reads an .rpm's header and checks its name, its file name, the files it installs and
-// how it marks them, and that its changelog starts with this version.
-func checkRPM(a artifact) error {
+// how it marks them, its desktop files against pkgs, and that its changelog starts with this
+// version.
+func checkRPM(a artifact, pkgs string) error {
 	data, err := os.ReadFile(a.Path)
 	if err != nil {
 		return err
@@ -268,15 +367,21 @@ func checkRPM(a artifact) error {
 		return fmt.Errorf("named %s; RPM's convention is %s", a.Name, want)
 	}
 	dirs, bases, idx, flags := h.strs(tagDirNames), h.strs(tagBaseNames), h.ints(tagDirIndexes), h.ints(tagFileFlags)
-	if len(idx) != len(bases) || len(flags) != len(bases) {
+	digests, algo := h.strs(tagFileDigests), h.ints(tagDigestAlgo)
+	if len(idx) != len(bases) || len(flags) != len(bases) || len(digests) != len(bases) {
 		return errors.New("the header's file lists do not line up")
 	}
+	if len(algo) == 0 || algo[0] != rpmSHA256 {
+		return fmt.Errorf("file digest algorithm %v, want %d (SHA-256)", algo, rpmSHA256)
+	}
 	installed := map[string]uint32{}
+	digest := map[string]string{} // installed path, without the leading slash -> SHA-256
 	for i, b := range bases {
 		if int(idx[i]) >= len(dirs) {
 			return errors.New("a file's directory index is out of range")
 		}
 		installed[dirs[idx[i]]+b] = flags[i]
+		digest[strings.TrimPrefix(dirs[idx[i]]+b, "/")] = digests[i]
 	}
 	for f, want := range rpmFiles {
 		got, ok := installed[f]
@@ -291,7 +396,8 @@ func checkRPM(a artifact) error {
 	if len(changes) == 0 || !strings.HasSuffix(changes[0], " - "+version+"-"+release) {
 		return fmt.Errorf("the changelog's newest entry is %q, want one for %s-%s", changes, version, release)
 	}
-	return nil
+	sha256sum := func(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
+	return checkDesktop(pkgs, "rpm", "/usr/bin/wopr", func(f string) string { return digest[f] }, sha256sum)
 }
 
 // rpmHeader is an RPM header's index and data store.

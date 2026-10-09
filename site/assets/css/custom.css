@@ -51,3 +51,12 @@
 .pswp__bg {
   opacity: 1 !important;
 }
+
+/* The Windows installer's and the Mac app's download links lead their install tabs, so they are
+   drawn larger, as the one thing to click; they stay plain links, with no picture of a button. */
+.hextra-tabs-panel a[href$="_windows_setup.exe"],
+.hextra-tabs-panel a[href$="_macos.dmg"] {
+  display: inline-block;
+  font-size: 1.25rem;
+  line-height: 1.4;
+}

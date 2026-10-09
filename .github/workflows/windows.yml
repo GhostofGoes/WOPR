@@ -1,0 +1,112 @@
+# Builds the Windows installer (Inno Setup) and the MSIX packages for the Microsoft Store from the
+# release files that GoReleaser made, then installs, runs and removes both on x64 and Arm64 Windows.
+# It never compiles wopr: every file it packs is one that checksums.txt lists. Called by ci.yml and
+# release.yml after their build job. The installer, installer-windows, becomes a release file; the
+# MSIX packages, msix, stay a workflow artifact for a Store submission (packaging/windows/build-msix.ps1).
+name: Windows
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: Name of the artifact that holds dist/release (the bare binaries, the notices and checksums.txt)
+        required: true
+        type: string
+      version:
+        description: GoReleaser's .Version of the build (1.2.3, or 1.2.4-snapshot.abc1234)
+        required: true
+        type: string
+
+permissions: {}
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build:
+    name: build (installer, MSIX)
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+      # As long as ci.yml keeps its downloads; for a release, 90 days (the most GitHub keeps a public
+      # repository's artifacts), since the MSIX bundle goes to the Store by hand.
+      RETENTION_DAYS: ${{ github.event_name == 'pull_request' && 3 || startsWith(github.ref, 'refs/tags/') && 90 || github.ref == 'refs/heads/main' && 30 || 7 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact }}
+          path: dist/release
+      - name: Check the release files against checksums.txt
+        run: ./packaging/windows/check-release-files.ps1 -Version $env:VERSION -BinDir dist/release
+      # Inno Setup 7.1.0, downloaded, checked by SHA-256 and signer, and installed into RUNNER_TEMP;
+      # the image's own Inno Setup is not used.
+      - name: Build the installer
+        run: >-
+          ./packaging/windows/build-installer.ps1 -Version $env:VERSION -BinDir dist/release
+          -OutputDir build/installer -InnoDir "$env:RUNNER_TEMP\innosetup"
+      # The Store identity is a placeholder until the owner sets these repository variables from
+      # Partner Center > Product identity.
+      - name: Build the MSIX packages
+        env:
+          MSIX_IDENTITY_NAME: ${{ vars.MSIX_IDENTITY_NAME }}
+          MSIX_PUBLISHER: ${{ vars.MSIX_PUBLISHER }}
+          MSIX_PUBLISHER_DISPLAY_NAME: ${{ vars.MSIX_PUBLISHER_DISPLAY_NAME }}
+        run: >-
+          ./packaging/windows/build-msix.ps1 -Version $env:VERSION -BinDir dist/release -OutputDir build/msix
+          -IdentityName "$env:MSIX_IDENTITY_NAME" -Publisher "$env:MSIX_PUBLISHER"
+          -PublisherDisplayName "$env:MSIX_PUBLISHER_DISPLAY_NAME" -WorkDir "$env:RUNNER_TEMP\msix"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installer-windows
+          path: build/installer/wopr_*_windows_setup.exe
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: msix
+          path: build/msix/
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+
+  smoke:
+    name: smoke (${{ matrix.runner }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-2025, windows-11-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-windows
+          path: build/installer
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: msix
+          path: build/msix
+      # Twice over: a fresh install, and one over the PowerShell install line's copy, then again
+      # over itself; each uninstalled and checked for what it leaves.
+      - name: Install, check and uninstall the installer
+        run: >-
+          ./packaging/windows/test-installer.ps1 -Installer "build/installer/wopr_$($env:VERSION)_windows_setup.exe"
+          -Version $env:VERSION -LogDir "$env:RUNNER_TEMP\installer-logs"
+      # Signed with a throwaway certificate that this machine trusts until the step ends.
+      - name: Install, run and remove the MSIX package
+        if: ${{ !cancelled() }}
+        run: ./packaging/windows/test-msix.ps1 -PackageDir build/msix -Version $env:VERSION

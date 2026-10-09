@@ -38,15 +38,36 @@ go.work.sum
 /stage/
 /wopr
 /wopr.exe
+# The Windows program's resources, which GoReleaser's before hook writes with go-winres
+/cmd/wopr/rsrc_windows_*.syso
+# Installers and store packages (packaging/*; their scripts write them under build/), and a
+# repository-tool binary that `go build ./internal/tools/<name>` leaves in the root
+*.dmg
+*.msix
+*.msixbundle
+*.appx
+*.appxbundle
+*.snap
+/WOPR.app/
+/icons
+/macapp
+/manpage
+/notices
+/pkgdocs
+/relnotes
+/sizegate
+/snapdir
 
 # The docs site's build output and Hugo's lock and cache (hugo --source site)
 /site/public/
 /site/resources/
 /site/.hugo_build.lock
 
-# Keys and certificates never belong in the tree
+# Keys and certificates never belong in the tree (signing ones included)
 *.pem
 *.key
+*.pfx
+*.p12
 
 # Tool caches
 .rumdl_cache/

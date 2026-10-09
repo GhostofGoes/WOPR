@@ -61,6 +61,7 @@ decisions"). **D** = derived from a U requirement. **P** = a plan default the ow
 | R11 | First release after the film set pieces; the remaining games ship in minor releases. | U (2026-10-06) | §15. |
 | R12 | **Movie mode** (`-m/--movie`) replays the WOPR terminal scenes from the film. | U (2026-10-06) | §7, M6. |
 | R13 | No Dependabot for now. Dependencies are updated by hand on a schedule (§11.5). | U (2026-10-06) | No `dependabot.yml`. |
+| R14 | **Installers** for people who never use a terminal: a per-user Windows installer, a Mac app in a `.dmg`, and a menu entry with an icon and AppStream metadata in the `.deb` and `.rpm`. Each opens a terminal running `wopr`. MSIX and snap packages are built for the stores but not published yet (§8). | U (2026-10-08) | CI installs, runs and removes each on its own platform (§11). |
 
 **Supported platforms.**
 
@@ -75,6 +76,10 @@ static Linux binary needs nothing from the distribution, only a kernel: Go's flo
 ships 5.15. The `ubuntu-22.04` runner image is deprecated and unsupported from 2027-04-17, and an
 `ubuntu:22.04` container would still run on the host's kernel, so CI tests neither; the 22.04 claim rests on
 that floor (B-5).
+
+The installers keep Go's floors rather than the table's: the Windows installer accepts 64-bit Windows 10 and
+later, and the Mac app declares macOS 13, read from the program (§8). Only the versions in the table are tested
+or supported.
 
 ---
 
@@ -205,6 +210,7 @@ art (L-4).
 | 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
 | 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
 | 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the other targets a list may name are placed the same way and may share a city's cell; the assets tests pin every place's cell). | U |
+| 27 | Installers | A per-user Inno Setup installer for Windows and a universal `WOPR.app` in a `.dmg` for macOS, both release files; a menu entry, icons and AppStream metadata in the `.deb` and `.rpm`; an MSIX bundle for the Microsoft Store and snaps for the Snap Store, built and tested but not published. One app ID, `io.github.ghostofgoes.wopr`. Every launcher opens a terminal running `wopr`, with no start screen yet. Nothing is signed (the Mac app ad hoc only); issues track signing (§8). | U (2026-10-08) |
 
 ---
 
@@ -219,14 +225,15 @@ PR (AR-1, IM-4).
 - `pkg/...` means the package and every package below it. The first matching row applies, so specific rows
   come before the subtrees that contain them.
 - The standard library is allowed everywhere except for three fenced packages: `net/http` (only `llm`),
-  `os/exec` (only `tools/...`, `archtest` and `e2e`) and `unsafe` (nowhere).
+  `os/exec` (only `cmd/wopr`, whose macOS build reopens the app in Terminal, `tools/...`, `archtest` and
+  `e2e`) and `unsafe` (nowhere).
 - **Test-only imports.** Any package's tests may also import `golden`, `games/catalog`, `games/gamestest`,
   `games/testkit` and `proto/host` (to configure testkit's runner). No non-test file may import `gamestest` or
   `testkit` (G-5).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7)
+cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, (movie in M6, for the scene index)
@@ -256,7 +263,8 @@ internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
 internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
 internal/tools/manpage → cli, games, games/catalog, movie, theme   the manual page, from the program itself (§13)
-internal/tools/...   → stdlib                         sizegate, stage, notices, relnotes, pkgdocs (Go programs, not shell)
+internal/tools/...   → stdlib                         sizegate, stage, notices, relnotes, pkgdocs, icons, macapp,
+                                                      snapdir (Go programs, not shell)
 internal/llm         → proto, wopr                    plus net/http (M7)
 ```
 
@@ -269,7 +277,8 @@ internal/llm         → proto, wopr                    plus net/http (M7)
 - **Injection.** `cmd/wopr` passes the registry to `cli` and `ui`; `ui` builds the persona and the host's
   resolver from it. Tests use fakes from `gamestest`.
 - **`internal/archtest`** reads each package's `Imports`, `TestImports` and `XTestImports` from
-  `go list -tags=e2e -json ./...` (the tag brings in `internal/e2e`) and checks every edge against its table.
+  `go list -tags=e2e -json ./...` (the tag brings in `internal/e2e`), once for each `GOOS` the release builds
+  (linux, darwin, windows) because some files build for one only, and checks every edge against its table.
   Every `Playable` registry entry having a constructor is checked by `games.NewRegistry` itself. archtest also
   checks that the running Go is at least `go.mod`'s `toolchain` line, and exactly that line in CI, where a
   mismatch means `setup-go` fell back (D-6, AR-2). A newer local Go is fine.
@@ -281,6 +290,7 @@ internal/llm         → proto, wopr                    plus net/http (M7)
 ```text
 legal.go                     package wopr (module root): go:embed of the licence files for --licenses
 cmd/wopr/main.go             flags → dispatch → exit code; WOPR_PANEL; maps ui.Outcome to an exit code (§4.2)
+cmd/wopr/launch*.go          the macOS app's relaunch in Terminal (§8); does nothing on other systems
 internal/version/            Version/Commit/Date via -X; fallback to debug.ReadBuildInfo(); "unknown" if absent (D-4)
 internal/cli/                Parse(args, reg, getenv) (Config, Action, error); usage; --games (§5)
 internal/proto/              program.go output.go canvas.go key.go rand.go
@@ -300,11 +310,16 @@ internal/games/              registry.go (Info, Status, Game, Entry, Registry, R
 internal/sim/                M4 engine
 internal/assets/             gtw_map.go (original), scenarios.go (third-party:abs0), banner.go (original)
 internal/movie/              director.go scenes/*.go (M6)
-internal/golden/ internal/archtest/ internal/e2e/ internal/tools/{sizegate,stage,notices,relnotes,manpage,pkgdocs}/
+internal/golden/ internal/archtest/ internal/e2e/
+internal/tools/              {sizegate,stage,notices,relnotes,manpage,pkgdocs,icons,macapp,snapdir}/
 packaging/                   description.txt (both Linux packages'), debian/copyright (generated by notices, §8), rpmlintrc
+  icons/                     src/*.svg and every icon generated from them (internal/tools/icons, §8)
+  linux/                     the menu entry's and the AppStream metadata's templates (pkgdocs fills them)
+  windows/                   wopr.iss, winres.json, the MSIX manifest, and the build and test scripts
+  macos/ snap/               the disk image's and the snap's build and test scripts; snap.yaml.in
 tools/go.mod                 Go tools: gitleaks, govulncheck
 tools/lint/go.mod            Go tool: golangci-lint (separate: its dependencies break gitleaks's build, SL-2)
-tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3)
+tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3), go-winres (wopr.exe's icon, §8)
 tools/docs/go.mod            Go tool: Hugo, standard edition (the docs site, §13)
 site/                        the docs site (§13): Hugo config, pages, layouts, game data; no Go packages
   go.mod                     a Hugo module file, not Go code: pins the Hextra theme
@@ -1283,6 +1298,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
     packages not the expected four.
   - It writes a table to the step summary, warns above 10 MB and fails above 15 MB.
   - GoReleaser's `report_sizes` also logs the sizes.
+  - `sizegate -files <file>...` holds the Windows installer and the macOS disk image to the same budget, in
+    the `collect` jobs (§11). The universal program in the Mac app is about 12 MB, but the image is
+    compressed.
   - The README states only the budget (B-8).
 - **Linux packages** (owner request 2026-10-07; `nfpms` in `.goreleaser.yaml`, GoReleaser's nFPM): a `.deb`
   and an `.rpm` for linux/amd64 and linux/arm64, holding the same binary as the archives.
@@ -1310,13 +1328,39 @@ before the classified address it leads to; v2.1's provisional table had it in th
     copyright file gives it; the film text is under no licence), no RPM `Group` (Fedora asks for none).
     The synopsis and description are `packaging/description.txt`, which `pkgdocs`'s tests hold to both
     formats' rules.
-  - **No desktop entry and no AppStream metadata** (decided 2026-10-07, open to the owner). wopr is a
-    console program: neither Debian Policy nor Fedora's guidelines require a `.desktop` file or a
-    metainfo file for one, and lintian and rpmlint are clean without them. A menu entry would open a
-    terminal of unknown size for a program that needs 80×24, and a software centre lists an AppStream
-    `console-application` from a distribution's catalogue, which a package installed by hand is not in.
-    Either can be added later, checked in CI with `appstreamcli validate --pedantic` and
-    `desktop-file-validate`.
+  - **Menu entry, icon and AppStream metadata** (owner decision 2026-10-08, reversing the "no desktop
+    entry" of 2026-10-07, which was left open to the owner), so that someone who never opens a terminal can
+    start wopr after double-clicking the package. Both packages install, named by the app ID
+    `io.github.ghostofgoes.wopr`, `/usr/share/applications/<id>.desktop`,
+    `/usr/share/metainfo/<id>.metainfo.xml`, and the icon in `/usr/share/icons/hicolor/` at 16, 22, 24,
+    32, 48, 64, 128, 256 and 512 px and as an SVG. `pkgdocs` fills the templates in `packaging/linux/`
+    into `build/pkg/{deb,rpm}/` and `build/pkg/`. The systems' own triggers refresh the menu and the icon
+    cache, so the packages still run no scripts.
+    - The menu entry (Desktop Entry 1.5) has `Terminal=true`, so the desktop opens its terminal running
+      wopr, at the terminal's own size (wopr's too-small screen covers a small one). `Exec` is the
+      program's full path in each package. `StartupNotify=true` hands the terminal its startup token, so
+      the busy cursor ends and, on Wayland, the terminal takes the focus. One action, "Movie Mode", runs
+      `wopr --movie`. Categories Game, BoardGame, CardGame and StrategyGame, and keywords such as
+      WarGames, Joshua and the games' names. There is no start screen yet (an issue tracks
+      `-w/--welcome`), so it starts at LOGON.
+    - The metadata is a `desktop-application`, not AppStream's `console-application`, because GNOME
+      Software never lists the latter (from its source, untested). Its summary and description are
+      `description.txt`'s; six screenshots come from the docs site; OARS 1.1 rates `money-gambling` and
+      `violence-fantasy` moderate (play money in Black Jack and Poker; text-only war games), both
+      judgement calls for the owner to confirm; amber branding colours, to revisit with the final icon; the releases
+      come from `changelog.yml`, the newest three with their notes, a snapshot marked `type="snapshot"`.
+    - Fedora: the `.rpm` owns the hicolor directories rather than requiring `hicolor-icon-theme`, as the
+      guidelines' gtk-doc example does for directories of a package not needed to run. A `Requires`
+      would break the docs' offline `dnf install --disablerepo='*'` where that package is missing.
+    - Checks: `pkgdocs`'s tests hold the templates to both specifications and check that their links exist
+      in `site/`; `stage -archives` checks that the packages hold pkgdocs's files (by digest), that every
+      `Exec` starts the package's own program, and every icon size; the smoke jobs validate the installed
+      `.deb`'s files with `desktop-file-validate`, `appstreamcli validate --no-net --pedantic` and
+      `appstream-util validate-relax --nonet` (the one Fedora asks for), check the `.rpm`'s files and the
+      directories it owns, and check that removing either leaves nothing behind.
+    - Untested on real desktops: which terminal opens (GNOME Terminal on Ubuntu 24.04, Ptyxis on 26.04 and
+      Fedora 44, Konsole on KDE, from research) and whether GNOME Software can remove a package installed
+      by hand.
   - **Versions and names.** Debian revision and RPM release 1, named by each format's convention:
     `wopr_X.Y.Z-1_amd64.deb` (dpkg-name) and `wopr-X.Y.Z-1.x86_64.rpm`, `arm64` and `aarch64` likewise. A
     snapshot is `X.Y.Z~snapshot.<commit>-1`, which dpkg and rpm sort before `X.Y.Z-1`. The package
@@ -1329,7 +1373,8 @@ before the classified address it leads to; v2.1's provisional table had it in th
     `internal/tools/pkgdocs`, which compresses like `gzip -9n` (no name, no time) and runs as a GoReleaser
     before hook into `build/pkg`, where it also copies the packages' `changelog.yml` from `WOPR_NOTES_DIR`
     (`nfpms.changelog` takes no template). Two snapshot builds in different clones, with different umasks,
-    gave the same `checksums.txt` (2026-10-07); `repro` compares the packages with everything else.
+    gave the same `checksums.txt` (2026-10-07), and again with the menu entry and icons, after touching an
+    icon (2026-10-09); `repro` compares the packages with everything else.
   - **Lint** (2026-10-07). lintian 2.117 with `--pedantic --display-experimental`, Debian and Ubuntu profiles,
     finds nothing but `statically-linked-binary`, which the package overrides: lintian knows a Go program is
     static only from a Debian source package's build dependencies. rpmlint 2.8.0, Fedora 44's (with its
@@ -1338,7 +1383,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
     distribution), and `spelling-error` for "Falken's" and "tac" (of tic-tac-toe) in the description.
     `packaging/rpmlintrc` filters those four (`rpmlint -r packaging/rpmlintrc`), each with its reason, and
     `invalid-license` for the map's LicenseRef, which no list of licences has (the License tag gained it
-    after that run, so this filter is not yet confirmed against Fedora's rpmlint). The
+    after that run, so this filter is not yet confirmed against Fedora's rpmlint). Again on 2026-10-09,
+    with the menu entry, icons and metadata: lintian 2.117 reports only the override; rpmlint 2.10 with
+    Fedora 44's configuration finds nothing new (its desktop-file and AppData checks ran); `appstreamcli`
+    1.0.2 `--pedantic` gives one info note, `description-first-word-not-capitalized`, because the
+    description starts with `wopr`; and `appstream-util validate-relax` passes. The
     packages carry no GPG signature (there is no signing key, only `GITHUB_TOKEN`); like every release file
     they are attested and can be checked with `gh attestation verify` (§12). zypper refuses an unsigned
     package unless given `--allow-unsigned-rpm`, so the Linux (RPM) install tab's openSUSE line passes it;
@@ -1347,6 +1396,118 @@ before the classified address it leads to; v2.1's provisional table had it in th
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
     and verify the packages correctly, but `rpm2cpio X.rpm | cpio -idm` writes into the live `/` from any
     directory. Use `rpm -qlvp`, `bsdtar -xf X.rpm -C dir`, or `cpio -idmv --no-absolute-filenames`.
+- **The installers** (owner decisions of 2026-10-08; R14, decision 27). Each is built on its own runner from
+  the release files that `checksums.txt` lists, checked against it first, so none compiles wopr again
+  (§11). The app ID `io.github.ghostofgoes.wopr` names the Linux menu entry, icon and metadata, the snap's
+  `common-id` and the Mac app's bundle identifier; the Microsoft Store assigns the MSIX identity itself.
+  Every launcher opens a terminal running `wopr` with no arguments, since there is no start screen yet (an
+  issue tracks `-w/--welcome`). Nothing is signed yet: issues track Windows signing and Apple's signing and
+  notarization.
+- **Icon** (owner decision 2026-10-08: the owner picks one of five designs; the committed art is
+  provisional and regenerates from its sources with one command).
+  - Three sources in `packaging/icons/src/`: the master, `wopr.svg` (1024×1024, with a transparent margin,
+    for Windows, Linux and the MSIX); optional simpler art for 32 px and below, `wopr-small.svg`; and
+    `wopr-full.svg`, an opaque full-bleed square for macOS, which rounds icons itself, and the site's
+    `apple-touch-icon.png`.
+  - `internal/tools/icons` draws every file from them with its own renderer (standard library only:
+    oksvg and rasterx cannot draw `scale(s)`, even-odd fills or transformed gradients correctly), which
+    matches Chromium to within 1/255 on average at 256 px and up. It writes `wopr.ico` (16 to 256 px, PNG
+    at 256), `wopr.icns`, the hicolor PNGs and SVG, the MSIX assets (scale and target-size variants, with
+    `_altform-unplated` and `_altform-lightunplated` twins, which Microsoft lists to avoid a backplate) and
+    the docs site's favicons, also its navbar logo.
+  - In `wopr.icns` the 16 and 32 px pictures are `is32`/`il32` with masks and the rest are PNG: PNG in
+    `icp4`/`icp5` does not show as an app's icon, and no form of `icp6` shows everywhere
+    (relikd/icns-archive's tests on macOS 10.0 to 26; Apple documents none of this).
+  - The sources are a strict SVG subset, refused with the file and line otherwise. No output may pass
+    512 KB. `-check` and the tests compare pixels within 2/255, because fused multiply-adds on arm64
+    change a few bytes. The icon is original work, so NOTICE.md needs no entry.
+- **Windows installer**, `wopr_X.Y.Z_windows_setup.exe`, a release file: Inno Setup 7.1.0, pinned by URL,
+  SHA-256 and its publisher's Authenticode signer and installed in portable mode on the runner, packs
+  both Windows programs and the notices (`packaging/windows/wopr.iss`, `windows.yml`).
+  - Per user, with no administrator prompt (`PrivilegesRequired=lowest`; an administrator may pass
+    `/ALLUSERS`), into `%LOCALAPPDATA%\Programs\WOPR`, the folder the PowerShell line uses, so installing
+    over that copy replaces it. One file for every PC: Setup installs the arm64 program on Arm64 and the
+    amd64 one elsewhere, as `wopr.exe`, on 64-bit Windows 10 and later.
+  - A short wizard that follows Windows' light or dark mode: the tasks (a desktop shortcut, off; add WOPR
+    to the user's `PATH`, on), a summary, the progress bar, and Finish with "Launch WOPR". One top-level
+    Start menu shortcut runs `wopr.exe`, and Windows opens its default terminal: Windows Terminal on
+    Windows 11 22H2 and later, the console host on 10. Settings → Apps lists and uninstalls it, which also
+    removes the `PATH` entry, the PowerShell line's included. An upgrade is the newer installer run over
+    it; Setup closes a running wopr first.
+  - `AppId` `{A7D86110-58E9-404E-9164-FBDDBDC6AC22}` never changes: upgrades and the uninstall entry
+    depend on it.
+  - Unsigned: SmartScreen asks (More info, then Run anyway), and Smart App Control, when it is on, blocks
+    the installer with no way to allow one app. The install tab and the troubleshooting page say both.
+  - Attested, not checked for reproducibility: it is built once (every file `notimestamp`), from files that
+    `repro` covers.
+  - The smoke jobs on `windows-2025` and `windows-11-arm` install it silently, check the files, the
+    shortcut, the uninstall entry, `PATH` and the program's CPU type, run `wopr --version`, uninstall it and
+    check that nothing is left, then do it again over a copy from the PowerShell line.
+  - Inno Setup's licence lets anyone use it (jrsoftware asks only commercial users to buy one); the docs
+    site's credits page names it.
+- **`wopr.exe`'s resources.** go-winres v0.3.3 (0BSD, in `tools/release/go.mod`) writes an icon, a manifest
+  (`asInvoker`, Windows 10 and 11) and version details (file version X.Y.Z.0; product version with any
+  snapshot suffix) from `packaging/windows/winres.json` into `cmd/wopr/rsrc_windows_{amd64,arm64}.syso`, in
+  a GoReleaser before hook. `--arch amd64,arm64` names both targets: the default, amd64 and 386, would leave
+  the arm64 program bare. The files are byte-identical on every run, so the programs stay reproducible. The
+  provisional icon adds about 170 KB to each.
+- **MSIX** (owner decision 2026-10-08: built for a later Microsoft Store submission, never a release file).
+  `windows.yml` builds `wopr_X.Y.Z_windows_{amd64,arm64}.msix` and `wopr_X.Y.Z_windows.msixbundle` with the
+  Windows SDK's `makeappx` and `makepri`: a full-trust console app with a `wopr.exe` execution alias, as
+  Python's Store package has, for Windows 10 2004 (10.0.19041) and later, versioned X.Y.Z.0. They stay
+  unsigned, since the Store signs what it publishes and nobody can install an unsigned package, so they
+  are the workflow artifact `msix` (kept 90 days for a tag). The identity is a placeholder until the owner
+  reserves the name and sets the `MSIX_*` repository variables (AGENTS.md). The Store refuses a version
+  whose first number is 0, so the first submission waits for v1.0.0. The smoke jobs sign a copy with a
+  throwaway certificate to install it, run `wopr --version` through the alias, and remove it.
+- **macOS app**, `wopr_X.Y.Z_macos.dmg`, a release file: one universal `WOPR.app` beside a link to
+  `/Applications`, in an HFS+ UDZO image (`packaging/macos/build-dmg.sh`, `macos.yml`). `lipo` on a
+  `macos-26` runner joins the two darwin programs; GoReleaser's universal binaries would add a seventh
+  binary to the size gate.
+  - `internal/tools/macapp` writes the bundle: `Info.plist` (bundle identifier the app ID, executable
+    `wopr`, versions X.Y.Z, category `public.app-category.strategy-games`, `LSUIElement` so that the
+    short first run puts no icon in the Dock, and `LSMinimumSystemVersion` read from the programs'
+    `LC_BUILD_VERSION`: 13.0 with Go 1.27), `PkgInfo`, the program, `WOPR.icns` and the notices. The
+    support statement stays macOS 26.
+  - Ad-hoc signed (`codesign --sign -`, without which Apple silicon will not run it), with the hardened
+    runtime that notarization will need. With no Developer ID and no notarization, Gatekeeper blocks the
+    first launch, and since macOS 15 Control-click no longer gets past it: the user clicks Done, then Open
+    Anyway in System Settings → Privacy & Security, and confirms with a password. The install tab gives
+    each step, and says to drag WOPR to Applications first: an app opened from Downloads or the image runs
+    from a randomised read-only copy (App Translocation), which may vanish while wopr hands itself to
+    Terminal.
+  - **The relaunch** (`cmd/wopr/launch*.go`). The bundle's executable is `wopr` itself. Run from
+    `<name>.app/Contents/MacOS/` with launchd as its parent, neither stdin nor stdout a terminal (a
+    character device other than `/dev/null`), and no argument but an old `-psn_` one, it runs
+    `/usr/bin/open -b com.apple.Terminal <its own path>` and exits, and Terminal runs it again in a new
+    window. Any other start is unchanged, so a pipeline or the e2e tests still get "not a terminal". It
+    sends Terminal no Apple events, which would need the user's permission. It always uses Terminal; an
+    iTerm2 user runs the program inside the app directly. `os/exec` is allowed in `cmd/wopr` for it (§4.1).
+  - Attested, not reproducible: the image's metadata and the signature differ from build to build. It
+    holds only files that `checksums.txt` lists, which `build-dmg.sh` checks.
+  - The smoke jobs on `macos-26` and `macos-26-intel` mount the image, check its layout, `Info.plist`, the
+    signature and both architectures, run the e2e tests against the app's program, and open the app as
+    Finder does to check the hand-off to Terminal. Artifacts are not quarantined, so Gatekeeper's dialogs
+    need a person on a Mac (§14).
+- **Snap** (owner decision 2026-10-08: built and tested, publishing off). `wopr_X.Y.Z_{amd64,arm64}.snap`:
+  base `core24` (the base of Ubuntu's preinstalled snaps, so an Ubuntu desktop downloads nothing more;
+  `bare` would also run the static program), strict confinement with no plugs, and the app ID as
+  `common-id`.
+  - There is no `snapcraft.yaml`: `internal/tools/snapdir` writes the snap's directory from the release's
+    program and notices, `packaging/snap/snap.yaml.in`, the 256 px icon and the Linux menu entry, rewritten
+    as snapd wants it, and `snap pack` packs it. Its licence is the `.rpm`'s without the map's LicenseRef,
+    which snapd refuses; the map's terms are in NOTICE.md inside the snap.
+  - The Store's `review-tools` must pass each snap, and `packaging/snap/test-snap.sh` installs it, runs it
+    in a pty under its confinement with the e2e tests, and removes it, on `ubuntu-24.04` and
+    `ubuntu-24.04-arm`. The snaps are the workflow artifact `snaps` (kept 90 days for a tag), never release
+    files, and not checked for reproducibility.
+  - `snap.yml`'s publish job uploads them to the stable channel only for a `v*` tag, after the GitHub
+    release is published, when the repository variable `SNAP_PUBLISH` is `true`, in the `snap-store`
+    environment that holds `SNAPCRAFT_STORE_CREDENTIALS` (AGENTS.md). It stays off until the owner
+    registers the name `wopr` and sets these up.
+  - App Center's own Open button starts a program without a terminal, so the docs will send users to the
+    app grid instead (from snapd's and App Center's source, untested). With `WOPR_DEBUG`, the snap's log is
+    `~/snap/wopr/current/.cache/wopr/debug.log`.
 - **Never UPX** (Windows AV false positives).
 - **Windows.**
   - Ctrl+C arrives as a key in raw mode on every OS, so `Update` maps it to `tea.Interrupt`. A blocked
@@ -1354,9 +1515,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - Keyboard enhancements stay off.
   - conhost resize events may report the buffer height (9001). Clamp to the window rect and check in the M2 QA
     pass.
-  - Ship unsigned. The one-line install downloads with `curl.exe`, which sets no Mark of the Web, so
-    SmartScreen does not ask; the Installation page's "Verifying binaries (attestation)" documents
-    SmartScreen for files downloaded with a browser, and verifying as optional (§12, §13).
+  - Ship unsigned (an issue tracks signing). The one-line install downloads with `curl.exe`, which sets no
+    Mark of the Web, so SmartScreen does not ask. It does ask about the installer, which people download
+    with a browser, and the install tab says what to click. The Installation page's "Verifying binaries
+    (attestation)" documents verifying as optional (§12, §13).
 - **Panics**: no custom `recover` around `p.Run()`. Bubble Tea restores the terminal, recovers `Cmd` goroutine
   panics too, and prints the stack to stderr. The model returned on panic is nil and is not used.
 - **Debug log** (S-5, `internal/debuglog`): `WOPR_DEBUG=1` writes `os.UserCacheDir()/wopr/debug.log`. It
@@ -1382,7 +1544,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - the scripted brain, typewriter dt math and pauses, and the line editor;
   - `Sanitize*`, the canvas, and the themes: every Style defined, distinct pairs in 16 colours and without
     colour, contrast, and each profile rendering only its own colours;
-  - accessibility (M5): the sweeps of every game in `internal/ui/access_test.go` (§4.5).
+  - accessibility (M5): the sweeps of every game in `internal/ui/access_test.go` (§4.5);
+  - packaging (§8): the icon renderer against exact areas and gradients, and the committed icons against their
+    sources; the app bundle; the snap's directory; the menu entry and AppStream metadata; and the macOS
+    relaunch decision, as a table.
 - **Architecture**: `archtest` covers the DAG (test imports and e2e files included), toolchain equality in CI,
   the tool modules' `go` lines, the pins shared between `prek.toml` and the tool modules, and the lint
   self-test. Each data package's tests check its provenance tags.
@@ -1403,8 +1568,8 @@ before the classified address it leads to; v2.1's provisional table had it in th
     `logon_list_then_number`, `help_list_games`, `intent_false_positives`, `offer_accept`, `stub_game`; UI
     `logon_joshua`, `logoff_exit0`, `too_small_pause_resume`, `esc_confirm`, `typeahead_thinking`,
     `front_panel`. Then each set piece (`film_path` in M2) and each movie scene.
-- **Fuzz** (Q-2): `FuzzClauses`, `FuzzSanitizeInput`, `FuzzEditor`, `FuzzResolve`, `FuzzGameIntent`, and the M7
-  reply parser.
+- **Fuzz** (Q-2): `FuzzClauses`, `FuzzSanitizeInput`, `FuzzEditor`, `FuzzResolve`, `FuzzGameIntent`, the games'
+  move and order parsers, `FuzzParseSVG` (the icon tool's SVG subset), and the M7 reply parser.
   - Seed corpora run in plain `go test`.
   - CI discovers every target with `go test -list '^Fuzz'`, runs each for 10 s on Linux, and uploads any
     crashing input as an artifact.
@@ -1433,7 +1598,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - On Unix every TUI case also asserts that the terminal modes (termios) are restored. Under ConPTY the
     assertion is weaker (exit code and final screen), because conhost owns the console modes.
   - The `build` job cross-compiles the test per target (`internal/tools/stage`) and ships it next to each
-    binary, so smoke runners need no Go toolchain.
+    binary, so smoke runners need no Go toolchain. The same test also runs against the program inside the
+    Mac app (`macos.yml`) and against the confined snap (`snap.yml`, all but `TestDebugLog`: a snap's `/tmp`
+    is its own, so `test-snap.sh` checks the log where the snap writes it).
 - **Race.**
   - CI runs `go test -race ./...` on `ubuntu-24.04` and `macos-26`, and plain `go test ./...` on
     `windows-2025`; the race detector there would need a C toolchain on the runner.
@@ -1466,7 +1633,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
   `go tool -modfile=<module> <tool>`:
   - `tools/go.mod`: gitleaks and govulncheck;
   - `tools/lint/go.mod`: golangci-lint (for the lint self-test and the Commands table);
-  - `tools/release/go.mod`: GoReleaser and changie;
+  - `tools/release/go.mod`: GoReleaser, changie and go-winres;
   - `tools/docs/go.mod`: Hugo, for the docs site (§13). Its own module because its graph is large.
 
   golangci-lint is separate because sharing a module with gitleaks pulls `x/ansi` to a version that breaks
@@ -1492,8 +1659,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
 - **codespell** skips script and art data with a prek `exclude` regex, `(^|/)testdata/` and every `go.mod` and
   `go.sum` included (the tool modules' hashes produced false positives, TO-3); `crasher` is on its ignore
   list.
-- **ShellCheck** stays in the hook set for any future script. CI and tooling logic is Go (`internal/tools/*`),
-  so it runs on Windows (B-14).
+- **ShellCheck** checks the scripts that run on one system only: the macOS image's and the snap's
+  (`packaging/macos/*.sh`, `packaging/snap/test-snap.sh`). The Windows installer's scripts are PowerShell
+  (`packaging/windows/*.ps1`), which no hook lints, so their CI runs are their check; they stay
+  non-executable for the shebang hooks. Logic that any system runs is Go (`internal/tools/*`), so it runs on
+  Windows (B-14).
 - **Change notes** (§13): a local `change-notes` hook runs `go run ./internal/tools/relnotes -check` when
   `.changes/`, `.changie.yaml`, `CHANGELOG.md` or relnotes itself changes, and on every `--all-files` run.
   It builds the pinned changie, so the generated `CHANGELOG.md` and version files are also kept to what
@@ -1510,7 +1680,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
 - Every action is pinned to a full commit SHA. Tools inside actions are pinned too: `prek-version: 0.5.5`
   (T-11), and GoReleaser and gitleaks via `go tool`.
 - `permissions: {}` at the top of each workflow; each job grants only what it needs.
-- `persist-credentials: false` on every checkout. Only `GITHUB_TOKEN` is used. No `pull_request_target`.
+- `persist-credentials: false` on every checkout. Only `GITHUB_TOKEN` is used, except
+  `SNAPCRAFT_STORE_CREDENTIALS`, a secret of the `snap-store` environment that only `snap.yml`'s publish job
+  reads (§12). No `pull_request_target`.
 - **`actions/setup-go`** uses `go-version-file: go.mod`, and **nothing sets `GOTOOLCHAIN` before it** (D-6).
   setup-go exports `GOTOOLCHAIN=local` itself after installing 1.27.1. `archtest` asserts the exact toolchain in
   CI.
@@ -1525,11 +1697,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
   release `build` and `rebuild` jobs produce the same version (CR-7).
 - **`.gitattributes`**: `* text=auto eol=lf`, plus `*.png binary`. Windows runners check out with
   `core.autocrlf=true`, which would otherwise break goldens (B-3).
-- **Concurrency** (CR-2) is set in `ci.yml` and `release.yml` only, never in the reusable `smoke.yml`: a called
-  workflow sees its caller's `github.ref`, and the same group in both deadlocks. Pull requests share a group per
-  PR, and pushes to other branches a group per branch; both cancel superseded runs. Pushes to `main` get a group
-  **per commit**, because with a shared group a newer pending run replaces an older pending one, which would
-  leave a merged commit without `ci-ok`:
+- **Concurrency** (CR-2) is set in `ci.yml` and `release.yml` only, never in the reusable workflows
+  (`smoke.yml`, `windows.yml`, `macos.yml`, `snap.yml`): a called workflow sees its caller's `github.ref`, and
+  the same group in both deadlocks. Pull requests share a group per PR, and pushes to other branches a group
+  per branch; both cancel superseded runs. Pushes to `main` get a group **per commit**, because with a shared
+  group a newer pending run replaces an older pending one, which would leave a merged commit without `ci-ok`:
 
   ```yaml
   concurrency:
@@ -1560,13 +1732,28 @@ its run tests exactly the tree the squash merge produces.
 |---|---|---|
 | `lint` | `ubuntu-24.04` | `fetch-depth: 0`. prek via `j178/prek-action` with `prek-version: 0.5.5`, including the `change-notes` hook (`relnotes -check`: the notes parse and fit one Debian changelog line, `CHANGELOG.md` is `changie merge`'s output, every release tag has its `.changes/vX.Y.Z.md`). The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). `relnotes -since origin/main`: a branch that changes a non-test file under `cmd/` or `internal/` (test-only packages aside), `.goreleaser.yaml`, `packaging/` or `docs/man/` adds a change note or carries a `Changelog: none` trailer (AGENTS.md). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
-| `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12); the manual-page check (§13). |
-| `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR` (on a release pull request, whose version is batched but not yet tagged, they are that version's notes under the snapshot's version, so the packages' first changelog entry is still their own); GoReleaser snapshot of all six targets and the four Linux packages; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, puts the `.deb` and `.rpm` beside the Linux ones, checks every archive's and package's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs (1 day). |
-| `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. On the two Linux runners it also installs the `.deb` with `sudo apt-get install`, finds `wopr` on the `PATH` that `/etc/environment` gives every login and its manual page with `man -w`, checks that the changelog starts with the package's version, and removes it; and installs the `.rpm` with `dnf` in a Fedora 44 container pinned by digest, with no network (it needs no other package), runs `rpm -V`, checks the changelog, and removes it. Neither removal may leave a file behind. |
+| `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12); the manual-page check (§13); the icons check (`icons -check`, §8). |
+| `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR` (on a release pull request, whose version is batched but not yet tagged, they are that version's notes under the snapshot's version, so the packages' first changelog entry is still their own); GoReleaser snapshot of all six targets and the four Linux packages; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, puts the `.deb` and `.rpm` beside the Linux ones, checks every archive's and package's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs and the end-to-end tests of its `macos` and `snap` jobs (1 day). Its `version` output is GoReleaser's `.Version` from `dist/metadata.json`, which names the installers and snaps, and it uploads `dist/release` as `release-dist` (1 day) for them. |
+| `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact, `chmod +x`es the files (artifacts lose the executable bit), and runs the e2e test against the binary with `-test.timeout=5m`; no Go toolchain. Every target has a native runner, so none is skipped. On the two Linux runners it also installs the `.deb` with `sudo apt-get install`, finds `wopr` on the `PATH` that `/etc/environment` gives every login and its manual page with `man -w`, checks that the changelog starts with the package's version, and removes it; and installs the `.rpm` with `dnf` in a Fedora 44 container pinned by digest, with no network (it needs no other package), runs `rpm -V`, checks the changelog, and removes it. Both check the menu entry (whose `Exec` names the package's program), the icon in every size and the AppStream metadata; the Ubuntu step validates them with `desktop-file-validate`, `appstreamcli` and `appstream-util` (apt installs those first), and the Fedora one checks that the package owns the icon directories. Neither removal may leave a file behind. |
+| `windows` | `windows-2025`; smoke on it and `windows-11-arm` | The reusable `windows.yml` with `release-dist` and the version: checks the files it packs against `checksums.txt`, builds the Inno Setup installer and the MSIX packages (§8), and uploads them as `installer-windows` and `msix`; then on each runner installs, checks and uninstalls the installer, also over a copy from the PowerShell line, and signs a copy of the MSIX package with a throwaway certificate, installs it, runs it through its alias and removes it. |
+| `macos` | `macos-26`; smoke on it and `macos-26-intel` | The reusable `macos.yml` with `release-dist`, the version and `smoke-bundle`: checks the darwin programs and notices, joins them with `lipo`, writes and ad-hoc signs `WOPR.app`, makes the `.dmg` and uploads it as `installer-macos`; then on each runner checks the image, runs the e2e test against the app's program, and opens the app as Finder does (§8). |
+| `snap` | `ubuntu-24.04`; tests on it and `ubuntu-24.04-arm` | The reusable `snap.yml` with `release-dist`, the version, `smoke-bundle` and `publish: false`: `snapdir` and `snap pack` for each architecture, the Store's `review-tools`, upload as `snaps`; then on each runner installs the snap, runs it and the e2e test under confinement, and removes it. Its publish job is skipped. |
+| `collect` | `ubuntu-24.04` | What `release.yml`'s `collect` does, without the upload: `sizegate -files` on the installer and the `.dmg`, then `stage -merge`, so a problem shows on any push and not first on a tag. |
 | `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`: a deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. |
-| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke, docs]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
+| `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
+
+The installers and snaps (owner decision 2026-10-08) are built in every CI run, as for a tag, so a broken
+installer shows on the branch that broke it. `windows.yml`, `macos.yml` and `snap.yml` are reusable
+workflows, called with `$/` like `smoke.yml`; each takes the `release-dist` artifact and the version, never
+compiles wopr, and checks what it packs against `checksums.txt`. Their calling jobs grant `contents: read`,
+because the called jobs check out the repository for the packaging files. `snap.yml`'s publish job is
+skipped in CI; GitHub reports such a called workflow as a success to `ci-ok`, which the first run must
+confirm (GitHub does not document it).
 
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
+
+`verify` → `build` and `rebuild` → `smoke`, `repro` and the installers → `collect` → `publish` → `docs` and the
+snaps.
 
 1. **`verify`** (`contents: read`, `checks: read`). The tag is semver; the tagged commit is an ancestor of
    `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (a check
@@ -1590,37 +1777,57 @@ its run tests exactly the tree the squash merge produces.
    `README.md`, `NOTICE.md` and `THIRD_PARTY_NOTICES.txt` (B-11), that the Linux and macOS archives hold the
    manual page `wopr.6` at their root and the Windows ones do not (Windows has no `man`), that each Linux
    build has one `.deb` and one `.rpm` named by its format's convention and installing what §8 lists (from
-   the `.deb`'s control archive and the `.rpm`'s header), and collects every file the release publishes
-   into `dist/release`: the six archives, the six bare binaries (a GoReleaser `binary`-format archive, named
+   the `.deb`'s control archive and the `.rpm`'s header), and collects every file of GoReleaser's that the
+   release publishes into `dist/release` (`collect` adds the installers): the six archives, the six bare binaries (a GoReleaser `binary`-format archive, named
    like the archives, `.exe` on Windows), the four Linux packages, those four documents, and
    `checksums.txt`, which GoReleaser writes over all of them (`checksum.extra_files` adds the documents). Each file must match its
-   checksum line. The staged files and `dist/release` are uploaded.
+   checksum line. The staged files (`release-stage`) and `dist/release` (`release-dist`) are uploaded. The
+   job's `version` output is GoReleaser's `.Version`, which must be the tag without its `v`; it names the
+   installers and snaps.
 3. **`smoke`**: the reusable workflow, run on the staged release binaries.
 4. **`rebuild`** runs beside `build`, not after it: relnotes and GoReleaser again from a fresh checkout on
    `ubuntu-24.04-arm` (cross-compiling), uploading its `checksums.txt`. relnotes takes every date from a
    version header or a commit, so both jobs package the same notes. **`repro`** then diffs the two
    `checksums.txt` files. Any difference fails the release.
-5. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`, `discussions: write`), on a tag
-   push only, and only when every earlier job succeeded.
-   1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt`, so every published file is
-      attested.
+5. **`windows`** and **`macos`**, beside `smoke`: the reusable workflows of §11.2 on `release-dist`
+   (`macos` with `release-stage` for its e2e tests). They build and test the Windows installer and the
+   MSIX packages, and the macOS disk image (§8). The MSIX bundle stays a workflow artifact, kept 90 days
+   for a Store submission by hand.
+6. **`collect`** (`contents: read`) downloads `release-dist`, `installer-windows` and `installer-macos`,
+   holds the installer and the `.dmg` to the size budget (`sizegate -files`), and adds them with
+   `stage -merge`: it requires `dist/release` to match `checksums.txt` exactly and in GoReleaser's own
+   format, copies the two files in, adds their lines sorted as GoReleaser sorts them, and checks every
+   file again, undoing everything on an error. It uploads the result as `release-files`. `repro` compared
+   GoReleaser's `checksums.txt` before this, so the installers are attested but not checked for
+   reproducibility; they are built once, from files that `repro` covers.
+7. **`publish`** (`contents: write`, `id-token: write`, `attestations: write`, `discussions: write`), on a tag
+   push only, and only when every earlier job succeeded (`windows`, `macos` and `collect` included).
+   1. `actions/attest@v4` with `subject-checksums: assets/checksums.txt` from `release-files`, so every
+      published file, the installers included, is attested.
    2. `gh release create vX.Y.Z --draft --verify-tag --notes-file notes.md` with every file from
-      `dist/release`. GitHub's generated notes stand in, with a warning, only if `notes.md` is empty.
+      `release-files`. GitHub's generated notes stand in, with a warning, only if `notes.md` is empty.
       GoReleaser's own changelog is disabled (CR-8): the notes are the change notes, not commit subjects.
    3. `gh release edit vX.Y.Z --draft=false --discussion-category Announcements`, which also starts the
       release's discussion (the job has `discussions: write`). If that fails, as when the category does not
       exist, it publishes without a discussion and warns.
 
    Immutable releases (§12) lock the release at publish time. A failed publish leaves only a draft.
-6. **`docs`** (`actions: write` only), after a successful `publish`, runs
+8. **`docs`** (`actions: write` only), after a successful `publish`, runs
    `gh workflow run docs.yml --ref main`, which publishes the docs site again so that its download commands
    name the new release (§13). A run that `GITHUB_TOKEN` starts through `workflow_dispatch` is the one kind
    such a token may start.
+9. **`snap`**, after a successful `publish`: `snap.yml` on `release-dist` and `release-stage`, with
+   `publish: true` for a tag push and `SNAPCRAFT_STORE_CREDENTIALS` passed by name (an environment's secret
+   reaches a called workflow only that way). It builds and tests the snaps, kept 90 days as `snaps`, and its
+   publish job uploads them only when `SNAP_PUBLISH` is `true`, in the `snap-store` environment, after the
+   owner approves (§8, AGENTS.md). It runs after `publish` so that the Snap Store never has a version the
+   GitHub release lacks, and so that the release never waits for that approval; `ci-ok`, which `verify`
+   requires, already built and tested the snaps on the same commit.
 
-**Dry run** (CR-1, IM-2). `workflow_dispatch` runs steps 2–4 with `--snapshot`: GoReleaser in release mode
-refuses an untagged commit, and there is no tag before v0.1.0. `verify` is then skipped, so every later job
-states its condition explicitly (`!cancelled()` and the results of its needs); otherwise the implicit
-`success()` would skip them too.
+**Dry run** (CR-1, IM-2). `workflow_dispatch` runs steps 2–6 and 9 with `--snapshot`, and never uploads the
+snaps: GoReleaser in release mode refuses an untagged commit, and there is no tag before v0.1.0. `verify` is
+then skipped, so every later job states its condition explicitly (`!cancelled()` and the results of its
+needs); otherwise the implicit `success()` would skip them too.
 
 **Never re-tag.** A bad release is fixed by the next patch version, plus a `retract` directive for
 `go install` users. That rule is in `SECURITY.md` and `AGENTS.md`.
@@ -1633,7 +1840,10 @@ removal. Ubuntu 26.04 has been generally available since 2026-09-17, and `ubuntu
 2026-10-19 and 2026-11-19; the pinned `ubuntu-24.04` labels do not move. `windows-2025` and `windows-11-arm` now
 run the images with Visual Studio 2026 (the Arm label moved in September 2026). `ubuntu-22.04` is deprecated and
 unsupported from 2027-04-17, and `macos-14` is unsupported from 2026-11-02, so neither is used. The labels are
-checked at every milestone boundary (AGENTS.md checklist) (B-5).
+checked at every milestone boundary (AGENTS.md checklist) (B-5). The installer and snap workflows use the
+same six labels. The MSIX jobs also need a Windows SDK on the Windows images (`WindowsSdk.psm1` takes the
+newest and fails clearly without one), and the snap jobs need snapd, which the `ubuntu-24.04-arm` partner
+image may lack, so `test-snap.sh` installs it when missing.
 
 ### 11.5 Dependency updates without Dependabot (R13)
 
@@ -1658,7 +1868,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   2. update the tool modules with `go get -tool`, the toolchain first if a tool needs it;
   3. `prek update`;
   4. bump action SHAs from their release tags;
-  5. regenerate the third-party notices.
+  5. bump the installers' tools: Inno Setup (by URL, SHA-256 and signer), the MSIX manifest's
+     `MaxVersionTested`, and snapcraft's track;
+  6. regenerate the third-party notices and the icons.
 
   Each step goes through a normal PR.
 - **Gaps covered** (S-10). Public repositories disable schedules after 60 days without activity, so the
@@ -1680,8 +1892,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     (a GitHub-supported token pattern would be stopped by push protection). Its push run's log must say
     `leaks found`, not an error. Then the branch is deleted, because a leftover branch would keep matching.
     AGENTS.md has the steps.
-  - `.gitignore` adds `*.pem`, `*.key`, `dist/`, `stage/`, `build/` (release notes and package documents) and
-    editor/OS files.
+  - `.gitignore` adds `*.pem`, `*.key`, `*.pfx` and `*.p12` (signing keys included), `dist/`, `stage/`,
+    `build/` (release notes and package documents), the installers and store packages (`*.dmg`, `*.msix`,
+    `*.snap` and their kin), go-winres's `.syso` files, and editor/OS files.
 - **Repository settings** (S-3, S-7, S-8). The owner applies them in M0; AGENTS.md lists them.
   - **`main` ruleset**: pull request required; required check `ci-ok` (from GitHub Actions), with branches
     required to be up to date before merging (§11.2); no force-push; no deletion. Merges are **squash
@@ -1702,17 +1915,30 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
     - workflows may not create or approve PRs;
     - approval required for **all** external contributors' workflow runs.
   - **Dependabot**: off (owner decision). govulncheck covers the Go graph.
+  - **Stores**, only when the owner turns them on (AGENTS.md has the steps): the `snap-store` environment
+    (the owner as required reviewer, deployments from `v*` tags only) holding `SNAPCRAFT_STORE_CREDENTIALS`,
+    a Snap Store login limited to the `wopr` snap, its stable channel, and uploading and releasing, which
+    expires within a year; the repository variable `SNAP_PUBLISH`; and the Microsoft Store identity as the
+    repository variables `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` and `MSIX_PUBLISHER_DISPLAY_NAME`, which are
+    not secret. No other secret exists.
 - **The app.** No network code before M7, no telemetry, no transcripts. External text is sanitised. wopr's
   debug log holds no typed input (§8).
-- **Releases.** Every file is attested. Verifying is optional, for those who want proof, in the Installation
+- **Releases.** Every file is attested, the Windows installer and the macOS disk image included; the MSIX
+  packages and snaps are not release files. Verifying is optional, for those who want proof, in the Installation
   page's last section, "Verifying binaries (attestation)", which the README and each release's notes link:
   - Command: `gh attestation verify <file> --repo GhostofGoes/WOPR`, plus
     `--signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml`,
     `--source-ref refs/tags/vX.Y.Z` and `--deny-self-hosted-runners`.
   - For a file downloaded with a browser, after verifying: `xattr -d com.apple.quarantine`, or the
     SmartScreen prompt. The one-line installs download with tools that set no such mark.
-  - Signing and notarisation are post-1.0 options. There is no Homebrew tap: casks need signing, third-party
-    taps need `brew trust`, and a tap needs a token beyond `GITHUB_TOKEN`.
+  - The installer holds each `wopr.exe` unchanged, so an installed one verifies. The Mac app's program joins
+    both darwin builds and matches neither, so the `.dmg` is what to verify.
+  - Nothing is signed yet (owner decision 2026-10-08): the Windows installer meets SmartScreen, and Smart
+    App Control blocks it outright; the Mac app is ad-hoc signed and needs Gatekeeper's Open Anyway once.
+    The install tabs walk through both. Issues track Windows code signing, Apple's signing and
+    notarization, the Microsoft Store (which signs MSIX packages itself), and Scoop and Chocolatey. There
+    is no Homebrew tap: casks need signing, third-party taps need `brew trust`, and a tap needs a token
+    beyond `GITHUB_TOKEN`.
 - **Licensing** (L-1, L-4, L-5, B-11).
   - Code is MIT.
   - `NOTICE.md` lists:
@@ -1736,8 +1962,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 - **README.md** (basic in M0, completed in M5):
   - what this is, and a link to the docs site (below);
   - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
-    …@latest`, a note that the `.deb` and `.rpm` install the manual page, and a link to the verifying section
-    (§12);
+    …@latest`, the Windows installer, the Mac app and the Linux packages (which put WOPR in the Start menu,
+    Applications or the app menu, and warn at first because they are unsigned), a note that the `.deb` and
+    `.rpm` install the manual page, and a link to the verifying section (§12);
   - quick start (`Joshua`, `LOGOFF`);
   - inside the shell: commands, keys, and "any key skips; what you type is kept";
   - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
@@ -1752,7 +1979,8 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - goldens and `WOPR_UPDATE_GOLDEN`; provenance tags;
   - the size budget and platforms; repository settings;
   - change notes (how to add one, the style, when `Changelog: none` applies) and how to release;
-  - the milestone checklist: dependency updates, runner labels, re-enabling schedules, `prek update`.
+  - the milestone checklist: dependency updates, the installers' tools, runner labels, re-enabling
+    schedules, `prek update`.
 
   `CLAUDE.md` contains exactly `@AGENTS.md`.
 - **Change notes and `CHANGELOG.md`** (owner decision 2026-10-07, after v0.2.0). Every change a player could
@@ -1772,17 +2000,31 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
     Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
     terminal, with only the tools each system installs by default (the Go tab needs Go). The lines download
-    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one Markdown file per tab in
-    `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an attestation is the
-    Installation page's last section, for those who want it; the README links there and to the guide.
+    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one
+    Markdown file per tab in `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an
+    attestation is the Installation page's last section, for those who want it; the README links there and
+    to the guide.
+  - **Installers first on Windows and macOS** (owner decision 2026-10-08). Once the latest release has the
+    installer and the Mac app (every release after v0.3.0; the `has-installers` partial), those two tabs
+    lead with the download and then each click in order, warnings included: the browser's, SmartScreen's
+    More info and Run anyway, and Smart App Control's block on Windows; dragging to Applications first, then
+    Gatekeeper's Done and Open Anyway in Privacy & Security on macOS. The line comes second, as the way to
+    get the `wopr` command. They are `windows-installer.md` and `macos-app.md`, where `@COMMAND-LINE@`
+    stands for the tab's own line, so each line is written once; every build reads and checks both. The
+    Linux (apt) and (RPM) tabs add the app menu and how to open a downloaded package in the desktop's
+    software app. The Installation page's uninstall steps, the troubleshooting page (SmartScreen, Smart App
+    Control, Gatekeeper, App Translocation, a missing menu entry) and the credits page (Inno Setup) show
+    their new parts only under the same gates (`if-installers`, `if-packages`). Nothing names the snap until
+    it is published.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
     requests sections are mounted and rendered, not copied; so are `docs/screenshots/` and the manual page.
     The download commands name the latest release (below), and the `.deb` and `.rpm` instructions appear once
     that release has packages (any release after v0.3.0, which also has `wopr.6` in its archives; the
-    `if-packages` shortcode). Tests in `internal/cli` check that the usage page lists every option and
-    environment variable and the movie page every scene.
+    `if-packages` shortcode), as the installer and the Mac app do (`if-installers`). The site's favicons and
+    navbar logo are the program's icon, drawn by `internal/tools/icons` (§8). Tests in `internal/cli` check
+    that the usage page lists every option and environment variable and the movie page every scene.
   - **Strict build.** `--panicOnWarning` (deprecations included) and `--printPathWarnings`; an internal link
     to no page or file, a missing screenshot or a game file without its required fields is an error. CI's
     `docs` job builds it on every push (§11.2).
@@ -1832,7 +2074,10 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 1. `ci-ok` is green on the tagged commit. The release pipeline's `verify`, `build`, `smoke` and `repro` jobs pass.
    The six archives each contain the four notice files and are within the size budget; the four Linux and macOS
    archives also hold `wopr.6`. The four Linux packages pass `stage`'s checks, and the smoke jobs install,
-   run and remove them on Ubuntu (`.deb`) and Fedora (`.rpm`).
+   run and remove them on Ubuntu (`.deb`) and Fedora (`.rpm`), menu entry, icons and metadata included. The
+   `windows`, `macos` and `collect` jobs pass: on both architectures the installer is installed, run and
+   removed, and the `.dmg` mounted and its app run and opened as Finder opens it; both fit the size budget
+   and are in `checksums.txt`. The `msix` and `snaps` artifacts exist.
 2. `wopr -v`, `-h`, `-g`, `-L` and their long forms print plain text and exit 0 without a terminal.
    `wopr --games | head -1` exits 0 on every OS.
 3. `wopr`:
@@ -1853,9 +2098,14 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
    self-test are green.
 6. The e2e test passes on all six smoke runners. A manual pass in Windows Terminal and conhost checks colours,
    cursor, resize, Ctrl+C restore and SmartScreen.
-7. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
+7. A manual pass of the installers, which CI cannot click through, on a download from the release page:
+   on Windows, the browser's warning, SmartScreen, the wizard, the Start menu entry opening a terminal, and
+   uninstalling from Settings; on a Mac, dragging to Applications, Gatekeeper's Open Anyway, the hand-off
+   to Terminal, and whether macOS asks again when Terminal runs the program; on Ubuntu and Fedora desktops,
+   opening the downloaded package, the menu entry and its Movie Mode action.
+8. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
-8. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
+9. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
    the end of the list, pausing between pages, and exits 0; `wopr -m 2 -o` plays scene 2 alone and exits 0;
    `wopr --scenes` lists them. The movie consistency tests are green.
 
@@ -1875,6 +2125,9 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
 | 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), `-o/--only` (the owner's request to play one scene and stop), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
 
+The installers (R14, owner decision 2026-10-08) belong to no milestone: they ship with the next release, and
+the store listings wait for the owner's accounts, the Microsoft Store's for v1.0.0 (§8).
+
 Effort is not estimated per game (P-3). Each milestone's PR description records time spent, which informs the
 next one.
 
@@ -1892,11 +2145,13 @@ M1.
 | RK-2 | "WOPR" is a registered US mark (Frontier Technology, class 42). | Low / medium | Different class (SaaS vs a free game); no logo imitation; revisit if contacted. Not legal advice. |
 | RK-3 | Bubble Tea v2 patch churn (v2.0.10 in under a year). | Medium / low | Pin; read release notes on each update; goldens catch rendering changes. |
 | RK-4 | Hosted runner labels retire. | High / low | Pinned labels; checklist at each milestone; the oldest Linux claim rests on Go's kernel floor, not on a runner (§1). |
-| RK-5 | Unsigned binaries trigger Gatekeeper and SmartScreen friction. | High / low | Attestations plus verify-first docs; signing post-1.0. |
+| RK-5 | Unsigned binaries and installers trigger Gatekeeper and SmartScreen friction, and Smart App Control blocks them outright. | High / medium | Attestations plus verify-first docs; the install tabs walk through each warning (§13); issues track signing and the stores (§12). |
 | RK-6 | No Dependabot means updates lag. | Medium / medium | Weekly scheduled report issue; govulncheck in CI; monthly manual cadence; 14-day response rule. |
 | RK-7 | 16 games is a large scope. | High / medium | A release per milestone; `Planned` games stay listed and decline in character. |
 | RK-8 | The chess library fork goes stale. | Low / low | Small API surface used (rules, SAN/UCI); search is our own. |
 | RK-9 | Tool dependency graphs conflict (golangci-lint's broke gitleaks's build, SL-2). | Medium / low | One tool module per conflicting tool; the CI jobs build each tool on every run, so a break shows at once. |
+| RK-10 | The installers' first runs on real machines are untested: Gatekeeper's dialogs, Smart App Control, which terminal a Linux desktop opens, App Center's Open button for the snap. | Medium / medium | CI installs and runs each on its own platform; a manual pass per release (§14); the docs hedge what is unconfirmed. |
+| RK-11 | The stores refuse or pull WOPR: the Snap Store reviews new names by hand, and the Microsoft Store's content policies cover the film quotations and the registered mark (RK-1, RK-2). | Medium / low | Publishing stays off until the owner decides; the GitHub release stays the main channel. |
 
 Risk ids are `RK-n`, so they do not collide with the requirement ids (R1…R13) or the v1 review's `R-n` findings
 (IM-12).

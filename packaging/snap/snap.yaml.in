@@ -1,0 +1,47 @@
+# wopr's snap metadata, meta/snap.yaml in the snap. internal/tools/snapdir writes it for each
+# architecture from packaging/snap/snap.yaml.in, with the version being built, and the summary and
+# description from packaging/description.txt. The snap holds the release's program unchanged, so
+# there is no snapcraft.yaml: snapdir prepares the directory and `snap pack` packs it
+# (.github/workflows/snap.yml).
+#
+# base core24: the program is static and needs nothing from its base, and the empty base, bare,
+# would do. But core24 is the usual base for strictly confined programs, and App Center, Firefox
+# and Ubuntu's other preinstalled snaps use it, so an Ubuntu desktop already has it.
+#
+# Strict confinement and no plugs: wopr uses no network and reads no files. snapd's default
+# AppArmor profile lets it use the terminal it runs in. Its home is ~/snap/wopr/<revision>, so
+# WOPR_DEBUG's log goes to ~/snap/wopr/<revision>/.cache/wopr/debug.log. (XDG_CACHE_HOME, when the
+# desktop sets it, takes the place of ~/.cache, and wopr says so if the snap may not write there.)
+#
+# license: snapd accepts only identifiers from its SPDX list, with no LicenseRef, so the .rpm's
+# LicenseRef-Matthew-Thomas-map cannot be here. The map's terms are in NOTICE.md, which the snap
+# holds.
+name: wopr
+version: '@VERSION@'
+title: WOPR
+summary: @SUMMARY@
+description: |
+  @DESCRIPTION@
+
+  Open WOPR from your app grid, or type wopr in a terminal.
+license: MIT AND BSD-2-Clause AND BSD-3-Clause
+links:
+  website:
+    - https://ghostofgoes.github.io/WOPR/
+  contact:
+    - https://github.com/GhostofGoes/WOPR/discussions
+  issues:
+    - https://github.com/GhostofGoes/WOPR/issues
+  source-code:
+    - https://github.com/GhostofGoes/WOPR
+architectures:
+  - @ARCH@
+base: core24
+confinement: strict
+grade: stable
+apps:
+  wopr:
+    command: bin/wopr
+    # The app ID, which the .deb's and the .rpm's menu entry and AppStream metadata use: software
+    # centres know them as the same program.
+    common-id: io.github.ghostofgoes.wopr

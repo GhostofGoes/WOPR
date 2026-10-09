@@ -1,0 +1,64 @@
+<!--
+  Provenance: original (drawn for wopr).
+  PROVISIONAL placeholder art until the owner picks the icon design: the lamps of wopr.svg on
+  an opaque square with no margin, for macOS, which rounds icons itself. To change the icon,
+  replace this file, wopr.svg and wopr-small.svg (packaging/icons/README.md), then run:
+  go run ./internal/tools/icons
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>WOPR</title>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2d333b"/>
+      <stop offset="1" stop-color="#111418"/>
+    </linearGradient>
+    <radialGradient id="amber" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#fff2c6"/>
+      <stop offset="0.4" stop-color="#ffb52e"/>
+      <stop offset="1" stop-color="#b05c00"/>
+    </radialGradient>
+    <radialGradient id="red" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#ffd3c7"/>
+      <stop offset="0.4" stop-color="#ff4a2b"/>
+      <stop offset="1" stop-color="#981306"/>
+    </radialGradient>
+    <radialGradient id="amber-glow">
+      <stop offset="0.5" stop-color="#ffb52e" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ffb52e" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="red-glow">
+      <stop offset="0.5" stop-color="#ff4a2b" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#ff4a2b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#tile)"/>
+  <rect x="128" y="128" width="768" height="768" rx="64" fill="#07090b"/>
+  <g fill="#2a241d" stroke="#40382d" stroke-width="8">
+    <circle cx="416" cy="224" r="64"/>
+    <circle cx="800" cy="224" r="64"/>
+    <circle cx="224" cy="416" r="64"/>
+    <circle cx="608" cy="416" r="64"/>
+    <circle cx="800" cy="416" r="64"/>
+    <circle cx="224" cy="608" r="64"/>
+    <circle cx="416" cy="608" r="64"/>
+    <circle cx="608" cy="608" r="64"/>
+    <circle cx="416" cy="800" r="64"/>
+    <circle cx="800" cy="800" r="64"/>
+  </g>
+  <g>
+    <circle cx="224" cy="224" r="90" fill="url(#amber-glow)"/>
+    <circle cx="608" cy="224" r="90" fill="url(#red-glow)"/>
+    <circle cx="416" cy="416" r="90" fill="url(#amber-glow)"/>
+    <circle cx="800" cy="608" r="90" fill="url(#amber-glow)"/>
+    <circle cx="224" cy="800" r="90" fill="url(#red-glow)"/>
+    <circle cx="608" cy="800" r="90" fill="url(#amber-glow)"/>
+  </g>
+  <g stroke="#2a1606" stroke-width="6" stroke-opacity="0.5">
+    <circle cx="224" cy="224" r="64" fill="url(#amber)"/>
+    <circle cx="608" cy="224" r="64" fill="url(#red)"/>
+    <circle cx="416" cy="416" r="64" fill="url(#amber)"/>
+    <circle cx="800" cy="608" r="64" fill="url(#amber)"/>
+    <circle cx="224" cy="800" r="64" fill="url(#red)"/>
+    <circle cx="608" cy="800" r="64" fill="url(#amber)"/>
+  </g>
+</svg>

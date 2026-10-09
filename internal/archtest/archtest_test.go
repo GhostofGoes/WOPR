@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go/version"
 	"io"
 	"os"
@@ -89,7 +90,7 @@ var rules = []rule{
 // stdBans fences standard-library packages to the places that need them.
 var stdBans = map[string][]string{ // std package -> packages allowed to import it
 	"net/http": {"internal/llm"},
-	"os/exec":  {"internal/tools/...", "internal/archtest", "internal/e2e"},
+	"os/exec":  {"cmd/wopr", "internal/tools/...", "internal/archtest", "internal/e2e"}, // cmd/wopr: the macOS app reopens itself in Terminal
 	"unsafe":   {},
 }
 
@@ -101,41 +102,56 @@ type listed struct {
 	XTestImports []string
 }
 
+// releaseGOOS are the systems the release builds for. go list sees only the files one GOOS
+// builds, so the DAG is checked for each: cmd/wopr's darwin-only relaunch imports os/exec, which a
+// Linux or Windows run would never see.
+var releaseGOOS = []string{"linux", "darwin", "windows"}
+
 func TestImportDAG(t *testing.T) {
 	root := moduleRoot(t)
 	trackSources(t, root)
-	cmd := exec.Command("go", "list", "-tags=e2e", "-json=ImportPath,Standard,Imports,TestImports,XTestImports", "./...")
-	cmd.Dir = root
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	out, err := cmd.Output()
-	if err != nil {
-		t.Fatalf("go list: %v\n%s", err, stderr.String())
+	reported := map[string]bool{} // each problem once, however many systems show it
+	report := func(msg string) {
+		if !reported[msg] {
+			reported[msg] = true
+			t.Error(msg)
+		}
 	}
-	dec := json.NewDecoder(bytes.NewReader(out))
-	for {
-		var p listed
-		if err := dec.Decode(&p); errors.Is(err, io.EOF) {
-			break
-		} else if err != nil {
-			t.Fatal(err)
+	for _, goos := range releaseGOOS {
+		cmd := exec.Command("go", "list", "-tags=e2e", "-json=ImportPath,Standard,Imports,TestImports,XTestImports", "./...")
+		cmd.Dir = root
+		cmd.Env = append(os.Environ(), "GOOS="+goos)
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		out, err := cmd.Output()
+		if err != nil {
+			t.Fatalf("GOOS=%s go list: %v\n%s", goos, err, stderr.String())
 		}
-		rel := relative(p.ImportPath)
-		r, ok := match(rel)
-		if !ok {
-			t.Errorf("%s matches no rule; add it to the DAG in internal/archtest and docs/PLAN.md", rel)
-			continue
-		}
-		check := func(imports []string, test bool) {
-			for _, imp := range imports {
-				if why := allowed(rel, r, imp, test); why != "" {
-					t.Errorf("%s imports %s: %s", rel, imp, why)
+		dec := json.NewDecoder(bytes.NewReader(out))
+		for {
+			var p listed
+			if err := dec.Decode(&p); errors.Is(err, io.EOF) {
+				break
+			} else if err != nil {
+				t.Fatal(err)
+			}
+			rel := relative(p.ImportPath)
+			r, ok := match(rel)
+			if !ok {
+				report(rel + " matches no rule; add it to the DAG in internal/archtest and docs/PLAN.md")
+				continue
+			}
+			check := func(imports []string, test bool) {
+				for _, imp := range imports {
+					if why := allowed(rel, r, imp, test); why != "" {
+						report(fmt.Sprintf("%s imports %s: %s", rel, imp, why))
+					}
 				}
 			}
+			check(p.Imports, false)
+			check(p.TestImports, true)
+			check(p.XTestImports, true)
 		}
-		check(p.Imports, false)
-		check(p.TestImports, true)
-		check(p.XTestImports, true)
 	}
 }
 

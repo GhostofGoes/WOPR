@@ -4,16 +4,20 @@
   assets/install/<file>.md, where @VERSION@ becomes the latest release's version (the version
   shortcode's), so that every command names a file that exists. Until the latest release has the
   Linux packages (the has-packages partial), their tabs show assets/install/packages-later.md, with
-  @PACKAGE@ as the package's kind. Hextra's tabs draw them, synced: a tab picked on one page is
-  picked on the other.
+  @PACKAGE@ as the package's kind. Once it has the Windows installer and the Mac app (the
+  has-installers partial), those two tabs show assets/install/<installer>.md instead, which leads
+  with the download and puts the command line after it: @COMMAND-LINE@ there stands for the tab's
+  own <file>.md, so each command is still written once. Hextra's tabs draw them, synced: a tab
+  picked on one page is picked on the other.
 
     {{< install-tabs >}}
 */ -}}
 {{- $version := partial "latest-version.html" . -}}
 {{- $hasPackages := partial "has-packages.html" . -}}
+{{- $hasInstallers := partial "has-installers.html" . -}}
 {{- $items := slice
-  (dict "name" "Windows" "file" "windows")
-  (dict "name" "macOS" "file" "macos")
+  (dict "name" "Windows" "file" "windows" "installer" "windows-installer")
+  (dict "name" "macOS" "file" "macos" "installer" "macos-app")
   (dict "name" "Linux" "file" "linux")
   (dict "name" "Linux (apt)" "file" "linux-apt" "package" ".deb")
   (dict "name" "Linux (RPM)" "file" "linux-rpm" "package" ".rpm")
@@ -25,12 +29,30 @@
   {{- if and $item.package (not $hasPackages) -}}
     {{- $file = "packages-later" -}}
   {{- end -}}
-  {{- with resources.Get (printf "install/%s.md" $file) -}}
-    {{- $text := replace .Content "@VERSION@" $version -}}
-    {{- $text = replace $text "@PACKAGE@" ($item.package | default "") -}}
-    {{- $tabs = $tabs | append (dict "id" $i "name" $item.name "icon" "" "content" $text "selected" false) -}}
-  {{- else -}}
-    {{- errorf "%s: install-tabs: assets/install/%s.md is missing" $.Position $file -}}
+  {{- $text := partial "inline/install-tab-file.html" (dict "file" $file "position" $.Position) -}}
+  {{- with $item.installer -}}
+    {{- /* Read and checked in every build, so that a broken file fails before the release. */ -}}
+    {{- $installer := partial "inline/install-tab-file.html" (dict "file" . "position" $.Position) -}}
+    {{- if not (strings.Contains $installer "@COMMAND-LINE@") -}}
+      {{- errorf "%s: install-tabs: assets/install/%s.md has no @COMMAND-LINE@" $.Position . -}}
+    {{- end -}}
+    {{- if $hasInstallers -}}
+      {{- $text = replace $installer "@COMMAND-LINE@" $text -}}
+    {{- end -}}
   {{- end -}}
+  {{- $text = replace $text "@VERSION@" $version -}}
+  {{- $text = replace $text "@PACKAGE@" ($item.package | default "") -}}
+  {{- $tabs = $tabs | append (dict "id" $i "name" $item.name "icon" "" "content" $text "selected" false) -}}
 {{- end -}}
 {{- partial "shortcodes/tabs" (dict "tabs" $tabs "enableSync" true "id" .Ordinal) -}}
+
+{{- /* The text of assets/install/<file>.md; a missing file fails the build. */ -}}
+{{- define "_partials/inline/install-tab-file.html" -}}
+  {{- $text := "" -}}
+  {{- with resources.Get (printf "install/%s.md" .file) -}}
+    {{- $text = .Content -}}
+  {{- else -}}
+    {{- errorf "%s: install-tabs: assets/install/%s.md is missing" .position .file -}}
+  {{- end -}}
+  {{- return $text -}}
+{{- end -}}

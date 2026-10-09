@@ -58,16 +58,32 @@ func TestCompress(t *testing.T) {
 	}
 }
 
+// testChangelog is changelog.yml as relnotes writes it for a snapshot of 0.3.0.
+const testChangelog = `[
+  {"semver": "0.3.0~snapshot.abc1234-1", "date": "2026-10-08T22:49:16Z", "changes": [{"note": "A new game."}]},
+  {"semver": "0.2.0-1", "date": "2026-10-07T15:32:04Z", "changes": [{"note": "Fixed a crash."}]}
+]
+`
+
 func TestRun(t *testing.T) {
 	t.Parallel()
 	root, notes, out := t.TempDir(), t.TempDir(), filepath.Join(t.TempDir(), "pkg")
 	const page = ".\\\" generated\n.TH WOPR 6 2026-10-07 \"wopr 0.2.0\" \"Games Manual\"\n.SH NAME\nwopr \\- WOPR\n"
 	sources := map[string]string{
-		filepath.Join(root, "docs", "man", "wopr.6"): page,
-		filepath.Join(root, "README.md"):             "# wopr\n",
-		filepath.Join(root, "NOTICE.md"):             "# Notices\n",
-		filepath.Join(notes, "CHANGELOG.md"):         "# Changelog\n",
-		filepath.Join(notes, "changelog.yml"):        "[]\n",
+		filepath.Join(root, "docs", "man", "wopr.6"):        page,
+		filepath.Join(root, "README.md"):                    "# wopr\n",
+		filepath.Join(root, "NOTICE.md"):                    "# Notices\n",
+		filepath.Join(notes, "CHANGELOG.md"):                "# Changelog\n",
+		filepath.Join(notes, "changelog.yml"):               testChangelog,
+		filepath.Join(root, "packaging", "description.txt"): "A summary\nThe description.\n",
+	}
+	// The real templates, which linux_test.go checks in detail.
+	for _, tmpl := range []string{desktopTemplate, metainfoTemplate} {
+		data, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(tmpl)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		sources[filepath.Join(root, filepath.FromSlash(tmpl))] = string(data)
 	}
 	for p, s := range sources {
 		if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
@@ -84,7 +100,7 @@ func TestRun(t *testing.T) {
 	stamped := strings.Replace(page, `"wopr 0.2.0"`, `"wopr 0.3.0\-snapshot.abc1234"`, 1)
 	for name, want := range map[string]string{
 		"wopr.6": stamped, "wopr.6.gz": stamped, "NEWS.gz": "# Changelog\n", "README.md.gz": "# wopr\n",
-		"NOTICE.md.gz": "# Notices\n", "changelog.yml": "[]\n",
+		"NOTICE.md.gz": "# Notices\n", "changelog.yml": testChangelog,
 	} {
 		data, err := os.ReadFile(filepath.Join(out, name))
 		if err != nil {
@@ -97,19 +113,47 @@ func TestRun(t *testing.T) {
 			t.Errorf("%s holds %q, want %q", name, got, want)
 		}
 	}
+	// The menu entries name the program where each package puts it; the metadata has the
+	// description and the releases.
+	for format, want := range map[string]string{"deb": "Exec=/usr/games/wopr\n", "rpm": "Exec=/usr/bin/wopr\n"} {
+		data, err := os.ReadFile(filepath.Join(out, format, appID+".desktop"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), want) {
+			t.Errorf("the %s menu entry has no %q:\n%s", format, want, data)
+		}
+	}
+	metainfo, err := os.ReadFile(filepath.Join(out, appID+".metainfo.xml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"\n    <p>The description.</p>\n",
+		`<release version="0.3.0-snapshot.abc1234" date="2026-10-08" type="snapshot">`,
+		"<li>A new game.</li>",
+		`<release version="0.2.0" date="2026-10-07">`,
+	} {
+		if !strings.Contains(string(metainfo), want) {
+			t.Errorf("the metadata has no %q:\n%s", want, metainfo)
+		}
+	}
+	if err := run(root, notes, out, "0.3.1"); err == nil {
+		t.Error("notes for another version must fail")
+	}
 	if err := run(root, notes, out, "v0.3.0"); err == nil {
 		t.Error("a version with a v must fail: GoReleaser's {{ .Version }} has none")
 	}
 	if err := os.Remove(filepath.Join(notes, "changelog.yml")); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(root, notes, out, "0.3.0"); err == nil {
+	if err := run(root, notes, out, "0.3.0-snapshot.abc1234"); err == nil {
 		t.Error("a missing package changelog must fail")
 	}
 	if err := os.Remove(filepath.Join(notes, "CHANGELOG.md")); err != nil {
 		t.Fatal(err)
 	}
-	if err := run(root, notes, out, "0.3.0"); err == nil {
+	if err := run(root, notes, out, "0.3.0-snapshot.abc1234"); err == nil {
 		t.Error("missing release notes must fail")
 	}
 }
@@ -128,7 +172,7 @@ func TestStampVersion(t *testing.T) {
 // The manual page in the tree has the title line stampVersion rewrites.
 func TestRepositoryPage(t *testing.T) {
 	t.Parallel()
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", filepath.FromSlash(manPage)))
+	data, err := os.ReadFile(filepath.Join(repoRoot, filepath.FromSlash(manPage)))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +186,7 @@ func TestRepositoryPage(t *testing.T) {
 // (Debian Policy §3.4, Fedora's "Summary and Description"; lintian and rpmlint check them).
 func TestDescription(t *testing.T) {
 	t.Parallel()
-	root := filepath.Join("..", "..", "..")
+	root := repoRoot
 	data, err := os.ReadFile(filepath.Join(root, "packaging", "description.txt"))
 	if err != nil {
 		t.Fatal(err)

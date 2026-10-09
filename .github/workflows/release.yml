@@ -1,8 +1,14 @@
-# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish → docs.
+# Releases on v* tags: verify → build and rebuild (in parallel) → smoke, repro and the installers →
+# collect → publish → docs and the snaps.
 # workflow_dispatch runs everything but verify, publish and docs as a dry run, and never publishes.
 # The release notes come from .changes/ (AGENTS.md, "Releasing"): build and rebuild both write them
 # with internal/tools/relnotes into build/notes (WOPR_NOTES_DIR), which .gitignore keeps out of the
 # tree that GoReleaser needs clean.
+# The installers (windows.yml's setup.exe, macos.yml's .dmg) and the snaps (snap.yml) are built on
+# their own runners from build's release files, never compiled again. collect adds the installers
+# to the release files and checksums.txt, which publish attests; repro compares GoReleaser's own
+# files only, so the installers are attested but not checked for reproducibility. The snaps and
+# the MSIX packages are workflow artifacts for the stores and never release files.
 name: Release
 
 on:
@@ -72,6 +78,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -100,9 +108,28 @@ jobs:
           SNAPSHOT: ${{ github.event_name == 'workflow_dispatch' && '--snapshot' || '' }}
           WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --clean --skip=publish ${SNAPSHOT:+"$SNAPSHOT"}
+      # GoReleaser's .Version, which names the installers and the snaps: the tag without its v, or a
+      # dry run's snapshot version.
+      - name: Version
+        id: version
+        env:
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="$(jq -r .version dist/metadata.json)"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::dist/metadata.json has no usable version: ${version}"
+            exit 1
+          fi
+          if [[ "${DRY_RUN}" != "true" && "${version}" != "${TAG#v}" ]]; then
+            echo "::error::GoReleaser built ${version}, not the tag's ${TAG#v}"
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6 -packages 4
-      # dist/release gets every published file, each checked against checksums.txt.
+      # dist/release gets every file GoReleaser made for the release, each checked against
+      # checksums.txt; collect adds the installers.
       - name: Stage binaries, check archive and package contents, collect the release files
         run: go run ./internal/tools/stage -archives -assets dist/release
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -132,6 +159,82 @@ jobs:
     uses: $/.github/workflows/smoke.yml
     with:
       artifact: release-stage
+
+  # The installers, built from release-dist and tested on Windows (x64 and Arm64) and macOS (Apple
+  # silicon and Intel). Each called workflow checks out the repository for its packaging files, so
+  # it needs contents: read. windows.yml also uploads the MSIX packages for a Store submission.
+  windows:
+    name: windows
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    permissions:
+      contents: read
+    uses: $/.github/workflows/windows.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+
+  macos:
+    name: macos
+    needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    permissions:
+      contents: read
+    uses: $/.github/workflows/macos.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+      stage-artifact: release-stage
+
+  # Adds the installers to the release files and to checksums.txt (stage -merge sorts it as
+  # GoReleaser does and checks every file again), after the same size budget as the binaries.
+  # publish attests and uploads what this uploads.
+  collect:
+    name: collect
+    needs: [build, windows, macos]
+    if: >-
+      ${{ !cancelled() && needs.build.result == 'success' && needs.windows.result == 'success'
+      && needs.macos.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dist
+          path: dist/release
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-windows
+          path: build/installers
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-macos
+          path: build/installers
+      - name: Size gate (installers)
+        run: >-
+          go run ./internal/tools/sizegate -files
+          "build/installers/wopr_${VERSION}_windows_setup.exe" "build/installers/wopr_${VERSION}_macos.dmg"
+      - name: Add the installers to the release files and checksums.txt
+        run: >-
+          go run ./internal/tools/stage -merge -assets dist/release
+          "build/installers/wopr_${VERSION}_windows_setup.exe" "build/installers/wopr_${VERSION}_macos.dmg"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-files
+          path: dist/release/
+          retention-days: 7
+          if-no-files-found: error
 
   rebuild:
     name: rebuild
@@ -175,6 +278,8 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
+  # GoReleaser's own checksums.txt from both builds, before collect adds the installers: they are
+  # built once, from these files, and attested only.
   repro:
     name: reproducible
     needs: [build, rebuild]
@@ -196,10 +301,11 @@ jobs:
 
   publish:
     name: publish
-    needs: [verify, build, smoke, repro]
+    needs: [verify, build, smoke, repro, windows, macos, collect]
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
-      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success' }}
+      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success'
+      && needs.windows.result == 'success' && needs.macos.result == 'success' && needs.collect.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -208,9 +314,10 @@ jobs:
       attestations: write
       discussions: write # the release's discussion
     steps:
+      # The release files with the installers, from collect.
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: release-dist
+          name: release-files
           path: assets
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -219,8 +326,8 @@ jobs:
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: assets/checksums.txt
-      # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
-      # THIRD_PARTY_NOTICES.txt, checksums.txt.
+      # Archives, bare binaries, .deb and .rpm packages, the Windows installer, the macOS disk
+      # image, LICENSE, README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt, checksums.txt.
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
       # Publishing also starts a discussion of the release in the Announcements category, which
       # GitHub creates with Discussions; if that fails (the category was renamed, say), the release is
@@ -268,3 +375,25 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: gh workflow run docs.yml --repo "${REPO}" --ref main
+
+  # The snaps, packed from release-dist and tested, after publish so that the Snap Store never gets
+  # a version the GitHub release lacks. snap.yml uploads them only for a tag, when the repository
+  # variable SNAP_PUBLISH is true, in the snap-store environment, after the owner approves; until
+  # then its publish job is skipped (AGENTS.md). The environment's secret reaches the called
+  # workflow only when passed by name here. A dry run builds and tests them.
+  snap:
+    name: snap
+    needs: [build, publish]
+    if: >-
+      ${{ !cancelled() && needs.build.result == 'success'
+      && (needs.publish.result == 'success' || github.event_name == 'workflow_dispatch') }}
+    permissions:
+      contents: read
+    uses: $/.github/workflows/snap.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+      stage-artifact: release-stage
+      publish: ${{ github.event_name == 'push' }}
+    secrets:
+      SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}

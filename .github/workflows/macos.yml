@@ -1,0 +1,100 @@
+# Builds the macOS disk image, wopr_<version>_macos.dmg, from the release files that GoReleaser
+# made: one universal WOPR.app from the two darwin programs, ad-hoc signed, beside a link to
+# /Applications (packaging/macos/build-dmg.sh). Then, on Apple silicon and on Intel, it checks the
+# image, runs the end-to-end tests against the app's program, and opens the app as Finder does.
+# It never compiles wopr: every file it packs is one that checksums.txt lists. Called by ci.yml
+# and release.yml after their build job; the image, installer-macos, becomes a release file.
+name: macOS
+
+on:
+  workflow_call:
+    inputs:
+      artifact:
+        description: Name of the artifact that holds dist/release (the bare binaries, the notices and checksums.txt)
+        required: true
+        type: string
+      version:
+        description: GoReleaser's .Version of the build (1.2.3, or 1.2.4-snapshot.abc1234)
+        required: true
+        type: string
+      stage-artifact:
+        description: Name of the staged artifact with the end-to-end tests (stage/darwin_<arch>/e2e.test); empty skips them
+        required: false
+        type: string
+        default: ""
+
+permissions: {}
+
+jobs:
+  build:
+    name: build (dmg)
+    runs-on: macos-26
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+      # As long as ci.yml keeps its downloads, and 30 days for a release.
+      RETENTION_DAYS: ${{ github.event_name == 'pull_request' && 3 || (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')) && 30 || 7 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # For internal/tools/macapp, which writes the bundle; it uses the standard library only.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact }}
+          path: dist/release
+      # Checks the programs and notices against checksums.txt, joins the programs with lipo, writes
+      # and ad-hoc signs WOPR.app, and makes the image.
+      - name: Build the disk image
+        run: packaging/macos/build-dmg.sh dist/release "${VERSION}" build/dmg
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installer-macos
+          path: build/dmg/wopr_*_macos.dmg
+          retention-days: ${{ env.RETENTION_DAYS }}
+          if-no-files-found: error
+
+  smoke:
+    name: smoke (${{ matrix.runner }})
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: macos-26, target: darwin_arm64 }
+          - { runner: macos-26-intel, target: darwin_amd64 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      VERSION: ${{ inputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-macos
+          path: build/dmg
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        if: inputs.stage-artifact != ''
+        with:
+          name: ${{ inputs.stage-artifact }}
+          path: stage
+      # The image's layout, Info.plist and signature; the program's two architectures; and, with
+      # the staged tests, the end-to-end tests against the program inside the app on this Mac.
+      - name: Check the disk image and the app
+        env:
+          E2E: ${{ inputs.stage-artifact != '' && format('stage/{0}/e2e.test', matrix.target) || '' }}
+        run: packaging/macos/test-dmg.sh "build/dmg/wopr_${VERSION}_macos.dmg" "${VERSION}" ${E2E:+"${E2E}"}
+      # Opened as Finder opens it, the app must reopen its program in Terminal, with a terminal.
+      - name: Open the app as Finder does
+        if: ${{ !cancelled() }}
+        run: packaging/macos/test-launch.sh "build/dmg/wopr_${VERSION}_macos.dmg"

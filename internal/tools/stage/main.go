@@ -16,6 +16,12 @@
 // the archives, the bare binaries under their release names, the Linux packages, those
 // four files and checksums.txt. Each one must match its line in checksums.txt, which the
 // release attests.
+//
+//	go run ./internal/tools/stage -merge -assets dist/release file...
+//
+// With -merge it stages nothing: it adds the files named (the installers, which the Windows and
+// macOS runners build from those release files) to the release files in -assets and to their
+// checksums.txt, then checks every file against it again (merge.go).
 package main
 
 import (
@@ -65,8 +71,20 @@ func main() {
 	out := flag.String("out", "stage", "directory to stage into")
 	checkArchives := flag.Bool("archives", false, "also verify the contents of release archives")
 	assets := flag.String("assets", "", "also collect every release file into this directory")
+	mergeFiles := flag.Bool("merge", false, "add the files named as arguments to the release files in -assets, and to checksums.txt")
 	flag.Parse()
-	if err := run(*dist, *out, *checkArchives, *assets); err != nil {
+	var err error
+	switch {
+	case *mergeFiles && (*assets == "" || *checkArchives):
+		err = errors.New("-merge needs -assets, the release files to add to, and takes no -archives")
+	case *mergeFiles:
+		err = merge(*assets, flag.Args())
+	case flag.NArg() > 0:
+		err = fmt.Errorf("unexpected arguments %q; only -merge takes files", flag.Args())
+	default:
+		err = run(*dist, *out, *checkArchives, *assets)
+	}
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "stage:", err)
 		os.Exit(1)
 	}
@@ -186,13 +204,13 @@ func verifyChecksums(dir string) error {
 	if err != nil {
 		return err
 	}
+	lines, err := parseChecksums(string(data))
+	if err != nil {
+		return err
+	}
 	want := map[string]string{}
-	for line := range strings.Lines(string(data)) {
-		f := strings.Fields(line)
-		if len(f) != 2 {
-			return fmt.Errorf("checksums.txt: malformed line %q", line)
-		}
-		want[f[1]] = f[0]
+	for _, l := range lines {
+		want[l.name] = l.sum
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {

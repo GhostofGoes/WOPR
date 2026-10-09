@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  wopr's AppStream metadata, which the .deb and the .rpm install in /usr/share/metainfo for
+  software centres. internal/tools/pkgdocs writes it from
+  packaging/linux/io.github.ghostofgoes.wopr.metainfo.xml.in, with the description from
+  packaging/description.txt and the releases from the release notes. The smoke job checks the
+  installed file with appstreamcli validate (pedantic) and with appstream-util validate-relax,
+  which Fedora's guidelines ask for.
+
+  wopr is a terminal program, which AppStream calls a console-application. It is a
+  desktop-application here on purpose: GNOME Software never lists a console-application, so
+  people could not find it there or remove it from its Installed list. Its menu entry
+  (launchable) opens a terminal and runs it.
+-->
+<component type="desktop-application">
+  <id>io.github.ghostofgoes.wopr</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <!-- The .rpm's License tag (.goreleaser.yaml), as a test checks. -->
+  <project_license>MIT AND BSD-2-Clause AND BSD-3-Clause AND LicenseRef-Matthew-Thomas-map</project_license>
+  <name>WOPR</name>
+  <summary>Fan-made recreation of the computer from WarGames</summary>
+  <description>
+    @DESCRIPTION@
+  </description>
+  <developer id="io.github.ghostofgoes">
+    <name>GhostofGoes</name>
+  </developer>
+  <launchable type="desktop-id">io.github.ghostofgoes.wopr.desktop</launchable>
+  <provides>
+    <binary>wopr</binary>
+  </provides>
+  <url type="homepage">https://ghostofgoes.github.io/WOPR/</url>
+  <url type="help">https://ghostofgoes.github.io/WOPR/usage/</url>
+  <url type="bugtracker">https://github.com/GhostofGoes/WOPR/issues</url>
+  <url type="vcs-browser">https://github.com/GhostofGoes/WOPR</url>
+  <url type="contribute">https://ghostofgoes.github.io/WOPR/contributing/</url>
+  <!-- Screenshots the docs site serves, from site/static/ (a test checks each file is there).
+       Captions are at most 50 characters, as appstream-util validate wants. -->
+  <screenshots>
+    <screenshot type="default">
+      <caption>LIST GAMES shows the games WOPR plays</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/logon-2.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Movie mode replays the film's scenes</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/movie-joshua.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>A game of chess against WOPR</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/games/chess-1.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Black Jack, with WOPR as the dealer</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/games/blackjack-1.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Falken's Maze, where WOPR moves the walls</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/games/maze-2.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Global Thermonuclear War in the amber theme</caption>
+      <image>https://ghostofgoes.github.io/WOPR/img/themes-amber.png</image>
+    </screenshot>
+  </screenshots>
+  <!--
+    OARS 1.1. Anything not listed is none: wopr has no chat, no purchases, no network and no
+    user data.
+    money-gambling moderate, "Gambling using 'play' money": Black Jack bets dollars and Poker bets
+    chips, none of them real, and nothing real can be bought or won.
+    violence-fantasy moderate, "Characters in aggressive conflict easily distinguishable from
+    reality": the six war games and Global Thermonuclear War are combat between two sides
+    (aircraft shot down, missiles launched, casualties counted), told only in capital letters,
+    numbers and ASCII symbols on a map. No person, wound or blood is ever drawn, so none of the
+    realistic or bloodshed levels apply, and conflict is more than mild's "unsafe situations".
+  -->
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-fantasy">moderate</content_attribute>
+    <content_attribute id="money-gambling">moderate</content_attribute>
+  </content_rating>
+  <supports>
+    <control>keyboard</control>
+  </supports>
+  <!-- The background behind the icon in software centres: the amber of its lamps. Revisit them
+       when the owner picks the final icon (packaging/icons/README.md). -->
+  <branding>
+    <color type="primary" scheme_preference="light">#f7d58b</color>
+    <color type="primary" scheme_preference="dark">#5a3d0a</color>
+  </branding>
+  <!-- The menu entry's Categories and Keywords, as a test checks. -->
+  <categories>
+    <category>Game</category>
+    <category>BoardGame</category>
+    <category>CardGame</category>
+    <category>StrategyGame</category>
+  </categories>
+  <keywords>
+    <keyword>WarGames</keyword>
+    <keyword>Joshua</keyword>
+    <keyword>Falken</keyword>
+    <keyword>chess</keyword>
+    <keyword>checkers</keyword>
+    <keyword>tic-tac-toe</keyword>
+    <keyword>blackjack</keyword>
+    <keyword>poker</keyword>
+    <keyword>hearts</keyword>
+    <keyword>bridge</keyword>
+    <keyword>gin rummy</keyword>
+    <keyword>retro</keyword>
+    <keyword>terminal</keyword>
+  </keywords>
+  <releases>
+    @RELEASES@
+  </releases>
+</component>

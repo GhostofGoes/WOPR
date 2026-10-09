@@ -1,7 +1,7 @@
 ---
 title: Installation
 weight: 2
-description: Install wopr on Windows, macOS or Linux with one line, remove it, or check that a download is genuine.
+description: Install wopr on Windows, macOS or Linux, remove it, or check that a download is genuine.
 tabs:
   sync: true
 next: /usage
@@ -9,7 +9,13 @@ next: /usage
 
 ## Install
 
+{{% if-installers %}}
+Pick your system. On Windows and macOS, download WOPR and open it as the tab says, or copy the line under
+it into a terminal. On Linux, and with Go, copy the line and paste it into a terminal.
+{{% /if-installers %}}
+{{% if-installers "not" %}}
 Pick your system, copy the line, and paste it into a terminal.
+{{% /if-installers %}}
 
 {{< install-tabs >}}
 
@@ -25,7 +31,17 @@ the network and collects no data.
 {{< tabs >}}
 
 {{< tab name="Windows" >}}
+{{< if-installers >}}
+If you used the installer, open **Settings**, then **Apps**, then **Installed apps**. Click **...** next
+to **WOPR**, then **Uninstall**, **Uninstall** again, and **Yes**. On Windows 10, it is **Settings**, then
+**Apps**, then **Apps & features**, then **WOPR**, then **Uninstall**. This removes the Start menu entry
+too, and takes WOPR's folder off your `PATH`, even if the PowerShell line put it there.
+
+If you used the PowerShell line, delete its folder and take the folder off your `PATH`, in PowerShell:
+{{< /if-installers >}}
+{{< if-installers "not" >}}
 In PowerShell, delete its folder and take the folder off your `PATH`:
+{{< /if-installers >}}
 
 ```powershell
 $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue; $k = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment'); $p = $k.GetValue('Path', '', 'DoNotExpandEnvironmentNames'); $k.SetValue('Path', ((@($p -split ';') | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'ExpandString'); $k.Close(); [Environment]::SetEnvironmentVariable('WOPR_PATH_REFRESH', $null, 'User')
@@ -34,6 +50,11 @@ $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAct
 {{< /tab >}}
 
 {{< tab name="macOS" >}}
+{{< if-installers >}}
+If you installed the app, drag **WOPR** from **Applications** to the Trash, and empty the Trash.
+
+If you used the Terminal line:
+{{< /if-installers >}}
 
 ```sh
 sudo rm /usr/local/bin/wopr
@@ -57,6 +78,7 @@ An earlier version of this page put `wopr` in `~/.local/bin`; this removes that 
 sudo apt remove wopr
 ```
 
+This also takes WOPR out of your app menu.
 {{< /if-packages >}}
 {{< if-packages "not" >}}
 There is no package yet; see the **Linux** tab.
@@ -70,7 +92,7 @@ There is no package yet; see the **Linux** tab.
 sudo dnf remove wopr
 ```
 
-On openSUSE: `sudo zypper remove wopr`.
+On openSUSE: `sudo zypper remove wopr`. This also takes WOPR out of your app menu.
 {{< /if-packages >}}
 {{< if-packages "not" >}}
 There is no package yet; see the **Linux** tab.
@@ -99,7 +121,8 @@ Remove-Item "$(go env GOPATH)\bin\wopr.exe"
 Every CI run on `main` builds all six targets. Open a
 [CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
 and download your platform's file under **Artifacts**. It is the bare program: `chmod +x` it on Linux and
-macOS. Development builds are for testing; they carry no attestation.
+macOS. The run also has the Windows installer, `installer-windows`, and the Mac app, `installer-macos`.
+Development builds are for testing; they carry no attestation.
 
 ## Verifying binaries (attestation)
 
@@ -126,7 +149,9 @@ attestation: a signed record, kept by GitHub, of the commit and the workflow tha
    installed: `"$(command -v wopr)"` on Linux and macOS, `(Get-Command wopr).Source` in PowerShell. The
    check compares the file's contents, so its name does not matter. A program installed with
    `go install` was built on your computer, not by the release workflow, so it has no attestation and this
-   check fails; Go has already checked its source against the Go checksum database.
+   check fails; Go has already checked its source against the Go checksum database.{{% if-installers %}}
+   Nor does the program inside the Mac app pass it, since it is not one of the release's files (see the
+   list below): check the `.dmg` you downloaded instead.{{% /if-installers %}}
 
 `Verification succeeded!` means the file was built from this repository's tagged source by its release
 workflow, on GitHub's own machines. For a file from a release, anything else means: do not run it.
@@ -142,21 +167,32 @@ it. Each release has, for each system:
   `chmod +x`.
 - `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows): the program with the README, the licence and
   the notices.{{% if-packages %}} On Linux and macOS it also holds the manual page, `wopr.6`.{{% /if-packages %}}
+{{% if-installers %}}
+- `wopr_<version>_windows_setup.exe`: the Windows installer. It holds both Windows programs and installs
+  the one that fits the computer as `wopr.exe`, unchanged, so the check passes for the installed
+  `wopr.exe` too.
+- `wopr_<version>_macos.dmg`: the Mac app, `WOPR.app`, in a disk image. Its program joins the two macOS
+  programs into one file, so it matches neither of them: check the `.dmg` itself, before you open it.
+{{% /if-installers %}}
 {{% if-packages %}}
 - `wopr_<version>-1_<arch>.deb` (`<arch>` as above: `amd64` or `arm64`) and `wopr-<version>-1.<arch>.rpm`
   (here `<arch>` is `x86_64` or `aarch64`, as `uname -m` prints): the Linux packages. Install a file you
   downloaded with `sudo apt install ./FILE` or `sudo dnf install ./FILE`.
 {{% /if-packages %}}
-- `checksums.txt`: the SHA-256 checksum of every file.
+- `checksums.txt`: the SHA-256 checksum of every file.{{% if-installers %}} The installer and the `.dmg` are
+  listed and attested like the rest.{{% /if-installers %}}
 
 A program downloaded with a web browser is marked as coming from the internet, and the system may stop it.
 Once you have verified it:
 
 - **macOS** says it cannot check the program for malware. Clear the mark with
-  `xattr -d com.apple.quarantine FILE`.
+  `xattr -d com.apple.quarantine FILE`.{{% if-installers %}} For the Mac app, follow the steps in the
+  **macOS** tab, or drag it to Applications and clear the mark from all of it with
+  `xattr -dr com.apple.quarantine /Applications/WOPR.app` before you open it.{{% /if-installers %}}
 - **Windows** SmartScreen may say it does not recognise the program. Choose *More info*, then
   *Run anyway*, or clear the mark with `Unblock-File FILE` in PowerShell.
 
 The install lines above download with `curl`, `wget` or `dnf`, which do not mark files, so this does not
-come up. Windows' Smart App Control is different: when it is on, it blocks every program that is not
+come up for them{{% if-installers %}}; for the installer and the Mac app, the **Windows** and **macOS** tabs
+say what to click{{% /if-installers %}}. Windows' Smart App Control is different: when it is on, it blocks every program that is not
 signed, however it was downloaded ([Troubleshooting](/usage/troubleshooting) says more).

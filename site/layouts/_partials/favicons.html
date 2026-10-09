@@ -1,4 +1,7 @@
-{{- /* The site's own icon (static/favicon.svg, drawn for this site), in place of Hextra's. */ -}}
+{{- /*
+  The program's own icon, in place of Hextra's. go run ./internal/tools/icons draws all three
+  files in static/ from packaging/icons/src, as it draws the packages' icons.
+*/ -}}
 <link rel="icon" href="{{ "favicon.svg" | relURL }}" type="image/svg+xml" />
-<link rel="icon" href="{{ "favicon.ico" | relURL }}" sizes="16x16 32x32" />
+<link rel="icon" href="{{ "favicon.ico" | relURL }}" sizes="16x16 32x32 48x48" />
 <link rel="apple-touch-icon" href="{{ "apple-touch-icon.png" | relURL }}" sizes="180x180" />

@@ -7,9 +7,21 @@ project_name: wopr
 # $WOPR_NOTES_DIR first: the manual page with this build's version in its header (for the archives,
 # and compressed for the packages), the .deb's other documents compressed as `gzip -9n` writes them
 # (Debian Policy §12), and the packages' changelog.yml.
+#
+# go-winres (pinned in tools/release/go.mod) writes the Windows program's icon, manifest and version
+# information from packaging/windows/winres.json into cmd/wopr/rsrc_windows_{amd64,arm64}.syso, which
+# go build links into the Windows binaries only, and .gitignore keeps out of the tree. --arch names
+# both targets: its default, amd64,386, would leave the arm64 program without them. The file version
+# must be four numbers, so it is the version without a snapshot suffix, plus .0; the product version
+# keeps the suffix in its text. The .syso files come out the same, byte for byte, on every run, so the
+# rebuild job still compares like with like.
 before:
   hooks:
     - go run ./internal/tools/pkgdocs -version "{{ .Version }}" -notes "{{ .Env.WOPR_NOTES_DIR }}" -out build/pkg
+    - >-
+      go tool -modfile=tools/release/go.mod go-winres make --in packaging/windows/winres.json
+      --out cmd/wopr/rsrc --arch amd64,arm64 --product-version "{{ .Version }}"
+      --file-version "{{ index (split .Version "-") 0 }}.0"
 
 builds:
   - id: wopr
@@ -70,6 +82,13 @@ archives:
 # the commit's, the RPM build host is fixed, and the documents come from pkgdocs. Their changelogs
 # come from changie's notes: relnotes writes changelog.yml into $WOPR_NOTES_DIR, and pkgdocs copies
 # it to build/pkg; nfpms.changelog takes no template, so it names that fixed path.
+#
+# Both put wopr in the desktop's menu (docs/PLAN.md §8), in files named by its app ID: a menu entry
+# that opens a terminal running wopr (pkgdocs writes one for each package, naming the program where
+# that package puts it), the icon in every size of the hicolor theme (packaging/icons/hicolor, from
+# internal/tools/icons, each at the same path below /usr/share/icons/hicolor), and the AppStream
+# metadata that software centres show (pkgdocs). hicolor-icon-theme and desktop-file-utils refresh
+# the icon cache and the menu with dpkg and rpm triggers, so the packages need no scripts.
 nfpms:
   # Debian Policy §11.11 puts a game's program in /usr/games (on the PATH of every Debian and
   # Ubuntu login) and its manual page in section 6; §12.5 wants the copyright file uncompressed;
@@ -112,6 +131,15 @@ nfpms:
         file_info: { mode: 0644 }
       - src: build/pkg/NOTICE.md.gz
         dst: /usr/share/doc/wopr/NOTICE.md.gz
+        file_info: { mode: 0644 }
+      - src: build/pkg/deb/io.github.ghostofgoes.wopr.desktop
+        dst: /usr/share/applications/io.github.ghostofgoes.wopr.desktop
+        file_info: { mode: 0644 }
+      - src: build/pkg/io.github.ghostofgoes.wopr.metainfo.xml
+        dst: /usr/share/metainfo/io.github.ghostofgoes.wopr.metainfo.xml
+        file_info: { mode: 0644 }
+      - src: packaging/icons/hicolor/*/apps/io.github.ghostofgoes.wopr.*
+        dst: /usr/share/icons/hicolor
         file_info: { mode: 0644 }
 
   # Fedora's packaging guidelines put games in /usr/bin like every other program (Games SIG:
@@ -174,6 +202,43 @@ nfpms:
         dst: /usr/share/licenses/wopr/THIRD_PARTY_NOTICES.txt
         type: license
         file_info: { mode: 0644 }
+      - src: build/pkg/rpm/io.github.ghostofgoes.wopr.desktop
+        dst: /usr/share/applications/io.github.ghostofgoes.wopr.desktop
+        file_info: { mode: 0644 }
+      - src: build/pkg/io.github.ghostofgoes.wopr.metainfo.xml
+        dst: /usr/share/metainfo/io.github.ghostofgoes.wopr.metainfo.xml
+        file_info: { mode: 0644 }
+      - src: packaging/icons/hicolor/*/apps/io.github.ghostofgoes.wopr.*
+        dst: /usr/share/icons/hicolor
+        file_info: { mode: 0644 }
+      # Fedora's guidelines ("File and Directory Ownership"): a package owns every directory it puts
+      # files in, except those of filesystem (/usr/share/applications, /usr/share/metainfo and
+      # /usr/share/icons are) and of packages it needs to work. The hicolor directories belong to
+      # hicolor-icon-theme, which wopr does not need to run, so wopr owns them too, as the
+      # guidelines' gtk-doc example does, with the same mode. Requiring hicolor-icon-theme instead
+      # would break the docs' offline install (dnf install --disablerepo='*') where it is missing.
+      # rpm leaves a directory alone while another package owns it.
+      - { dst: /usr/share/icons/hicolor, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/16x16, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/16x16/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/22x22, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/22x22/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/24x24, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/24x24/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/32x32, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/32x32/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/48x48, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/48x48/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/64x64, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/64x64/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/128x128, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/128x128/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/256x256, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/256x256/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/512x512, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/512x512/apps, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/scalable, type: dir, file_info: { mode: 0755 } }
+      - { dst: /usr/share/icons/hicolor/scalable/apps, type: dir, file_info: { mode: 0755 } }
 
 checksum:
   name_template: checksums.txt       # the default would be wopr_<version>_checksums.txt

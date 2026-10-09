@@ -1,0 +1,26 @@
+# wopr's menu entry (Desktop Entry Specification 1.5), which the .deb and the .rpm install in
+# /usr/share/applications. internal/tools/pkgdocs writes one for each package from
+# packaging/linux/io.github.ghostofgoes.wopr.desktop.in, naming the program where that package
+# puts it: /usr/games in the .deb, /usr/bin in the .rpm.
+#
+# wopr runs in a terminal, so Terminal=true: the desktop opens its terminal (GNOME Terminal, Ptyxis,
+# Konsole and others) and runs wopr in it. StartupNotify=true hands that terminal a startup
+# notification token, which it uses to end the busy cursor and, on Wayland, to take the focus.
+# Exec names the program by its full path, so the desktop finds it whatever its PATH.
+[Desktop Entry]
+Type=Application
+Version=1.5
+Name=WOPR
+GenericName=Terminal Game
+Comment=Fan-made recreation of the computer from WarGames
+Icon=io.github.ghostofgoes.wopr
+Exec=@BINDIR@/wopr
+Terminal=true
+StartupNotify=true
+Categories=Game;BoardGame;CardGame;StrategyGame;
+Keywords=WarGames;Joshua;Falken;chess;checkers;tic-tac-toe;blackjack;poker;hearts;bridge;gin rummy;retro;terminal;
+Actions=movie;
+
+[Desktop Action movie]
+Name=Movie Mode
+Exec=@BINDIR@/wopr --movie

@@ -12,6 +12,15 @@ screenshots on this site show some of that material.
 
 {{% repo-file "NOTICE.md" %}}
 
+{{% if-installers %}}
+
+## The Windows installer
+
+The Windows installer is made with [Inno Setup](https://jrsoftware.org/isinfo.php), by Jordan Russell and
+Martijn Laan.
+
+{{% /if-installers %}}
+
 ## The Hextra theme's licence
 
 This site's look, stylesheet and scripts come from the Hextra theme, used under its MIT licence:
