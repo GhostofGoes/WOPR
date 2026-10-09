@@ -103,7 +103,7 @@ nfpms:
     release: "1"
     section: games
     priority: optional
-    maintainer: GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>
+    maintainer: Christopher Goes <ghostofgoes@gmail.com>
     homepage: https://github.com/GhostofGoes/WOPR
     # The synopsis (its first line) and the extended description.
     description: '{{ mustReadFile "packaging/description.txt" }}'
@@ -153,8 +153,8 @@ nfpms:
     file_name_template: "{{ .ConventionalFileName }}"
     bindir: /usr/bin
     release: "1"
-    maintainer: GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>
-    vendor: GhostofGoes
+    maintainer: Christopher Goes <ghostofgoes@gmail.com>
+    vendor: Christopher Goes
     homepage: https://github.com/GhostofGoes/WOPR
     # SPDX: wopr's own code; abs0's transcription (NOTICE.md); the Go modules it links; and Matthew
     # Thomas's map on the big board, whose terms (NOTICE.md) have no SPDX identifier, so it gets a

@@ -23,7 +23,7 @@
     @DESCRIPTION@
   </description>
   <developer id="io.github.ghostofgoes">
-    <name>GhostofGoes</name>
+    <name>Christopher Goes</name>
   </developer>
   <launchable type="desktop-id">io.github.ghostofgoes.wopr.desktop</launchable>
   <provides>

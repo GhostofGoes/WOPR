@@ -89,8 +89,9 @@ The `wopr` program does not contain them.
 
 ## Rights holders
 
-If you believe something here infringes your rights, contact the maintainer, @GhostofGoes, using the
-contact details on their GitHub profile. The material will be removed or replaced promptly.
+If you believe something here infringes your rights, contact the maintainer, Christopher Goes, using the
+contact details on their GitHub profile, [@GhostofGoes](https://github.com/GhostofGoes). The material will be
+removed or replaced promptly.
 
 ## Third-party software
 

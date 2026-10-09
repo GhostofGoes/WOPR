@@ -46,7 +46,7 @@ import (
 // defaultPackager signs each entry of the package changelogs. It is the packages' maintainer, as
 // .goreleaser.yaml's nfpms name it (a test checks): Debian wants "name <email address>", and
 // GitHub's no-reply address for the owner's account stands in, so no one's mailbox is published.
-const defaultPackager = "GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>"
+const defaultPackager = "Christopher Goes <ghostofgoes@gmail.com>"
 
 // errCheck marks a failed check (exit 1), as against a failure to run (exit 2).
 var errCheck = errors.New("check failed")

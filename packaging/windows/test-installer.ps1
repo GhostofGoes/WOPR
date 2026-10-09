@@ -124,7 +124,7 @@ function Test-Installed {
     $entry = Get-ItemProperty -LiteralPath $uninstallKey
     Assert ($entry.DisplayName -eq 'WOPR') "its name is WOPR: $($entry.DisplayName)"
     Assert ($entry.DisplayVersion -eq $Version) "its version is ${Version}: $($entry.DisplayVersion)"
-    Assert ($entry.Publisher -eq 'GhostofGoes') "its publisher is GhostofGoes: $($entry.Publisher)"
+    Assert ($entry.Publisher -eq 'Christopher Goes') "its publisher is Christopher Goes: $($entry.Publisher)"
     Assert ($entry.DisplayIcon -eq $exe) "its icon is wopr.exe's: $($entry.DisplayIcon)"
 
     Assert ((Get-PathCount) -eq 1) "PATH has $app once: $(Get-UserPath)"
