@@ -30,7 +30,27 @@ fail() {
     mkdir -p "${DIAG_DIR}"
     screencapture -x "${DIAG_DIR}/test-launch.png" || echo "test-launch: no screenshot" >&2
   fi
+  control >&2
   exit 1
+}
+
+# A control for a failure: whether Terminal on this machine runs a plain shell script that open
+# gives it the same way, which separates a fault in the app from one in this Mac's Terminal.
+control() {
+  local dir script
+  dir="$(mktemp -d)"
+  script="${dir}/control.command"
+  printf '#!/bin/sh\ntouch "%s/ran"\n' "${dir}" > "${script}"
+  chmod 755 "${script}"
+  open -b com.apple.Terminal "${script}" || echo "control: open failed"
+  for _ in $(seq 30); do
+    if [[ -e "${dir}/ran" ]]; then
+      echo "control: Terminal ran a plain script; the fault is in the app's hand-off"
+      return
+    fi
+    sleep 1
+  done
+  echo "control: Terminal did not run a plain script either within 30 seconds; the fault is this Mac's Terminal"
 }
 
 # Copied out of the image first, as a user drags it to Applications.
