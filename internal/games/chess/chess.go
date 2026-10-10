@@ -106,6 +106,9 @@ func ParseMove(pos *cg.Position, input string) (*cg.Move, bool) {
 		add("O-O-O")
 	}
 	san := strings.NewReplacer("-", "", " ", "").Replace(s) // Ng1-f3
+	if san == "" {                                          // only dashes and spaces
+		return nil, false
+	}
 	add(san)
 	if strings.ContainsRune("KQRBN", rune(san[0])) {
 		add(san[:1] + strings.ToLower(san[1:]))

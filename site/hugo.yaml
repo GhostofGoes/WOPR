@@ -48,6 +48,11 @@ module:
     - { source: ../NOTICE.md, target: assets/repo/NOTICE.md }
     - { source: ../docs/screenshots, target: assets/screenshots }
     - { source: ../docs/man, target: assets/man }
+    # The release signing key (AGENTS.md, "Repository settings"), published at /wopr-signing-key.asc
+    # (for rpm --import) when a page links it, and its fingerprint for the pages. Until they exist,
+    # no page names them (the has-signatures partial).
+    - { source: ../packaging/wopr-signing-key.asc, target: assets/wopr-signing-key.asc }
+    - { source: ../packaging/wopr-signing-key.fingerprint, target: assets/signing/fingerprint }
 
 markup:
   goldmark:

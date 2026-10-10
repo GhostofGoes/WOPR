@@ -18,7 +18,8 @@ session carries on where it was.
 
 **`wopr` is not found.** Open a new terminal window: the one you installed from may not know about the new
 program yet. The [install lines](/install) put it in `%LOCALAPPDATA%\Programs\wopr` on Windows,
-`/usr/local/bin` on macOS and Linux, and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb`
+`~/.local/bin` on macOS and Linux (adding that folder to your `PATH` in `~/.zprofile`, `~/.bashrc` or
+`~/.zshrc` when it is not there), and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb`
 puts it in `/usr/games`, which is not on root's `PATH`: as root, or in a small container, run
 `/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}
 
@@ -33,7 +34,7 @@ password, `su -c "adduser $USER sudo"`, then log out and back in, and paste the 
 
 **An old version still starts after you update.** Another copy comes first on your `PATH`. On Linux and
 macOS, `type -a wopr` lists every copy; in PowerShell, `Get-Command -All wopr`. Delete the ones you do not
-want: an earlier version of these pages put `wopr` in `~/.local/bin`.
+want.
 
 **Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
 

@@ -169,7 +169,7 @@ func firstDifference(cur, want []byte) string {
 
 func listModules(pattern, goos, goarch string, mods map[string]module) error {
 	cmd := exec.Command("go", "list", "-deps", "-json=Standard,Module", pattern)
-	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=mod", "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
+	cmd.Env = append(os.Environ(), "GOFLAGS=-mod=readonly", "CGO_ENABLED=0", "GOOS="+goos, "GOARCH="+goarch)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()

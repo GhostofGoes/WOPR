@@ -1,0 +1,10 @@
+{{- /*
+  The release signing key's fingerprint, in groups of four (the signing-fingerprint partial). Use
+  it inside if-signed: Hugo renders an if-signed's content even when it drops it, so this writes
+  nothing while the release is not signed.
+
+    {{< signing-fingerprint >}}
+*/ -}}
+{{- if partial "has-signatures.html" . -}}
+  {{- partial "signing-fingerprint.html" . -}}
+{{- end -}}

@@ -75,7 +75,7 @@ func TestParseMove(t *testing.T) {
 			t.Errorf("ParseMove(%q) = %v, %v; want %s", in, m, ok, want)
 		}
 	}
-	for _, in := range []string{"", "e5", "e2e5", "Ke2", "hello", "z9z9"} {
+	for _, in := range []string{"", "e5", "e2e5", "Ke2", "hello", "z9z9", "-", "- -", "--+", "-!"} {
 		if _, ok := ParseMove(start, in); ok {
 			t.Errorf("ParseMove(%q) accepted", in)
 		}

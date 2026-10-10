@@ -25,8 +25,9 @@ profile.cov
 go.work
 go.work.sum
 
-# env file
+# env files
 .env
+.env.*
 
 # Editor/IDE
 # .idea/
@@ -47,6 +48,12 @@ go.work.sum
 # Keys and certificates never belong in the tree
 *.pem
 *.key
+*.p12
+*.pfx
+*.jks
+id_rsa*
+id_ecdsa*
+id_ed25519*
 
 # Tool caches
 .rumdl_cache/

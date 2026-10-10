@@ -65,7 +65,7 @@ hooks = [{ id = "actionlint", priority = "lint" }]  # workflow syntax; zizmor co
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder,fpr", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
@@ -92,6 +92,8 @@ hooks = [
   # The change notes parse and are short, CHANGELOG.md is changie merge's output, and every release
   # tag has its .changes/vX.Y.Z.md (AGENTS.md, "Change notes"). It builds changie on first use.
   { id = "change-notes", name = "change notes and CHANGELOG.md", language = "system", entry = "go run ./internal/tools/relnotes -check", files = '^(\.changes/|\.changie\.yaml$|CHANGELOG\.md$|internal/tools/relnotes/)', pass_filenames = false, priority = "lint" },
+  # No module in any build list newer than 14 days (AGENTS.md, "Dependency cooldown"); asks the module proxy.
+  { id = "dependency-cooldown", name = "dependency cooldown (14 days)", language = "system", entry = "go run ./internal/tools/cooldown -now", files = '(^|/)go\.(mod|sum)$|^tools/cooldown-exceptions\.txt$|^internal/tools/cooldown/', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
 ]

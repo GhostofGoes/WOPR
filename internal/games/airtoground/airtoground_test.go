@@ -128,6 +128,8 @@ func TestPackages(t *testing.T) {
 		{"marsh", "TARGET MARSHALLING YARD"},
 		{"strike 0 go", "AT LEAST ONE STRIKE"},
 		{"strike 9 sead 2 escort 2 go", "THAT IS 13 AIRCRAFT; YOU HAVE 12."},
+		{"strike 9223372036854775807 sead 1 escort 0 go", "THAT IS 1000 AIRCRAFT; YOU HAVE 12."},
+		{"strike 9223372036854775807 escort 9223372036854775807 sead 3 go", "THAT IS 2001 AIRCRAFT; YOU HAVE 12."},
 		{"status", "SORTIE 1 OF 6"},
 	}
 	for _, c := range cases {

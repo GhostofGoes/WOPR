@@ -43,13 +43,14 @@ jobs:
         with:
           go-version-file: go.mod
           # The hooks run `go mod tidy -diff` in every module and build changie (relnotes -check); the
-          # self-test builds golangci-lint.
+          # self-test builds golangci-lint; the cooldown lists every module's build list, the site's too.
           cache-dependency-path: |
             go.sum
             tools/go.sum
             tools/lint/go.sum
             tools/release/go.sum
             tools/docs/go.sum
+            site/go.sum
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
         with:
           prek-version: 0.5.5
@@ -62,6 +63,9 @@ jobs:
       # On main, and on a fork's pull request merged with it, the base is main itself.
       - name: Change note for user-visible changes
         run: go run ./internal/tools/relnotes -since origin/main
+      # No module in any build list may be newer than 14 days at this commit (AGENTS.md, "Dependency cooldown").
+      - name: Dependency cooldown
+        run: go run ./internal/tools/cooldown
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}
@@ -186,6 +190,24 @@ jobs:
         run: go run ./internal/tools/sizegate -expect 6 -packages 4
       - name: Stage binaries, end-to-end tests and Linux packages
         run: go run ./internal/tools/stage -archives -assets dist/release
+      # The release's signing step (packaging/sign-packages.sh), with a key made for this run: the
+      # .rpm packages are signed, and the smoke jobs install them with dnf checking the signature,
+      # and check the .deb's detached signature, with this public key.
+      - name: Sign the Linux packages with a throwaway key
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y --no-install-recommends rpm
+          keys="$(mktemp -d)"
+          GNUPGHOME="${keys}" gpg --batch --quiet --pinentry-mode loopback --passphrase '' --quick-gen-key \
+            'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+          GNUPGHOME="${keys}" gpg --batch --armor --export > "${RUNNER_TEMP}/signing-key.asc"
+          WOPR_SIGNING_KEY="$(GNUPGHOME="${keys}" gpg --batch --armor --export-secret-keys)" \
+            packaging/sign-packages.sh dist/release "${RUNNER_TEMP}/signing-key.asc"
+          GNUPGHOME="${keys}" gpgconf --kill all
+          for arch in amd64:x86_64 arm64:aarch64; do
+            dir="stage/linux_${arch%%:*}"
+            cp dist/release/wopr-*."${arch##*:}".rpm dist/release/wopr_*_"${arch%%:*}".deb.asc "${dir}/"
+            cp "${RUNNER_TEMP}/signing-key.asc" "${dir}/signing-key.asc"
+          done
       # One download per platform: the bare binary, uploaded as-is rather than zipped, so the download
       # is the program itself (it prints its licences with --licenses). Each artifact is named after
       # its file, e.g. wopr_0.0.1-snapshot.1a2b3c4_linux_amd64. Downloads lose the executable bit.
@@ -263,6 +285,26 @@ jobs:
         run: |
           go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
             --minify --destination "${RUNNER_TEMP}/site"
+      # docs.yml tells the site whether the latest release is signed (the has-signatures partial).
+      # Build it both ways, with a throwaway key in packaging/ while the real one is missing.
+      - name: Build the site as for a signed and an unsigned release
+        run: |
+          if [[ ! -f packaging/wopr-signing-key.asc ]]; then
+            export GNUPGHOME="${RUNNER_TEMP}/gnupg"
+            mkdir -m 700 "${GNUPGHOME}"
+            gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+              --quick-gen-key 'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+            gpg --batch --armor --export > packaging/wopr-signing-key.asc
+            gpg --batch --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }' \
+              > packaging/wopr-signing-key.fingerprint
+          fi
+          for signed in true false; do
+            HUGO_PARAMS_SIGNEDRELEASE="${signed}" go tool -modfile=tools/docs/go.mod hugo --source site \
+              --panicOnWarning --printPathWarnings --minify --destination "${RUNNER_TEMP}/site-${signed}"
+          done
+          grep -q 'rpm --import' "${RUNNER_TEMP}/site-true/install/index.html"
+          test -f "${RUNNER_TEMP}/site-true/wopr-signing-key.asc"
+          ! grep -q 'rpm --import' "${RUNNER_TEMP}/site-false/install/index.html"
 
   smoke:
     name: smoke

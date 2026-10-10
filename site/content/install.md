@@ -36,18 +36,21 @@ $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAct
 {{< tab name="macOS" >}}
 
 ```sh
-sudo rm /usr/local/bin/wopr
+rm -f ~/.local/bin/wopr
 ```
 
+The `PATH` line the install line added to `~/.zprofile` (or `~/.bash_profile`) is harmless; delete it with
+a text editor if you like.
 {{< /tab >}}
 
 {{< tab name="Linux" >}}
 
 ```sh
-sudo rm -f /usr/local/bin/wopr ~/.local/bin/wopr
+rm -f ~/.local/bin/wopr
 ```
 
-An earlier version of this page put `wopr` in `~/.local/bin`; this removes that copy too.
+The `PATH` line the install line may have added to `~/.bashrc` (or `~/.zshrc`) is harmless; delete it with a
+text editor if you like.
 {{< /tab >}}
 
 {{< tab name="Linux (apt)" >}}
@@ -148,6 +151,20 @@ it. Each release has, for each system:
   downloaded with `sudo apt install ./FILE` or `sudo dnf install ./FILE`.
 {{% /if-packages %}}
 - `checksums.txt`: the SHA-256 checksum of every file.
+{{% if-signed %}}
+- `checksums.txt.asc` and `wopr_<version>-1_<arch>.deb.asc`: OpenPGP signatures of `checksums.txt` and
+  the `.deb` files, made with wopr's [signing key](/wopr-signing-key.asc). The `.rpm` files carry their
+  signature inside.
+{{% /if-signed %}}
+
+{{% if-signed %}}
+To check a signature, download the [signing key](/wopr-signing-key.asc) and check that its fingerprint
+is `{{< signing-fingerprint >}}`, then run `gpg --import wopr-signing-key.asc` and
+`gpg --verify checksums.txt.asc checksums.txt` (or `FILE.deb.asc FILE.deb`). `Good signature` means the
+file is as the release workflow signed it. `sha256sum --ignore-missing -c checksums.txt` then checks the
+files you downloaded against a list you know is genuine. For an `.rpm`, `rpm --import` the key and run
+`rpm -K FILE.rpm`, which prints `digests signatures OK`.
+{{% /if-signed %}}
 
 A program downloaded with a web browser is marked as coming from the internet, and the system may stop it.
 Once you have verified it:

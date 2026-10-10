@@ -10,14 +10,14 @@ require (
 	github.com/charmbracelet/colorprofile v0.4.3
 	github.com/charmbracelet/x/ansi v0.11.8
 	github.com/charmbracelet/x/term v0.2.2
-	github.com/charmbracelet/x/vt v0.0.0-20261004011457-ad85c59fdf4e
+	github.com/charmbracelet/x/vt v0.0.0-20260901172002-a5dee49b2863
 	github.com/charmbracelet/x/xpty v0.1.4
 	github.com/corentings/chess/v2 v2.6.0
 	github.com/rivo/uniseg v0.4.7
 )
 
 require (
-	github.com/charmbracelet/ultraviolet v0.0.0-20261001125412-878653296cfd // indirect
+	github.com/charmbracelet/ultraviolet v0.0.0-20260811164956-006e29f97886 // indirect
 	github.com/charmbracelet/x/conpty v0.2.0 // indirect
 	github.com/charmbracelet/x/exp/ordered v0.1.0 // indirect
 	github.com/charmbracelet/x/termios v0.1.1 // indirect

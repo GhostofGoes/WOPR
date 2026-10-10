@@ -26,6 +26,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Lint | `go tool -modfile=tools/lint/go.mod golangci-lint run ./...` |
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
+| Dependency cooldown (no module newer than 14 days) | `go run ./internal/tools/cooldown` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`); CI runs it with `-check` |
 | Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
@@ -60,6 +61,10 @@ toolchain first, then the tool.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
+- **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
+  may be less than 14 days old at the commit being checked, by the time the module proxy gives its version:
+  `go run ./internal/tools/cooldown` (CI's `lint` job, and a prek hook on `go.mod` and `go.sum`). A fix that
+  cannot wait goes in `tools/cooldown-exceptions.txt` with its reason, until it is old enough.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
   copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
   quote the film from their provenance tags, so regenerate it when film text moves. It files each linked
@@ -71,8 +76,10 @@ toolchain first, then the tool.
   checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
   changelogs it writes, so change both together. `pkgdocs` writes the packages' documents and their
   `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
-  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. The smoke
-  jobs install, run and remove both packages.
+  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. A release
+  signs them (`packaging/sign-packages.sh`: a signature inside each `.rpm`, a `.deb.asc` beside each
+  `.deb`, and `checksums.txt.asc`) with the key in `packaging/wopr-signing-key.asc`; CI signs with a
+  throwaway key. The smoke jobs install, run and remove both packages, with signature checks on.
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
   `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
@@ -94,7 +101,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 
 - They get Events and return Outputs. They never block: anything slow is a `Think`, which runs off the UI
   goroutine. A `Think`'s `Fn` captures values only, never a pointer the program keeps using; copy a chess
-  position as a FEN string.
+  position as a FEN string. An Update or View that runs for 10 s (`internal/ui/watchdog.go`), or is still
+  running a second after SIGINT or SIGTERM, is taken for a hang: wopr restores the terminal and exits 1.
 - With `Env.Deterministic` (`--seed` or `WOPR_SEED`, tests, movie mode), searches stop at `Think.Limit`.
   Wall-clock `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never
@@ -175,7 +183,8 @@ request or done by `release.yml`.
    if other pull requests merged after it: their notes are not in this release's notes, so their changes
    wait for the next one.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
-   `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
+   `.rpm` included), signs the Linux packages and `checksums.txt` (its `sign` job, in the `release`
+   environment), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
    (`internal/tools/relnotes` adds a footer), and starts a discussion of it in the Discussions category
    Announcements. The packages' changelogs carry the same notes. Then it publishes the docs site again
    (`docs.yml`), so that its download commands name the new release.
@@ -289,6 +298,24 @@ These live in GitHub settings, not in files. Check them at each milestone:
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases
   before v0.1.0.
 - **Security:** secret scanning with push protection, private vulnerability reporting.
+- **Release signing key** (`docs/PLAN.md` §8, "Signatures"). An environment named `release`
+  (Settings → Environments) with deployment tags limited to `v*`, holding the secret `WOPR_SIGNING_KEY`
+  (the armored secret key) and, if the key has one, `WOPR_SIGNING_PASSPHRASE`. Only `release.yml`'s `sign`
+  job uses the environment. The public key and its fingerprint are committed: `release.yml` stops at
+  `sign` without them. To make the key, on a trusted computer:
+
+  ```sh
+  export GNUPGHOME="$(mktemp -d)"
+  gpg --batch --pinentry-mode loopback --passphrase '' \
+    --quick-gen-key 'wopr release signing <6599820+GhostofGoes@users.noreply.github.com>' rsa4096 sign 5y
+  gpg --armor --export > packaging/wopr-signing-key.asc
+  gpg --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }' > packaging/wopr-signing-key.fingerprint
+  gpg --armor --export-secret-keys   # paste into the WOPR_SIGNING_KEY secret
+  ```
+
+  Keep an offline copy of the secret key, then delete `$GNUPGHOME`. Before the key expires, extend it
+  (`gpg --quick-set-expire`) and commit the new `wopr-signing-key.asc`, which keeps the fingerprint. A
+  new key needs both files changed in one pull request, and the docs site then shows the new fingerprint.
 - **Issues and Discussions:** issues on, with the bug report and feature request forms in
   `.github/ISSUE_TEMPLATE/` (blank issues off); **Discussions on** (Settings → General → Features), since
   the forms, the docs site and the README send questions there, with its default **Announcements**
@@ -308,9 +335,13 @@ These live in GitHub settings, not in files. Check them at each milestone:
 
 At every milestone boundary:
 
-1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
-   docs theme with `go -C site get github.com/imfing/hextra@latest`. Re-vendor PhotoSwipe (its newest
+1. Update dependencies to versions at least 14 days old ([Dependency cooldown](#rules-that-tests-enforce)):
+   `go list -m -u -json all` shows each update and its `Time`. Update direct dependencies one by one with
+   `go get <module>@<version>`, never `go get -u ./...`, which also lifts indirect modules to their newest
+   untagged commits; then `go mod tidy`. Update the tool modules the same way, with
+   `go get -tool <tool>@<version>` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
+   docs theme with `go -C site get github.com/imfing/hextra@<version>`. Run
+   `go run ./internal/tools/cooldown` before pushing. Re-vendor PhotoSwipe (its newest
    5.x, the major version Hextra's script is written for) and FlexSearch (the version the new Hextra
    defaults to, in its `layouts/_partials/scripts/search.html`): download each npm tarball from
    `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, check its SHA-512 against the
@@ -318,7 +349,7 @@ At every milestone boundary:
    and update the versions and hashes in `site/hugo.yaml`. Build the docs site: a new Hugo can
    deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
-3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
+3. Bump action SHAs from their release tags, each at least 14 days old, and the Fedora image digest in `smoke.yml` to the newest
    Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
 4. Regenerate the notices.
 5. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.

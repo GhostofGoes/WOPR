@@ -1,0 +1,3 @@
+kind: Changed
+body: If a game ever stops responding, wopr now quits instead of freezing.
+time: 2026-10-10T00:36:43.427414359Z

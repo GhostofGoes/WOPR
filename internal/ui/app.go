@@ -76,7 +76,7 @@ func Run(opts Options) (Outcome, error) {
 	if opts.NoColor { // colorprofile alone parses NO_COLOR with ParseBool and ignores NO_COLOR=yes
 		teaOpts = append(teaOpts, tea.WithColorProfile(colorprofile.Ascii))
 	}
-	_, err := tea.NewProgram(newModel(opts, teaScheduler), teaOpts...).Run()
+	_, err := runWatched(newModel(opts, teaScheduler), opts.Log, teaOpts...)
 	return classify(err), err
 }
 
