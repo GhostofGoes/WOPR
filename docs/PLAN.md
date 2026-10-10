@@ -1,43 +1,17 @@
 # WOPR — Architecture & Scope Plan (v2.1)
 
-_Status: v2.1, 2026-10-06. v2 plus the fixes from its review. Supersedes v1 (commit `ada63a0`, which never reached
-`main`). [`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md) is the adversarial review of v1, and
+_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.4.0 are
+released; M5's film viewing pass, QA on all OSes and some owner settings (M0b) remain, and the installers (R14)
+ship in the next release. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
+[`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md) is the adversarial review of v1, and
 [`docs/reviews/PLAN-v2-review.md`](reviews/PLAN-v2-review.md) reviews v2. Finding ids are cited inline where the plan
 answers them: v1 ids look like A-3, v2 ids look like AR-1. Implementation follows the milestones in §15._
 
-**How to read this plan.** It states intent, contracts and constraints. M0 has landed, so the files in the
-repository are authoritative for configuration (`prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, the workflows,
-`tools/*/go.mod`), and the M0 seeds that v2 carried in Appendix A are gone (M-2). Likewise the import table in
+**How to read this plan.** It states intent, contracts and constraints. The files in the repository are
+authoritative for configuration (`prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, the workflows, `tools/*/go.mod`),
+and the plan keeps no copy of them, so there is no Appendix A (M-2). Likewise the import table in
 `internal/archtest` is authoritative and §4.1 mirrors it. Conventions live in `AGENTS.md`; this plan links to it
 rather than repeating it (M-1).
-
-**What changed from v1, in one paragraph.**
-
-- **Contracts.** Games and the persona now speak one protocol: dynamic input mode, `Clear`, `Wait`,
-  `SetLayout`, `Think` for any slow work, and a semantic canvas for colour. A Bubble-Tea-free host core runs
-  them. A catalog package wires the game constructors without an import cycle.
-- **Persona.** The brain gets a value snapshot and returns effects. LOGON is a closed table. The film's climax
-  has one owner.
-- **Toolchain.** CI no longer silently downgrades it.
-- **Releases.** Release builds are gated, reproducible, attested and ship their licence notices. The film text
-  has per-line provenance, and third-party text is credited.
-- **Owner decisions.** macOS 26 only. Dependabot is dropped. `main` is PR-only. Movie mode is M6, and the
-  optional LLM brain moves to M7.
-
-**What changed in v2.1.** The v2 review found 59 issues and refuted none; M0 and most of M1 were built meanwhile,
-and several had already been settled in code. v2.1 records those decisions and fixes the rest:
-
-- **Contracts written down** (IM-6, AR-5, IM-7, AR-9): `games.Info`, the host's injected resolver, the host
-  chaining `Result.Next`, the greeting scene, the `Think` cancellation rules, per-launch seeds (AR-10), layout
-  geometry with the front panel (AR-11), and the M6 host hooks for movie mode (AR-7).
-- **The import table matches `archtest`** (AR-1, AR-4, IM-4): test-only imports, subtree rules, the root package that
-  embeds the licences, and the edges M0 needed.
-- **Tooling and CI as built** (TO-1, CR-1, CR-6, SL-2): the lint fixture under `testdata/`, three tool modules,
-  a release dry run that uses `--snapshot`, explicit job conditions, a weekly report that tells findings from
-  errors, and a gitleaks job that can actually fail.
-- **Film text** (RF-3, RF-9, SL-5): the climax keeps the film's `LIST GAMES` beat, the montage names carry honest
-  provenance, the call-back is two scenes, and the status burst is ours.
-- **Appendix A is deleted.** Appendix C's mockups are redrawn at exactly 80×24.
 
 ---
 
@@ -56,9 +30,9 @@ decisions"). **D** = derived from a U requirement. **P** = a plan default the ow
 | R6 | Size: **target ≤ 10 MB, hard limit 15 MB** per binary (decimal MB). | U (confirmed 2026-10-06) | CI warns above 10,000,000 bytes and fails above 15,000,000. |
 | R7 | `wopr` starts the TUI. `--version`, `--help`, `--games`, `-p/--play <game>`. | U | CLI tests (§5). |
 | R8 | Optional LLM hookup, or purely scripted responses. | U | Scripted from v0.1; LLM in M7, opt-in (§4.7). |
-| R9 | Every long flag has a one-letter shorthand. | v1 decision 6 (source not recorded) | `flags_test.go`. |
+| R9 | Every long flag has a one-letter shorthand. | v1 decision 6 (source not recorded) | `TestEveryLongFlagHasAShorthand` (`internal/cli`). |
 | R10 | Public repository: no secrets, least-privilege CI, reproducible and attested releases. | D | §11, §12. |
-| R11 | First release after the film set pieces; the remaining games ship in minor releases. | U (2026-10-06) | §15. |
+| R11 | First release after the film set pieces; the remaining games ship in minor releases. | U (2026-10-06) | Met: v0.1.0 shipped every game (§15). |
 | R12 | **Movie mode** (`-m/--movie`) replays the WOPR terminal scenes from the film. | U (2026-10-06) | §7, M6. |
 | R13 | No Dependabot for now. Dependencies are updated by hand on a schedule (§11.5). | U (2026-10-06) | No `dependabot.yml`. |
 | R14 | **Installers** for people who never use a terminal: a per-user Windows installer, a Mac app in a `.dmg`, and a menu entry with an icon and AppStream metadata in the `.deb` and `.rpm`. Each opens a terminal running `wopr`. MSIX and snap packages are built for the stores but not published yet (§8). | U (2026-10-08) | CI installs, runs and removes each on its own platform (§11). |
@@ -113,11 +87,10 @@ like other film text (SL-4). The status burst after the header is **not** an abs
 in our own layout, tagged `reconstructed` (SL-5).
 
 **Provenance tags.** Every script line, scene step and asset carries one. The tag is one of the values below,
-and a `third-party:` tag must name a source credited in `NOTICE.md`; a test enforces both for `lines.go` now and
-for `internal/assets/` and `internal/movie/scenes/` (SL-4). The user's typed lines in movie mode are
-`script.User` lines, which keep their mixed case. The types and the check live in
-`internal/script` (`script.L`, `script.Validate`), shared by the persona, every game, the assets and the movie
-scenes.
+and a `third-party:` tag must name a source credited in `NOTICE.md`; the tests check both for every package that
+holds script text (SL-4). The user's typed lines in movie mode are `script.User` lines, which keep their mixed
+case. The types and the check live in `internal/script` (`script.L`, `script.Validate`), shared by the persona,
+every game, the assets and the movie scenes.
 
 | Tag | Meaning |
 |---|---|
@@ -133,21 +106,21 @@ scenes.
 - David's terminal was a 17-inch **Electrohome black-and-white** monitor: white text on black. The default
   `imsai` theme is white phosphor, and green and amber are alternates.
 - WOPR's text was generated off-screen by CompuPro S-100 systems on a **24-line × 80-column** display. The map
-  glyphs came from 34 custom line-segment characters. This supports the 80×24 target, and it is why the GTW map
-  is drawn as **original line-segment-style ASCII art**.
+  glyphs came from 34 custom line-segment characters. This supports the 80×24 target and is why GTW's side-choice
+  outlines are **original line-segment-style ASCII art**; the big board's map is Matthew Thomas's (§2.1).
 - **WOPR's output is upper case. David's typing appears in mixed case** ("Hello.", "Love to. How about Global
   Thermonuclear War?", "Las Vegas"). One exception is recorded until the M5 viewing pass: at the NORAD console
   in the climax, abs0's transcription has his entries in capitals (`CHESS`, `GTW`, `TIC-TAC-TOE`, `ZERO`), and
   movie mode types them so, tagged `reconstructed` (§7).
 - **LOGON comes first.** The `#45 11456 …` header and status burst appear only *after* `Joshua` is accepted.
   An unrecognised ID prints two lines and drops the connection.
-- The GTW-vs-chess exchange is a separate scene after the greeting (§2.3).
+- The GTW-vs-chess exchange is a separate scene after the greeting (§4.6).
 
 ### 2.3 Canonical screen text
 
-The full text, with a provenance tag per line, is in **Appendix B**. In M1 it moves into `internal/wopr/lines.go`
-and `internal/assets/`, which become authoritative. Two fan-source conflicts are recorded there and settled in
-the M5 viewing pass:
+The canonical text, with its provenance tags, is in **Appendix B**. The code that holds it is authoritative:
+`internal/wopr/lines.go`, `internal/assets/`, the games' packages and `internal/movie/scenes/`. Three conflicts
+remain for the M5 viewing pass to settle:
 
 - `USER ACCOUNT` vs `USER ACCOUNT NUMBER`;
 - `CITY AND/OR COUNTY NAME` vs `COUNTRY`;
@@ -160,8 +133,8 @@ the M5 viewing pass:
   solid block cursor.
 - **NORAD big board**: near-black blue field, cyan/blue outlines, red incoming and yellow outgoing tracks, white
   labels, a DEFCON column of boxed numerals 5…1, and `** … **` notices. This is the `norad` theme.
-- **WOPR cabinet**: rows of lights and a `W.O.P.R.` nameplate. This becomes an optional one-row front panel,
-  which also shows "thinking" (§4.3).
+- **WOPR cabinet**: rows of lights and a `W.O.P.R.` nameplate. The optional one-row front panel draws them, and
+  also shows "thinking" (§4.3).
 - **Verbiage**: ALL CAPS, terse, declarative; never asks clarifying questions; numbered lists `1.  2.  3.`
   (except `LIST GAMES`, which is unnumbered as in the film);
   refuses invalid actions with `** IMPROPER REQUEST **`-style lines; calls the user PROFESSOR.
@@ -173,10 +146,9 @@ the M5 viewing pass:
   two nations' outlines, generated from Natural Earth (public domain). Every piece fits its layout at 80×24
   and is tagged `original`, except the big board's world map, which is Matthew Thomas's (credited above).
 
-The target screens are in **Appendix C**, all at exactly 80×24: the greeting, the GTW side choice, the GTW big
-board, and the chess panel. **As built**, the GTW and chess screens are superseded by the regenerated goldens
-(`internal/ui/testdata/gtw_screens.golden`, `internal/games/chess/testdata/view.golden`), which show the real
-art (L-4).
+The target screens are in **Appendix C**, all at exactly 80×24: the greeting, drawn there, and the GTW side
+choice, the GTW big board and the chess panel, which the goldens hold as built, with the real art
+(`internal/ui/testdata/gtw_screens.golden`, `internal/games/chess/testdata/view.golden`; L-4).
 
 ---
 
@@ -184,33 +156,33 @@ art (L-4).
 
 | # | Decision | Choice | Src |
 |---|---|---|---|
-| 1 | TUI stack | **Bubble Tea v2.0.10 + Lip Gloss v2.0.6**, no bubbles. Measured 3.6–3.9 MiB stripped on all six targets. No fallback renderer is planned (D-3). | U |
+| 1 | TUI stack | **Bubble Tea v2.0.10 + Lip Gloss v2.0.6**, no bubbles. The two measured 3.6–3.9 MiB stripped on all six targets, with one styled view (§8 has the program's size). No fallback renderer is planned (D-3). | U |
 | 2 | Brain | **Scripted** behind `Brain`. The LLM provider is **M7**, optional and opt-in. | U |
-| 3 | Military sims | Short turn-based mini-wargames on one `sim` engine, specified before any sim is built (G-2). | U |
+| 3 | Military sims | Short turn-based mini-wargames: four scenarios on one `sim` engine, and two bespoke games that reuse its combat-results table and kill ratios (§6.3, G-2). | U |
 | 4 | LOGON | Film-faithful: a closed command table, the `Joshua` backdoor, a hint after 3 failures. `--play` and `--movie` bypass it (A-17). | U |
 | 5 | Platforms | Linux and Windows (amd64, arm64); **macOS 26 only** (amd64, arm64). | U |
 | 6 | Arg parsing | Stdlib `flag`. Every long flag has a shorthand. One bare positional means `--play`, and flags may follow it (C-1). | v1 |
 | 7 | Persistence | None. Flags and `WOPR_*` environment variables only. | P |
-| 8 | Toolchain | `go 1.27` + `toolchain go1.27.1`, as in v1 (D-1 closed by the owner). CI must not set `GOTOOLCHAIN` before `setup-go` (D-6). | U |
+| 8 | Toolchain | `go 1.27` + `toolchain go1.27.1` (D-1 closed by the owner). CI must not set `GOTOOLCHAIN` before `setup-go` (D-6). | U |
 | 9 | Lint | **prek** with **`prek.toml`** (authoritative in the repository since M0). | U |
 | 10 | Size | Target ≤ 10 MB, hard limit 15 MB. | U |
 | 11 | CI topology | Build once with GoReleaser; run each binary natively on its OS/arch (B-2). | U |
 | 12 | Docs | README from M0. **AGENTS.md from M0** is the single source for commands and conventions. `CLAUDE.md` contains `@AGENTS.md` (M-1). | P (review M-1) |
-| 13 | Releases | v0.1.0 after M2, then a minor release per milestone, then v1.0.0 after M5 (P-2). | U (v0.1.0 after M2); P (the rest) |
+| 13 | Releases | v0.1.0 after M2, then minor releases as work lands, then v1.0.0 after M5 (P-2). | U (v0.1.0 after M2); P (the rest) |
 | 14 | Bridge | Minimal: WOPR bids all four seats by point count. The user always plays the declaring side, as declarer plus dummy, with seats rotated when East/West win the contract. Passed-out deals are redealt (G-3). | U (minimal); P (seat rule, G-3) |
 | 15 | Chess rules | `github.com/corentings/chess/v2` v2.6.0, the maintained MIT fork of the archived `notnil/chess`. Search lives in `games/ai` (G-1). | P |
 | 16 | Branching | **`main` is PR-only**. One required check, `ci-ok`. Squash merges only. CI also runs on every branch push (§11.2). | U |
 | 17 | Dependabot | **Not used.** Manual update cadence plus a weekly staleness and vulnerability report (§11.5). | U |
 | 18 | Montage names | Keep the list and credit abs0 under BSD-2 now. Verify in the M5 viewing pass. | U |
 | 19 | Movie mode | **M6**: `-m/--movie` replays the film's WOPR terminal scenes (§7). | U |
-| 20 | Tool modules | Three: `tools/` (gitleaks, govulncheck), `tools/lint/` (golangci-lint), `tools/release/` (GoReleaser). golangci-lint's dependencies break gitleaks's build when they share a module (SL-2). | P |
-| 21 | `LIST GAMES` | Printed unnumbered, as in the film, at LOGON and in the Shell. A number typed right after it still selects; `HELP` and the README say so. `--games` stays numbered (RF-6). | U (confirmed 2026-10-06) |
+| 20 | Tool modules | Four: `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`; §10 lists their tools. golangci-lint's dependencies break gitleaks's build when they share a module (SL-2). | P |
+| 21 | `LIST GAMES` | Printed unnumbered, as in the film, at LOGON and in the Shell. In the Shell, a number typed right after it still selects; `HELP` and the README say so. `--games` stays numbered (RF-6). | U (confirmed 2026-10-06) |
 | 22 | Leaving the war | Esc twice may abandon GTW and the climax tic-tac-toe, like any game, with WOPR's remark about the abandoned war; the ending itself cannot be aborted (§6.2). | U |
 | 23 | `-m N` | Plays from scene N to the end of the list, then exits 0 (§7). | U |
-| 24 | GTW exchange | **Turn-based DEFCON in M5** (§6.2), replacing the one animated strike built in M2. | U |
-| 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: `GhostofGoes`. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
+| 24 | GTW exchange | **Turn-based DEFCON**, built in M5 (§6.2). | U |
+| 25 | History and legal text | The branch keeps its v1 history (the NOTICE credit covers the early-draft fragments). LICENSE holder: Christopher Goes. The Code of Conduct's contact: "contact @GhostofGoes privately via GitHub profile". Lines derived from the brother's prompt stay out of the repository until his written licence (L-3). | U |
 | 26 | ASCII art | Original art in every game, in the film's spirit (owner request 2026-10-06): printable ASCII capitals, every line ≤ 80 columns, every screen within its layout, each piece tagged `original`. Galleries and other WOPR projects are style references only; GTW's side-choice outlines are generated from Natural Earth (public domain, credited in NOTICE.md). The one exception is the big board's world map, Matthew Thomas's (owner's choice, used under his terms and credited in NOTICE.md; its northern 13 rows are shown, in its own equirectangular projection, with cities placed from their latitude and longitude, each in a cell of its own: a city whose cell is open water goes to the nearest land, and the few that share a cell or fall a column off the art's coast are moved one cell, each with its reason in `internal/assets/gtwmap.go`; the other targets a list may name are placed the same way and may share a city's cell; the assets tests pin every place's cell). | U |
-| 27 | Installers | A per-user Inno Setup installer for Windows and a universal `WOPR.app` in a `.dmg` for macOS, both release files; a menu entry, icons and AppStream metadata in the `.deb` and `.rpm`; an MSIX bundle for the Microsoft Store and snaps for the Snap Store, built and tested but not published. One app ID, `io.github.ghostofgoes.wopr`. The main launchers open a terminal running `wopr` with no arguments, with no start screen yet; the Linux and snap menu entries add one right-click action, Movie Mode (`wopr --movie`), which the owner kept (2026-10-09). Nothing is signed (the Mac app ad hoc only); issues track signing (§8). | U (2026-10-08) |
+| 27 | Installers | A per-user Inno Setup installer for Windows and a universal `WOPR.app` in a `.dmg` for macOS, both release files; a menu entry, icons and AppStream metadata in the `.deb` and `.rpm`; an MSIX bundle for the Microsoft Store and snaps for the Snap Store, built and tested but not published. One app ID, `io.github.ghostofgoes.wopr`. The main launchers open a terminal running `wopr` with no arguments, with no start screen yet; the Linux and snap menu entries add right-click actions for Chess, Checkers, Tic-Tac-Toe and Global Thermonuclear War (`wopr --play <game>`) and for Movie Mode (`wopr --movie`, which the owner kept, 2026-10-09). Nothing is signed (the Mac app ad hoc only); issues track signing (§8). | U (2026-10-08) |
 
 ---
 
@@ -236,7 +208,7 @@ PR (AR-1, IM-4).
 cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
 internal/version     → stdlib
-internal/cli         → games, theme (--theme validation), version, (movie in M6, for the scene index)
+internal/cli         → games, theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
 internal/proto/host  → proto                          Bubble-Tea-free runner (A-14)
 internal/prompt      → stdlib                         normalise, clauses, numbers, yes/no
@@ -261,7 +233,7 @@ internal/movie/...   → movie/..., proto, prompt, script, assets, games/gtw, ga
                        tests also: wopr (the consistency test, §7)
 internal/golden      → stdlib                         golden-file helper (Q-3)
 internal/archtest    → stdlib                         enforces this table
-internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt}   build tag e2e (Q-1)
+internal/e2e         → github.com/charmbracelet/{x/xpty,x/vt,x/term}   build tag e2e (Q-1)
 internal/tools/manpage → cli, games, games/catalog, movie, theme   the manual page, from the program itself (§13)
 internal/tools/...   → stdlib                         sizegate, stage, notices, relnotes, pkgdocs, icons, macapp,
                                                       snapdir (Go programs, not shell)
@@ -293,7 +265,7 @@ cmd/wopr/main.go             flags → dispatch → exit code; WOPR_PANEL; maps 
 cmd/wopr/launch*.go          the macOS app's relaunch in Terminal (§8); does nothing on other systems
 internal/version/            Version/Commit/Date via -X; fallback to debug.ReadBuildInfo(); "unknown" if absent (D-4)
 internal/cli/                Parse(args, reg, getenv) (Config, Action, error); usage; --games (§5)
-internal/proto/              program.go output.go canvas.go key.go rand.go
+internal/proto/              program.go output.go canvas.go key.go rand.go typed.go
 internal/proto/host/         runner.go (program stack, input mode, Esc machine, Think jobs, Animate, pacing)
 internal/prompt/             normalisation, clauses, numbers, menu choice, yes/no, negation
 internal/theme/              palettes: Style → (truecolor, ANSI-16 index, no-colour attribute) (U-7)
@@ -302,13 +274,14 @@ internal/ui/                 app.go (model, Run, effects) clock.go (the single t
   console/                   sanitize, wrap, scrollback, typewriter, line editor
 internal/wopr/               persona.go (session, dial, LOGON, greeting, shell) intent.go brain.go scripted.go lines.go
 internal/games/              registry.go (Info, Status, Game, Entry, Registry, Resolve)
-  ai/ cards/ board/          search (depth/node limits, time cap), decks and tricks, board drawing and cursor
+  ai/ cards/ board/          search (depth/node limits, time cap), decks and tricks, board drawing and square parsing
   ending/                    the climax: tic-tac-toe self-play → montage → final dialogue (A-16)
   catalog/ gamestest/ testkit/
   falkensmaze/ blackjack/ ginrummy/ hearts/ bridge/ checkers/ chess/ poker/ gtw/ tictactoe/
   fightercombat/ guerrilla/ desertwarfare/ airtoground/ theaterwide/ biotoxic/
 internal/sim/                M4 engine
-internal/assets/             gtw_map.go (original), scenarios.go (third-party:abs0), banner.go (original)
+internal/assets/             gtwmap.go (Matthew Thomas's map, third-party; the outlines and places, original),
+                             scenarios.go (third-party:abs0)
 internal/movie/              director.go scenes/*.go (M6)
 internal/golden/ internal/archtest/ internal/e2e/
 internal/tools/              {sizegate,stage,notices,relnotes,manpage,pkgdocs,icons,macapp,snapdir}/
@@ -316,7 +289,7 @@ packaging/                   description.txt (both Linux packages'), debian/copy
   icons/                     src/*.svg and every icon generated from them (internal/tools/icons, §8)
   linux/                     the menu entry's and the AppStream metadata's templates (pkgdocs fills them)
   windows/                   wopr.iss, winres.json, the MSIX manifest, and the build and test scripts
-  macos/ snap/               the disk image's and the snap's build and test scripts; snap.yaml.in
+  macos/ snap/               the disk image's build and test scripts; the snap's test script and snap.yaml.in
 tools/go.mod                 Go tools: gitleaks, govulncheck
 tools/lint/go.mod            Go tool: golangci-lint (separate: its dependencies break gitleaks's build, SL-2)
 tools/release/go.mod         Go tools: goreleaser (T-11), changie (release notes, §11.3), go-winres (wopr.exe's icon, §8)
@@ -347,7 +320,7 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
      program that the injected resolver builds (§4.4); `Done` pops it and delivers `GameOver{Result}` to the
      program below. `Done` with `Result.Next` is a hand-off: the **host** replaces the program with the next one
      and tells no one (AR-5, IM-6).
-   - The persona owns the **conversation phase**: `Dialing → Logon`, back to `Dialing` after a failed log-on,
+   - The persona owns the **conversation phase**: `Logon` from the first dial (a re-dial stays in it),
      then `Greeting → Shell`. There is no game phase ("a game is active" is "the stack is deeper than one") and
      no ending phase: the persona gets no input while the climax runs, and the ending's `GameOver` (the only
      `NoVerdict` result) returns it to `Shell` with chess offered.
@@ -369,13 +342,14 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
      | Empty line | `LOGON:` again |
      | Anything else, including a game name | `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--`, then `Wait`, `Clear` and a short re-dial |
 
-   - The failure counter lives in `Session`. After the third termination, an `original` hint line is printed
+   - The failure counter lives in `Session`. After every third termination, an `original` hint line is printed
      before the next `LOGON:`.
-7. **Backdoor**: the header block, the status burst, `Clear`, `GREETINGS PROFESSOR FALKEN.`, then the
+7. **Backdoor**: the header block, `Clear`, the status burst, `Clear`, `GREETINGS PROFESSOR FALKEN.`, then the
    greeting scene (§4.6) and **Shell**.
 8. **Shell dispatch.** Sanitised input goes, in order, to: host commands (`LOGOFF` family, at every depth of the
-   stack) → **phase-gated commands** (`HELP`, `HELP GAMES`, `LIST GAMES`, `PLAY <game>`) → **numbered selection**
-   (only on the line right after a list) → **explicit intent** (§4.6) → the **greeting scene** while it is active → **offer acceptance** (§4.6) → **Brain** (asynchronous,
+   stack) → **phase-gated commands** (`HELP`, `HELP GAMES`, `LIST GAMES`) → **numbered selection** (only on the
+   line right after a list) → **explicit intent** (§4.6) → the **greeting scene** while it is active →
+   `PLAY <name>` that matches no game or several → **offer acceptance** (§4.6) → **Brain** (asynchronous,
    via `Think`). A command or an explicit request therefore ends the greeting early; any other non-empty line
    advances it (IM-7, RF-11). An empty line only re-prompts: it keeps a pending offer and an armed list.
    `PLAY <name>` that matches no game answers `NO SUCH GAME IN MEMORY`; one that matches several lists them.
@@ -400,14 +374,15 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
   `--instant` / `WOPR_INSTANT=1` and "skip" both mean "advance by infinity". Movie mode adds a user-typing pace
   (§7).
 - **Cursor.** `tea.NewCursor` gives a blinking block. It is parked at the end of the input line, or after the
-  last revealed text. It is steady while WOPR thinks and under `--reduce-motion`, and hidden in key mode.
+  last revealed text. It is steady while WOPR thinks, while output is held and under `--reduce-motion`. Key
+  mode hides it, except in movie mode, where it stays after the text unless a key hint (`** PAUSED **`) is up.
 - **Skip policy** (U-3).
   - While output is revealing or paused (`Wait` is skippable), the first key flushes the queue.
   - In line mode, a printable key is *also* typed into the input line (typeahead kept). Enter and Space act
     purely as "skip" only when the input line is empty.
   - In key mode, the key flushes *and* is delivered to the game.
   - PgUp/PgDn always scroll. Esc only skips. Ctrl+C always quits.
-  - The README says "any key skips; what you type is kept".
+  - The docs site's Usage page says so: any key shows the rest of WOPR's text, and what you type is kept.
 - **Thinking.** While a `Think` or a Brain reply is pending:
   - the cursor stops blinking, and a `PROCESSING` row with one to three dots cycling at 2 Hz sits directly above
     the input line (it is the last row when nothing has been typed);
@@ -443,14 +418,14 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
     3. map CR LF, CR, LF and TAB to one space each (a multi-line paste becomes one line);
     4. drop the remaining C0, C1 and DEL;
     5. cap at 256 grapheme clusters.
-  - `SanitizeText` serves any text from outside the binary (Brain, LLM): invalid UTF-8 replaced, `ansi.Strip`,
+  - `SanitizeText` serves any text from outside the binary (the M7 LLM): invalid UTF-8 replaced, `ansi.Strip`,
     CR LF and CR normalised to LF, split on LF into logical lines, tabs expanded to 8-column stops, then the
-    remaining controls dropped. `ui` applies it to every Brain-originated line.
-  - Fuzz properties: no control rune survives, the result is valid UTF-8 and at most 256 clusters, and every
+    remaining controls dropped. Nothing calls it yet, since the scripted brain's lines are compiled in.
+  - Fuzz properties: no control rune survives, the result is at most 256 clusters, and every
     wrapped row fits its width.
 - **Width** (U-6). The line editor and the wrapper measure with the same method as the renderer: `wcwidth` by
   default, and grapheme widths once the terminal confirms mode 2027.
-- **Scrollback.** Logical lines are wrapped at render time and cached per width, capped at 2000. New output
+- **Scrollback.** At most 2000 logical lines, wrapped at render time from the newest back as needed. New output
   auto-follows. `Clear` starts a new page, and history stays above it. A short page starts at the top of
   the screen; scrolled up, its blank rows move with the text, so the lines just above the page come into
   view first. `Render(w, h)` emits exactly `h` rows.
@@ -470,7 +445,7 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
 - **Too small** (U-8). Below 80×24 the `TERMINAL TOO SMALL` card is shown, and:
   - the typewriter, `Animate`, `Wait` and Blink consumers **pause**;
   - a finishing `Think` is held until the size is valid again;
-  - every key except Ctrl+C is dropped.
+  - every key except Ctrl+C and Ctrl+Z is dropped.
   No program starts before the first valid size. `ResizeEvent` fires only when a program's layout area
   actually changes.
 - **Mouse.** Mouse reporting stays off, so native text selection works. On the alternate screen some terminals
@@ -497,6 +472,7 @@ type Env struct {
 	Width, Height int    // the program's layout area for its placement at the current size
 	Instant       bool
 	Deterministic bool   // --seed or WOPR_SEED, or under test, or movie mode: AI search obeys Limit, not the clock
+	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking (§4.5)
 	Mode          string // optional launch mode, e.g. "climax" (§6.2)
 }
 
@@ -517,7 +493,7 @@ type Output interface{ isOutput() }
 type Say       struct{ Lines []string; Pace Pace; Open bool } // typewriter; PaceSpeech, PaceTable, PaceInstant,
                                                          // PaceTyping; Open: the next Say continues the last line
 type Prompt    struct{ Text string }                     // line mode: next LineEvent answers it
-type AwaitKeys struct{ Hint string; Capture bool }       // key mode (maze, board cursor); Capture: M6, below
+type AwaitKeys struct{ Hint string; Capture bool }       // key mode (the maze); Capture: M6, below
 type Animate   struct{ Every time.Duration }             // 0 stops
 type Wait      struct{ D time.Duration }                 // host-timed pause; skippable; dropped under Instant
 type Clear     struct{}                                  // page break
@@ -530,7 +506,7 @@ type Think     struct {                                  // all slow work runs o
 }
 type Launch struct{ Slug, Mode string }               // push the program the host's resolver builds
 type Done   struct{ Result Result }                   // pop this program
-type Quit   struct{}                                  // LOGOFF: exit 0
+type Quit   struct{}                                  // exit 0 (the movie director); LOGOFF is the host's
 type Hold   struct{ On bool }                         // freeze output, as TOO SMALL does (M6)
 type Drain  struct{}                                  // ask for Drained (M6)
 type Skip   struct{}                                  // reveal what is queued at once, as a key would (M6)
@@ -557,7 +533,8 @@ type Info struct {
 	Layout    proto.Layout
 	PanelRows int      // for LayoutPanel; ≤ 12
 	Status    Status
-	Blurb     string   // one line for --games and HELP
+	Blurb     string   // one line about the game
+	Internal  bool     // the ending: only Get finds it (below)
 }
 type Entry struct {
 	Info Info
@@ -565,15 +542,15 @@ type Entry struct {
 }
 
 // internal/proto/host: the resolver ui injects (AR-5).
-type Placement struct{ Layout proto.Layout; PanelRows int }
+type Placement struct{ Layout proto.Layout; PanelRows int; NoAbort bool } // NoAbort: Esc cannot end it
 type Resolver func(proto.Launch) (proto.Program, Placement, error)
 ```
 
 Rules:
 
 - **Movie-mode hooks** (M6, AR-7, RF-1, IM-11; the `gamestest` stub has a case for each but `Hold`, which a
-  game cannot send). They are additive: no other program uses them, and the goldens did not move when they
-  landed.
+  game cannot send). They are additive, and only movie mode uses them: the director, and tic-tac-toe and the
+  ending, which type the user's lines themselves there.
   - **Key capture.** A *root* program sends `AwaitKeys{Capture: true}` and then receives every key as a
     `KeyEvent`, Esc as `KeyEsc`, with none of the host's side effects: no key skips output, and the Esc
     machine is idle. A `Prompt` ends the capture. The host ignores `Capture` from a launched program, so Esc
@@ -597,8 +574,8 @@ Rules:
     (the echo of a submitted line) or any page break closes it, including one the UI applies at once when a
     game with its own screen launches.
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
-  between them as it needs (checkers: type `b6-a5`, or move a cursor). While a `Prompt` is active, an empty
-  Enter is delivered as `LineEvent{""}`; GTW ends its target list that way.
+  between them as it needs (the movie director: keys while a scene plays, a line at the scene menu). While a
+  `Prompt` is active, an empty Enter is delivered as `LineEvent{""}`; GTW ends its target list that way.
 - **Launch and hand-off** (AR-5, IM-6).
   - The host resolves `Launch{Slug}` through the injected `Resolver`. `ui` builds it from the registry: a
     `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. The ending is a registry
@@ -659,8 +636,8 @@ are red (9) and outgoing yellow (11).
 **Contrast** (RF-10). `TestTextContrast` checks every Style against its background: WCAG AA (4.5:1) in
 truecolor, or 3:1 for the deliberately faint `Dim` and `Land`, and at least 3:1 under the default xterm and VGA
 16-colour palettes. The theme tests range over `proto.Styles()`, so a Style added later is covered as soon as
-it is declared. norad's Dim moved from ANSI blue (4), which is under 2.3:1 on black in both palettes, to
-cyan (6). Two exceptions are accepted and documented: imsai's Dim is bright black (8), 2.8:1 on the Linux
+it is declared. norad's Dim is cyan (6), because ANSI blue (4) is under 2.3:1 on black in both palettes.
+Two exceptions are accepted and documented: imsai's Dim is bright black (8), 2.8:1 on the Linux
 console's VGA palette; and Solarized redefines bright black as its background colour, which no theme can
 work around.
 
@@ -673,12 +650,12 @@ work around.
   - The current DEFCON level is pointed at, `>| 3 |`, as well as reversed. The pointer is what says it: the
     monochrome themes reverse the DEFCON 1 rung at every level (their stand-in for white on red), and so
     does norad without colour.
-  - Card suits always show their letter. The card winning a trick so far is edged `.===.`; it was bold, which
-    showed only on the card's index, and not at all on a red card in the monochrome themes, whose red suits
-    are bold already. Before each play prompt, Hearts and Bridge say the trick so far in the console
+  - Card suits always show their letter. The card winning a trick so far is edged `.===.`: bold would show
+    only on the card's index, and not at all on a red card in the monochrome themes, whose red suits are
+    bold already. Before each play prompt, Hearts and Bridge say the trick so far in the console
     (`WEST LEADS 7H. NORTH PLAYS KH.`), and each trick once it is complete.
   - Chess and checkers bracket the last move (`[]` and `P<`, `[b]`); a king is its capital letter alone (bold
-    on Black's made it look like White's men without colour), and a jumped man is `x`. Tic-tac-toe
+    on Black's would make them look like White's men without colour), and a jumped man is `x`. Tic-tac-toe
     underlines the last mark, and the console says every move.
   - Gin Rummy names the melds by position beside the hand (`MELDS 1-3 4-6`, or `NO MELDS`), besides
     drawing them bright. Bridge points at the hand to play (`>`); Hearts draws its pass as an arrow and
@@ -701,8 +678,9 @@ work around.
   `HELP` or `LIST GAMES` it is the list's last line). The cursor sits at the end of the input line; key mode
   shows a hint where the input line would be.
 - **Art** is pure ASCII.
-- **Goldens.** From M2, game goldens include `Canvas.StyleMap()`; the theme tests check each Style's rendering
-  under the TrueColor, ANSI and ASCII profiles.
+- **Goldens.** Game goldens include `Canvas.StyleMap()`; the theme tests check each Style's rendering under
+  the TrueColor, ANSI and ASCII profiles, and that a Style that paints a background keeps a reversed block
+  without colour.
 - **Sweeps** (`internal/ui/access_test.go`). The persona, the movie menu, the whole film and every playable
   game in the catalog are played through the real UI, each game a little way from a playbook of inputs
   (`TestEveryGameHasAPlaybook` fails for a game without one; GTW's goes on through the climax, tic-tac-toe
@@ -724,27 +702,15 @@ work around.
 - *Checked:* every game's screens, the persona, the GTW board and kill ratios, the ending, movie mode (the
   board, the game clock, typed lines, the menu) and the front panel; each under `NO_COLOR` and the ASCII
   profile in all four themes, paced and `--instant`, with and without `--reduce-motion`; the contrast table.
-- *Fixed:* tic-tac-toe's last X was marked only by bold on a style that is bold in every theme, so nothing
-  showed; the last mark is now underlined. The trick table's winning card was marked by bold, which showed
-  only on its index (not at all on a red card in the monochrome themes); it is now edged `.===.`. The current
-  DEFCON level rested on reversal, which the DEFCON 1 rung always has in the monochrome themes; it now has
-  a `>` pointer. Gin Rummy's melds were told from the deadwood only by brightness; their positions are now
-  written beside the hand. The ending's self-play still sped up under `--reduce-motion`; it now keeps a
-  steady step. Bold that never showed (chess's `CHECK`, GTW's last-orders warning and launch code, the
-  ending's code, the maze's player, exit and title, checkers' white kings) was removed, and the sweep keeps it
-  out. Gin's discard lost its bold too: its frame was bold already, so only a black card's index (any card's
-  in norad) looks different. The theme tests now cover every Style, a Style that paints a background keeps
-  a reversed block without colour, the meaningful pairs stay apart in 16 colours and without colour, and
-  every Style renders under each profile with only that profile's colours. The README gained an
-  accessibility section and the mouse-wheel note. After review: Hearts and Bridge say the trick so far before
-  each play prompt; Black's checkers kings lost their bold, which the sweep's no-colour check found making
-  them look like White's men; every game must have a playbook, and checkers' now plays to a king; `--help`
-  and the README say what `-r` does and does not do, and point to `-i`.
+- *Fixed:* every gap it found, so the screens meet the rules above: the last tic-tac-toe mark, the trick's
+  winning card, the current DEFCON level, Gin Rummy's melds, the trick so far in Hearts and Bridge, Black's
+  checkers kings, the ending's pace under `--reduce-motion`, and bold that showed in no theme. v0.3.0's
+  change notes list what players see.
 - *Left for a human with a screen reader* (Orca, NVDA with Windows Terminal, VoiceOver): how the alternate
   screen reads while the typewriter reveals text and Bubble Tea redraws changed rows; whether the 2-D panels
   (trick tables, boards, the big board, the sims' maps) read in a useful order, or whether the console's
   words (each move, the trick so far) are enough on their own; whether the cursor, hidden in key mode (the
-  maze) and while movie mode plays, should be parked at the key hint for magnifiers; and how the film's open
+  maze) and while movie mode is paused, should be parked at the key hint for magnifiers; and how the film's open
   prompts sound with no prompt text, above all after a list.
 
 ### 4.6 Persona: session, intent, offers, brain
@@ -757,7 +723,7 @@ type Snapshot struct { // a value copy taken in Handle; safe on another goroutin
 	Seed    uint64
 	Said    map[string]bool   // cloned
 	Flags   map[string]bool   // cloned
-	Last    *proto.Result     // the previous game's result (copied); replaces v1's PostGame
+	Last    *proto.Result     // the previous game's result (copied)
 	History []Exchange        // last 20, copied; recorded exchanges are never mutated (AR-9)
 }
 type Effect interface{ isEffect() }
@@ -777,8 +743,8 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
 	Lines Ls                            // fixed reply, with provenance
 	Pick  []Ls                          // or one of these, chosen with NewRand(Seed, DomainBrain|Turn)
 	Once  bool                          // after it fires once, the rule is skipped
-	// M2 adds After (AfterWin, AfterLoss, AfterNoWinner, AfterAbort) for remarks about the last game.
 }
+// The verdict after a game is the persona's (gameOver, from the Result and the game played), not a rule's.
 ```
 
 - **Brain calls.** The persona calls the Brain through `Think`: `Fn` calls `Reply` with the snapshot. The reply
@@ -802,11 +768,12 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
     `I WANT TO PLAY` or `I'D LIKE TO PLAY`;
   - the rest of the clause, after an optional `A GAME OF`, `A ROUND OF`, `A NICE GAME OF`, `A GOOD GAME OF`,
     `SOME`, `A` or `THE`, and before optional trailing `NOW`, `INSTEAD`, `PLEASE`, `THEN`, `AGAIN`, `TODAY`,
-    `WITH ME` or `WITH YOU`, is **exactly** a game name, slug or alias, a number, or a unique prefix. Anything
-    else in the clause means the line is not a plain request ("Let's play 2 games of chess", "How about 1 more
-    round?").
-  - A negator (`NOT`, `DON'T`, `DONT`, `NO`, `NEVER`) before the verb vetoes the match. Because the verb must
-    open the clause, this is a safety net rather than a rule that does work today.
+    `WITH ME` or `WITH YOU`, is **exactly** a game name, slug or alias, a number, or a unique prefix of three
+    letters or more that is not a negator. Anything else in the clause means the line is not a plain request
+    ("Let's play 2 games of chess", "How about 1 more round?").
+  - A negator (`NOT`, `NO`, `NEVER`, and `DON'T`, `WON'T` or `CAN'T` with or without the apostrophe;
+    `prompt.Negators`) before the verb vetoes the match. Because the verb must open the clause, this is a
+    safety net rather than a rule that does work today.
 
   Input that is exactly a game name, slug or alias also counts.
 
@@ -819,8 +786,9 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
   - `SHALL WE PLAY A GAME?` arms `Offer{Any}`. YES gets `WHICH GAME?` (`original`), the list, and arms selection.
   - `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?` and `HOW ABOUT A NICE GAME OF CHESS?` arm `Offer{chess}`.
 
-  `YES`, `Y`, `OK`, `SURE`, `LOVE TO` and `FINE` accept. `NO` declines in character. Explicit intent outranks
-  an offer, so "Love to. How about Global Thermonuclear War?" asks for GTW.
+  `YES`, `Y`, `OK`, `SURE`, `LOVE TO`, `FINE` and the like accept; `NO` and the like decline in character
+  (`prompt.YesNo` has the lists). Explicit intent outranks an offer, so "Love to. How about Global
+  Thermonuclear War?" asks for GTW.
 - **GTW-vs-chess scene.** The first GTW intent gets `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?` and arms
   `Offer{chess}`. A second GTW intent ("Later. Let's play Global Thermonuclear War.") gets `FINE.` and
   `Launch{gtw}`. `YES` starts chess.
@@ -869,8 +837,8 @@ type Rule struct { // the scripted brain's table; first match wins, specific bef
 ```text
 wopr                          start the TUI (dial → LOGON)
 wopr -v | --version           wopr v0.1.0 (commit abc1234, built 2026-…, go1.27.1); "unknown" if not stamped
-wopr -h | --help              usage, including LOGON: Joshua, LOGOFF and the movie scene list
-wopr -g | --games             numbered list in film order (+ slugs); tic-tac-toe under "ALSO AVAILABLE"
+wopr -h | --help              usage, including LOGON: Joshua, LOGOFF, movie mode's keys and the docs site
+wopr -g | --games             numbered list in film order, shortest names; tic-tac-toe under "ALSO AVAILABLE"
 wopr -p | --play <game>       launch a game (number 1-15, slug, alias, name, or unique prefix)
 wopr <game> [flags]           same as --play; flags may come before or after
 wopr -m | --movie [scene]     movie mode (§7): from that scene to the end of the list; without one, a scene menu
@@ -881,7 +849,7 @@ wopr -i | --instant           no pacing                              (env WOPR_I
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
 wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
                               typing or the animations, which -i skips
-wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
+wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
 - **Interspersed positional** (C-1).
@@ -921,13 +889,13 @@ wopr -L | --licenses          print NOTICE.md and third-party notices, then exit
   `-is 1`. A test pins both lists, and the help text shows the accepted ones.
 - **Letters.** `-v` means version, deliberately. A future verbose flag gets another letter (not `-V`, which
   conventionally means version) (C-4). `-l` is reserved for `--llm` (M7). `--licenses` uses `-L`, and
-  `--scenes` uses `-S` because `-s` is the seed; `--only` is `-o` (`--single` would have needed another letter
-  for the same reason).
+  `--scenes` uses `-S` because `-s` is the seed; `--only` is `-o`.
 - **`games.Resolve`**: number (1–15) → slug → alias → exact normalised name → unique prefix.
   - Unlisted entries are never matched by number. Tic-tac-toe has `Listed: false`, which is explicit rather
     than relying on a zero `Number` (G-4). A registry test checks that 1..15 each appear exactly once.
   - Slugs are the full film names, lower case and hyphenated (`global-thermonuclear-war`,
-    `theaterwide-tactical-warfare`); aliases are short forms (`gtw`, `ttt`). `wopr --games` prints them all.
+    `theaterwide-tactical-warfare`); aliases are short forms (`gtw`, `ttt`). `wopr --games` prints the shortest
+    name each game answers to, its slug or an alias (`cli.Handle`).
   - Ambiguity (e.g. `theaterwide`, a prefix of two slugs) prints the candidates and exits 2.
   - A `Planned` game resolves; the TUI starts, and WOPR answers `** GAME ROUTINE NOT AVAILABLE **` (`original`)
     and stays in Shell.
@@ -961,7 +929,7 @@ Every game must meet all of these:
 
 | # | Game | Layout | Input | M | Notes and quality test |
 |---|---|---|---|---|---|
-| 1 | Falken's Maze | Panel | keys | 4 | Procedural maze, fog of war. WOPR learns a turn bias and re-routes walls. Property test after every re-route: the exit is reachable *from the player's current cell*, no wall lands on the player, revealed cells stay consistent or the change is announced (G-6). **As built:** 19×5 perfect maze (arrows or WASD, `Q` gives up); the player sees their cell and where its passages lead. Every 6 moves WOPR closes an unseen passage on the way to the exit (at a junction where the way on is the player's favourite turn, if it can) and opens another unseen wall that rejoins the halves, the longest way round; at most 12 a game, since always lengthening the way could stall a player forever. Walls only change between unseen cells, so the maze stays perfect and seen walls never change. The key hint shows where the input line would be. |
+| 1 | Falken's Maze | Panel | keys | 4 | Procedural 19×5 perfect maze under fog of war (arrows or WASD, `Q` gives up); the player sees their cell and where its passages lead. WOPR learns a turn bias and re-routes walls: every 6 moves it closes an unseen passage on the way to the exit (at a junction where the way on is the player's favourite turn, if it can) and opens another unseen wall that rejoins the halves, the longest way round; at most 12 a game, since always lengthening the way could stall a player forever. Walls only change between unseen cells, so the maze stays perfect and seen walls never change. The key hint shows where the input line would be. Property test after every re-route: the exit is reachable *from the player's current cell*, the maze stays perfect and no seen wall changes (G-6). |
 | 2 | Black Jack | Console | line | 3 | One deck; the dealer stands on soft 17 (`Rules.StandSoft17`) and peeks on an ace or ten; 3 to 2 for a natural (money in cents, so exact); double on any first two cards; one split a round (split aces take one card). $100 stake per launch, $1–$25 bets, `LEAVE` cashes out (QUIT and EXIT stay the host's). Test: the dealer's rules over 600 seeded shoes under S17 and H17; exact payouts. |
 | 3 | Gin Rummy | Panel (hand) | line | 3 | To 100; knock at 10 or less (`knock 7h`), gin 25, undercut 25, repeated lay-offs, void at two stock cards. Melds by exhaustive search; WOPR takes the discard only into a meld, sheds deadwood, knocks at once. Test: arrangement and scoring tables; legality and card conservation over 60 seeded games. |
 | 4 | Hearts | Panel (trick) | line | 3 | 4 seats, passing (left, right, across, hold), 2C lead, no points on the first trick, hearts broken, shoot-the-moon, to 100; heuristic AI on `cards/trick.go`. Test: legality over 200 seeded deals. |
@@ -969,9 +937,9 @@ Every game must meet all of these:
 | 6 | Checkers | Panel | line | 2 | 8×8 English draughts: forced captures, multi-jumps, crowning ends the move, kings move both ways, draw after 40 moves each without progress (a capture or a man's move, crowning included). The player is Black and moves first, typing squares with or without separators (`c3-d4`, `c3d4`, `c3xe5xg7`, `c3e5g7`); the first hop of a multi-jump is enough when only one jump continues it, and the game names the continuations otherwise. The game says why it ended. Search depth 6 (deterministic), or iterative deepening to depth 10 within 1.5 s. Test: rules cases, a double-jump puzzle, legality over seeded self-play. A board cursor (key mode) is optional polish. |
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`; `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). Repetition and the fifty-move rule are claimed at once, so the search sees the game's history: below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop); `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07; checkers keeps three columns); the last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two; no illegal move in 20 seeded self-play games at depth 2; K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side; ante 1, fixed limit 5/10, a bet and three raises; bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands); pot accounting. |
-| 9–14 | Military sims | Console/Panel | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. **As built** (all Console): Guerrilla (12 turns; hidden cells, ambush at double strength, recruiting with support; survival wins), Desert (10 turns; supply to the depot), Theaterwide Tactical (10 turns; the escalation ladder, the top rung ends it `WINNER: NONE`) and Biotoxic (8 turns; contamination spreads with the wind) are `sim` scenarios; Fighter Combat (15 turns; simultaneous manoeuvres, energy and aspect) and Air-to-Ground (6 sorties; packages against SAM sites, interceptors and a hidden mobile battery) are bespoke. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks; balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1); §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. **As built in M5**, the exchange is turn-based: three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, the UI screens; no allocation wins (exhaustive), the order grammar, the ladder under every order, Instant without ticks, the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder. |
-| — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice; both modes' transcripts. |
+| 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. Guerrilla (12 turns; hidden cells, ambush at double strength, recruiting with support; survival wins), Desert (10 turns; supply to the depot), Theaterwide Tactical (10 turns; the escalation ladder, the top rung ends it `WINNER: NONE`) and Biotoxic (8 turns; contamination spreads with the wind) are `sim` scenarios; Fighter Combat (15 turns; simultaneous manoeuvres, energy and aspect) and Air-to-Ground (6 sorties; packages against SAM sites, interceptors and a hidden mobile battery) are bespoke. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks; balance logged over seeds. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1); §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, the UI screens; no allocation wins (exhaustive), the order grammar, the ladder under every order, Instant without ticks, the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder. |
+| — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice; each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
 
@@ -989,7 +957,7 @@ no verdict of their own.
         refused (`SMALLVILLE IS NOT IN THE TARGET DATABASE.`, `MOSCOW IS NOT AN ENEMY TARGET.`) with the hint
         `TYPE LIST FOR THE ENEMY TARGETS ON FILE.` `LIST` (also `HELP`, `?`) prints them in four columns. A
         target listed twice counts once, so `WASHINGTON, D.C.` is one.
-   3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24). **As built in M5**:
+   3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24):
       - **The first strike needs no order.** The empty line that ends the target list opens the board at
         DEFCON 5 and launches strike 1 at once on WOPR's **war plan** (ICBM 25%, SLBM 25%, bombers 0%), as in
         the film. Your SLBMs fly at the listed targets, your ICBMs at the enemy's silo field.
@@ -1046,9 +1014,8 @@ no verdict of their own.
           in, dotted, at DEFCON 1: yours on a low arc, WOPR's straight in under it, both sides' dots on the
           same columns so that where the routes meet one covers the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
-        kill ratios, the climax. That is two more Enters than M2's single strike, and about 18 s of flight
-        instead of 8. Under `Instant` each line returns everything up to the next prompt; nothing waits for
-        a tick.
+        kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
+        everything up to the next prompt; nothing waits for a tick.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
@@ -1091,7 +1058,7 @@ no verdict of their own.
    The persona, back on top, returns to `Shell` with `Offer{chess}` armed.
 4. **Leaving early.** GTW and the climax tic-tac-toe are games, so Esc twice ends them like any game (§4.3);
    that is a deliberate choice, not a loophole. The persona then says an `original` line acknowledging the
-   abandoned war (an `AfterAbort` rule that knows the last game was GTW) instead of the plain verdict.
+   abandoned war (the game it launched was GTW) instead of the plain verdict.
 5. **Goldens.** `film_path` (§9) covers the 0-players path; tic-tac-toe's `climax` golden covers a WOPR win
    and `NO`; the persona's `TestAbandonedWar`, `TestAbandonedMidExchange` and `TestAbandonedClimax` cover Esc
    in GTW, at a strike prompt and in the climax, and
@@ -1099,9 +1066,9 @@ no verdict of their own.
 
 ### 6.3 Sim engine (M4)
 
-The first M4 task is a written engine spec:
+The engine, `internal/sim` (specified in §6.3.1), has:
 
-- a map model (named regions on a strip or grid);
+- a map model (named regions on a strip);
 - a unit table (type, strength, mobility, range);
 - per-scenario action sets;
 - a combat-results table drawn with the game's stream;
@@ -1112,15 +1079,14 @@ The first M4 task is a written engine spec:
 Guerrilla Engagement, Desert Warfare, Theaterwide Tactical and Biotoxic are **scenarios** (data plus a few
 hooks). Fighter Combat (an energy/aspect dogfight) and Air-to-Ground (sortie packages against SAM threat) do
 not fit a region map. They are bespoke games that reuse only the combat-results and kill-ratio parts (G-2).
-GTW moves onto `sim` only if that removes code.
 
-**As built.** `sim.NewGame` turns a `Scenario` into a `proto.Program`; scenario hooks are `Setup`, `Victory`,
-`AI` (default: `DefaultAI`), `AttackMod`, `Upkeep`, `Status` and `RegionNote`, and scenario verbs run in
-phases 0 (before movement), 1 (with combat) or 2 (after). Units may be hidden (`~` on the map) until found.
-Fighter Combat shoots on `sim.CRT` and ends with `sim.RatioTable`; WOPR's manoeuvre is a heuristic with a
-little randomness. Air-to-Ground resolves escorts, interceptors, SEAD, SAM fire and the bomb run on `sim.CRT`;
-WOPR places its mobile battery where the last raid went (usually) and keeps its interceptors down when the
-last escort outnumbered them. GTW stays separate: moving it would not remove code.
+`sim.NewGame` turns a `Scenario` into a `proto.Program`; scenario hooks are `Setup`, `Victory`, `AI` (default:
+`DefaultAI`), `AttackMod`, `Upkeep`, `Status`, `RegionNote`, `Overlay` and `Ground` (the last two draw the map's
+picture), and scenario verbs run in phases 0 (with movement), 1 (with combat) or 2 (after). Units may be hidden
+(`~` on the map) until found. Fighter Combat shoots on `sim.CRT` and ends with `sim.RatioTable`; WOPR's manoeuvre
+is a heuristic with a little randomness. Air-to-Ground resolves escorts, interceptors, SEAD, SAM fire and the
+bomb run on `sim.CRT`; WOPR places its mobile battery where the last raid went (usually) and keeps its
+interceptors down when the last escort outnumbered them. GTW stays separate: moving it would not remove code.
 
 #### 6.3.1 Engine spec (written first, M4)
 
@@ -1158,11 +1124,11 @@ last escort outnumbered them. GTW stays separate: moving it would not remove cod
 `wopr --movie [scene]` replays the film's **WOPR terminal scenes** as a self-running show, through the same
 console, typewriter, canvas and game code as interactive play. **Built in M6.**
 
-**Scenes.** `wopr --scenes` (`-S`) prints this list. The scripts are checked in the M5 viewing pass; until
-then every film line in them is tagged `reconstructed`. David's lines are `Type` steps in mixed case, as on
-screen (RF-9), with one exception: his entries at the NORAD console in the climax (`CHESS`, `GTW`,
-`TIC-TAC-TOE`, and `ZERO` in tic-tac-toe) are in capitals, as abs0's transcription of the scene has them,
-tagged `reconstructed`; M5 confirms or puts them in mixed case like the rest:
+**Scenes.** `wopr --scenes` (`-S`) prints this list. The scripts are checked in the M5 viewing pass; until then
+every film line in them is tagged `reconstructed`, except abs0's backdoor header (§2.1). David's lines are `Type`
+steps in mixed case, as on screen (RF-9), with one exception: his entries at the NORAD console in the climax
+(`CHESS`, `GTW`, `TIC-TAC-TOE`, and `ZERO` in tic-tac-toe) are in capitals, as abs0's transcription of the scene
+has them, tagged `reconstructed`; M5 confirms or puts them in mixed case like the rest:
 
 | # | Slug | Content |
 |---|---|---|
@@ -1173,10 +1139,10 @@ tagged `reconstructed`; M5 confirms or puts them in mixed case like the rest:
 | 5 | `norad-terminal` | The NORAD session: `Joshua`, `Are you still playing the game?`, `28 HOURS` and the kill-ratio offer, GTW's kill-ratio table, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, and Falken's address after `What classified address?` |
 | 6 | `climax` | The board at DEFCON 1 while WOPR cracks the launch code; `List Games`; `CHESS`, refused; `GTW`, running; `TIC-TAC-TOE`: one player to a stalemate, `ZERO`, self-play, the montage, `Hello.` and `A STRANGE GAME…` |
 
-As built, `Is this a game or is it real?` is in the NORAD session, where the fan transcriptions put it, just
-before the classified address it leads to; v2.1's provisional table had it in the call-back. M5 settles it.
+`Is this a game or is it real?` is in the NORAD session, where the fan transcriptions put it, just before the
+classified address it leads to; M5 settles it.
 
-**Design** (as built).
+**Design.**
 
 - **Data.** Scenes are data in `internal/movie/scenes`, every step tagged (`scenes.Scene.Lines` feeds
   `script.Validate`). A `Scene` has a slug, a menu title, a one-line blurb, an `Interactive` mark and its
@@ -1278,19 +1244,10 @@ before the classified address it leads to; v2.1's provisional table had it in th
   `-trimpath`, `-s -w`, and `-X` for Version, Commit and Date. `mod_timestamp`, `builds_info` and per-file
   `info.mtime` are pinned to the commit time, so archives are byte-reproducible. A test with GoReleaser v2.18.2
   touched the extra files between two runs and got identical checksums (B-12).
-- **Measured** (go1.27.1, one Lip Gloss-styled view, stripped):
-
-  | Target | Bubble Tea + Lip Gloss | + chess (full use) | + stdlib HTTP client (M7) |
-  |---|---|---|---|
-  | linux/amd64 | 3.88 MiB | ≈ 4.0 MiB | 7.99 MiB |
-  | linux/arm64 | 3.69 MiB | ≈ 3.8 MiB | 7.44 MiB |
-  | darwin/amd64 | 3.89 MiB | ≈ 4.0 MiB | 8.15 MiB |
-  | darwin/arm64 | 3.71 MiB | ≈ 3.8 MiB | 7.60 MiB |
-  | windows/amd64 | 3.84 MiB | ≈ 4.2 MiB | 8.04 MiB |
-  | windows/arm64 | 3.59 MiB | ≈ 3.9 MiB | 7.33 MiB |
-
-  The worst case, with everything including HTTP (windows/amd64), is 8.75 MB, under the 10 MB target. Game
-  code, art and scenes add hundreds of KB. A provider SDK would add about 4.5 MB more, so none is used.
+- **Measured** (go1.27.1, stripped, 2026-10-09): the program is 5.8 to 6.4 MB on the six targets, plus the
+  Windows programs' resources (below). The standard library's HTTP client (M7) added 3.9 to 4.5 MB to a
+  one-view program (2026-10-06); as much again would take the amd64 programs to about 10.5 to 11 MB, over the
+  10 MB target and under the 15 MB limit. A provider SDK would add about 4.5 MB more, so none is used.
 - **Size gate**: `go run ./internal/tools/sizegate -expect 6 -packages 4`, which reads `dist/artifacts.json`
   (B-7, B-9).
   - It reads GoReleaser's artifact list and gates the `Binary` entries and the Linux packages.
@@ -1301,7 +1258,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - `sizegate -files <file>...` holds the Windows installer and the macOS disk image to the same budget, in
     the `collect` jobs (§11). The universal program in the Mac app is about 12 MB, but the image is
     compressed.
-  - The README states only the budget (B-8).
+  - The README has no size table, only a development build's rough size (B-8).
 - **Linux packages** (owner request 2026-10-07; `nfpms` in `.goreleaser.yaml`, GoReleaser's nFPM): a `.deb`
   and an `.rpm` for linux/amd64 and linux/arm64, holding the same binary as the archives.
   - **Where files go.** The `.deb` follows Debian Policy 4.7: the program in `/usr/games` (§11.11; it is on
@@ -1320,17 +1277,15 @@ before the classified address it leads to; v2.1's provisional table had it in th
     from `NOTICE.md`; and every module linked into the Linux builds, each filed under Expat or BSD-3-clause
     only if its licence has those words, so any other licence stops the tool until someone files it.
   - **Metadata.** Section `games`, priority `optional`, no dependencies (the binary is static), homepage the
-    repository, maintainer and packager `GhostofGoes <6599820+GhostofGoes@users.noreply.github.com>`
-    (GitHub's no-reply address for the owner's account, so no mailbox is published), RPM vendor
-    `GhostofGoes`, `License: MIT AND BSD-2-Clause AND BSD-3-Clause AND LicenseRef-Matthew-Thomas-map`
+    repository, maintainer and packager `Christopher Goes <ghostofgoes@gmail.com>`, RPM vendor
+    `Christopher Goes`, `License: MIT AND BSD-2-Clause AND BSD-3-Clause AND LicenseRef-Matthew-Thomas-map`
     (wopr, abs0's transcription, the Go modules, and Matthew Thomas's map, which is compiled into the
     program and whose terms have no SPDX identifier, so it gets a LicenseRef with the name the `.deb`'s
     copyright file gives it; the film text is under no licence), no RPM `Group` (Fedora asks for none).
     The synopsis and description are `packaging/description.txt`, which `pkgdocs`'s tests hold to both
     formats' rules.
-  - **Menu entry, icon and AppStream metadata** (owner decision 2026-10-08, reversing the "no desktop
-    entry" of 2026-10-07, which was left open to the owner), so that someone who never opens a terminal can
-    start wopr after double-clicking the package. Both packages install, named by the app ID
+  - **Menu entry, icon and AppStream metadata** (owner decision 2026-10-08), so that someone who never opens
+    a terminal can start wopr after double-clicking the package. Both packages install, named by the app ID
     `io.github.ghostofgoes.wopr`, `/usr/share/applications/<id>.desktop`,
     `/usr/share/metainfo/<id>.metainfo.xml`, and the icon in `/usr/share/icons/hicolor/` at 16, 22, 24,
     32, 48, 64, 128, 256 and 512 px and as an SVG. `pkgdocs` fills the templates in `packaging/linux/`
@@ -1339,16 +1294,18 @@ before the classified address it leads to; v2.1's provisional table had it in th
     - The menu entry (Desktop Entry 1.5) has `Terminal=true`, so the desktop opens its terminal running
       wopr, at the terminal's own size (wopr's too-small screen covers a small one). `Exec` is the
       program's full path in each package. `StartupNotify=true` hands the terminal its startup token, so
-      the busy cursor ends and, on Wayland, the terminal takes the focus. One right-click action, "Movie
-      Mode", runs `wopr --movie` (the owner kept it, 2026-10-09). Categories Game, BoardGame, CardGame
-      and StrategyGame, and keywords such as WarGames, Joshua and the games' names. There is no start
-      screen yet (an issue tracks `-w/--welcome`), so it starts at LOGON.
+      the busy cursor ends and, on Wayland, the terminal takes the focus. Five right-click actions start
+      Chess, Checkers, Tic-Tac-Toe or Global Thermonuclear War (`wopr --play`), or Movie Mode
+      (`wopr --movie`, which the owner kept, 2026-10-09); the games are named as `wopr --games` lists them
+      (`chess`, `checkers`, `ttt`, `gtw`). Categories Game, BoardGame, CardGame and StrategyGame, and
+      keywords such as WarGames, war, Joshua and the games' names, which the metadata lists too.
     - The metadata is a `desktop-application`, not AppStream's `console-application`, because GNOME
       Software never lists the latter (from its source, untested). Its summary and description are
       `description.txt`'s; six screenshots come from the docs site; OARS 1.1 rates `money-gambling` and
       `violence-fantasy` moderate (play money in Black Jack and Poker; text-only war games), both
-      judgement calls for the owner to confirm; amber branding colours, which suit the final icon; the releases
-      come from `changelog.yml`, the newest three with their notes, a snapshot marked `type="snapshot"`.
+      judgement calls for the owner to confirm; amber branding colours, matched to the icon's lamps; the
+      releases come from `changelog.yml`, the newest three with their notes, a snapshot marked
+      `type="snapshot"`.
     - Fedora: the `.rpm` owns the hicolor directories rather than requiring `hicolor-icon-theme`, as the
       guidelines' gtk-doc example does for directories of a package not needed to run. A `Requires`
       would break the docs' offline `dnf install --disablerepo='*'` where that package is missing.
@@ -1357,7 +1314,8 @@ before the classified address it leads to; v2.1's provisional table had it in th
       `Exec` starts the package's own program, and every icon size; the smoke jobs validate the installed
       `.deb`'s files with `desktop-file-validate`, `appstreamcli validate --no-net --pedantic` and
       `appstream-util validate-relax --nonet` (the one Fedora asks for), check the `.rpm`'s files and the
-      directories it owns, and check that removing either leaves nothing behind.
+      directories it owns, and check that removing either leaves nothing behind. `pkgdocs`'s
+      `TestValidators` runs the same three validators on the files it writes (the `desktop-files` hook, §10).
     - Untested on real desktops: which terminal opens (GNOME Terminal on Ubuntu 24.04, Ptyxis on 26.04 and
       Fedora 44, Konsole on KDE, from research) and whether GNOME Software can remove a package installed
       by hand.
@@ -1372,9 +1330,9 @@ before the classified address it leads to; v2.1's provisional table had it in th
     the fixed `reproducible`, the payloads are xz (deterministic), and the compressed documents come from
     `internal/tools/pkgdocs`, which compresses like `gzip -9n` (no name, no time) and runs as a GoReleaser
     before hook into `build/pkg`, where it also copies the packages' `changelog.yml` from `WOPR_NOTES_DIR`
-    (`nfpms.changelog` takes no template). Two snapshot builds in different clones, with different umasks,
-    gave the same `checksums.txt` (2026-10-07), and again with the menu entry and icons, after touching an
-    icon (2026-10-09); `repro` compares the packages with everything else.
+    (`nfpms.changelog` takes no template). Two snapshot builds in different clones, with different umasks
+    and an icon touched between them, gave the same `checksums.txt` (2026-10-09, with the menu entry and
+    icons); `repro` compares the packages with everything else.
   - **Lint** (2026-10-07). lintian 2.117 with `--pedantic --display-experimental`, Debian and Ubuntu profiles,
     finds nothing but `statically-linked-binary`, which the package overrides: lintian knows a Go program is
     static only from a Debian source package's build dependencies. rpmlint 2.8.0, Fedora 44's (with its
@@ -1382,12 +1340,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
     `position-independent-executable-suggested`, both by design (one static binary that runs on every
     distribution), and `spelling-error` for "Falken's" and "tac" (of tic-tac-toe) in the description.
     `packaging/rpmlintrc` filters those four (`rpmlint -r packaging/rpmlintrc`), each with its reason, and
-    `invalid-license` for the map's LicenseRef, which no list of licences has (the License tag gained it
-    after that run, so this filter is not yet confirmed against Fedora's rpmlint). Again on 2026-10-09,
-    with the menu entry, icons and metadata: lintian 2.117 reports only the override; rpmlint 2.10 with
-    Fedora 44's configuration finds nothing new (its desktop-file and AppData checks ran); `appstreamcli`
-    1.0.2 `--pedantic` gives one info note, `description-first-word-not-capitalized`, because the
-    description starts with `wopr`; and `appstream-util validate-relax` passes. The
+    `invalid-license` for the map's LicenseRef, which no list of licences has. Again on 2026-10-09, with
+    the map's LicenseRef, the menu entry, icons and metadata: lintian 2.117 reports only the override;
+    rpmlint 2.10 with Fedora 44's configuration finds nothing new (its desktop-file and AppData checks ran);
+    `appstreamcli` 1.0.2 `--pedantic` gives one info note, `description-first-word-not-capitalized`,
+    because the description starts with `wopr`; and `appstream-util validate-relax` passes. The
     packages carry no GPG signature (there is no signing key, only `GITHUB_TOKEN`); like every release file
     they are attested and can be checked with `gh attestation verify` (§12). zypper refuses an unsigned
     package unless given `--allow-unsigned-rpm`, so the Linux (RPM) install tab's openSUSE line passes it;
@@ -1395,19 +1352,19 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - **Looking inside an `.rpm`.** nFPM's RPM writer (google/rpmpack) stores the payload's paths as absolute
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
     and verify the packages correctly, but `rpm2cpio X.rpm | cpio -idm` writes into the live `/` from any
-    directory. Use `rpm -qlvp`, `bsdtar -xf X.rpm -C dir`, or `cpio -idmv --no-absolute-filenames`.
+    directory. AGENTS.md's Commands table gives safe ways to list or unpack one.
 - **The installers** (owner decisions of 2026-10-08; R14, decision 27). Each is built on its own runner from
   the release files that `checksums.txt` lists, checked against it first, so none compiles wopr again
   (§11). The app ID `io.github.ghostofgoes.wopr` names the Linux menu entry, icon and metadata, the snap's
   `common-id` and the Mac app's bundle identifier; the Microsoft Store assigns the MSIX identity itself.
   The main launchers (the Start menu entries of the installer and the MSIX, the Mac app, and the Linux
   and snap menu entries) open a terminal running `wopr` with no arguments, since there is no start
-  screen yet (an issue tracks `-w/--welcome`); the Linux and snap menu entries add one right-click
-  action, Movie Mode (`wopr --movie`). Nothing is signed yet: issues track Windows signing and Apple's
-  signing and notarization.
-- **Icon** (owner decisions: 2026-10-08, one of five designs, regenerated from its sources with one
-  command; 2026-10-09, front-panel lamps: a gunmetal frame around a panel of indicator lamps, lit amber
-  along one diagonal, with one red lamp).
+  screen yet (an issue tracks `-w/--welcome`); the Linux and snap menu entries add right-click actions
+  for four of the film's games and Movie Mode (above). Nothing is signed yet: issues track Windows signing
+  and Apple's signing and notarization.
+- **Icon** (owner decisions: 2026-10-08, regenerated from its sources with one command; 2026-10-09,
+  front-panel lamps: a gunmetal frame around a panel of indicator lamps, lit amber along one diagonal, with
+  one red lamp).
   - The sources, in `packaging/icons/src/`: the master, `wopr.svg` (1024×1024, with a transparent
     margin, for Windows, Linux and the MSIX, four by four lamps); optional simpler art for 32 px and below,
     `wopr-small.svg` (three by three lamps on a 64-unit grid, whole pixels at 16 and 32 px); optional art
@@ -1569,16 +1526,16 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - Regenerate every golden with `WOPR_UPDATE_GOLDEN=1 go test ./...`, which works on every OS and package.
   - **Persona and game transcripts** come from `testkit`: the real runner, `Instant` and `Deterministic`, with
     `[CLEAR]` and `[NOTICE]` markers.
-  - **UI screens** come from `internal/ui/drive_test.go`, a synchronous driver in package `ui` (the model is
-    unexported, so the plan's `ui/testutil` package could not reach it). A fake `Scheduler` records armed
-    ticks and a fake clock delivers them; commands run inline, `tea.BatchMsg` is unwrapped, and `Think` results
-    can be held to simulate a slow search. It snapshots `View().Content` after `ansi.Strip`, with trailing
-    spaces trimmed, plus the cursor position.
-  - `tea.Sequence` is banned (forbidigo).
+  - **UI screens** come from `internal/ui/drive_test.go`, a synchronous driver in package `ui`, since the model
+    is unexported. A fake `Scheduler` records armed ticks and a fake clock delivers them; commands run inline,
+    `tea.BatchMsg` is unwrapped (`tea.Sequence` is banned, §10), and `Think` results can be held to simulate a
+    slow search. It snapshots `View().Content` after `ansi.Strip`, with trailing spaces trimmed, plus the
+    cursor position.
   - **Flows** (M1): persona `film_greeting`, `logon_fail_x3_hint` (a game name at LOGON is not a login),
     `logon_list_then_number`, `help_list_games`, `intent_false_positives`, `offer_accept`, `stub_game`; UI
     `logon_joshua`, `logoff_exit0`, `too_small_pause_resume`, `esc_confirm`, `typeahead_thinking`,
-    `front_panel`. Then each set piece (`film_path` in M2) and each movie scene.
+    `front_panel`. The film path has its own flow, `film_path` (M2), and movie mode has one for the whole
+    film, `film` (M6, §7).
 - **Fuzz** (Q-2): `FuzzClauses`, `FuzzSanitizeInput`, `FuzzEditor`, `FuzzResolve`, `FuzzGameIntent`, the games'
   move and order parsers, `FuzzParseSVG` (the icon tool's SVG subset), and the M7 reply parser.
   - Seed corpora run in plain `go test`.
@@ -1616,8 +1573,7 @@ before the classified address it leads to; v2.1's provisional table had it in th
   - CI runs `go test -race ./...` on `ubuntu-24.04` and `macos-26`, and plain `go test ./...` on
     `windows-2025`; the race detector there would need a C toolchain on the runner.
   - `testkit` exercises `View` concurrently with `Think` so the detector has something to see.
-  - Contributors: `go test ./...` everywhere. Add `-race` on Linux and macOS, and on Windows amd64 only with a
-    C toolchain. windows/arm64 has no race detector (B-14).
+  - Contributors: AGENTS.md's Commands table says where `-race` runs; windows/arm64 has no race detector (B-14).
 
 ---
 
@@ -1660,8 +1616,8 @@ before the classified address it leads to; v2.1's provisional table had it in th
     - `^tea\.(Tick|Every|Sequence)$` with `pkg: ^charm\.land/bubbletea/v2$`, exempt in `internal/ui/clock.go`;
     - the top-level `math/rand/v2` functions, and every `math/rand` (v1) function (TO-5);
     - `time.Sleep`, `After`, `AfterFunc`, `Tick`, `NewTicker` and `NewTimer`, exempt in tests.
-  - `warn-unused` is on, so a stale exclusion shows up; the v2 exclusions for `rand.go` and for misspell on film
-    text never matched (misspell's default English accepts `RECOGNISED`) and are gone (TO-4).
+  - `warn-unused` is on, so a stale exclusion shows up. Film text needs no misspell exclusion: misspell's
+    default English accepts `RECOGNISED` (TO-4).
   - **Self-test** (TO-1, AR-3, IM-1). `config verify` accepts rules that never fire, so
     `internal/archtest/testdata/lintfixture` holds a deliberate violation of each rule, one per line. Under
     `testdata/` it is outside `./...`, so neither the lint gate nor archtest sees it.
@@ -1679,6 +1635,11 @@ before the classified address it leads to; v2.1's provisional table had it in th
   `.changes/`, `.changie.yaml`, `CHANGELOG.md` or relnotes itself changes, and on every `--all-files` run.
   It builds the pinned changie, so the generated `CHANGELOG.md` and version files are also kept to what
   rumdl and the whitespace fixers accept.
+- **Menu entries and AppStream metadata** (§8): a local `desktop-files` hook runs `pkgdocs`'s and `snapdir`'s
+  tests (`-count=1`, since Go's test cache cannot see programs outside the module) when `packaging/linux/`,
+  `description.txt` or either tool changes. `TestValidators` runs `desktop-file-validate`, `appstreamcli` and
+  `appstream-util` where they are installed (Linux tools, not pinned) and skips them elsewhere, unless
+  `WOPR_DESKTOP_VALIDATORS=1`, which CI's lint job sets after installing them.
 - **Commands** have one home: the Commands table in `AGENTS.md`. There is no Makefile, because Git for Windows
   ships no `make`. The README links to that table.
 
@@ -1699,16 +1660,19 @@ before the classified address it leads to; v2.1's provisional table had it in th
   CI.
 - **Caching.** `cache: false` in `release.yml` and in any job that runs GoReleaser (B-4, B-9). Compiling
   GoReleaser from a cold cache costs about 1.5–2 minutes per such job; that is accepted (CR-4). Every other
-  `ci.yml` job keys its cache on the `go.sum` files of the modules it builds (`cache-dependency-path`): with
-  one shared key, the first job to finish saves the cache for all of them. `scheduled.yml` uses none.
-- **Timeouts.** Every job sets `timeout-minutes` (5 to 15 for the short jobs, 20 for `build`, 30 for `test`
-  and the two release builds), and the smoke step runs the e2e binary with `-test.timeout=5m`, so a hang
-  fails with every goroutine's stack instead of holding a runner for six hours.
+  `ci.yml` job that builds modules keys its cache on their `go.sum` files (`cache-dependency-path`): with one
+  shared key, the first job to finish saves the cache for all of them. Jobs that build only standard-library
+  tools (`collect`, and the Mac app's and the snaps' builds), `docs.yml` (§13) and `scheduled.yml` use none.
+- **Timeouts.** Every job sets `timeout-minutes` (5 to 20 for most, 30 for `test` and the two release builds,
+  50 for `release.yml`'s `verify`, which may wait 45 minutes for `ci-ok`), and the smoke step runs the e2e
+  binary with `-test.timeout=5m`, so a hang fails with every goroutine's stack instead of holding a runner for
+  six hours.
 - **`fetch-depth: 0`** in every job that runs GoReleaser, so snapshot versions reflect the latest tag and the
   release `build` and `rebuild` jobs produce the same version (CR-7).
-- **`.gitattributes`**: `* text=auto eol=lf`, plus `*.png binary`. Windows runners check out with
+- **`.gitattributes`**: `* text=auto eol=lf`, plus `*.png`, `*.gif`, `*.jpg`, `*.ico` and `*.icns` binary, and
+  `site/assets/vendor/**` `-text`, kept byte for byte (§13). Windows runners check out with
   `core.autocrlf=true`, which would otherwise break goldens (B-3).
-- **Concurrency** (CR-2) is set in `ci.yml` and `release.yml` only, never in the reusable workflows
+- **Concurrency** (CR-2) is set in `ci.yml`, `release.yml` and `docs.yml`, never in the reusable workflows
   (`smoke.yml`, `windows.yml`, `macos.yml`, `snap.yml`): a called workflow sees its caller's `github.ref`, and
   the same group in both deadlocks. Pull requests share a group per PR, and pushes to other branches a group
   per branch; both cancel superseded runs. Pushes to `main` get a group **per commit**, because with a shared
@@ -1723,7 +1687,8 @@ before the classified address it leads to; v2.1's provisional table had it in th
     cancel-in-progress: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/main' }}
   ```
 
-  `release.yml` uses `release-${{ github.ref }}` and `scheduled.yml` none.
+  `release.yml` uses `release-${{ github.ref }}`, `docs.yml` uses `docs-${{ github.ref }}` (and `pages` for its
+  deploy job, §13), and `scheduled.yml` none.
 
 ### 11.2 `ci.yml` (on `pull_request` and `push` to any branch)
 
@@ -1741,7 +1706,7 @@ its run tests exactly the tree the squash merge produces.
 
 | Job | Runner(s) | Does |
 |---|---|---|
-| `lint` | `ubuntu-24.04` | `fetch-depth: 0`. prek via `j178/prek-action` with `prek-version: 0.5.5`, including the `change-notes` hook (`relnotes -check`: the notes parse and fit one Debian changelog line, `CHANGELOG.md` is `changie merge`'s output, every release tag has its `.changes/vX.Y.Z.md`). The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). `relnotes -since origin/main`: a branch that changes a non-test file under `cmd/` or `internal/` (test-only packages aside), `.goreleaser.yaml`, `packaging/` or `docs/man/` adds a change note or carries a `Changelog: none` trailer (AGENTS.md). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
+| `lint` | `ubuntu-24.04` | `fetch-depth: 0`. prek via `j178/prek-action` with `prek-version: 0.5.5`, including the `change-notes` hook (`relnotes -check`: the notes parse and fit one Debian changelog line, `CHANGELOG.md` is `changie merge`'s output, every release tag has its `.changes/vX.Y.Z.md`) and the `desktop-files` hook, with Ubuntu 24.04's validators installed first and `WOPR_DESKTOP_VALIDATORS=1` (§10). The lint-fixture self-test (`WOPR_LINT_SELFTEST=1`). `relnotes -since origin/main`: a branch that changes a non-test file under `cmd/` or `internal/` (test-only packages aside), `.goreleaser.yaml`, `packaging/` or `docs/man/` adds a change note or carries a `Changelog: none` trailer (AGENTS.md). Separately, a zizmor online-audits step with `GH_TOKEN` scoped to that step only (T-5). |
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`; gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`: the pushed branch, or a fork's PR merged with `main`; not every branch, so a stale branch cannot block every PR). `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line, on `0 commits scanned`, and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure; `govulncheck`; the third-party-notices check (§12); the manual-page check (§13); the icons check (`icons -check`, §8). |
 | `build` | `ubuntu-24.04` | `relnotes -snapshot`, the release notes for this commit's snapshot version as `release.yml` makes them for a tag (§11.3), shown in the job summary and passed to GoReleaser in `WOPR_NOTES_DIR` (on a release pull request, whose version is batched but not yet tagged, they are that version's notes under the snapshot's version, so the packages' first changelog entry is still their own); GoReleaser snapshot of all six targets and the four Linux packages; the size gate; `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/`, cross-compiles the e2e test next to it, puts the `.deb` and `.rpm` beside the Linux ones, checks every archive's and package's contents, and collects the release files (below). Uploads one download per platform, the bare binary as-is (`archive: false`, so it is not zipped; it loses its executable bit, and `--licenses` prints its notices), named after its file such as `wopr_<version>_linux_amd64`, kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13); and a `smoke-bundle` of every staged binary and e2e test for this run's smoke jobs and the end-to-end tests of its `macos` and `snap` jobs (1 day). Its `version` output is GoReleaser's `.Version` from `dist/metadata.json`, which names the installers and snaps, and it uploads `dist/release` as `release-dist` (1 day) for them. |
@@ -1758,8 +1723,8 @@ installer shows on the branch that broke it. `windows.yml`, `macos.yml` and `sna
 workflows, called with `$/` like `smoke.yml`; each takes the `release-dist` artifact and the version, never
 compiles wopr, and checks what it packs against `checksums.txt`. Their calling jobs grant `contents: read`,
 because the called jobs check out the repository for the packaging files. `snap.yml`'s publish job is
-skipped in CI; GitHub reports such a called workflow as a success to `ci-ok`, which the first run must
-confirm (GitHub does not document it).
+skipped in CI; GitHub reports such a called workflow as a success to `ci-ok` (undocumented, but CI's runs
+confirm it).
 
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
 
@@ -1770,7 +1735,7 @@ snaps.
    `origin/main`; and every `ci-ok` check run that GitHub Actions posted on that commit succeeded (a check
    of the same name from another app is ignored). A tag pushed right after its merge arrives before `main`'s
    CI run has finished, so a missing or pending `ci-ok` is waited out, for up to 45 minutes; any other
-   result fails at once. (v0.2.0's first release run failed on exactly that race.)
+   result fails at once.
 2. **`build`** (`contents: read`, no OIDC). First the release notes: `internal/tools/relnotes -version vX.Y.Z`
    writes `notes.md` (the release body), `CHANGELOG.md` and `changelog.yml` (nFPM's chglog format, for the
    `.deb` and `.rpm` changelogs) into `build/notes`, which `.gitignore` keeps out of the tree GoReleaser
@@ -1836,9 +1801,9 @@ snaps.
    requires, already built and tested the snaps on the same commit.
 
 **Dry run** (CR-1, IM-2). `workflow_dispatch` runs steps 2–6 and 9 with `--snapshot`, and never uploads the
-snaps: GoReleaser in release mode refuses an untagged commit, and there is no tag before v0.1.0. `verify` is
-then skipped, so every later job states its condition explicitly (`!cancelled()` and the results of its
-needs); otherwise the implicit `success()` would skip them too.
+snaps: GoReleaser in release mode refuses an untagged commit. `verify` is then skipped, so every later job
+states its condition explicitly (`!cancelled()` and the results of its needs); otherwise the implicit
+`success()` would skip them too.
 
 **Never re-tag.** A bad release is fixed by the next patch version, plus a `retract` directive for
 `go install` users. That rule is in `SECURITY.md` and `AGENTS.md`.
@@ -1874,15 +1839,9 @@ image may lack, so `test-snap.sh` installs it when missing.
 
   A finding opens or comments on a single tracking issue; a week with none closes it. It never opens PRs, so
   "Allow GitHub Actions to create pull requests" stays off.
-- **Manual cadence** (AGENTS.md checklist, at every milestone and at least monthly):
-  1. `go get -u ./... && go mod tidy`;
-  2. update the tool modules with `go get -tool`, the toolchain first if a tool needs it;
-  3. `prek update`;
-  4. bump action SHAs from their release tags;
-  5. bump the installers' tools: Inno Setup (by URL, SHA-256 and signer), the MSIX manifest's
-     `MaxVersionTested`, and snapcraft's track;
-  6. regenerate the third-party notices and the icons.
-
+- **Manual cadence**, at every milestone and at least monthly: AGENTS.md's milestone checklist, which updates
+  the modules, the tool modules (the toolchain first if a tool needs it), the docs theme and its vendored
+  scripts, the hooks, the action SHAs and the installers' tools, and regenerates the notices and the icons.
   Each step goes through a normal PR.
 - **Gaps covered** (S-10). Public repositories disable schedules after 60 days without activity, so the
   milestone checklist includes "re-enable `scheduled.yml` if disabled". Dependency PRs also run `govulncheck`
@@ -1899,26 +1858,26 @@ image may lack, so `test-snap.sh` installs it when missing.
     §11.2).
   - A finding is handled by rotating the secret first, then adding its fingerprint to `.gitleaksignore` in a
     PR; history on `main` is never rewritten (SECURITY.md, SL-2).
-  - M0 proves the job with a **canary**: a throwaway branch with a fake secret that only gitleaks recognises
+  - M0b proves the job with a **canary**: a throwaway branch with a fake secret that only gitleaks recognises
     (a GitHub-supported token pattern would be stopped by push protection). Its push run's log must say
     `leaks found`, not an error. Then the branch is deleted, because a leftover branch would keep matching.
     AGENTS.md has the steps.
   - `.gitignore` adds `*.pem`, `*.key`, `*.pfx` and `*.p12` (signing keys included), `dist/`, `stage/`,
     `build/` (release notes and package documents), the installers and store packages (`*.dmg`, `*.msix`,
     `*.snap` and their kin), go-winres's `.syso` files, and editor/OS files.
-- **Repository settings** (S-3, S-7, S-8). The owner applies them in M0; AGENTS.md lists them.
+- **Repository settings** (S-3, S-7, S-8). The owner applies them (M0b, §15); AGENTS.md lists them.
   - **`main` ruleset**: pull request required; required check `ci-ok` (from GitHub Actions), with branches
     required to be up to date before merging (§11.2); no force-push; no deletion. Merges are **squash
     only**, which keeps `main`'s history linear. It does not keep v1's commits out of the public repository:
-    the branch and any PR ref still serve them, and the v1 review quotes three fragments of the CC BY-SA map.
+    PR #1's ref still serves them, and the v1 review quotes three fragments of the CC BY-SA map.
     `NOTICE.md` therefore credits Franklin Wei's map under CC BY-SA 4.0 for those fragments (SL-6, L-4).
   - **`v*` tag ruleset**: creation, update and deletion restricted, with only the owner able to bypass.
-    **Immutable releases** are enabled before v0.1.0.
-  - **Secret scanning** and **push protection** must be enabled at repository level; an audit on 2026-10-06
-    found both off. Also **private vulnerability reporting**, which `SECURITY.md` sends reporters to.
+    **Immutable releases** are on.
+  - **Secret scanning** and **push protection** must be enabled at repository level; both were still off on
+    2026-10-09. **Private vulnerability reporting**, which `SECURITY.md` sends reporters to, is on.
   - **Issues and Discussions**: issue forms for bug reports and feature requests (`.github/ISSUE_TEMPLATE/`,
     blank issues off, with links to Discussions, a private security report and the docs site). Discussions
-    must be turned on: the forms, the docs site's Troubleshooting page and the README send questions there.
+    are on, since the forms, the docs site's Troubleshooting page and the README send questions there.
   - **Actions**:
     - allow only listed actions (`actions/*`, `j178/prek-action`);
     - require actions pinned to a full-length commit SHA;
@@ -1955,7 +1914,9 @@ image may lack, so `test-snap.sh` installs it when missing.
   - `NOTICE.md` lists:
     - the film quotations, excluded from the MIT grant, with a non-affiliation disclaimer;
     - the two abs0 items, with its BSD-2 notice, which covers the transcription; the text stays film text;
+    - Matthew Thomas's world map with his line, and Natural Earth for GTW's outlines (§2.1, decision 26);
     - the CC BY-SA 4.0 credit for the map fragments in early drafts (SL-6);
+    - the docs site's theme and vendored scripts (§13);
     - a contact for rights holders (SL-8), with AGENTS.md's takedown runbook behind it;
     - the brother's licence once granted.
   - `THIRD_PARTY_NOTICES.txt` is generated by `go run ./internal/tools/notices` from the **union** of
@@ -1963,24 +1924,25 @@ image may lack, so `test-snap.sh` installs it when missing.
     `COPYING*` file and Go's own licence, so the output does not depend on the host (SL-1). It is committed,
     embedded in the binary for `wopr --licenses` (through the root package, `legal.go`), checked up-to-date on
     Linux in CI and weekly, and shipped in every archive.
-  - "WarGames" is used only nominatively, in the README. There are no film stills.
+  - "WarGames" is used only nominatively, to name the film the program recreates. There are no film stills.
   - "WOPR" is a registered US mark held by an unrelated company (L-6). It is recorded as a low risk in §16.
 
 ---
 
 ## 13. Documentation
 
-- **README.md** (basic in M0, completed in M5):
+- **README.md**:
   - what this is, and a link to the docs site (below);
   - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
     …@latest`, the Linux packages (since v0.4.0; they install the manual page), and the Windows installer,
     the Mac app and the packages' menu entry (from the release after v0.4.0), which put WOPR in the Start
     menu, Applications or the app menu (the installer and the app warn at first because they are
     unsigned), and a link to the verifying section (§12);
-  - quick start (`Joshua`, `LOGOFF`);
-  - inside the shell: commands, keys, and "any key skips; what you type is kept";
-  - flags; themes; the games (with the `Planned` ones marked as coming); movie mode; accessibility (M5);
-  - troubleshooting: too small, `NO_COLOR`, reduced motion, Windows/mintty, the mouse-wheel note, `-i`, `-s`;
+  - quick start (`LOGON:`, `LIST GAMES`, `LOGOFF`); the shell's commands and keys ("what you type is kept")
+    are on the docs site's Usage page;
+  - screenshots; the games; movie mode; flags and themes; accessibility;
+  - troubleshooting: not a terminal (and mintty), too small, colours and `NO_COLOR`, the mouse-wheel note,
+    and the debug log and seed for a bug report, with a link to the docs site's page;
   - development builds: artifacts from **`main` push runs only** (B-13);
   - build from source (a link to the AGENTS.md Commands table); credits and licence; a link to this plan.
 - **AGENTS.md** (M0; updated each milestone). It is the single source for:
@@ -1989,7 +1951,7 @@ image may lack, so `test-snap.sh` installs it when missing.
     host's, input mode is dynamic);
   - how to add a game: catalog entry, package, testkit test, definition of done;
   - goldens and `WOPR_UPDATE_GOLDEN`; provenance tags;
-  - the size budget and platforms; repository settings;
+  - repository settings;
   - change notes (how to add one, the style, when `Changelog: none` applies) and how to release;
   - the milestone checklist: dependency updates, the installers' tools, runner labels, re-enabling
     schedules, `prek update`.
@@ -2021,17 +1983,13 @@ image may lack, so `test-snap.sh` installs it when missing.
     lead with the download and then each click in order, warnings included: the browser's, SmartScreen's
     More info and Run anyway, and Smart App Control's block on Windows; dragging to Applications first, then
     Gatekeeper's Done and Open Anyway in Privacy & Security on macOS. The line comes second, as the way to
-    get the `wopr` command. They are `windows-installer.md` and `macos-app.md`, where `@COMMAND-LINE@`
-    stands for the tab's own line, so each line is written once; every build reads and checks both. The
-    Linux (apt) and (RPM) tabs say how to open a downloaded package in the desktop's software app. The
-    packages' menu entry first ships with the installers, in the release after v0.4.0 (v0.4.0's packages
-    have none), so `has-installers` gates it too: `@APP-MENU@` in `linux-apt.md` and `linux-rpm.md`
-    becomes `app-menu.md`'s sentence only then, and every build fails if either file lacks it or a tab
-    is left with a placeholder. The Installation page's uninstall steps, the troubleshooting page
-    (SmartScreen, Smart App Control, Gatekeeper, App Translocation, a missing menu entry) and the credits
-    page (Inno Setup) show their new parts only under the same gates: `if-installers` for the installers
-    and the menu entry, `if-packages` for the rest of the packages. Nothing names the snap until it is
-    published.
+    get the `wopr` command. The Linux (apt) and (RPM) tabs say how to open a downloaded package in the
+    desktop's software app and, from the same release, name the packages' menu entry (v0.4.0's packages
+    have none). The Installation page's uninstall steps, the troubleshooting page (SmartScreen, Smart App
+    Control, Gatekeeper, App Translocation, a missing menu entry) and the credits page (Inno Setup) show
+    their new parts only under the same gates: `if-installers` for the installers and the menu entry,
+    `if-packages` for the rest of the packages. AGENTS.md ("Docs site") has the placeholders that keep each
+    line written once. Nothing names the snap until it is published.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull
@@ -2080,8 +2038,9 @@ image may lack, so `test-snap.sh` installs it when missing.
   and macOS archives, and in the `.deb` and `.rpm` as `/usr/share/man/man6/wopr.6.gz`, so `man wopr` works
   once a package is installed; `mandoc -T lint -W all` and `groff -man -ww` pass it clean. What ships is
   `pkgdocs`'s copy, whose header names the version being built.
-- **Screens**: Appendix C holds the target mockups. The real screens are goldens, kept current by the tests:
-  `internal/ui/testdata/gtw_screens.golden` and `card_screens.golden` (Hearts, Gin Rummy, Bridge at 80×24).
+- **Screens**: Appendix C draws the greeting and names the goldens for the rest. The real screens are goldens,
+  kept current by the tests: `internal/ui/testdata/gtw_screens.golden` and `card_screens.golden` (Hearts, Gin
+  Rummy, Bridge and Falken's Maze at 80×24).
 - **This plan** is updated at milestone boundaries. Superseded text is deleted.
 
 ---
@@ -2093,8 +2052,8 @@ image may lack, so `test-snap.sh` installs it when missing.
    archives also hold `wopr.6`. The four Linux packages pass `stage`'s checks, and the smoke jobs install,
    run and remove them on Ubuntu (`.deb`) and Fedora (`.rpm`), menu entry, icons and metadata included. The
    `windows`, `macos` and `collect` jobs pass: on both architectures the installer is installed, run and
-   removed, and the `.dmg` mounted and its app run and opened as Finder opens it; both fit the size budget
-   and are in `checksums.txt`. The `msix` and `snaps` artifacts exist.
+   removed, and the `.dmg` mounted and its app run (and, on Apple silicon, opened as Finder opens it); both
+   fit the size budget and are in `checksums.txt`. The `msix` and `snaps` artifacts exist.
 2. `wopr -v`, `-h`, `-g`, `-L` and their long forms print plain text and exit 0 without a terminal.
    `wopr --games | head -1` exits 0 on every OS.
 3. `wopr`:
@@ -2108,21 +2067,21 @@ image may lack, so `test-snap.sh` installs it when missing.
    7. `list games` → `7` → the chess board. WOPR shows `PROCESSING` and Ctrl+C stays responsive;
    8. `LOGOFF` → exit 0.
 4. The film path under `-s 1 -i` with scripted input (the `testkit` golden `film_path`): GTW → climax → NORAD
-   notices → `TIC-TAC-TOE` → 0 players → montage → `HELLO` → `A STRANGE GAME…` → chess offer armed.
+   notices → `TIC-TAC-TOE` → 0 players → montage → `Hello.` → `A STRANGE GAME…` → chess offer armed.
    `wopr -p 15`, `wopr -p "global thermonuclear war"` and `wopr gtw` resolve to the same game.
    `wopr -p theaterwide` and `wopr gtw chess` exit 2.
-5. `go test -race ./...` is green on the three test OSes. Goldens are stable. `archtest` and the lint
-   self-test are green.
+5. `go test -race ./...` (plain `go test` on Windows) is green on the three test OSes. Goldens are stable.
+   `archtest` and the lint self-test are green.
 6. The e2e test passes on all six smoke runners. A manual pass in Windows Terminal and conhost checks colours,
    cursor, resize, Ctrl+C restore and SmartScreen.
 7. A manual pass of the installers, which CI cannot click through, on a download from the release page:
    on Windows, the browser's warning, SmartScreen, the wizard, the Start menu entry opening a terminal, and
    uninstalling from Settings; on a Mac, dragging to Applications, Gatekeeper's Open Anyway, the hand-off
    to Terminal, and whether macOS asks again when Terminal runs the program; on Ubuntu and Fedora desktops,
-   opening the downloaded package, the menu entry and its Movie Mode action.
+   opening the downloaded package, the menu entry and its right-click actions.
 8. On a tag, `gh attestation verify` with the flags in §12 succeeds for each file, and the release is
    immutable.
-9. From M6: `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
+9. `wopr --movie` opens the scene menu and every scene plays; `wopr -m 2 -i` plays from scene 2 to
    the end of the list, pausing between pages, and exits 0; `wopr -m 2 -o` plays scene 2 alone and exits 0;
    `wopr --scenes` lists them. The movie consistency tests are green.
 
@@ -2132,25 +2091,23 @@ image may lack, so `test-snap.sh` installs it when missing.
 
 | M | Deliverable | Exit criteria | Release |
 |---|---|---|---|
-| 0 | **Scaffold** (done). go.mod, `.gitattributes`/`.gitignore`, LICENSE/NOTICE/SECURITY/CONTRIBUTING/CODE_OF_CONDUCT, `legal.go`, `version`, `proto` (types), `games` (types + catalog with 16 `Planned` entries), `cli`, `theme`, `ui` hello-world, `archtest` + lint fixture, `golden`, `tools/*`, `prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, `ci.yml`/`smoke.yml`/`release.yml`/`scheduled.yml`, README (basic), **AGENTS.md** + `CLAUDE.md`, the M0 e2e cases. | `ci-ok` green with all six smoke runners; the lint fixture fires every rule; a **snapshot** dry run of `release.yml` passes `build`/`smoke`/`repro` (CR-1); Appendix A deleted (done in v2.1). M1 may start once `ci-ok` is green. | — |
-| 0b | **Owner settings** (IM-3): the repository settings in AGENTS.md; the gitleaks canary branch turned red for a finding. | Settings applied; canary done. These gate **v0.1.0**, not M1. | — |
-| 1 | **Console, persona and protocol.** `proto/host` runner, `games/testkit`, clock, typewriter, line editor, `Sanitize*`, scrollback, canvas renderer, front panel, `prompt` (menus, yes/no, clauses; moved from M3, P-4), the ui adapter and its synchronous driver, persona (session, LOGON table, greeting scene, commands, intent, offers, scripted brain, lines with provenance), themes with ANSI/ASCII fallbacks and contrast tests, too-small handling, `gamestest` stub exercising every Output, goldens, fuzz, the M1 e2e cases. 80×24 mockups for chess and the GTW phases (Appendix C). | Every M1 golden flow and the e2e cases marked M0–M1 are green on all runners. | — |
-| 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, original GTW map art, abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
-| 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.2.0 |
-| 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.3.0 |
-| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots (**done** 2026-10-07: six in `docs/screenshots/`, recorded from the program in an 80×24 terminal); accessibility pass (**done**: §4.5 records what was checked, what changed and what is left for a screen-reader user); dependency and runner checklist (last run 2026-10-07, to be run again at the v1.0.0 boundary: only indirect modules moved, `ultraviolet` to its 2026-10-01 commit, `go-runewidth` v0.0.30, `xo/terminfo` v1.2.0, `x/sync` v0.23.0 and `x/sys` v0.48.0, with goldens byte-identical and linux/amd64 6,119,584 → 6,140,064 bytes stripped; Go 1.27.1, the direct modules, the four tools, the prek hooks, the action SHAs and the runner labels (§11.4) were already current; `scheduled.yml` is active). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; the checklist run again just before tagging v1.0.0, not only the 2026-10-07 run. | **v1.0.0** |
-| 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), `-o/--only` (the owner's request to play one scene and stop), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (linux/amd64, stripped: 5,922,976 bytes before M6, 6,119,584 after; every target passes the gate). | v1.1.0 |
-| 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | v1.2.0 |
+| 0 | **Scaffold** (done). go.mod, `.gitattributes`/`.gitignore`, LICENSE/NOTICE/SECURITY/CONTRIBUTING/CODE_OF_CONDUCT, `legal.go`, `version`, `proto` (types), `games` (types + catalog with 16 `Planned` entries), `cli`, `theme`, `ui` hello-world, `archtest` + lint fixture, `golden`, `tools/*`, `prek.toml`, `.golangci.yml`, `.goreleaser.yaml`, `ci.yml`/`smoke.yml`/`release.yml`/`scheduled.yml`, README (basic), **AGENTS.md** + `CLAUDE.md`, the M0 e2e cases. | `ci-ok` green with all six smoke runners; the lint fixture fires every rule; a **snapshot** dry run of `release.yml` passes `build`/`smoke`/`repro` (CR-1). | — |
+| 0b | **Owner settings** (IM-3): the repository settings in AGENTS.md; the gitleaks canary branch turned red for a finding. | Settings applied; canary done. Still open on 2026-10-09: the `main` and `v*` rulesets, squash-only merging, secret scanning and push protection, and the canary (immutable releases, private vulnerability reporting and Discussions are on). | — |
+| 1 | **Console, persona and protocol.** `proto/host` runner, `games/testkit`, clock, typewriter, line editor, `Sanitize*`, scrollback, canvas renderer, front panel, `prompt` (menus, yes/no, clauses; moved from M3, P-4), the ui adapter and its synchronous driver, persona (session, LOGON table, greeting scene, commands, intent, offers, scripted brain, lines with provenance), themes with ANSI/ASCII fallbacks and contrast tests, too-small handling, `gamestest` stub exercising every Output, goldens, fuzz, the M1 e2e cases. 80×24 mockups for chess and the GTW phases (now the goldens Appendix C names). | Every M1 golden flow and the e2e cases marked M0–M1 are green on all runners. | v0.1.0 |
+| 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table), **`games/ending`** (reusing tic-tac-toe; owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war, random session seeds and the debug log, the GTW maps (decision 26), abs0's 157 scenario names verbatim. **Built**; QA on all OSes remains. | The `film_path` and climax goldens; quality tests; manual QA list. | **v0.1.0** |
+| 3 | **Card games.** `cards/` + `trick.go`; Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**; Hearts mockup (the `card_screens` golden). **Built**; QA on all OSes remains. | Definition of done per game. | v0.1.0 |
+| 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims; Falken's Maze. **Built**; QA on all OSes remains. | Definition of done per game. | v0.1.0 |
+| 5 | **Polish.** Film viewing pass (every `reconstructed` line becomes `film` or is corrected; the montage names verified; the three conflicts in §2.3 settled; the status burst's wording; the movie scene scripts fixed); **GTW's turn-based DEFCON exchange** (§6.2, decision 24; **built**); README completed with screenshots (**done** 2026-10-07: six in `docs/screenshots/`, recorded from the program in an 80×24 terminal); accessibility pass (**done**: §4.5 records what was checked, what changed and what is left for a screen-reader user); dependency and runner checklist (last run 2026-10-07). | No `reconstructed` tags remain; the turn-based exchange cannot be won and its film path stays short; the checklist run again just before tagging v1.0.0. | **v1.0.0** |
+| 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu, `-S/--scenes` (the owner's request for a scene list), `-o/--only` (the owner's request to play one scene and stop), consistency tests, e2e cases. **Built**; QA on all OSes remains. | All scenes play; consistency test green; size re-checked (every target passes the gate). | v0.2.0 |
+| 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser; size gate; offline behaviour unchanged. | after v1.0.0 |
 
 The installers (R14, owner decision 2026-10-08) belong to no milestone: they ship with the next release, and
 the store listings wait for the owner's accounts, the Microsoft Store's for v1.0.0 (§8).
 
-Effort is not estimated per game (P-3). Each milestone's PR description records time spent, which informs the
-next one.
+Effort is not estimated per game (P-3).
 
 **Third-party permission gate** (L-3, L-5). Lines adapted from the brother's prompt carry the `prompt` tag and
-are not committed at all until he gives written permission and a licence. The gate blocks those lines only, not
-M1.
+are not committed at all until he gives written permission and a licence. The gate blocks those lines only.
 
 ---
 
@@ -2162,23 +2119,23 @@ M1.
 | RK-2 | "WOPR" is a registered US mark (Frontier Technology, class 42). | Low / medium | Different class (SaaS vs a free game); no logo imitation; revisit if contacted. Not legal advice. |
 | RK-3 | Bubble Tea v2 patch churn (v2.0.10 in under a year). | Medium / low | Pin; read release notes on each update; goldens catch rendering changes. |
 | RK-4 | Hosted runner labels retire. | High / low | Pinned labels; checklist at each milestone; the oldest Linux claim rests on Go's kernel floor, not on a runner (§1). |
-| RK-5 | Unsigned binaries and installers trigger Gatekeeper and SmartScreen friction, and Smart App Control blocks them outright. | High / medium | Attestations plus verify-first docs; the install tabs walk through each warning (§13); issues track signing and the stores (§12). |
+| RK-5 | Unsigned binaries and installers trigger Gatekeeper and SmartScreen friction, and Smart App Control blocks them outright. | High / medium | Attestations, with verifying optional in the docs; the install tabs walk through each warning (§13); issues track signing and the stores (§12). |
 | RK-6 | No Dependabot means updates lag. | Medium / medium | Weekly scheduled report issue; govulncheck in CI; monthly manual cadence; 14-day response rule. |
-| RK-7 | 16 games is a large scope. | High / medium | A release per milestone; `Planned` games stay listed and decline in character. |
+| RK-7 | 16 games is a large scope. | Retired | All 16 games are playable, and shipped in v0.1.0. |
 | RK-8 | The chess library fork goes stale. | Low / low | Small API surface used (rules, SAN/UCI); search is our own. |
 | RK-9 | Tool dependency graphs conflict (golangci-lint's broke gitleaks's build, SL-2). | Medium / low | One tool module per conflicting tool; the CI jobs build each tool on every run, so a break shows at once. |
 | RK-10 | The installers' first runs on real machines are untested: Gatekeeper's dialogs, Smart App Control, which terminal a Linux desktop opens, App Center's Open button for the snap. | Medium / medium | CI installs and runs each on its own platform; a manual pass per release (§14); the docs hedge what is unconfirmed. |
 | RK-11 | The stores refuse or pull WOPR: the Snap Store reviews new names by hand, and the Microsoft Store's content policies cover the film quotations and the registered mark (RK-1, RK-2). | Medium / low | Publishing stays off until the owner decides; the GitHub release stays the main channel. |
 
-Risk ids are `RK-n`, so they do not collide with the requirement ids (R1…R13) or the v1 review's `R-n` findings
+Risk ids are `RK-n`, so they do not collide with the requirement ids (R1…R14) or the v1 review's `R-n` findings
 (IM-12).
 
 ---
 
 ## Appendix B — Canonical screen text (provenance-tagged)
 
-Since M1, `internal/wopr/lines.go` (and later `internal/assets/`) is authoritative for the text it holds; this
-appendix keeps the rest until it lands. Tags: **F** = `film` once confirmed, currently `reconstructed`.
+The code holds this text and its tags, and is authoritative: `internal/wopr/lines.go`, `internal/assets/`, the
+games' packages and `internal/movie/scenes/`. Tags: **F** = `film` once confirmed, currently `reconstructed`.
 **A** = `third-party:abs0/wargames@010ed92:wargames.sh` (film text as transcribed by abs0, credited). **O** =
 `original`.
 
@@ -2252,16 +2209,14 @@ PLEASE LIST PRIMARY TARGETS BY
 CITY AND/OR COUNTY NAME:
 ```
 
-Both fan transcripts have `COUNTY`; v1 had `COUNTRY`. Settled in M5. The `TRAJECTORY HEADING` table values are
+Both fan transcripts have `COUNTY`, not `COUNTRY`. Settled in M5. The `TRAJECTORY HEADING` table values are
 generated (O).
 
 **Call-back, at David's home** (F). WOPR phones David; the screen also shows `GAME TIME ELAPSED` and
 `ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9). Until then movie mode shows the
 hours and minutes both transcriptions give (`31 HRS 12 MIN`, `52 HRS 17 MIN`, tagged `reconstructed`) with
 seconds of its own that tick (`original`); abs0 alone gives seconds, which are not one of its two credited
-items. David's typed lines, such as `What is the primary goal?`, are
-mixed case. Movie mode (§7) puts `Is this a game or is it real?` and `WHAT'S THE DIFFERENCE?` in the NORAD
-session, as the transcriptions do:
+items. David's typed lines, such as `What is the primary goal?`, are mixed case. WOPR's lines:
 
 ```text
 I'M SORRY TO HEAR THAT, PROFESSOR.
@@ -2269,16 +2224,17 @@ YESTERDAY'S GAME WAS INTERRUPTED.
 ALTHOUGH PRIMARY GOAL HAS NOT YET BEEN ACHIEVED, SOLUTION IS NEAR.
 YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.
 TO WIN THE GAME.
-WHAT'S THE DIFFERENCE?
 ```
 
 **The NORAD terminal session** (F), later, after `Joshua` and `Are you still playing the game?`. `28 HOURS`
-follows the subtitles and the film's timeline; abs0 has `61` (§2.3). The split of lines between the two scenes is
-provisional until M5; movie mode's scenes record the current one:
+follows the subtitles and the film's timeline; abs0 has `61` (§2.3). `WHAT'S THE DIFFERENCE?` answers `Is this a
+game or is it real?` here, as in the transcriptions. The split of lines between the two scenes is provisional until
+M5; movie mode's scenes (§7) record the current one:
 
 ```text
 OF COURSE. I SHOULD REACH DEFCON 1 AND LAUNCH MY MISSILES IN 28 HOURS.
 WOULD YOU LIKE TO SEE SOME PROJECTED KILL RATIOS?
+WHAT'S THE DIFFERENCE?
 YOU ARE A HARD MAN TO REACH. COULD NOT FIND YOU IN SEATTLE AND NO TERMINAL IS IN OPERATION AT YOUR
 CLASSIFIED ADDRESS.
 DOD PENSION FILES INDICATE CURRENT MAILING AS: DR. ROBERT HUME (A.K.A. STEPHEN W. FALKEN)
@@ -2315,27 +2271,15 @@ NOT TO PLAY.
 HOW ABOUT A NICE GAME OF CHESS?
 ```
 
-**Montage scenario names** (decision 18; verified or replaced in M5). 40 of the 45 names below match abs0's
-157-entry list and are tagged A. Five are not abs0's text and are tagged F (`reconstructed`) until M5 (RF-9):
-`NATO LIGHT` (abs0: `NATO ALERT`), and our respellings `BURMESE THEATERWIDE`, `AUSTRALIAN MANEUVER`,
-`ICELAND INCIDENT` and `MALAYSIAN MANEUVER` (abs0: `THEATERWIOE`, `AUSTRAILIAN`, `ICELANDIC INCIDENT`, <!-- codespell:ignore -->
-`MAYLASIAN`). The 45 are a sparse subsequence of abs0's list, so completing it in M2 means re-deriving it in
-abs0's order, not appending: `U.S. FIRST STRIKE`, `USSR FIRST STRIKE`,
-`NATO / WARSAW PACT`, `FAR EAST STRATEGY`, `US USSR ESCALATION`, `MIDDLE EAST WAR`, `USSR CHINA ATTACK`,
-`INDIA PAKISTAN WAR`, `MEDITERRANEAN WAR`, `HONGKONG VARIANT`, `SEATO DECAPITATING`, `CUBAN PROVOCATION`,
-`ATLANTIC HEAVY`, `CUBAN PARAMILITARY`, `NICARAGUAN PREEMPTIVE`, `PACIFIC TERRITORIAL`, `BURMESE THEATERWIDE`,
-`TURKISH DECOY`, `NATO LIGHT`, `ARGENTINA ESCALATION`, `ICELAND MAXIMUM`, `ARABIAN THEATERWIDE`,
-`U.S. SUBVERSION`, `AUSTRALIAN MANEUVER`, `SUDAN SURPRISE`, `NATO TERRITORIAL`, `ZAIRE ALLIANCE`,
-`ICELAND INCIDENT`, `ENGLISH ESCALATION`, `MIDDLE EAST HEAVY`, `MEXICAN TAKEOVER`, `CZECH OPTION`,
-`FRENCH ALLIANCE`, `ARABIAN CLANDESTINE`, `GABON REBELLION`, `SEATO TAKEOVER`, `HAWAIIAN ESCALATION`,
-`TAIWAN DOMESTIC`, `MONGOLIAN THRUST`, `POLISH DECOY`, `ALASKAN DISCRETIONARY`, `CANADIAN THRUST`,
-`S.AFRICAN DOMESTIC`, `TUNISIAN INCIDENT`, `MALAYSIAN MANEUVER`.
+**Montage scenario names** (A; decision 18). `internal/assets/scenarios.go` holds all 157 of abs0's names, from
+`U.S. FIRST STRIKE` on, in abs0's order and spelling, some truncated or misspelt as transcribed. The M5 viewing
+pass verifies them, and may replace a name the film shows differently and re-tag it `film` (RF-9).
 
 **Original lines** (O): the LOGON hint, `WHICH GAME?`, `** GAME ROUTINE NOT AVAILABLE **`,
 `** REQUEST CANCELLED **`, `** PRESS ESC AGAIN TO END GAME **`, the `HELP` command list (including
 `<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints, the climax tic-tac-toe's WOPR-win line, the
-remark after an abandoned war, `PROCESSING`, and every fallback reply. GTW's exchange (M5), with `#` filled in
-order:
+remark after an abandoned war, `PROCESSING`, and the fallback `PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's
+exchange (M5), with `#` filled in order:
 
 ```text
 STRIKE # OF # [# # #]:
@@ -2367,8 +2311,8 @@ figures.
 
 ## Appendix C — Target screens (80×24)
 
-Each screen is exactly 24 rows of at most 80 columns, drawn with the geometry of §4.3 (a script checked the
-counts). `█` is the cursor.
+Each screen is exactly 24 rows of at most 80 columns, with the geometry of §4.3. Only the greeting is drawn here
+(`█` is the cursor); the goldens named below hold the other screens as built, and the tests keep them current.
 
 **Backdoor greeting** (`imsai`). WOPR is upper case and revealed at modem speed. The user's input is echoed in
 mixed case. At the film's spacing the exchange may scroll; that is fine:
@@ -2400,97 +2344,17 @@ FINE.
 █
 ```
 
-**GTW side choice** (`norad`, `LayoutConsole`, front panel shown). The map and its labels are printed as
-console text before the question, as in the film (RF-3). The map is a placeholder until the original art lands
-in M2:
-
-```text
-   +---------------------------------------------------------+
-   |                                                         |
-   |   [ map: North America left, USSR right; original       |
-   |     line-segment ASCII art, 57x7, drawn in M2 ]         |
-   |                                                         |
-   |                                                         |
-   |                                                         |
-   |                                                         |
-   +---------------------------------------------------------+
-           UNITED STATES                  SOVIET UNION
-
-WHICH SIDE DO YOU WANT?
-
-  1.    UNITED STATES
-  2.    SOVIET UNION
-
-PLEASE CHOOSE ONE: █
-
-
-
-
-
-
- W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-```
+**GTW side choice** (`norad`, `LayoutConsole`, front panel shown). The two nations' outlines and their names are
+printed as console text before the question, as in the film (RF-3). As built: `side choice` in
+`internal/ui/testdata/gtw_screens.golden`.
 
 **GTW big board** (`norad`, `LayoutFull`, front panel shown): the view takes `H' − 4` = 19 rows, then the 3-row
-strip, the input row and the panel (AR-11). This is the built screen at the strike 2 prompt (the
-`gtw_screens` golden: USSR, Las Vegas and Seattle, after the first strike). Trajectory values are illustrative.
-Outgoing tracks draw `+`, incoming `*`, and an impact a reversed `X`, drawn over every track; earlier strikes keep only their impacts.
-The current DEFCON level is pointed at (`>`) and reversed, shown here as `[4]`:
-
-```text
-+---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|               |:/''-\:::::::|   + '-'             .___.               |  +---+
-|        .___.  |:\.  '\::++++++++ ++++++++ .. ...__/:::\__. ._.        |  | 5 |
-|._______/:::\__/:/\_. ++++:*****************++/\/:::::::::\_/:\______. |  +---+
-||::::::::::::::/-'|+++*******      .*************:::::::::::::::::::/' | >|[4]|
-|'\:/-\::::::::/' ++****'-'        .//********:******:::::::::/--\/--'  |  +---+
-| '-' '-\::::::\+***:\_.         ..|:\/**:****X::::*X*X::::::/'  ''     |  | 3 |
-|       '+::::****:::/-'         |\/::::X:::**:::::::::::::::|          |  +---+
-|       ++X::**:::::/'          ./:/\:::/-\/\**:::::::::::::/'          |  | 2 |
-|       ++++:::::::/'           |:/\/--\\_/\/:*X:::::::::/--'           |  +---+
-|         'X::::::/'            |:\/\__/:::::::::::::::::\.             |  | 1 |
-|          '-\:/--'            ./::::::::::::/-\:::::::::/'             |  +---+
-|            '\\_.             |:::::::::::::| '\:/--\:/-'              |
-|             '--'             |:::::::::::/-'  '\|  '\|                |
-+------- UNITED STATES ----------------------- SOVIET UNION ------------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 932 534     C-SSN8-A 319 667            USSR      500   450   200     0
-       B 487 038            B 558 572            US        737   562     0   375
-ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
-FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
-ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
-LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
-STRIKE 2 OF 3 [50 50 100]: █
- W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-```
+strip, the input row and the panel (AR-11). As built at the strike 2 prompt (USSR, Las Vegas and Seattle, after
+the first strike): `big board: strike 2 orders` in the same golden, which shows the rest of the exchange too.
+Outgoing tracks draw `+`, incoming `*`, and an impact a reversed `X`, drawn over every track; earlier strikes keep
+only their impacts. The current DEFCON level is pointed at (`>`) and reversed.
 
 **Chess** (`imsai`, `LayoutPanel`, `PanelRows` 12, no front panel): 12 rows of board, then the 12-row console
-strip. The board is gridless, per the no-chrome rule. WOPR is thinking: the `PROCESSING` row is the last line
-of text, with the steady cursor after it; anything typed now would appear on the row below:
-
-```text
-
-                                    CHESS
-
-                         8   r  n  b  q  k  b  n  r
-                         7   p  p  p  p  .  p  p  p
-                         6   .  .  .  .  .  .  .  .
-                         5   .  .  .  .  p  .  .  .
-                         4   .  .  .  .  P  .  .  .
-                         3   .  .  .  .  .  N  .  .
-                         2   P  P  P  P  .  P  P  P
-                         1   R  N  B  Q  K  B  .  R
-                             a  b  c  d  e  f  g  h
-YOUR MOVE: e4
-
-WOPR: E7E5
-
-YOUR MOVE: Nf3
-
-PROCESSING ..█
-
-
-
-
-
-```
+strip. The board is framed, its dark squares shaded and each square two columns wide, beside an original title
+piece (decision 26, §6.1); `internal/games/chess/testdata/view.golden` holds it as built. v2's mockup drew the
+board gridless and unshaded; the frame and shading came later, at the owner's request.

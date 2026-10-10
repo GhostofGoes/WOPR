@@ -38,7 +38,7 @@ There is no Makefile.
 | Size gate | `go run ./internal/tools/sizegate -expect 6 -packages 4`; `-files <file>...` gates the installers (the `collect` jobs) |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage` (`-archives -assets dist/release` also checks the archives and the Linux packages, and collects every release file into `dist/release`; `-merge -assets dist/release <file>...` adds the installers to them and to `checksums.txt`, sorted as GoReleaser sorts it) |
 | Lint the Linux packages (after a release build; Linux, tools not pinned) | `lintian --pedantic dist/*.deb` and, with Fedora's rpmlint configuration, `rpmlint -r packaging/rpmlintrc dist/*.rpm`; see `docs/PLAN.md` §8 for what they report. List an `.rpm`'s files with `rpm -qlvp`, or unpack it with `bsdtar -xf X.rpm -C dir`; never pipe `rpm2cpio` into a plain `cpio -idm`, which writes into `/` (the payload's paths are absolute) |
-| Validate the menu entries and the AppStream metadata (after a release build; Linux, tools not pinned) | `desktop-file-validate build/pkg/deb/*.desktop build/pkg/rpm/*.desktop` (prints nothing when they pass), `appstreamcli validate --no-net --pedantic build/pkg/*.metainfo.xml` and `appstream-util validate-relax --nonet build/pkg/*.metainfo.xml`; the smoke jobs run them on the installed `.deb` |
+| Validate the menu entries and the AppStream metadata (after a release build; Linux, tools not pinned) | `desktop-file-validate build/pkg/deb/*.desktop build/pkg/rpm/*.desktop` (prints nothing when they pass), `appstreamcli validate --no-net --pedantic build/pkg/*.metainfo.xml` and `appstream-util validate-relax --nonet build/pkg/*.metainfo.xml`; the `desktop-files` hook runs them on what `pkgdocs` writes (its `TestValidators`, which skips one that is not installed unless `WOPR_DESKTOP_VALIDATORS=1`), and the smoke jobs on the installed `.deb` |
 | Windows installer and MSIX packages (Windows, PowerShell 7, after a release build and `stage -archives -assets dist/release`) | `pwsh -File packaging/windows/check-release-files.ps1 -Version <V> -BinDir dist/release`, then `pwsh -File packaging/windows/build-installer.ps1 -Version <V> -BinDir dist/release -OutputDir build/installer` (downloads the pinned Inno Setup) and `pwsh -File packaging/windows/build-msix.ps1 -Version <V> -BinDir dist/release -OutputDir build/msix` (needs the Windows SDK) |
 | Test them (Windows; only on a machine without WOPR, such as a CI runner) | `pwsh -File packaging/windows/test-installer.ps1 -Installer build/installer/wopr_<V>_windows_setup.exe -Version <V>` (changes the user's `PATH` while it runs) and, as an administrator, `pwsh -File packaging/windows/test-msix.ps1 -PackageDir build/msix -Version <V>` (trusts a throwaway certificate while it runs) |
 | `wopr.exe`'s icon, manifest and version details by hand | `go tool -modfile=tools/release/go.mod go-winres make --in packaging/windows/winres.json --out cmd/wopr/rsrc --arch amd64,arm64` (GoReleaser's before hook runs it; the `.syso` files it writes are gitignored) |
@@ -72,7 +72,7 @@ channel, and review-tools from `latest/stable`.
   and windows, since some files build for one only. `os/exec` is fenced to `cmd/wopr` (its macOS build
   reopens the app in Terminal), `internal/tools/...`, `internal/archtest` and `internal/e2e`.
 - **One clock.** Only `internal/ui/clock.go` may call `tea.Tick`, `tea.Every` or `time.Sleep`-style
-  timers; `tea.Sequence` is banned everywhere (forbidigo).
+  timers (tests may use `time`'s); `tea.Sequence` is banned everywhere (forbidigo).
 - **Seeded randomness.** Use `proto.NewRand(seed, streamID)` with a stream from the domains in
   `internal/proto/rand.go`. The top-level `math/rand/v2` functions are banned.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
@@ -88,28 +88,26 @@ channel, and review-tools from `latest/stable`.
   (Fedora: `/usr/bin`, `%license`, `%doc`) for each Linux build (`docs/PLAN.md` §8). `stage -archives`
   checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
   changelogs it writes, so change both together. `pkgdocs` writes the packages' documents and their
-  `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
-  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. Both
-  packages also put WOPR in the desktop's menu, in files named by the app ID `io.github.ghostofgoes.wopr`:
-  a menu entry that opens a terminal running `wopr` (with one right-click action, "Movie Mode", that
-  runs `wopr --movie`), the icon in every hicolor size, and AppStream metadata. `pkgdocs` writes the
+  `changelog.yml` into `build/pkg`; its tests hold `packaging/description.txt`, both packages'
+  description, to both formats' rules. Both packages also put WOPR in the desktop's menu, in files named
+  by the app ID `io.github.ghostofgoes.wopr`: a menu entry that opens a terminal running `wopr`, the icon
+  in every hicolor size, and AppStream metadata. `pkgdocs` writes the
   menu entry for each package and the metadata from their templates in `packaging/linux/`; its tests
   hold them to the Desktop Entry Specification and AppStream's rules, and check that the screenshots and
   pages they link exist in `site/`. `stage -archives` checks that the packages hold `build/pkg`'s files
   (by digest), that each menu entry starts that package's own program, and every icon size. The sizes
   are also listed in the `.rpm`'s directories in `.goreleaser.yaml` and in `smoke.yml`: change all three
   together. The smoke jobs install, run and remove both packages, and validate the installed menu entry
-  and metadata.
+  and metadata; `pkgdocs`'s `TestValidators` runs the same validators on its own files wherever they are
+  installed, and CI's lint job installs them, so none skips there.
 - **Icons.** Everything in `packaging/icons/` except `src/`, and the docs site's `favicon.svg` (also its
   navbar logo), `favicon.ico` and `apple-touch-icon.png`, is drawn by `internal/tools/icons` from the SVG
   sources in `packaging/icons/src/`. Its tests and `-check` fail when a file is stale; pictures are
   compared pixel by pixel within 2/255, because floating point differs between CPUs, and the `.ico` and
-  `.icns` around them must be byte for byte what the tool writes from those pixels. The sources may use
-  only the SVG subset listed in `internal/tools/icons/svg.go`, and the tool refuses a design that would
-  make any file larger than 512 KB. A size whose edges would fall between pixels can have its own source,
-  `wopr-<N>.svg`, drawn for that size only (`wopr-24.svg`, for the Windows taskbar); the tool refuses one
-  for a size it never draws, and any other SVG file there. The icon is the front-panel lamps design, the
-  owner's choice (2026-10-09).
+  `.icns` around them must be byte for byte what the tool writes from those pixels. The tool refuses a
+  source it cannot draw or would never use, and a design that makes any file larger than 512 KB;
+  `packaging/icons/README.md` lists the sources and the SVG subset. The design, front-panel lamps, is the
+  owner's choice (`docs/PLAN.md` §8).
 - **Windows installer and MSIX.** `windows.yml` checks the release files against `checksums.txt`, builds
   `wopr_<V>_windows_setup.exe` with Inno Setup (`packaging/windows/wopr.iss`: per user, no administrator
   prompt, both architectures in one file) and the MSIX packages for the Microsoft Store, then installs,
@@ -123,7 +121,7 @@ channel, and review-tools from `latest/stable`.
   checks the image and runs the e2e tests against the app's program (`test-dmg.sh`); on Apple silicon it
   also opens the app as Finder does (`test-launch.sh`: the Intel runner's Terminal runs nothing it is
   given). Started from Finder, with no terminal, `wopr` reopens itself in
-  Terminal (`cmd/wopr/launch*.go`, with table tests); started from a terminal, it runs as before.
+  Terminal (`cmd/wopr/launch*.go`, with table tests); started from a terminal, it runs there.
 - **Snap.** `snap.yml` prepares each architecture's snap with `internal/tools/snapdir`, which checks the
   program and notices against `checksums.txt`, the metadata against snapd's limits, and turns the Linux
   menu entry into the snap's; `snap pack` packs it. The Store's `review-tools` must pass it, and
@@ -176,9 +174,9 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 Every script line, scene step and asset carries a provenance tag (movie scenes included: `internal/movie/scenes`,
 where the user's typed lines are `script.User` lines that keep their mixed case): `film`, `reconstructed`,
 `third-party:<repo>@<commit>:<path>` (or `third-party:<https URL>` for art from a web page, which is kept as
-drawn and exempt from the capitals rule), `original` or `prompt`. Do not copy text or art from other projects
-without a licence and a `NOTICE.md` entry that credits the source. Lines tagged `prompt` stay out of builds until the brother's
-licence is recorded.
+drawn and exempt from the capitals rule), or `original`. Do not copy text or art from other projects
+without a licence and a `NOTICE.md` entry that credits the source. Lines adapted from the brother's prompt (the
+`prompt` tag) are not committed at all until he grants written permission and a licence (`docs/PLAN.md` §2.1).
 
 ## Change notes
 
@@ -213,8 +211,8 @@ Every change a player could notice gets a change note: a small file in `.changes
 The owner merges the release pull request, then pushes the tag. Everything else is prepared in the pull
 request or done by `release.yml`.
 
-1. **The release pull request**, titled `vX.Y.Z` (the version from `docs/PLAN.md` §15), batches the notes
-   and rebuilds the changelog and the manual page:
+1. **The release pull request**, titled `vX.Y.Z` (a milestone's version is in `docs/PLAN.md` §15), batches
+   the notes and rebuilds the changelog and the manual page:
 
    ```sh
    go tool -modfile=tools/release/go.mod changie batch vX.Y.Z
@@ -302,15 +300,16 @@ screenshot fails the build.
   and `prek.toml` leave them alone), and `site/hugo.yaml` names them. The credits page shows the
   licences, so the build needs no network beyond the Go module proxy.
 - Download commands in pages use the `version` shortcode, and those in `site/assets/install/` use
-  `@VERSION@`: the latest published release in `docs.yml`'s builds, the latest in `CHANGELOG.md` in others. Text about the `.deb` and `.rpm`, or the archives' `wopr.6`, goes
-  inside `{{% if-packages %}}`, which shows it only once the latest release has them (every release after
-  v0.3.0; the `has-packages` partial), so no build of the site names a file that does not exist yet; until
-  then the package tabs show `site/assets/install/packages-later.md`. Its content is Markdown only: a
-  shortcode inside it that writes HTML, such as `tabs`, is dropped. Inside a Hextra `tab`, write it as
-  `{{< if-packages >}}`: the tab renders the Markdown, and the `%` form fails the build there. Text about
-  the Windows installer, the Mac app, or WOPR in the Linux app menu (the packages' menu entry) goes inside
-  `{{% if-installers %}}` (the `has-installers` partial) in the same way, and text for the releases before
-  them inside `{{% if-installers "not" %}}`. Nothing names the snap until it is published.
+  `@VERSION@`: the latest published release in `docs.yml`'s builds, the latest in `CHANGELOG.md` in
+  others. Text about the Windows installer, the Mac app, or WOPR in the Linux app menu (the packages' menu
+  entry) goes inside `{{% if-installers %}}`, which shows it only once the latest release has them (every
+  release after v0.4.0; the `has-installers` partial), so no build of the site names a file that does not
+  exist yet; text for the releases before them goes inside `{{% if-installers "not" %}}`. Its content is
+  Markdown only: a shortcode inside it that writes HTML, such as `tabs`, is dropped. Inside a Hextra
+  `tab`, write it as `{{< if-installers >}}`: the tab renders the Markdown, and the `%` form fails the
+  build there. Text about the `.deb`, the `.rpm` or the archives' `wopr.6` needs no gate: every release
+  since v0.4.0 has them, so `if-packages`, which still wraps some of it, always shows it. Nothing names the
+  snap until it is published.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 
@@ -332,7 +331,7 @@ merged with `main`), with `--no-color` so its `ERR` lines can be detected; it fa
 error, and on an empty scan. A finding is handled as `SECURITY.md` describes: rotate the secret, then add its
 fingerprint to `.gitleaksignore` by pull request.
 
-To prove the job (the M0 canary), push a throwaway branch containing a fake secret that only gitleaks
+To prove the job (the M0b canary), push a throwaway branch containing a fake secret that only gitleaks
 recognises (not a GitHub-supported token pattern, which push protection blocks), check that its CI run's
 `secrets` log says `leaks found` rather than an error, then delete the branch.
 
@@ -364,8 +363,7 @@ These live in GitHub settings, not in files. Check them at each milestone:
   "Require branches to be up to date before merging"; block force pushes and deletion. Allow squash merges
   only (merge commits and rebase merging off). `gh api 'repos/{owner}/{repo}/rules/branches/main'` should
   list `pull_request` and `required_status_checks` rules.
-- **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases
-  before v0.1.0.
+- **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases.
 - **Security:** secret scanning with push protection, private vulnerability reporting.
 - **Issues and Discussions:** issues on, with the bug report and feature request forms in
   `.github/ISSUE_TEMPLATE/` (blank issues off); **Discussions on** (Settings → General → Features), since
@@ -394,8 +392,7 @@ These live in GitHub settings, not in files. Check them at each milestone:
     Store would refuse them.
 - **Pages:** Settings → Pages → Build and deployment → Source: **GitHub Actions**. `docs.yml` then
   deploys the docs site to <https://ghostofgoes.github.io/WOPR/> through the `github-pages` environment,
-  which GitHub creates and limits to deployments from `main`. The first deployment comes with the first
-  push to `main` after this setting.
+  which GitHub creates and limits to deployments from `main`.
 
 ## Milestone checklist
 
@@ -419,12 +416,13 @@ At every milestone boundary:
      release's `.issig` file) and `$InnoSigner` together, with the version in `-InnoDir`'s default and the
      download's name, and read the release notes for changes to scripts.
    - **The Windows SDK**: check that the `windows-2025` and `windows-11-arm` images still have one
-     (`build-msix.ps1` takes the newest), and set `MaxVersionTested` in
+     (`WindowsSdk.psm1` takes the newest), and set `MaxVersionTested` in
      `packaging/windows/AppxManifest.xml` to the newest Windows build.
    - **snapcraft**: if `snap info snapcraft` shows a newer major track than `snap.yml`'s `9.x/stable`, move
      to it; check that core24 is still a supported base.
    - If `LICENSE`'s year changed, change the copyright in `packaging/windows/wopr.iss`,
-     `packaging/windows/winres.json` and `internal/tools/macapp` to match.
+     `packaging/windows/winres.json`, `internal/tools/macapp` and the docs site's footer
+     (`site/i18n/en.yaml`) to match.
 5. Regenerate the notices and the icons (`go run ./internal/tools/icons`, which rewrites only the files
    that changed).
 6. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.

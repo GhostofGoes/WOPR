@@ -302,7 +302,7 @@ func (m *model) drain() tea.Cmd {
 func (m *model) paused() bool { return m.tooSmall() || m.frozen }
 
 // relayout applies a placement change. When a game with a board ends, its last View stays
-// up until its final output has been revealed (docs/PLAN.md §4.2): the change waits for a
+// up until its final output has been revealed (docs/PLAN.md §4.3): the change waits for a
 // typewriter mark. Any other change applies at once and cancels a waiting one.
 func (m *model) relayout(e host.Relayout) {
 	m.markID++
