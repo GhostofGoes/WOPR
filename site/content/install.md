@@ -40,8 +40,7 @@ rm -f ~/.local/bin/wopr
 ```
 
 The `PATH` line the install line added to `~/.zprofile` (or `~/.bash_profile`) is harmless; delete it with
-a text editor if you like. An earlier version of this page put `wopr` in `/usr/local/bin`; remove that copy
-with `sudo rm /usr/local/bin/wopr`.
+a text editor if you like.
 {{< /tab >}}
 
 {{< tab name="Linux" >}}
@@ -51,8 +50,7 @@ rm -f ~/.local/bin/wopr
 ```
 
 The `PATH` line the install line may have added to `~/.bashrc` (or `~/.zshrc`) is harmless; delete it with a
-text editor if you like. An earlier version of this page put `wopr` in `/usr/local/bin`; remove that copy
-with `sudo rm /usr/local/bin/wopr`.
+text editor if you like.
 {{< /tab >}}
 
 {{< tab name="Linux (apt)" >}}
