@@ -34,8 +34,7 @@ password, `su -c "adduser $USER sudo"`, then log out and back in, and paste the 
 
 **An old version still starts after you update.** Another copy comes first on your `PATH`. On Linux and
 macOS, `type -a wopr` lists every copy; in PowerShell, `Get-Command -All wopr`. Delete the ones you do not
-want: an earlier version of these pages put `wopr` in `/usr/local/bin`, which `sudo rm /usr/local/bin/wopr`
-removes.
+want.
 
 **Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
 
