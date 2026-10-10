@@ -36,18 +36,23 @@ $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAct
 {{< tab name="macOS" >}}
 
 ```sh
-sudo rm /usr/local/bin/wopr
+rm -f ~/.local/bin/wopr
 ```
 
+The `PATH` line the install line added to `~/.zprofile` (or `~/.bash_profile`) is harmless; delete it with
+a text editor if you like. An earlier version of this page put `wopr` in `/usr/local/bin`; remove that copy
+with `sudo rm /usr/local/bin/wopr`.
 {{< /tab >}}
 
 {{< tab name="Linux" >}}
 
 ```sh
-sudo rm -f /usr/local/bin/wopr ~/.local/bin/wopr
+rm -f ~/.local/bin/wopr
 ```
 
-An earlier version of this page put `wopr` in `~/.local/bin`; this removes that copy too.
+The `PATH` line the install line may have added to `~/.bashrc` (or `~/.zshrc`) is harmless; delete it with a
+text editor if you like. An earlier version of this page put `wopr` in `/usr/local/bin`; remove that copy
+with `sudo rm /usr/local/bin/wopr`.
 {{< /tab >}}
 
 {{< tab name="Linux (apt)" >}}

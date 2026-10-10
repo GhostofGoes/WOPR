@@ -1783,7 +1783,10 @@ checked at every milestone boundary (AGENTS.md checklist) (B-5).
   - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
     Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
     terminal, with only the tools each system installs by default (the Go tab needs Go). The lines download
-    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one Markdown file per tab in
+    the latest release's file and put the program on the `PATH`; all but Go's start it. The macOS and Linux
+    lines install the bare binary into `~/.local/bin` without `sudo` (owner decision 2026-10-10), adding it
+    to the `PATH` in `~/.zprofile` or `~/.bash_profile` (macOS), or `~/.bashrc` or `~/.zshrc` (Linux), when
+    the shell does not already have it; only the package tabs need root. The text is one Markdown file per tab in
     `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an attestation is the
     Installation page's last section, for those who want it; the README links there and to the guide.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
