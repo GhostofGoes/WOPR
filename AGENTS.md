@@ -208,13 +208,15 @@ Every change a player could notice gets a change note: a small file in `.changes
 
 ## Releasing
 
-**Start to finish:** (1) on a branch from `main`, batch the notes into the new version with the three
-commands below, and open a pull request titled `vX.Y.Z`; (2) read the notes as a player would, fix any in
-`.changes/vX.Y.Z.md`, and wait for `ci-ok`; (3) the owner merges it, then (4) tags the merge commit
-`vX.Y.Z` and pushes the tag; (5) `release.yml` waits for `main`'s CI, builds, tests and attests every file
-(the installers included), publishes the GitHub Release with the notes, starts its discussion in
-Announcements and publishes the docs site again; (6) check the release page and the site's download
-commands. Only steps 3 and 4 are the owner's; the details follow.
+**Start to finish:** (1) On a new branch from `main` that holds nothing else, run the three commands
+below and open a pull request titled `vX.Y.Z`. (2) Read the notes as a player would. To fix one, edit
+`.changes/vX.Y.Z.md` and run `changie merge` again. Wait for `ci-ok`, and keep the branch up to date with
+`main`; if `main` gains new notes meanwhile, start again from (1). (3) The owner merges the pull request,
+then (4) tags the merge commit `vX.Y.Z` and pushes the tag. (5) `release.yml` waits for `main`'s CI, then
+builds, checks and attests every file, the installers included. If all of that passes, it publishes the
+GitHub Release with the notes, starts its discussion and publishes the docs site again; then it packs and
+tests the snaps. (6) Do the checks in `docs/PLAN.md` §14, such as installing from the release page by
+hand. Only the merge, the tag and any store upload are the owner's; the details follow.
 
 1. **The release pull request**, titled `vX.Y.Z` (a milestone's version is in `docs/PLAN.md` §15), batches
    the notes and rebuilds the changelog and the manual page:
