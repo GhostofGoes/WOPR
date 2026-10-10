@@ -1933,11 +1933,11 @@ image may lack, so `test-snap.sh` installs it when missing.
 
 - **README.md**:
   - what this is, and a link to the docs site (below);
-  - install, in a few lines: a link to the docs site's one-line installs, the latest release, `go install
-    …@latest`, the Linux packages (since v0.4.0; they install the manual page), and the Windows installer,
-    the Mac app and the packages' menu entry (from the release after v0.4.0), which put WOPR in the Start
-    menu, Applications or the app menu (the installer and the app warn at first because they are
-    unsigned), and a link to the verifying section (§12);
+  - install, in a few lines: a link to the docs site's download buttons and one-line installs, the latest
+    release, `go install …@latest`, the Linux packages (since v0.4.0; they install the manual page), and
+    the Windows installer, the Mac app and the packages' menu entry (from the release after v0.4.0), which
+    put WOPR in the Start menu, Applications or the app menu (the installer and the app warn at first
+    because they are unsigned), and a link to the verifying section (§12);
   - quick start (`LOGON:`, `LIST GAMES`, `LOGOFF`); the shell's commands and keys ("what you type is kept")
     are on the docs site's Usage page;
   - screenshots; the games; movie mode; flags and themes; accessibility;
@@ -1971,25 +1971,34 @@ image may lack, so `test-snap.sh` installs it when missing.
   module pinned in `site/go.mod`, MIT; credited in NOTICE.md and on the site's credits page). Pages: home,
   quickstart, installation, usage (with accessibility and troubleshooting under it), games (an index and one
   page per game), movie scenes, contributing with the code of conduct, changelog, and credits.
-  - **Install in one line** (owner decision 2026-10-08). Quickstart and Installation show the same tabs:
-    Windows, macOS, Linux, Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a
-    terminal, with only the tools each system installs by default (the Go tab needs Go). The lines download
-    the latest release's file and put the program on the `PATH`; all but Go's start it. The text is one
-    Markdown file per tab in `site/assets/install/`, drawn by the `install-tabs` shortcode. Verifying an
-    attestation is the Installation page's last section, for those who want it; the README links there and
-    to the guide.
-  - **Installers first on Windows and macOS** (owner decision 2026-10-08). Once the latest release has the
-    installer and the Mac app (every release after v0.4.0; the `has-installers` partial), those two tabs
-    lead with the download and then each click in order, warnings included: the browser's, SmartScreen's
-    More info and Run anyway, and Smart App Control's block on Windows; dragging to Applications first, then
-    Gatekeeper's Done and Open Anyway in Privacy & Security on macOS. The line comes second, as the way to
-    get the `wopr` command. The Linux (apt) and (RPM) tabs say how to open a downloaded package in the
-    desktop's software app and, from the same release, name the packages' menu entry (v0.4.0's packages
-    have none). The Installation page's uninstall steps, the troubleshooting page (SmartScreen, Smart App
-    Control, Gatekeeper, App Translocation, a missing menu entry) and the credits page (Inno Setup) show
-    their new parts only under the same gates: `if-installers` for the installers and the menu entry,
-    `if-packages` for the rest of the packages. AGENTS.md ("Docs site") has the placeholders that keep each
-    line written once. Nothing names the snap until it is published.
+  - **Install in one line** (owner decision 2026-10-08). The command lines: Windows, macOS, Linux (any),
+    Linux (apt), Linux (RPM) and Go, each one line for a person who has never used a terminal, with only
+    the tools each system installs by default (the Go tab needs Go). The lines download the latest
+    release's file and put the program on the `PATH`; all but Go's start it. Since the download buttons
+    (next), they are the Installation page's "Command line install methods" section, after Uninstall.
+    Verifying an attestation is the Installation page's last section, for those who want it; the README
+    links there and to the guide.
+  - **Download buttons first, no command line** (owner decision 2026-10-10). Quickstart and Installation lead
+    with the same three tabs, Windows, macOS and Linux, each a button that downloads the latest release's
+    file, then each click in order, warnings included: the browser's, SmartScreen's More info and Run anyway,
+    and Smart App Control's block for the Windows installer; dragging to Applications first, then Gatekeeper's
+    Done and Open Anyway in Privacy & Security for the Mac app; the `.deb` and the `.rpm` (for Intel and AMD,
+    with a link to the Arm file), opened in the desktop's software app, for Linux, with a pointer to the
+    command lines for other distributions and the atomic desktops. A button is a plain link, drawn by the
+    `install-tabs` shortcode from a placeholder in the tab's text, at least 44 px tall, in Hextra's primary
+    colour. Until the latest release has the installer and the Mac app (every release after v0.4.0; the
+    `has-installers` partial), the Windows and macOS tabs say they come with the next release and point to the
+    command lines. A small script (`site/assets/js/install-platform.js`) picks the tab for the reader's system
+    (Windows, macOS or Linux; Linux (apt) or (RPM) among the command lines when the browser names the
+    distribution) unless the reader picked one before, and on an Arm Linux computer shows the Arm packages'
+    buttons in place of the others; phones, tablets and ChromeOS keep the first tab, as does a browser without
+    JavaScript. The packages' menu entry is named only from the same release as the installers (v0.4.0's
+    packages have none). The Installation page's uninstall steps (the download buttons' first, then the
+    command lines'), the troubleshooting page (SmartScreen, Smart App Control, Gatekeeper, App Translocation,
+    a missing menu entry) and the credits page (Inno Setup) show their new parts only under the same gates:
+    `if-installers` for the installers and the menu entry, `if-packages` for the rest of the packages.
+    AGENTS.md ("Docs site") has the placeholders that keep each text written once. Nothing names the snap
+    until it is published.
   - **One source for everything.** Each game's page is built from `site/data/games/<slug>.json` by a content
     adapter (`site/content/games/_content.gotmpl`), and the manual page (`docs/man/wopr.6`) is generated from
     the same files. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's Commands and Pull

@@ -17,14 +17,14 @@ the other printing options still work.
 session carries on where it was.
 
 **`wopr` is not found.** Open a new terminal window: the one you installed from may not know about the new
-program yet. The [install lines](/install) put it in `%LOCALAPPDATA%\Programs\wopr` on Windows,
-`/usr/local/bin` on macOS and Linux, and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb`
-puts it in `/usr/games`, which is not on root's `PATH`: as root, or in a small container, run
-`/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}{{% if-installers %}} The Windows
-installer uses the same folder as the install line, and puts it on your `PATH` only if its **Add WOPR to
-PATH** box was ticked: run the installer again to tick it. The Mac app adds no `wopr` command: open WOPR
-from Applications, or install the command with the Terminal line in the [install](/install) page's
-**macOS** tab.{{% /if-installers %}}
+program yet. The [install lines](/install#command-line-install-methods) put it in
+`%LOCALAPPDATA%\Programs\wopr` on Windows, `/usr/local/bin` on macOS and Linux, and Go's `bin` folder with
+`go install`.{{% if-packages %}} The `.deb` puts it in `/usr/games`, which is not on root's `PATH`: as
+root, or in a small container, run `/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}
+{{% if-installers %}} The Windows installer uses the same folder as the install line, and puts it on
+your `PATH` only if its **Add WOPR to PATH** box was ticked: run the installer again to tick it. The Mac
+app adds no `wopr` command: open WOPR from Applications, or install the command with the Terminal line in
+[Command line install methods](/install#command-line-install-methods).{{% /if-installers %}}
 
 **Windows protected your PC.** Microsoft Defender SmartScreen says this about a program from the
 internet that it does not recognise, such as `wopr.exe`{{% if-installers %}} or its installer{{% /if-installers %}}
@@ -61,11 +61,12 @@ which can disappear while WOPR hands itself to Terminal.
 
 **WOPR always opens in Terminal on a Mac.** The app opens Apple's Terminal, whichever terminal you use.
 To play in another, such as iTerm2, run `/Applications/WOPR.app/Contents/MacOS/wopr` in it, or install
-the `wopr` command with the Terminal line in the [install](/install) page's **macOS** tab.
+the `wopr` command with the Terminal line in
+[Command line install methods](/install#command-line-install-methods).
 {{% /if-installers %}}
 {{% if-installers %}}
 **WOPR is not in the app menu after installing the `.deb` or the `.rpm`.** Log out and back in: some
-desktops notice a new app only then. The **Linux** tab's line adds no menu entry; only the packages do.
+desktops notice a new app only then. The **Linux (any)** line adds no menu entry; only the packages do.
 {{% /if-installers %}}
 
 **`sudo` says you are not in the sudoers file.** On Debian, when a root password was set during

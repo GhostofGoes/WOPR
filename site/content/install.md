@@ -10,11 +10,13 @@ next: /usage
 ## Install
 
 {{% if-installers %}}
-Pick your system. On Windows and macOS, download WOPR and open it as the tab says, or copy the line under
-it into a terminal. On Linux, and with Go, copy the line and paste it into a terminal.
+Pick your system, click the download button, and follow the steps under it. To install from a terminal
+instead, or with Go, see [Command line install methods](#command-line-install-methods).
 {{% /if-installers %}}
 {{% if-installers "not" %}}
-Pick your system, copy the line, and paste it into a terminal.
+Pick your system. On Linux, click a download button and follow the steps under it. The downloads for
+Windows and macOS come with the next release; until then, and to install with Go, see
+[Command line install methods](#command-line-install-methods).
 {{% /if-installers %}}
 
 {{< install-tabs >}}
@@ -28,20 +30,57 @@ the network and collects no data.
 `wopr` keeps no settings: removing the program removes everything except a debug log, if you ever made one
 ([Troubleshooting](/usage/troubleshooting#debug-log) says where it is; delete its `wopr` folder).
 
+If you installed WOPR with a download button:
+
 {{< tabs >}}
 
 {{< tab name="Windows" >}}
 {{< if-installers >}}
-If you used the installer, open **Settings**, then **Apps**, then **Installed apps**. Click **...** next
-to **WOPR**, then **Uninstall**, **Uninstall** again, and **Yes**. On Windows 10, it is **Settings**, then
-**Apps**, then **Apps & features**, then **WOPR**, then **Uninstall**. This removes the Start menu entry
-too, and takes WOPR's folder off your `PATH`, even if the PowerShell line put it there.
-
-If you used the PowerShell line, delete its folder and take the folder off your `PATH`, in PowerShell:
+Open **Settings**, then **Apps**, then **Installed apps**. Click **...** next to **WOPR**, then
+**Uninstall**, **Uninstall** again, and **Yes**. On Windows 10, it is **Settings**, then **Apps**, then
+**Apps & features**, then **WOPR**, then **Uninstall**. This removes the Start menu entry too, and takes
+WOPR's folder off your `PATH`, even if the PowerShell line put it there.
 {{< /if-installers >}}
 {{< if-installers "not" >}}
-In PowerShell, delete its folder and take the folder off your `PATH`:
+The Windows installer comes with the next release. Until then, WOPR installs from PowerShell: see below.
 {{< /if-installers >}}
+{{< /tab >}}
+
+{{< tab name="macOS" >}}
+{{< if-installers >}}
+Drag **WOPR** from **Applications** to the Trash, and empty the Trash.
+{{< /if-installers >}}
+{{< if-installers "not" >}}
+The Mac app comes with the next release. Until then, WOPR installs from Terminal: see below.
+{{< /if-installers >}}
+{{< /tab >}}
+
+{{< tab name="Linux" >}}
+Open a terminal, and remove the package. For the `.deb`:
+
+```sh
+sudo apt remove wopr
+```
+
+For the `.rpm`:
+
+```sh
+sudo dnf remove wopr
+```
+
+{{< if-installers >}}
+This also takes WOPR out of your app menu.
+{{< /if-installers >}}
+{{< /tab >}}
+
+{{< /tabs >}}
+
+If you installed it from the [command line](#command-line-install-methods):
+
+{{< tabs >}}
+
+{{< tab name="Windows" >}}
+In PowerShell, delete its folder and take the folder off your `PATH`:
 
 ```powershell
 $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue; $k = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment'); $p = $k.GetValue('Path', '', 'DoNotExpandEnvironmentNames'); $k.SetValue('Path', ((@($p -split ';') | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'ExpandString'); $k.Close(); [Environment]::SetEnvironmentVariable('WOPR_PATH_REFRESH', $null, 'User')
@@ -50,11 +89,6 @@ $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAct
 {{< /tab >}}
 
 {{< tab name="macOS" >}}
-{{< if-installers >}}
-If you installed the app, drag **WOPR** from **Applications** to the Trash, and empty the Trash.
-
-If you used the Terminal line:
-{{< /if-installers >}}
 
 ```sh
 sudo rm /usr/local/bin/wopr
@@ -62,7 +96,7 @@ sudo rm /usr/local/bin/wopr
 
 {{< /tab >}}
 
-{{< tab name="Linux" >}}
+{{< tab name="Linux (any)" >}}
 
 ```sh
 sudo rm -f /usr/local/bin/wopr ~/.local/bin/wopr
@@ -72,7 +106,6 @@ An earlier version of this page put `wopr` in `~/.local/bin`; this removes that 
 {{< /tab >}}
 
 {{< tab name="Linux (apt)" >}}
-{{< if-packages >}}
 
 ```sh
 sudo apt remove wopr
@@ -81,24 +114,15 @@ sudo apt remove wopr
 {{< if-installers >}}
 This also takes WOPR out of your app menu.
 {{< /if-installers >}}
-{{< /if-packages >}}
-{{< if-packages "not" >}}
-There is no package yet; see the **Linux** tab.
-{{< /if-packages >}}
 {{< /tab >}}
 
 {{< tab name="Linux (RPM)" >}}
-{{< if-packages >}}
 
 ```sh
 sudo dnf remove wopr
 ```
 
 On openSUSE: `sudo zypper remove wopr`.{{< if-installers >}} This also takes WOPR out of your app menu.{{< /if-installers >}}
-{{< /if-packages >}}
-{{< if-packages "not" >}}
-There is no package yet; see the **Linux** tab.
-{{< /if-packages >}}
 {{< /tab >}}
 
 {{< tab name="Go" >}}
@@ -117,6 +141,14 @@ Remove-Item "$(go env GOPATH)\bin\wopr.exe"
 {{< /tab >}}
 
 {{< /tabs >}}
+
+## Command line install methods
+
+Each tab has a line to paste into a terminal. It downloads the latest release, installs it, and starts
+WOPR; Go's line only installs it. Use these if you would rather use a terminal, to get the `wopr` command
+on a Mac, or on a Linux that the download buttons do not cover.
+
+{{< install-tabs "command-line" >}}
 
 ## Development builds
 
@@ -189,12 +221,14 @@ Once you have verified it:
 
 - **macOS** says it cannot check the program for malware. Clear the mark with
   `xattr -d com.apple.quarantine FILE`.{{% if-installers %}} For the Mac app, follow the steps in the
-  **macOS** tab, or drag it to Applications and clear the mark from all of it with
-  `xattr -dr com.apple.quarantine /Applications/WOPR.app` before you open it.{{% /if-installers %}}
+  **macOS** tab under [Install](#install), or drag it to Applications and clear the mark from all of it
+  with `xattr -dr com.apple.quarantine /Applications/WOPR.app` before you open it.{{% /if-installers %}}
 - **Windows** SmartScreen may say it does not recognise the program. Choose *More info*, then
   *Run anyway*, or clear the mark with `Unblock-File FILE` in PowerShell.
 
-The install lines above download with `curl`, `wget` or `dnf`, which do not mark files, so this does not
-come up for them{{% if-installers %}}; for the installer and the Mac app, the **Windows** and **macOS** tabs
-say what to click{{% /if-installers %}}. Windows' Smart App Control is different: when it is on, it blocks every program that is not
-signed, however it was downloaded ([Troubleshooting](/usage/troubleshooting) says more).
+The lines in [Command line install methods](#command-line-install-methods) download with `curl`, `wget`
+or `dnf`, which do not mark files, so this does not come up for them{{% if-installers %}}; for the
+installer and the Mac app, the **Windows** and **macOS** tabs under [Install](#install) say what to
+click{{% /if-installers %}}. Windows' Smart App Control is different: when it is on, it blocks every
+program that is not signed, however it was downloaded ([Troubleshooting](/usage/troubleshooting) says
+more).

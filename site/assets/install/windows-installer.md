@@ -1,4 +1,4 @@
-[**Download the WOPR installer**](https://github.com/GhostofGoes/WOPR/releases/download/v@VERSION@/wopr_@VERSION@_windows_setup.exe)
+@DOWNLOAD-INSTALLER@
 
 One installer for every Windows PC, Intel, AMD or Arm. Then:
 
@@ -19,7 +19,3 @@ is on, because it is not signed yet. [Troubleshooting](/usage/troubleshooting) s
 
 To update WOPR, run a newer installer the same way: it replaces the old version. To remove it, see
 [Uninstall](/install#uninstall).
-
-**Or install from PowerShell.**
-
-@COMMAND-LINE@

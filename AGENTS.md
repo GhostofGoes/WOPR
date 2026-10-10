@@ -278,21 +278,28 @@ screenshot fails the build.
 - Pages are Markdown in `site/content/`, written for players in plain, direct prose. Usage has two sub-pages,
   `usage/accessibility.md` and `usage/troubleshooting.md`; a page that moves keeps its old address with an
   `aliases` entry in its front matter.
-- The install instructions are written once, for both Quickstart and Installation: one Markdown file per
-  tab in `site/assets/install/` (Windows, macOS, Linux, Linux (apt), Linux (RPM), Go), which the
-  `install-tabs` shortcode puts in synced tabs. `@VERSION@` in them becomes the latest release's version
-  (shortcodes do not run there). Each tab's command is a line to paste into a terminal, which a person who
-  has never used one can follow, using only the tools each system installs by default (the Go tab needs
-  Go). Once the latest release has the installers (the `has-installers` partial: every release after
-  v0.4.0), the Windows and macOS tabs lead with them instead, from `windows-installer.md` and
-  `macos-app.md`: the download, then each click and warning in order, with the line second.
-  `@COMMAND-LINE@` in those two files stands for the tab's own `windows.md` or `macos.md`, so each line is
-  still written once; every build reads both files and fails if one lacks it. The Linux (apt) and (RPM)
-  tabs also say how to open a downloaded package in the desktop's software app. The packages' menu entry
-  first ships in the same release as the installers (v0.4.0's packages have none), so `@APP-MENU@` in
-  `linux-apt.md` and `linux-rpm.md` becomes the sentence in `app-menu.md` only when `has-installers` is
-  true, and nothing before; every build fails if either file lacks it, or if a tab is left with any
-  `@NAME@` placeholder. Verifying an attestation is for the Installation page's last section.
+- The install instructions are written once, for both Quickstart and Installation: one Markdown file per tab
+  in `site/assets/install/`, which the `install-tabs` shortcode puts in synced tabs. With no argument, it
+  draws the download tabs (Windows, macOS, Linux, from `windows-installer.md`, `macos-app.md` and
+  `linux-packages.md`): a download button, then each click and warning in order, with no command line. With
+  `"command-line"`, it draws the Installation page's Command line install methods (Windows, macOS,
+  Linux (any), Linux (apt), Linux (RPM), Go): each a line to paste into a terminal, which a person who has
+  never used one can follow, using only the tools each system installs by default (the Go tab needs Go). In
+  these files, `@VERSION@` becomes the latest release's version (shortcodes do not run there), and
+  `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a paragraph,
+  becomes a download button: a link to that release file, drawn by the shortcode (styled in
+  `site/assets/css/custom.css`), with the file's name under it and, for a package, a link to its Arm file.
+  Until the latest release has the installers (the `has-installers` partial: every release after v0.4.0), the
+  Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry first ships in
+  the same release (v0.4.0's packages have none), so `@APP-MENU@` in `linux-packages.md`, `linux-apt.md` and
+  `linux-rpm.md` becomes the sentence in `app-menu.md` only when `has-installers` is true, and nothing before.
+  Every build reads each file of a set, whichever it shows, and fails if one lacks its placeholder or a tab is
+  left with any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
+  `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked before,
+  saving nothing, and shows the packages' Arm buttons in place of the others on an Arm Linux computer. It
+  picks a tab with Hextra's own `updateGroup`, which `head-end.html` copies from Hextra's `tabs.js` at build
+  time, so a Hextra that changes it fails the build. Verifying an attestation is for the Installation page's
+  last section.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
   which documents the schema; the manual page reads the same files. Change a game's text there.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's

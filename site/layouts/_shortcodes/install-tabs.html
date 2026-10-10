@@ -1,23 +1,63 @@
 {{- /*
-  The install commands, one tab for each way of installing, shared by the Quickstart and
-  Installation pages so that the two never differ. Each tab's text is Markdown in
-  assets/install/<file>.md, where @VERSION@ becomes the latest release's version (the version
-  shortcode's), so that every command names a file that exists. Until the latest release has the
-  Linux packages (the has-packages partial), their tabs show assets/install/packages-later.md, with
-  @PACKAGE@ as the package's kind. Once it has the Windows installer and the Mac app (the
-  has-installers partial), those two tabs show assets/install/<installer>.md instead, which leads
-  with the download and puts the command line after it: @COMMAND-LINE@ there stands for the tab's
-  own <file>.md, so each command is still written once. The same release is the first whose
-  packages put WOPR in the app menu, so only then does @APP-MENU@ in the packages' tabs become the
-  sentence in assets/install/app-menu.md (and, before it, nothing). Every build reads and checks
-  each of these files, whichever it shows, and fails if a placeholder is missing from its file or
-  left in a tab. Hextra's tabs draw them, synced: a tab picked on one page is picked on the other.
+  The install instructions, one tab for each system or way of installing, shared by the Quickstart
+  and Installation pages so that the two never differ. With no argument, they are the download
+  tabs (Windows, macOS, Linux): a download button, then what to click, with no command line. With
+  "command-line", they are the lines to paste into a terminal (Windows, macOS, Linux (any), Linux
+  (apt), Linux (RPM), Go). Hextra's tabs draw each set, synced: a tab picked on one page is picked
+  on the other, and the two sets, whose tab names differ, are picked apart.
+  js/install-platform.js picks the reader's system in each set they have not picked before.
+
+  Each tab's text is Markdown in assets/install/<file>.md, where @VERSION@ becomes the latest
+  release's version (the version shortcode's), so that every download names a file that exists.
+  @DOWNLOAD-<KIND>@, a paragraph of its own, becomes a download button for that kind of file, drawn
+  here (install-download below; assets/css/custom.css styles it). Until the latest release has the
+  Windows installer and the Mac app (the has-installers partial: every release after v0.4.0), their
+  tabs show assets/install/download-later.md instead, with @LATER@ as what is to come. The same
+  release is the first whose packages put WOPR in the app menu, so only then does @APP-MENU@ in the
+  packages' tabs become the sentence in assets/install/app-menu.md (and, before it, nothing). Every
+  build reads and checks each file of the set, whichever it shows, and fails if a placeholder is
+  missing from its file or left in a tab.
 
     {{< install-tabs >}}
+    {{< install-tabs "command-line" >}}
 */ -}}
+{{- $set := .Get 0 | default "download" -}}
+{{- $sets := dict
+  "download" (slice
+    (dict "name" "Windows" "file" "windows-installer" "downloads" (slice "INSTALLER") "later" "The Windows installer")
+    (dict "name" "macOS" "file" "macos-app" "downloads" (slice "APP") "later" "The Mac app")
+    (dict "name" "Linux" "file" "linux-packages" "downloads" (slice "DEB" "RPM") "appMenu" true)
+  )
+  "command-line" (slice
+    (dict "name" "Windows" "file" "windows")
+    (dict "name" "macOS" "file" "macos")
+    (dict "name" "Linux (any)" "file" "linux")
+    (dict "name" "Linux (apt)" "file" "linux-apt" "appMenu" true)
+    (dict "name" "Linux (RPM)" "file" "linux-rpm" "appMenu" true)
+    (dict "name" "Go" "file" "go")
+  )
+-}}
+{{- $items := index $sets $set -}}
+{{- if not $items -}}
+  {{- errorf "%s: install-tabs: unknown argument %q (give none, or \"command-line\")" .Position $set -}}
+{{- end -}}
 {{- $version := partial "latest-version.html" . -}}
-{{- $hasPackages := partial "has-packages.html" . -}}
 {{- $hasInstallers := partial "has-installers.html" . -}}
+{{- $repo := site.Params.repo -}}
+{{- if not $repo -}}
+  {{- errorf "%s: install-tabs: hugo.yaml has no params.repo" .Position -}}
+{{- end -}}
+
+{{- /* The download buttons: each one's words, and its file for Intel and AMD computers and, for a
+  Linux package, for Arm computers. Their release files are named in .goreleaser.yaml, windows.yml
+  and macos.yml. */ -}}
+{{- $downloads := dict
+  "INSTALLER" (dict "label" "Download the WOPR installer for Windows" "file" (printf "wopr_%s_windows_setup.exe" $version))
+  "APP" (dict "label" "Download the WOPR app for Mac" "file" (printf "wopr_%s_macos.dmg" $version))
+  "DEB" (dict "label" "Download the .deb package" "file" (printf "wopr_%s-1_amd64.deb" $version) "arm" (printf "wopr_%s-1_arm64.deb" $version))
+  "RPM" (dict "label" "Download the .rpm package" "file" (printf "wopr-%s-1.x86_64.rpm" $version) "arm" (printf "wopr-%s-1.aarch64.rpm" $version))
+-}}
+
 {{- $appMenu := partial "inline/install-tab-file.html" (dict "file" "app-menu" "position" .Position) | strings.TrimSpace -}}
 {{- if not $appMenu -}}
   {{- errorf "%s: install-tabs: assets/install/app-menu.md is empty" .Position -}}
@@ -27,43 +67,63 @@
 {{- else -}}
   {{- $appMenu = "" -}}
 {{- end -}}
-{{- $items := slice
-  (dict "name" "Windows" "file" "windows" "installer" "windows-installer")
-  (dict "name" "macOS" "file" "macos" "installer" "macos-app")
-  (dict "name" "Linux" "file" "linux")
-  (dict "name" "Linux (apt)" "file" "linux-apt" "package" ".deb")
-  (dict "name" "Linux (RPM)" "file" "linux-rpm" "package" ".rpm")
-  (dict "name" "Go" "file" "go")
--}}
+{{- $later := partial "inline/install-tab-file.html" (dict "file" "download-later" "position" .Position) -}}
+{{- if not (strings.Contains $later "@LATER@") -}}
+  {{- errorf "%s: install-tabs: assets/install/download-later.md has no @LATER@" .Position -}}
+{{- end -}}
+{{- $later = replace $later "@VERSION@" $version -}}
+{{- with findRE `@[A-Z][A-Z-]*@` (replace $later "@LATER@" "") 1 -}}
+  {{- errorf "%s: install-tabs: assets/install/download-later.md has %s, which nothing fills" $.Position (index . 0) -}}
+{{- end -}}
+
 {{- $tabs := slice -}}
+{{- $buttons := slice -}}
 {{- range $i, $item := $items -}}
   {{- $text := partial "inline/install-tab-file.html" (dict "file" $item.file "position" $.Position) -}}
-  {{- with $item.package -}}
+  {{- if $item.appMenu -}}
     {{- if not (strings.Contains $text "@APP-MENU@") -}}
       {{- errorf "%s: install-tabs: assets/install/%s.md has no @APP-MENU@" $.Position $item.file -}}
     {{- end -}}
     {{- $text = replace $text "@APP-MENU@" $appMenu -}}
-    {{- if not $hasPackages -}}
-      {{- $text = partial "inline/install-tab-file.html" (dict "file" "packages-later" "position" $.Position) -}}
-    {{- end -}}
-  {{- end -}}
-  {{- with $item.installer -}}
-    {{- $installer := partial "inline/install-tab-file.html" (dict "file" . "position" $.Position) -}}
-    {{- if not (strings.Contains $installer "@COMMAND-LINE@") -}}
-      {{- errorf "%s: install-tabs: assets/install/%s.md has no @COMMAND-LINE@" $.Position . -}}
-    {{- end -}}
-    {{- if $hasInstallers -}}
-      {{- $text = replace $installer "@COMMAND-LINE@" $text -}}
-    {{- end -}}
   {{- end -}}
   {{- $text = replace $text "@VERSION@" $version -}}
-  {{- $text = replace $text "@PACKAGE@" ($item.package | default "") -}}
-  {{- with findRE `@[A-Z][A-Z-]*@` $text 1 -}}
-    {{- errorf "%s: install-tabs: the %s tab has %s, which nothing fills" $.Position $item.name (index . 0) -}}
+  {{- $shown := slice -}}
+  {{- $rest := $text -}}
+  {{- range $item.downloads -}}
+    {{- $placeholder := printf "@DOWNLOAD-%s@" . -}}
+    {{- /* Checked on the Markdown as rendered, so that every build checks it, even one that shows
+      download-later.md in its place. */ -}}
+    {{- if or (ne (strings.Count $placeholder $text) 1) (not (strings.Contains (string ($text | markdownify)) (printf "<p>%s</p>" $placeholder))) -}}
+      {{- errorf "%s: install-tabs: assets/install/%s.md must have %s once, as a paragraph of its own" $.Position $item.file $placeholder -}}
+    {{- end -}}
+    {{- $shown = $shown | append . -}}
+    {{- $rest = replace $rest $placeholder "" -}}
   {{- end -}}
+  {{- with findRE `@[A-Z][A-Z-]*@` $rest 1 -}}
+    {{- errorf "%s: install-tabs: assets/install/%s.md has %s, which nothing fills" $.Position $item.file (index . 0) -}}
+  {{- end -}}
+  {{- if and $item.later (not $hasInstallers) -}}
+    {{- $text = replace $later "@LATER@" $item.later -}}
+    {{- $shown = slice -}}
+  {{- end -}}
+  {{- $buttons = $buttons | append $shown -}}
   {{- $tabs = $tabs | append (dict "id" $i "name" $item.name "icon" "" "content" $text "selected" false) -}}
 {{- end -}}
-{{- partial "shortcodes/tabs" (dict "tabs" $tabs "enableSync" true "id" .Ordinal) -}}
+
+{{- /* Hextra's tabs render each tab's Markdown, and raw HTML in it would be dropped (hugo.yaml), so the
+  buttons go into the HTML that comes out, each in place of its placeholder's paragraph. */ -}}
+{{- $html := string (partial "shortcodes/tabs" (dict "tabs" $tabs "enableSync" true "id" .Ordinal)) -}}
+{{- range $buttons -}}
+  {{- $paragraph := printf "<p>@DOWNLOAD-%s@</p>" . -}}
+  {{- if not (strings.Contains $html $paragraph) -}}
+    {{- errorf "%s: install-tabs: @DOWNLOAD-%s@ is not a paragraph of its own" $.Position . -}}
+  {{- end -}}
+  {{- $button := string (partial "inline/install-download.html" (dict "download" (index $downloads .) "repo" $repo "version" $version)) -}}
+  {{- $html = replace $html $paragraph $button -}}
+{{- end -}}
+<div class="wopr-install-tabs" data-wopr-install-tabs="{{ $set }}">
+{{- $html | safeHTML -}}
+</div>
 
 {{- /* The text of assets/install/<file>.md; a missing file fails the build. */ -}}
 {{- define "_partials/inline/install-tab-file.html" -}}
@@ -74,4 +134,23 @@
     {{- errorf "%s: install-tabs: assets/install/%s.md is missing" .position .file -}}
   {{- end -}}
   {{- return $text -}}
+{{- end -}}
+
+{{- /* A download button: a plain link to the release file, with the file's name under it. A Linux
+  package has one for Intel and AMD computers, shown, and one for Arm computers, hidden, each
+  naming the other's file; js/install-platform.js swaps them on an Arm computer. */ -}}
+{{- define "_partials/inline/install-download.html" -}}
+  {{- $d := .download -}}
+  {{- $url := printf "%s/releases/download/v%s/" .repo .version -}}
+  {{- $icon := partial "utils/icon.html" (dict "name" "download" "attributes" `class="wopr-download-icon"`) -}}
+  {{- if $d.arm -}}
+    {{- range slice
+      (dict "arch" "x86-64" "label" $d.label "file" $d.file "for" "for Intel and AMD computers" "other" $d.arm "otherFor" "On an Arm computer")
+      (dict "arch" "arm64" "label" (printf "%s for Arm" $d.label) "file" $d.arm "for" "for Arm computers" "other" $d.file "otherFor" "On an Intel or AMD computer")
+    -}}
+      <div class="wopr-download" data-wopr-arch="{{ .arch }}"{{ if eq .arch "arm64" }} hidden{{ end }}><a class="wopr-download-button not-prose" href="{{ $url }}{{ .file }}">{{ $icon }}<span>{{ .label }}</span></a><p class="wopr-download-file"><code>{{ .file }}</code>, {{ .for }}. {{ .otherFor }}, download <a href="{{ $url }}{{ .other }}"><code>{{ .other }}</code></a> instead.</p></div>
+    {{- end -}}
+  {{- else -}}
+    <div class="wopr-download"><a class="wopr-download-button not-prose" href="{{ $url }}{{ $d.file }}">{{ $icon }}<span>{{ $d.label }}</span></a><p class="wopr-download-file"><code>{{ $d.file }}</code></p></div>
+  {{- end -}}
 {{- end -}}

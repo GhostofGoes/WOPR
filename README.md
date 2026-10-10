@@ -18,8 +18,10 @@ how to play each game with tips for winning, movie mode, and contributing.
 
 ## Install
 
-The [installation guide](https://ghostofgoes.github.io/WOPR/install/) has one line to copy for Windows,
-macOS or Linux that downloads `wopr` and installs it. Or download the program for your system from the
+The [installation guide](https://ghostofgoes.github.io/WOPR/install/) has download buttons, with the steps
+to install what you download and no command line: the Linux packages, and from the release after v0.4.0,
+the Windows installer and the Mac app. Its command line section has one line to copy for Windows, macOS
+or Linux that downloads `wopr` and installs it. Or download the program for your system from the
 [latest release](https://github.com/GhostofGoes/WOPR/releases/latest), or build it with Go:
 
 ```sh

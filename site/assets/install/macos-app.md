@@ -1,4 +1,4 @@
-[**Download WOPR for Mac**](https://github.com/GhostofGoes/WOPR/releases/download/v@VERSION@/wopr_@VERSION@_macos.dmg)
+@DOWNLOAD-APP@
 
 One app for every Mac, Apple silicon or Intel. Then:
 
@@ -18,10 +18,7 @@ One app for every Mac, Apple silicon or Intel. Then:
 5. WOPR opens in a **Terminal** window and starts dialing; the Dock shows Terminal's icon. From then on,
    WOPR opens like any other app.
 
-The app always opens in Terminal, and it does not add a `wopr` command to your terminal: for that, use
-the line below. When you update WOPR, drag the new one to Applications in the same way, and macOS may
-ask you to allow it again. To remove it, see [Uninstall](/install#uninstall).
-
-**Or install from Terminal**, which gives you the `wopr` command.
-
-@COMMAND-LINE@
+The app always opens in Terminal, and it does not add a `wopr` command to your terminal: for that,
+install WOPR from the [command line](/install#command-line-install-methods) too. When you update WOPR,
+drag the new one to Applications in the same way, and macOS may ask you to allow it again. To remove it,
+see [Uninstall](/install#uninstall).

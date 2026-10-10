@@ -1,0 +1,38 @@
+{{- /*
+  Hextra's hook at the end of <head>. On a page with install tabs (the install-tabs shortcode), it
+  loads js/install-platform.js, which picks the tab for the reader's system: deferred, so that it
+  runs once the page is read and before Hextra's own tabs script, and fingerprinted, with its
+  integrity, like Hextra's scripts.
+
+  The script draws a picked tab with Hextra's own updateGroup function, taken here from Hextra's
+  js/core/tabs.js, so that the two never differ. The build fails if that function, or the way
+  Hextra saves a reader's pick (which the script reads to leave that pick alone), is not as the
+  script expects: compare the script with the new tabs.js, then change the patterns here.
+*/ -}}
+{{- if .HasShortcode "install-tabs" -}}
+  {{- $hextra := resources.Get "js/core/tabs.js" -}}
+  {{- if not $hextra -}}
+    {{- errorf "head-end: Hextra's js/core/tabs.js is missing" -}}
+  {{- end -}}
+  {{- $updateGroup := findRE `(?s)\n  function updateGroup\(container, index\) \{\n.*?\n  \}\n` $hextra.Content 1 -}}
+  {{- if not $updateGroup -}}
+    {{- errorf "head-end: Hextra's js/core/tabs.js has no updateGroup(container, index) for js/install-platform.js" -}}
+  {{- end -}}
+  {{- if not (strings.Contains $hextra.Content "localStorage.getItem('hextra-tab-' + key)") -}}
+    {{- errorf "head-end: Hextra's js/core/tabs.js no longer saves a pick as js/install-platform.js expects" -}}
+  {{- end -}}
+  {{- if not (strings.Contains $hextra.Content "const key = encodeURIComponent(group.dataset.tabGroup);") -}}
+    {{- errorf "head-end: Hextra's js/core/tabs.js no longer names a saved pick as js/install-platform.js expects" -}}
+  {{- end -}}
+  {{- $placeholder := "/* @HEXTRA-UPDATE-GROUP@ */" -}}
+  {{- $source := resources.Get "js/install-platform.js" -}}
+  {{- if ne (strings.Count $placeholder $source.Content) 1 -}}
+    {{- errorf "head-end: js/install-platform.js must have %s once" $placeholder -}}
+  {{- end -}}
+  {{- $js := replace $source.Content $placeholder (strings.TrimSpace (index $updateGroup 0)) | resources.FromString "js/install-platform.js" -}}
+  {{- if hugo.IsProduction -}}
+    {{- $js = $js | minify -}}
+  {{- end -}}
+  {{- $js = $js | fingerprint }}
+  <script defer src="{{ $js.RelPermalink }}" integrity="{{ $js.Data.Integrity }}"></script>
+{{- end -}}

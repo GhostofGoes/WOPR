@@ -1,6 +1,6 @@
 {{- /*
   Whether the latest release (the latest-version partial's) has the Linux packages, a .deb and an
-  .rpm, and the manual page in its archives: every release after v0.3.0 does. The if-packages and
-  install-tabs shortcodes use it, so that no page names a file that does not exist yet.
+  .rpm, and the manual page in its archives: every release after v0.3.0 does. The if-packages
+  shortcode uses it, so that no page names a file that does not exist yet.
 */ -}}
 {{- return not (in (slice "0.1.0" "0.2.0" "0.3.0") (partial "latest-version.html" .)) -}}
