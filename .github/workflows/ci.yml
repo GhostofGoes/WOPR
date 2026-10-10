@@ -43,13 +43,14 @@ jobs:
         with:
           go-version-file: go.mod
           # The hooks run `go mod tidy -diff` in every module and build changie (relnotes -check); the
-          # self-test builds golangci-lint.
+          # self-test builds golangci-lint; the cooldown lists every module's build list, the site's too.
           cache-dependency-path: |
             go.sum
             tools/go.sum
             tools/lint/go.sum
             tools/release/go.sum
             tools/docs/go.sum
+            site/go.sum
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
         with:
           prek-version: 0.5.5
@@ -62,6 +63,9 @@ jobs:
       # On main, and on a fork's pull request merged with it, the base is main itself.
       - name: Change note for user-visible changes
         run: go run ./internal/tools/relnotes -since origin/main
+      # No module in any build list may be newer than 14 days at this commit (AGENTS.md, "Dependency cooldown").
+      - name: Dependency cooldown
+        run: go run ./internal/tools/cooldown
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}

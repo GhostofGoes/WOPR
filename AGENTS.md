@@ -26,6 +26,7 @@ All commands run from the repository root and work on Linux, macOS and Windows. 
 | Lint | `go tool -modfile=tools/lint/go.mod golangci-lint run ./...` |
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
+| Dependency cooldown (no module newer than 14 days) | `go run ./internal/tools/cooldown` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`); CI runs it with `-check` |
 | Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
@@ -60,6 +61,10 @@ toolchain first, then the tool.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
+- **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
+  may be less than 14 days old at the commit being checked, by the time the module proxy gives its version:
+  `go run ./internal/tools/cooldown` (CI's `lint` job, and a prek hook on `go.mod` and `go.sum`). A fix that
+  cannot wait goes in `tools/cooldown-exceptions.txt` with its reason, until it is old enough.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
   copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
   quote the film from their provenance tags, so regenerate it when film text moves. It files each linked
@@ -309,9 +314,13 @@ These live in GitHub settings, not in files. Check them at each milestone:
 
 At every milestone boundary:
 
-1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
-   docs theme with `go -C site get github.com/imfing/hextra@latest`. Re-vendor PhotoSwipe (its newest
+1. Update dependencies to versions at least 14 days old ([Dependency cooldown](#rules-that-tests-enforce)):
+   `go list -m -u -json all` shows each update and its `Time`. Update direct dependencies one by one with
+   `go get <module>@<version>`, never `go get -u ./...`, which also lifts indirect modules to their newest
+   untagged commits; then `go mod tidy`. Update the tool modules the same way, with
+   `go get -tool <tool>@<version>` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
+   docs theme with `go -C site get github.com/imfing/hextra@<version>`. Run
+   `go run ./internal/tools/cooldown` before pushing. Re-vendor PhotoSwipe (its newest
    5.x, the major version Hextra's script is written for) and FlexSearch (the version the new Hextra
    defaults to, in its `layouts/_partials/scripts/search.html`): download each npm tarball from
    `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, check its SHA-512 against the
@@ -319,7 +328,7 @@ At every milestone boundary:
    and update the versions and hashes in `site/hugo.yaml`. Build the docs site: a new Hugo can
    deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
-3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
+3. Bump action SHAs from their release tags, each at least 14 days old, and the Fedora image digest in `smoke.yml` to the newest
    Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
 4. Regenerate the notices.
 5. Check the hosted runner labels in `.github/workflows` against GitHub's announcements.
