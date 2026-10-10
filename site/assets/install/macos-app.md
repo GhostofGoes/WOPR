@@ -1,7 +1,5 @@
 @DOWNLOAD-APP@
 
-One app for every Mac, Apple silicon or Intel. Then:
-
 1. Open the file you downloaded, `wopr_@VERSION@_macos.dmg`. A window shows **WOPR** and an
    **Applications** folder.
 2. Drag **WOPR** onto **Applications**. Do this before you open WOPR: it may not start from the

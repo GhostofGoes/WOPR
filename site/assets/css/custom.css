@@ -52,15 +52,18 @@
   opacity: 1 !important;
 }
 
-/* Download buttons (the install-tabs shortcode): a link to a release file, drawn as a button in the
-   theme's primary colour, with the file's name under it. White on primary 600 (light) or 700 (dark) is
-   at least 4.5:1, and the focus ring, outside the button, stands out from both it and the page. */
+/* Download buttons (the install-tabs shortcode): two links to release files, side by side, drawn as
+   buttons in the theme's primary colour. White on primary 600 (light) or 700 (dark) is at least 4.5:1,
+   and the focus ring, outside the button, stands out from both it and the page. */
 .wopr-download {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   margin-top: 1.25rem;
   margin-bottom: 1.25rem;
 }
 
-.wopr-download[hidden] {
+.wopr-download-button[hidden] {
   display: none;
 }
 
@@ -108,18 +111,6 @@
   flex: none;
   width: 1.25rem;
   height: 1.25rem;
-}
-
-.wopr-download .wopr-download-file {
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  overflow-wrap: anywhere;
-}
-
-/* The link to the other file: its underline drawn below the name, not through its underscores. */
-.wopr-download .wopr-download-file a {
-  text-underline-offset: 0.3em;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 # Installs wopr_<version>_windows_setup.exe silently for the current user, checks what it installed,
-# uninstalls it and checks that it left nothing behind. Then it does the same over a copy that the
+# uninstalls it and checks that it left nothing behind, not even a debug log. Then it does the same over a copy that the
 # PowerShell install line put in %LOCALAPPDATA%\Programs\wopr, the same folder, and installs twice.
 # Run it on a machine without WOPR installed (a CI runner): it changes the user's PATH while it
 # runs, and puts it back at the end.
@@ -23,6 +23,7 @@ $oneLinerDir = Join-Path $env:LOCALAPPDATA 'Programs\wopr' # the PowerShell inst
 $programs = [Environment]::GetFolderPath('Programs') # the user's Start menu, All apps
 $shortcut = Join-Path $programs 'WOPR.lnk'
 $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WOPR.lnk'
+$debugLogDir = Join-Path $env:LOCALAPPDATA 'wopr' # internal/debuglog's folder: os.UserCacheDir()\wopr
 # wopr.iss's AppId, plus the _is1 that Inno Setup adds.
 $uninstallKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A7D86110-58E9-404E-9164-FBDDBDC6AC22}_is1'
 $files = 'wopr.exe', 'LICENSE.txt', 'NOTICE.md', 'THIRD_PARTY_NOTICES.txt', 'README.md', 'unins000.exe', 'unins000.dat'
@@ -146,6 +147,13 @@ function Test-Removed {
     Assert (-not (Test-Path -LiteralPath $shortcut)) 'the Start menu shortcut is gone'
     Assert (-not (Test-Path -LiteralPath $uninstallKey)) 'Settings > Apps no longer lists WOPR'
     Assert ((Get-PathCount) -eq 0) "PATH no longer has ${app}: $(Get-UserPath)"
+    Assert (-not (Test-Path -LiteralPath $debugLogDir)) "the debug log and its folder, $debugLogDir, are gone"
+}
+
+# A debug log, as WOPR_DEBUG=1 writes it, for Uninstall to delete.
+function New-DebugLog {
+    $null = New-Item -ItemType Directory -Force -Path $debugLogDir
+    Set-Content -LiteralPath (Join-Path $debugLogDir 'debug.log') -Value 'a debug log'
 }
 
 $originalPath = Get-UserPath
@@ -154,6 +162,7 @@ try {
     Write-Host "== A first install, with the default tasks"
     Invoke-Setup 'install'
     Test-Installed
+    New-DebugLog
     Invoke-Uninstall 'uninstall'
     Test-Removed
     Assert (((Get-PathEntries (Get-UserPath)) -join ';') -ceq ((Get-PathEntries $originalPath) -join ';')) 'PATH is back to what it was, every other entry untouched'
@@ -168,6 +177,7 @@ try {
     Assert ((Get-UserPath) -ceq $withOneLiner) 'Setup left the PATH entry the install line made as it was'
     Invoke-Setup 'reinstall'
     Test-Installed
+    New-DebugLog
     Invoke-Uninstall 'uninstall-over-one-liner'
     Test-Removed
     Assert (((Get-PathEntries (Get-UserPath)) -join ';') -ceq ((Get-PathEntries $originalPath) -join ';')) 'Uninstall took the install line''s PATH entry off too, and only that'
