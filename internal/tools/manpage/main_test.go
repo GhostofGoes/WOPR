@@ -236,6 +236,40 @@ func TestRoff(t *testing.T) {
 			t.Errorf("wrap left a long line: %q", l)
 		}
 	}
+	for in, want := range map[string]string{
+		"It cannot be won.": `It cannot be won.\&`, "(SAY 1 TO 9.)": `(SAY 1 TO 9.)\&`, `"Joshua?"`: `"Joshua?"\&`,
+		".": `.\&`, "the LOGON:": "the LOGON:", "e.g. this": "e.g. this", "": "",
+	} {
+		if got := oneSpace(in); got != want {
+			t.Errorf("oneSpace(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// The page puts one space between words and sentences: it turns off groff's stretched lines
+// right after .TH, and no input line ends a sentence that groff or mandoc would follow with
+// two spaces. No text line is longer than mandoc's lint allows, \& included.
+func TestOneSpace(t *testing.T) {
+	t.Parallel()
+	got, err := generate(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := string(got)
+	if !regexp.MustCompile(`(?m)^\.TH .*\n\.ad l\n\.ds AD l\n`).MatchString(page) {
+		t.Error(".TH is not followed by .ad l and .ds AD l")
+	}
+	for i, l := range strings.Split(page, "\n") {
+		if strings.HasPrefix(l, `.\"`) {
+			continue
+		}
+		if oneSpace(l) != l {
+			t.Errorf("line %d ends a sentence without \\&: %q", i+1, l)
+		}
+		if !strings.HasPrefix(l, ".") && len(l) > lineWidth && strings.Contains(l, " ") {
+			t.Errorf("line %d is longer than %d bytes: %q", i+1, lineWidth, l)
+		}
+	}
 }
 
 // A name of several words is quoted, as the shell needs it, so that a list of names reads as
