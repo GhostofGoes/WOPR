@@ -208,8 +208,13 @@ Every change a player could notice gets a change note: a small file in `.changes
 
 ## Releasing
 
-The owner merges the release pull request, then pushes the tag. Everything else is prepared in the pull
-request or done by `release.yml`.
+**Start to finish:** (1) on a branch from `main`, batch the notes into the new version with the three
+commands below, and open a pull request titled `vX.Y.Z`; (2) read the notes as a player would, fix any in
+`.changes/vX.Y.Z.md`, and wait for `ci-ok`; (3) the owner merges it, then (4) tags the merge commit
+`vX.Y.Z` and pushes the tag; (5) `release.yml` waits for `main`'s CI, builds, tests and attests every file
+(the installers included), publishes the GitHub Release with the notes, starts its discussion in
+Announcements and publishes the docs site again; (6) check the release page and the site's download
+commands. Only steps 3 and 4 are the owner's; the details follow.
 
 1. **The release pull request**, titled `vX.Y.Z` (a milestone's version is in `docs/PLAN.md` §15), batches
    the notes and rebuilds the changelog and the manual page:
