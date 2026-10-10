@@ -7,6 +7,31 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.5.0 - 2026-10-10
+
+### Added
+
+- A new Windows installer puts WOPR in the Start menu.
+- A new Mac app, in a `.dmg`, opens WOPR in a Terminal window.
+- The .deb and .rpm packages add WOPR to your app menu, with an icon.
+- Right-click WOPR in your app menu to start a game or Movie Mode.
+- On Windows, `wopr.exe` now has an icon and version details.
+- The `.rpm` and `.deb` packages and `checksums.txt` are now signed.
+
+### Changed
+
+- `wopr --help` now ends with a link to the website.
+- If a game ever stops responding, wopr now quits instead of freezing.
+- The manual page no longer has stretched lines, double spaces or split names.
+
+### Fixed
+
+- Fixed a crash in CHESS and AIR-TO-GROUND ACTIONS on some typed moves.
+
+### Security
+
+- The debug log from `WOPR_DEBUG` no longer follows links to other files.
+
 ## v0.4.0 - 2026-10-08
 
 ### Added
