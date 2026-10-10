@@ -65,7 +65,7 @@ hooks = [{ id = "actionlint", priority = "lint" }]  # workflow syntax; zizmor co
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder,fpr", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"

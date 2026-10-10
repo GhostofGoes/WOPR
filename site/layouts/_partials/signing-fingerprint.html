@@ -1,0 +1,13 @@
+{{- /*
+  The signing key's fingerprint (packaging/wopr-signing-key.fingerprint) in groups of four, as
+  gpg --fingerprint prints it.
+*/ -}}
+{{- $fpr := "" -}}
+{{- with resources.Get "signing/fingerprint" -}}
+  {{- $fpr = trim .Content " \n" -}}
+{{- end -}}
+{{- if not (findRE `^[0-9A-F]{40}$` $fpr) -}}
+  {{- errorf "signing-fingerprint: packaging/wopr-signing-key.fingerprint is %q, not 40 hex digits" $fpr -}}
+{{- end -}}
+{{- $groups := findRE `.{4}` $fpr -}}
+{{- return printf "%s  %s" (delimit (first 5 $groups) " ") (delimit (after 5 $groups) " ") -}}

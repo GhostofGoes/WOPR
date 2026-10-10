@@ -1342,11 +1342,29 @@ before the classified address it leads to; v2.1's provisional table had it in th
     distribution), and `spelling-error` for "Falken's" and "tac" (of tic-tac-toe) in the description.
     `packaging/rpmlintrc` filters those four (`rpmlint -r packaging/rpmlintrc`), each with its reason, and
     `invalid-license` for the map's LicenseRef, which no list of licences has (the License tag gained it
-    after that run, so this filter is not yet confirmed against Fedora's rpmlint). The
-    packages carry no GPG signature (there is no signing key, only `GITHUB_TOKEN`); like every release file
-    they are attested and can be checked with `gh attestation verify` (§12). zypper refuses an unsigned
-    package unless given `--allow-unsigned-rpm`, so the Linux (RPM) install tab's openSUSE line passes it;
-    checking the package first is optional, in the Installation page's "Verifying binaries (attestation)".
+    after that run, so this filter is not yet confirmed against Fedora's rpmlint).
+  - **Signatures** (owner decision 2026-10-10). Releases are signed with wopr's OpenPGP key, whose public
+    half and fingerprint are committed as `packaging/wopr-signing-key.asc` and
+    `packaging/wopr-signing-key.fingerprint`; the secret half is the `release` environment's
+    `WOPR_SIGNING_KEY` secret (AGENTS.md, "Repository settings"). `release.yml`'s `sign` job, the only job
+    that sees it, runs `packaging/sign-packages.sh` on the checked release files, after the reproducibility
+    check and before the attestation, so that the attestation covers the signed files:
+    - each `.rpm` gets a signature header (`rpmsign`), which dnf (`localpkg_gpgcheck=1`), zypper and
+      `rpm -K` check against an imported key. The script proves that signing changed nothing else: the
+      header's and payload's SHA-256 digests are the same before and after, and `rpmkeys` accepts the
+      signature with only the public key. A signed `.rpm` is no longer byte-for-byte what `repro` rebuilt,
+      so the job checks the unsigned files against the rebuild before it signs;
+    - each `.deb` gets a detached, armored `.deb.asc`. apt does not check a signature on a `.deb` installed
+      from a file (only on a repository's metadata), so this is for `gpg --verify`, as is
+      `checksums.txt.asc`, the signature of the rewritten `checksums.txt`.
+
+    The secret key must be the committed key's (the script checks the fingerprint), so a replaced secret
+    cannot sign. CI signs every build with a throwaway key, and `smoke` installs the packages with
+    signature checks on (dnf with `localpkg_gpgcheck=1`, and `gpgv` for the `.deb.asc`). The docs site's
+    Linux (RPM) tab imports the key (served at `/wopr-signing-key.asc`) and installs with the check on,
+    once the latest release is signed (`docs.yml` looks for `checksums.txt.asc`; the `has-signatures`
+    partial); before that, zypper needs `--allow-unsigned-rpm`. Like every release file, the packages are
+    also attested and can be checked with `gh attestation verify` (§12).
   - **Looking inside an `.rpm`.** nFPM's RPM writer (google/rpmpack) stores the payload's paths as absolute
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
     and verify the packages correctly, but `rpm2cpio X.rpm | cpio -idm` writes into the live `/` from any

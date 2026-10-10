@@ -1,5 +1,7 @@
-# Releases on v* tags: verify → build and rebuild (in parallel) → smoke and repro → publish → docs.
-# workflow_dispatch runs everything but verify, publish and docs as a dry run, and never publishes.
+# Releases on v* tags: verify → build and rebuild (in parallel) → smoke, repro and sign → publish → docs.
+# workflow_dispatch runs everything but verify, sign, publish and docs as a dry run, and never publishes.
+# sign is the only job with the signing key (the release environment's secret), and runs before the
+# only job with a write token, publish; CI signs every build with a throwaway key instead.
 # The release notes come from .changes/ (AGENTS.md, "Releasing"): build and rebuild both write them
 # with internal/tools/relnotes into build/notes (WOPR_NOTES_DIR), which .gitignore keeps out of the
 # tree that GoReleaser needs clean.
@@ -194,12 +196,73 @@ jobs:
       - name: Compare checksums
         run: diff -u first/checksums.txt second/checksums.txt
 
-  publish:
-    name: publish
-    needs: [verify, build, rebuild, smoke, repro]
+  # Signs the .rpm packages, writes a detached signature for each .deb and for checksums.txt, and
+  # rewrites checksums.txt (packaging/sign-packages.sh; docs/PLAN.md §8, "Signatures"). The key is
+  # the release environment's WOPR_SIGNING_KEY secret (with WOPR_SIGNING_PASSPHRASE if it has one),
+  # and must be the committed packaging/wopr-signing-key.asc, whose fingerprint is
+  # packaging/wopr-signing-key.fingerprint. The environment allows only v* tags (AGENTS.md,
+  # "Repository settings"). What it signs is first checked against the rebuild's checksums: every
+  # file the rebuild made must be here, byte for byte.
+  sign:
+    name: sign
+    needs: [verify, build, rebuild]
     if: >-
       ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
-      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success' }}
+      && needs.build.result == 'success' && needs.rebuild.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: release
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dist
+          path: build/release
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: rebuild-checksums
+          path: build/rebuild
+      - name: Check the files against both builds' checksums
+        run: |
+          missing="$(grep -vxFf build/release/checksums.txt build/rebuild/checksums.txt || true)"
+          if [[ -n "${missing}" ]]; then
+            echo "::error::files that differ from the rebuild's:"
+            echo "${missing}"
+            exit 1
+          fi
+          (cd build/release && sha256sum --strict -c checksums.txt)
+      - name: Install rpmsign
+        run: sudo apt-get update -q && sudo apt-get install -y --no-install-recommends rpm
+      - name: Sign
+        env:
+          WOPR_SIGNING_KEY: ${{ secrets.WOPR_SIGNING_KEY }}
+          WOPR_SIGNING_PASSPHRASE: ${{ secrets.WOPR_SIGNING_PASSPHRASE }}
+        run: |
+          for f in packaging/wopr-signing-key.asc packaging/wopr-signing-key.fingerprint; do
+            if [[ ! -s "${f}" ]]; then
+              echo "::error::${f} is missing; AGENTS.md, \"Repository settings\", says how to make the signing key"
+              exit 1
+            fi
+          done
+          packaging/sign-packages.sh build/release packaging/wopr-signing-key.asc packaging/wopr-signing-key.fingerprint
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-signed
+          path: build/release/
+          retention-days: 7
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: [verify, build, rebuild, smoke, repro, sign]
+    if: >-
+      ${{ !cancelled() && github.event_name == 'push' && needs.verify.result == 'success'
+      && needs.build.result == 'success' && needs.smoke.result == 'success' && needs.repro.result == 'success'
+      && needs.sign.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -210,22 +273,15 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: release-dist
+          name: release-signed
           path: assets
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: release-notes
           path: notes
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: rebuild-checksums
-          path: rebuild
-      # What is attested is what was checked: the files match checksums.txt, and checksums.txt still
-      # matches the rebuild's, here in the job that publishes rather than only in repro.
-      - name: Check the files against both builds' checksums
-        run: |
-          diff -u rebuild/checksums.txt assets/checksums.txt
-          (cd assets && sha256sum --strict -c checksums.txt)
+      # What is attested is what sign checked and signed: every file matches the new checksums.txt.
+      - name: Check the files against checksums.txt
+        run: (cd assets && sha256sum --strict -c checksums.txt)
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-checksums: assets/checksums.txt
@@ -233,8 +289,8 @@ jobs:
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-path: assets/checksums.txt
-      # Archives, bare binaries, .deb and .rpm packages, LICENSE, README.md, NOTICE.md,
-      # THIRD_PARTY_NOTICES.txt, checksums.txt.
+      # Archives, bare binaries, .deb and .rpm packages and the .deb's .asc signatures, LICENSE,
+      # README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt, checksums.txt and checksums.txt.asc.
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
       # Publishing also starts a discussion of the release in the Announcements category, which
       # GitHub creates with Discussions; if that fails (the category was renamed, say), the release is

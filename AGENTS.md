@@ -76,8 +76,10 @@ toolchain first, then the tool.
   checks what each installs. `relnotes`'s tests check that the packages' maintainer and release match the
   changelogs it writes, so change both together. `pkgdocs` writes the packages' documents and their
   `changelog.yml` into `build/pkg`, and puts the version being built in the manual page's header; its
-  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. The smoke
-  jobs install, run and remove both packages.
+  tests hold `packaging/description.txt`, both packages' description, to both formats' rules. A release
+  signs them (`packaging/sign-packages.sh`: a signature inside each `.rpm`, a `.deb.asc` beside each
+  `.deb`, and `checksums.txt.asc`) with the key in `packaging/wopr-signing-key.asc`; CI signs with a
+  throwaway key. The smoke jobs install, run and remove both packages, with signature checks on.
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, at least three tips, and screenshots in
   `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing else
@@ -181,7 +183,8 @@ request or done by `release.yml`.
    if other pull requests merged after it: their notes are not in this release's notes, so their changes
    wait for the next one.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
-   `.rpm` included), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
+   `.rpm` included), signs the Linux packages and `checksums.txt` (its `sign` job, in the `release`
+   environment), and publishes the GitHub Release with `.changes/vX.Y.Z.md` as its notes
    (`internal/tools/relnotes` adds a footer), and starts a discussion of it in the Discussions category
    Announcements. The packages' changelogs carry the same notes. Then it publishes the docs site again
    (`docs.yml`), so that its download commands name the new release.
@@ -295,6 +298,24 @@ These live in GitHub settings, not in files. Check them at each milestone:
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases
   before v0.1.0.
 - **Security:** secret scanning with push protection, private vulnerability reporting.
+- **Release signing key** (`docs/PLAN.md` §8, "Signatures"). An environment named `release`
+  (Settings → Environments) with deployment tags limited to `v*`, holding the secret `WOPR_SIGNING_KEY`
+  (the armored secret key) and, if the key has one, `WOPR_SIGNING_PASSPHRASE`. Only `release.yml`'s `sign`
+  job uses the environment. The public key and its fingerprint are committed: `release.yml` stops at
+  `sign` without them. To make the key, on a trusted computer:
+
+  ```sh
+  export GNUPGHOME="$(mktemp -d)"
+  gpg --batch --pinentry-mode loopback --passphrase '' \
+    --quick-gen-key 'wopr release signing <6599820+GhostofGoes@users.noreply.github.com>' rsa4096 sign 5y
+  gpg --armor --export > packaging/wopr-signing-key.asc
+  gpg --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }' > packaging/wopr-signing-key.fingerprint
+  gpg --armor --export-secret-keys   # paste into the WOPR_SIGNING_KEY secret
+  ```
+
+  Keep an offline copy of the secret key, then delete `$GNUPGHOME`. Before the key expires, extend it
+  (`gpg --quick-set-expire`) and commit the new `wopr-signing-key.asc`, which keeps the fingerprint. A
+  new key needs both files changed in one pull request, and the docs site then shows the new fingerprint.
 - **Issues and Discussions:** issues on, with the bug report and feature request forms in
   `.github/ISSUE_TEMPLATE/` (blank issues off); **Discussions on** (Settings → General → Features), since
   the forms, the docs site and the README send questions there, with its default **Announcements**
