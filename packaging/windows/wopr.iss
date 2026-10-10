@@ -198,12 +198,11 @@ begin
     SuppressibleMsgBox('Setup could not add ' + Dir + ' to PATH. WOPR is installed; start it from the Start menu.', mbError, MB_OK, IDOK);
 end;
 
-procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+procedure RemoveFromPath;
 var
   Path, NewPath: String;
 begin
-  // usUninstall comes before Uninstall tells running programs that the environment changed.
-  if (CurUninstallStep <> usUninstall) or not RegQueryStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path) then
+  if not RegQueryStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path) then
     Exit;
   NewPath := PathWithout(Path, ExpandConstant('{app}'));
   if NewPath = Path then
@@ -213,4 +212,37 @@ begin
   else
     RegWriteExpandStringValue(HKEY_AUTO, EnvironmentKey, 'Path', NewPath);
   Log('Removed ' + ExpandConstant('{app}') + ' from PATH');
+end;
+
+// Windows may still have the Start menu shortcut open when Uninstall deletes it: the shell and the
+// search indexer read a new shortcut to list it. Uninstall tries each file once ("Failed to delete
+// the file; it may be in use (32)", seen on windows-11-arm), which would leave WOPR in All apps,
+// pointing at nothing. So it is tried again for up to 10 seconds. The desktop shortcut is left to
+// Uninstall alone: a WOPR.lnk there may be the user's own, when the desktop icon task was off.
+procedure DeleteStartMenuShortcut;
+var
+  Shortcut: String;
+  I: Integer;
+begin
+  Shortcut := ExpandConstant('{autoprograms}\WOPR.lnk');
+  for I := 1 to 40 do begin
+    if not FileExists(Shortcut) then
+      Exit;
+    if DeleteFile(Shortcut) then begin
+      Log('Deleted ' + Shortcut + ' (try ' + IntToStr(I) + ')');
+      Exit;
+    end;
+    Sleep(250);
+  end;
+  Log('Could not delete ' + Shortcut);
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  case CurUninstallStep of
+    // usUninstall comes before Uninstall tells running programs that the environment changed.
+    usUninstall: RemoveFromPath;
+    // usPostUninstall comes after Uninstall has tried to delete every file it installed.
+    usPostUninstall: DeleteStartMenuShortcut;
+  end;
 end;

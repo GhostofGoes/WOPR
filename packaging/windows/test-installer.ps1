@@ -84,9 +84,9 @@ function Invoke-Uninstall([string] $Name) {
     $p = Start-Process -FilePath (Join-Path $app 'unins000.exe') -Wait -PassThru -ArgumentList @(
         '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/LOG=`"$log`"")
     Assert ($p.ExitCode -eq 0) "Uninstall ($Name) exits with 0, not $($p.ExitCode)"
-    # The uninstaller runs a copy of itself from TEMP, which can still be removing the folder when
-    # the first one exits.
-    for ($i = 0; $i -lt 60 -and ((Test-Path -LiteralPath $app) -or (Test-Path -LiteralPath $uninstallKey)); $i++) {
+    # The uninstaller runs a copy of itself from TEMP, which can still be removing the folder, or
+    # retrying the Start menu shortcut (wopr.iss, DeleteStartMenuShortcut), when the first one exits.
+    for ($i = 0; $i -lt 60 -and ((Test-Path -LiteralPath $app) -or (Test-Path -LiteralPath $uninstallKey) -or (Test-Path -LiteralPath $shortcut)); $i++) {
         Start-Sleep -Seconds 1
     }
 }
@@ -114,9 +114,18 @@ function Test-Installed {
     Assert ($signature -eq 0x4550 -and $machine -eq $wantMachine) ('wopr.exe is for this CPU: machine 0x{0:X4}, want 0x{1:X4}' -f $machine, $wantMachine)
 
     Assert (Test-Path -LiteralPath $shortcut -PathType Leaf) "the Start menu shortcut is $shortcut"
-    $link = (New-Object -ComObject WScript.Shell).CreateShortcut($shortcut)
-    Assert ($link.TargetPath -eq $exe -and $link.Arguments -eq '') "the shortcut runs $exe with no arguments: $($link.TargetPath) $($link.Arguments)"
-    Assert ($link.WorkingDirectory -eq $app) "the shortcut starts in ${app}: $($link.WorkingDirectory)"
+    # Read the shortcut, then let go of the COM objects at once rather than at some later garbage
+    # collection, so that this test never holds the file Uninstall must delete.
+    $wsh = New-Object -ComObject WScript.Shell
+    $link = $wsh.CreateShortcut($shortcut)
+    try {
+        $target, $arguments, $workingDir = $link.TargetPath, $link.Arguments, $link.WorkingDirectory
+    } finally {
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($link)
+        [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($wsh)
+    }
+    Assert ($target -eq $exe -and $arguments -eq '') "the shortcut runs $exe with no arguments: $target $arguments"
+    Assert ($workingDir -eq $app) "the shortcut starts in ${app}: $workingDir"
     Assert (-not (Test-Path -LiteralPath (Join-Path $programs 'WOPR') -PathType Container)) 'there is no WOPR folder in the Start menu'
     Assert (-not (Test-Path -LiteralPath $desktopShortcut)) 'there is no desktop shortcut (that task is off by default)'
 
