@@ -54,6 +54,7 @@ there is one, in Terminal:
 ```sh
 rm -rf ~/Library/Caches/wopr
 ```
+
 {{< /if-installers >}}
 {{< if-installers "not" >}}
 The Mac app comes with the next release. Until then, WOPR installs from Terminal: see below.

@@ -2060,7 +2060,9 @@ image may lack, so `test-snap.sh` installs it when missing.
     `has-installers` partial), the Windows and macOS tabs say they come with the next release and point to the
     command lines. A small script (`site/assets/js/install-platform.js`) picks the tab for the reader's system
     (Windows, macOS or Linux; Linux (apt) or (RPM) among the command lines when the browser names the
-    distribution) unless the reader picked one before; phones, tablets and ChromeOS keep the first tab, as does a browser without
+    distribution) unless the reader picked one before, and hides the download button that does not fit the
+    reader's processor when the browser says it for certain (client hints, or Firefox's user agent on
+    Linux), leaving both when it cannot tell or without JavaScript; phones, tablets and ChromeOS keep the first tab, as does a browser without
     JavaScript. The packages' menu entry is named only from the same release as the installers (v0.4.0's
     packages have none). The Installation page's uninstall steps (the download buttons' first, then the
     command lines'), the troubleshooting page (SmartScreen, Smart App Control, Gatekeeper, App Translocation,

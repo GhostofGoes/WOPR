@@ -60,17 +60,17 @@
 {{- $app := printf "wopr_%s_macos.dmg" $version -}}
 {{- $downloads := dict
   "INSTALLER" (slice
-    (dict "label" "Download installer (Intel/AMD)" "file" $installer)
-    (dict "label" "Download installer (ARM)" "file" $installer))
+    (dict "arch" "x86-64" "label" "Download installer (Intel/AMD)" "file" $installer)
+    (dict "arch" "arm64" "label" "Download installer (ARM)" "file" $installer))
   "APP" (slice
-    (dict "label" "Download app (Apple Silicon)" "file" $app)
-    (dict "label" "Download app (Intel)" "file" $app))
+    (dict "arch" "arm64" "label" "Download app (Apple Silicon)" "file" $app)
+    (dict "arch" "x86-64" "label" "Download app (Intel)" "file" $app))
   "DEB" (slice
-    (dict "label" "Download .deb (Intel/AMD)" "file" (printf "wopr_%s-1_amd64.deb" $version))
-    (dict "label" "Download .deb (ARM)" "file" (printf "wopr_%s-1_arm64.deb" $version)))
+    (dict "arch" "x86-64" "label" "Download .deb (Intel/AMD)" "file" (printf "wopr_%s-1_amd64.deb" $version))
+    (dict "arch" "arm64" "label" "Download .deb (ARM)" "file" (printf "wopr_%s-1_arm64.deb" $version)))
   "RPM" (slice
-    (dict "label" "Download .rpm (Intel/AMD)" "file" (printf "wopr-%s-1.x86_64.rpm" $version))
-    (dict "label" "Download .rpm (ARM)" "file" (printf "wopr-%s-1.aarch64.rpm" $version)))
+    (dict "arch" "x86-64" "label" "Download .rpm (Intel/AMD)" "file" (printf "wopr-%s-1.x86_64.rpm" $version))
+    (dict "arch" "arm64" "label" "Download .rpm (ARM)" "file" (printf "wopr-%s-1.aarch64.rpm" $version)))
 -}}
 
 {{- $appMenu := partial "inline/install-tab-file.html" (dict "file" "app-menu" "position" .Position) | strings.TrimSpace -}}
@@ -202,13 +202,15 @@
   {{- return $text -}}
 {{- end -}}
 
-{{- /* A pair of download buttons: plain links to the release files, side by side. */ -}}
+{{- /* A pair of download buttons: plain links to the release files, side by side, each marked with
+  its kind of computer. Both show, and js/install-platform.js hides the one that does not fit when
+  it is sure of the reader's processor. */ -}}
 {{- define "_partials/inline/install-download.html" -}}
   {{- $url := printf "%s/releases/download/v%s/" .repo .version -}}
   {{- $icon := partial "utils/icon.html" (dict "name" "download" "attributes" `class="wopr-download-icon"`) -}}
   <div class="wopr-download">
   {{- range .download -}}
-    <a class="wopr-download-button not-prose" href="{{ $url }}{{ .file }}">{{ $icon }}<span>{{ .label }}</span></a>
+    <a class="wopr-download-button not-prose" data-wopr-arch="{{ .arch }}" href="{{ $url }}{{ .file }}">{{ $icon }}<span>{{ .label }}</span></a>
   {{- end -}}
   </div>
 {{- end -}}

@@ -63,6 +63,10 @@
   margin-bottom: 1.25rem;
 }
 
+.wopr-download-button[hidden] {
+  display: none;
+}
+
 .wopr-download-button {
   display: inline-flex;
   align-items: center;

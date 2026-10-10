@@ -318,7 +318,8 @@ screenshot fails the build.
   `packages-signed.md` included, whichever it shows, and fails if one lacks its placeholder or a tab is
   left with any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
   `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked before,
-  saving nothing. It
+  saving nothing, and hides the download button that does not fit the reader's processor when the browser
+  says it for certain (client hints, or Firefox's user agent on Linux); otherwise both buttons stay. It
   picks a tab with Hextra's own `updateGroup`, which `head-end.html` copies from Hextra's `tabs.js` at build
   time, so a Hextra that changes it fails the build. Verifying an attestation is for the Installation page's
   "Verifying binaries" section, which keeps the anchor `#verifying-binaries-attestation` that releases link;

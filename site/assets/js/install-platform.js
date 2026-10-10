@@ -6,6 +6,13 @@
   reader's own click always wins. Phones and tablets, ChromeOS and anything else unknown keep the
   first tab, as they do without JavaScript.
 
+  Each download tab has two buttons, one for Intel and AMD computers and one for Arm computers. When
+  the browser says for certain which processor the computer has, it hides the button that does not
+  fit; when it cannot tell, both stay, as they do without JavaScript. Chrome and Edge say it in the
+  client hints they give when asked, on every system. Without client hints, only Firefox on Linux
+  names the processor in navigator.platform and its user agent: Windows and macOS browsers name
+  x64 or Intel even on Arm computers, and Chrome's user agent says x86_64 on every Linux.
+
   layouts/_partials/custom/head-end.html loads it, deferred, on the pages with install tabs. It
   runs before Hextra's own tabs script, which restores the saved picks and handles clicks.
 */
@@ -92,8 +99,52 @@
     });
   }
 
+  // Shows only the buttons for arch, 'x86-64' or 'arm64'.
+  function showArch(arch) {
+    document.querySelectorAll('.wopr-download').forEach(function (pair) {
+      var buttons = pair.querySelectorAll('[data-wopr-arch]');
+      var fits = pair.querySelectorAll('[data-wopr-arch="' + arch + '"]');
+      // A pair without a button for arch keeps both.
+      if (fits.length === 0) {
+        return;
+      }
+      buttons.forEach(function (el) {
+        el.hidden = el.dataset.woprArch !== arch;
+      });
+    });
+  }
+
+  function pickArch(sys) {
+    if (uaData && uaData.getHighEntropyValues) {
+      uaData
+        .getHighEntropyValues(['architecture', 'bitness'])
+        .then(function (v) {
+          if (v.bitness !== '64') {
+            return;
+          }
+          if (v.architecture === 'arm') {
+            showArch('arm64');
+          } else if (v.architecture === 'x86') {
+            showArch('x86-64');
+          }
+        })
+        .catch(function () {});
+      return;
+    }
+    if (sys !== 'linux') {
+      return;
+    }
+    var names = navigator.platform + ' ' + ua;
+    var arm = /aarch64|arm64/i.test(names);
+    var x86 = /x86_64|amd64/i.test(names);
+    if (arm !== x86) {
+      showArch(arm ? 'arm64' : 'x86-64');
+    }
+  }
+
   var sys = system();
   if (sys) {
     pickTabs(sys);
+    pickArch(sys);
   }
 })();
