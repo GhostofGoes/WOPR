@@ -43,9 +43,9 @@ prek run --all-files   # run everything on demand
 ## Making a change
 
 1. Branch from `main`. `main` only accepts pull requests, and every PR needs the `ci-ok` check to pass.
-   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets and the
-   Linux packages, runs each binary natively (and installs the packages on Linux), and builds the docs
-   site.
+   CI lints, scans for secrets, tests on Linux, macOS and Windows, builds all six release targets, the
+   Linux packages and snaps, the Windows installer and the Mac app, runs each binary natively, tries each
+   package, installer and app on its own system, and builds the docs site.
 2. Keep each change focused. Add or update tests with the change. Regenerate golden files with
    `WOPR_UPDATE_GOLDEN=1 go test ./...`, and review the resulting diff.
 3. If players will notice the change, add a change note with
@@ -53,7 +53,9 @@ prek run --all-files   # run everything on demand
    them, such as "Fixed an issue with the Chess game". [AGENTS.md](AGENTS.md#change-notes) has the rules.
    Do not edit `CHANGELOG.md`; releases build it from the notes.
 4. Run `prek run --all-files` and `go test ./...` before pushing. On Linux and macOS, also run
-   `go test -race ./...`.
+   `go test -race ./...`. The installers' scripts in `packaging/windows/`, `packaging/macos/` and
+   `packaging/snap/` run only on their own systems, so CI's `windows`, `macos` and `snap` jobs are their
+   real test: check them on your branch's run when you change those files.
 5. Write commit messages that say what changed and why. PRs are squash-merged, so the PR title and
    description become the commit on `main`.
 
@@ -64,7 +66,9 @@ This project quotes short pieces of the film's on-screen text. Each quoted line 
 
 - Do not copy text, ASCII art or code from other projects unless their licence allows it. When it does,
   add the credit to [NOTICE.md](NOTICE.md) in the same PR.
-- Write new screen text and art yourself and tag it `original`.
+- Write new screen text and art yourself and tag it `original`. The program's icon is original too: its
+  sources are in `packaging/icons/src/`, and [packaging/icons/README.md](packaging/icons/README.md) says how
+  to change it.
 - Do not add film stills, audio or other media.
 
 ## Licence

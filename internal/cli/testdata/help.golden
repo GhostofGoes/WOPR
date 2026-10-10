@@ -37,3 +37,5 @@ Examples:
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene
+
+Documentation, with how to play each game: https://ghostofgoes.github.io/WOPR/

@@ -6,21 +6,44 @@ description: Install wopr, log on, and play your first game in two minutes.
 
 ## 1. Get it
 
-Pick your system, copy the line, and paste it into a terminal as the tab says. Every line except Go's
-also starts `wopr` once it is installed, so WOPR starts dialing right away.
+{{% if-installers %}}
+Pick your system, click the download button, and follow the steps under it. To install from a terminal
+instead, see [Command line install methods](/install#command-line-install-methods).
+{{% /if-installers %}}
+{{% if-installers "not" %}}
+Pick your system. On Linux, click a download button and follow the steps under it. The downloads for
+Windows and macOS come with the next release; until then, see
+[Command line install methods](/install#command-line-install-methods).
+{{% /if-installers %}}
 
 {{< install-tabs >}}
 
-[Installation](/install) says how to remove it again, and how to check that a download is genuine.
+[Installation](/install) also says how to remove it, and how to check that a download is genuine.
 
 ## 2. Dial in
 
-If step 1 started it, WOPR is already dialing. If not (the Go tab), or to play again later, open a terminal
-at least 80 columns wide and 24 rows tall, and type:
+{{% if-installers %}}
+The Windows installer starts WOPR when you click **Finish**, and the Mac app starts it when you open it,
+so it may be dialing already. The lines in
+[Command line install methods](/install#command-line-install-methods) start it too, except Go's. The
+Linux packages do not.
+{{% /if-installers %}}
+{{% if-installers "not" %}}
+The lines in [Command line install methods](/install#command-line-install-methods) start WOPR, except
+Go's, so it may be dialing already. The Linux packages do not start it.
+{{% /if-installers %}}
+
+To start it yourself, or to play again later, open a terminal at least 80 columns wide and 24 rows tall,
+and type:
 
 ```sh
 wopr
 ```
+
+{{% if-installers %}}
+Or open **WOPR** from the Start menu on Windows, from Applications on a Mac, or from your app menu if you
+installed a Linux package. With the Mac app, that is the way to start it: it adds no `wopr` command.
+{{% /if-installers %}}
 
 WOPR dials in, connects, and asks `LOGON:`.
 

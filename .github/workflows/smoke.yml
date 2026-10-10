@@ -52,13 +52,23 @@ jobs:
           # Quoted: pwsh splits -test.v at the dot.
           & "stage/$env:TARGET/e2e.test.exe" '-test.v' '-test.timeout=5m' -binary "stage/$env:TARGET/wopr.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The validators for the menu entry and the AppStream metadata: desktop-file-validate,
+      # appstreamcli, and appstream-util, whose validate-relax Fedora's guidelines ask for.
+      - name: Install the desktop file validators
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends desktop-file-utils appstream appstream-util
       # The .deb, installed with apt as a user would. The program must be on the PATH every login
       # gets (/etc/environment has /usr/games), the manual page must be found, the changelog must
-      # start with this version, and removing the package must leave nothing behind.
+      # start with this version, the menu entry (which starts /usr/games/wopr), the icon in every
+      # size and the AppStream metadata must be in place and valid, and removing the package must
+      # leave nothing behind.
       - name: Install, check and remove the .deb
         if: runner.os == 'Linux'
         env:
           TARGET: ${{ matrix.target }}
+          APP: io.github.ghostofgoes.wopr
         run: |
           debs=("stage/${TARGET}"/wopr_*.deb)
           if [[ ${#debs[@]} -ne 1 || ! -f "${debs[0]}" ]]; then
@@ -82,8 +92,23 @@ jobs:
           version="$(dpkg-query -W -f='${Version}' wopr)"
           zcat /usr/share/doc/wopr/changelog.Debian.gz | sed -n 1p | grep -F "wopr (${version}) "
           test -f /usr/share/doc/wopr/copyright
+          desktop="/usr/share/applications/${APP}.desktop"
+          metainfo="/usr/share/metainfo/${APP}.metainfo.xml"
+          icons=("/usr/share/icons/hicolor/scalable/apps/${APP}.svg")
+          for size in 16 22 24 32 48 64 128 256 512; do
+            icons+=("/usr/share/icons/hicolor/${size}x${size}/apps/${APP}.png")
+          done
+          ls -l "${desktop}" "${metainfo}" "${icons[@]}"
+          grep -Fx 'Exec=/usr/games/wopr' "${desktop}"
+          report="$(desktop-file-validate "${desktop}")"
+          if [[ -n "${report}" ]]; then
+            echo "::error::desktop-file-validate: ${report}"
+            exit 1
+          fi
+          appstreamcli validate --no-net --pedantic "${metainfo}"
+          appstream-util validate-relax --nonet "${metainfo}"
           sudo apt-get remove -y --purge wopr
-          for f in /usr/games/wopr /usr/share/man/man6/wopr.6.gz /usr/share/doc/wopr; do
+          for f in /usr/games/wopr /usr/share/man/man6/wopr.6.gz /usr/share/doc/wopr "${desktop}" "${metainfo}" "${icons[@]}"; do
             if [[ -e "${f}" ]]; then
               echo "::error::removing wopr left ${f} behind"
               exit 1
@@ -91,15 +116,19 @@ jobs:
           done
       # The .rpm, in Fedora (the image pinned by digest; bump it with the action SHAs): its header
       # and files, then an install with no network (it needs no other package), rpm's own
-      # verification, the changelog, and a clean removal. The image's dnf skips documentation
-      # (tsflags=nodocs), so the install turns that off to install the manual page too.
+      # verification, the changelog, the menu entry (which starts /usr/bin/wopr), the icon in every
+      # size in directories the package owns, the AppStream metadata, and a clean removal. The
+      # image's dnf skips documentation (tsflags=nodocs), so the install turns that off to install
+      # the manual page too. With no network there are no validators here; the .deb's step runs
+      # them on the same metadata.
       - name: Install, check and remove the .rpm in Fedora
         if: runner.os == 'Linux'
         env:
           TARGET: ${{ matrix.target }}
           FEDORA: registry.fedoraproject.org/fedora@sha256:ba35579e107f26a4c2c000390fb3ff549f3858a9584a6b5a35f7fa51f54de309 # fedora:44
+          APP: io.github.ghostofgoes.wopr
         run: |
-          docker run --rm --network none -v "${PWD}/stage/${TARGET}:/pkgs:ro" "${FEDORA}" bash -euxo pipefail -c '
+          docker run --rm --network none -e APP -v "${PWD}/stage/${TARGET}:/pkgs:ro" "${FEDORA}" bash -euxo pipefail -c '
             pkgs=(/pkgs/wopr-*.rpm)
             test "${#pkgs[@]}" -eq 1
             rpm -qip "${pkgs[0]}"
@@ -119,8 +148,23 @@ jobs:
             rpm -V wopr
             test -f /usr/share/man/man6/wopr.6.gz
             rpm -q --changelog wopr | sed -n 1p | grep -F -- " - $(rpm -q --qf "%{VERSION}-%{RELEASE}" wopr)"
+            desktop="/usr/share/applications/${APP}.desktop"
+            metainfo="/usr/share/metainfo/${APP}.metainfo.xml"
+            icons=("/usr/share/icons/hicolor/scalable/apps/${APP}.svg")
+            for size in 16 22 24 32 48 64 128 256 512; do
+              icons+=("/usr/share/icons/hicolor/${size}x${size}/apps/${APP}.png")
+            done
+            ls -l "${desktop}" "${metainfo}" "${icons[@]}"
+            grep -Fx "Exec=/usr/bin/wopr" "${desktop}"
+            for icon in "${icons[@]}"; do
+              rpm -qf "$(dirname "${icon}")" | grep -Fx "$(rpm -q wopr)"
+            done
             dnf remove -y wopr
             test ! -e /usr/bin/wopr
             test ! -e /usr/share/doc/wopr
             test ! -e /usr/share/licenses/wopr
+            for f in "${desktop}" "${metainfo}" "${icons[@]}"; do
+              test ! -e "${f}"
+            done
+            rpm -q hicolor-icon-theme || test ! -e /usr/share/icons/hicolor
           '

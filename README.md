@@ -18,16 +18,22 @@ how to play each game with tips for winning, movie mode, and contributing.
 
 ## Install
 
-The [installation guide](https://ghostofgoes.github.io/WOPR/install/) has one line to copy for Windows,
-macOS or Linux that downloads `wopr` and installs it. Or download the program for your system from the
+The [installation guide](https://ghostofgoes.github.io/WOPR/install/) has download buttons, with the steps
+to install what you download and no command line: the Linux packages, and from the release after v0.4.0,
+the Windows installer and the Mac app. Its command line section has one line to copy for Windows, macOS
+or Linux that downloads `wopr` and installs it. Or download the program for your system from the
 [latest release](https://github.com/GhostofGoes/WOPR/releases/latest), or build it with Go:
 
 ```sh
 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest
 ```
 
-From the release after v0.3.0, Linux also has `.deb` and `.rpm` packages, which install the manual page
-too (`man wopr`). Every release file can be checked with its build-provenance attestation: see
+Releases since v0.4.0 also have `.deb` and `.rpm` packages for Linux, which install the manual page too
+(`man wopr`). From the release after v0.4.0, there are also a Windows installer and a Mac app (`WOPR.app`
+in a `.dmg`), and the Linux packages add WOPR to the app menu, so that you can start it from the Start
+menu, Applications or the app menu. The installer and the app are not signed yet, so Windows and macOS
+warn about them at first; the guide says what to click. Every release file can be checked with its
+build-provenance attestation: see
 [Verifying binaries](https://ghostofgoes.github.io/WOPR/install/#verifying-binaries-attestation).
 
 ## Quick start

@@ -92,6 +92,13 @@ hooks = [
   # The change notes parse and are short, CHANGELOG.md is changie merge's output, and every release
   # tag has its .changes/vX.Y.Z.md (AGENTS.md, "Change notes"). It builds changie on first use.
   { id = "change-notes", name = "change notes and CHANGELOG.md", language = "system", entry = "go run ./internal/tools/relnotes -check", files = '^(\.changes/|\.changie\.yaml$|CHANGELOG\.md$|internal/tools/relnotes/)', pass_filenames = false, priority = "lint" },
+  # The menu entries and the AppStream metadata. pkgdocs's tests check them in Go on every system, and
+  # TestValidators runs desktop-file-validate, appstreamcli and appstream-util on them where they are
+  # on the PATH (Linux; not pinned). CI's lint job installs them and sets WOPR_DESKTOP_VALIDATORS=1, so
+  # they cannot skip there. snapdir's tests check the snap's entry, made from the same template.
+  # -count=1, because Go's test cache sees no file outside the module: it would replay a skip after
+  # the validators are installed, or a pass after they are updated.
+  { id = "desktop-files", name = "menu entries and AppStream metadata", language = "system", entry = "go test -count=1 ./internal/tools/pkgdocs ./internal/tools/snapdir", files = '^(packaging/linux/|packaging/description\.txt$|internal/tools/(pkgdocs|snapdir)/)', pass_filenames = false, priority = "lint" },
   # No module in any build list newer than 14 days (AGENTS.md, "Dependency cooldown"); asks the module proxy.
   { id = "dependency-cooldown", name = "dependency cooldown (14 days)", language = "system", entry = "go run ./internal/tools/cooldown -now", files = '(^|/)go\.(mod|sum)$|^tools/cooldown-exceptions\.txt$|^internal/tools/cooldown/', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },

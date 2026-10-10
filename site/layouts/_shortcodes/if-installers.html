@@ -1,0 +1,18 @@
+{{- /*
+  Shows its content only when the latest release has the Windows installer and the Mac app, and
+  Linux packages that put WOPR in the app menu (the has-installers partial); with "not", only when it
+  has none of them. So no page names a file, or a menu entry, that does not exist yet. Call it as
+  if-packages is called: with % delimiters, so that its Markdown joins the page, and with < > inside
+  a Hextra tab.
+
+    {{% if-installers %}}Run the installer.{{% /if-installers %}}
+    {{% if-installers "not" %}}Paste the line into PowerShell.{{% /if-installers %}}
+*/ -}}
+{{- $arg := .Get 0 | default "" -}}
+{{- if not (in (slice "" "not") $arg) -}}
+  {{- errorf "%s: if-installers: unknown argument %q (give none, or \"not\")" .Page.String $arg -}}
+{{- end -}}
+{{- $has := partial "has-installers.html" . -}}
+{{- if eq $has (eq $arg "") -}}
+  {{- .Inner -}}
+{{- end -}}

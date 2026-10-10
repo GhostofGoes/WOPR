@@ -73,11 +73,13 @@ body:
       label: How did you install wopr?
       description: The tab you used on the Installation or Quickstart page, or another way.
       options:
-        - Installation page, Windows tab
-        - Installation page, macOS tab
-        - Installation page, Linux tab
-        - Linux (apt) tab, or a .deb package
-        - Linux (RPM) tab, or an .rpm package
+        - Windows installer (the Windows download button)
+        - Mac app (the macOS download button)
+        - A .deb package (the Linux download button or the Linux (apt) line)
+        - An .rpm package (the Linux download button or the Linux (RPM) line)
+        - The PowerShell line (Windows command line)
+        - The Terminal line (macOS command line)
+        - The Linux (any) line
         - go install (the Go tab)
         - Downloaded a file by hand from the Releases page
         - Built it myself from the source

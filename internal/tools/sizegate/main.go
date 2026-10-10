@@ -1,12 +1,17 @@
 // Command sizegate enforces the binary size budget on GoReleaser output.
 //
 //	go run ./internal/tools/sizegate [-expect 6] [-packages 4] [dist/artifacts.json]
+//	go run ./internal/tools/sizegate -files file...
 //
 // It reads GoReleaser's artifact list, checks every Binary artifact, and every Linux package
 // (.deb and .rpm, which hold one binary each), against the budget (warn above 10 MB, fail
 // above 15 MB; decimal megabytes), writes a Markdown table to $GITHUB_STEP_SUMMARY when set,
 // and fails when no binaries are listed, or when -expect or -packages is set and the number of
 // binaries or packages differs.
+//
+// With -files it checks the files named instead, against the same budget: the installers (the
+// Windows setup.exe and the macOS .dmg), which hold the binaries too and are built after
+// GoReleaser. Every file named must exist.
 package main
 
 import (
@@ -15,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -50,13 +56,24 @@ func main() { os.Exit(realMain()) }
 func realMain() int {
 	expect := flag.Int("expect", 0, "fail unless exactly this many binaries are listed (0 = any, at least one)")
 	packages := flag.Int("packages", 0, "fail unless exactly this many Linux packages are listed (0 = any)")
+	files := flag.Bool("files", false, "check the files named as arguments instead of GoReleaser's artifacts")
 	flag.Parse()
-	path := "dist/artifacts.json"
-	if flag.NArg() > 0 {
-		path = flag.Arg(0)
-	}
 	var out, summary strings.Builder
-	err := run(path, *expect, *packages, &out, &summary, statSize)
+	var err error
+	switch {
+	case *files && (*expect != 0 || *packages != 0):
+		err = errors.New("-expect and -packages count GoReleaser's artifacts; -files checks every file it is given")
+	case *files:
+		err = runFiles(flag.Args(), &out, &summary, statSize)
+	case flag.NArg() > 1:
+		err = fmt.Errorf("one artifact list, not %d; -files checks several files", flag.NArg())
+	default:
+		path := "dist/artifacts.json"
+		if flag.NArg() > 0 {
+			path = flag.Arg(0)
+		}
+		err = run(path, *expect, *packages, &out, &summary, statSize)
+	}
 	fmt.Print(out.String())
 	if p := os.Getenv("GITHUB_STEP_SUMMARY"); p != "" && summary.Len() > 0 {
 		if werr := appendFile(p, summary.String()); werr != nil {
@@ -118,10 +135,27 @@ func run(path string, expect, packages int, out, summary *strings.Builder, size 
 		r.size = n
 		rows = append(rows, r)
 	}
-	return gate(rows, expect, packages, out, summary)
+	return gate(rows, "target", expect, packages, out, summary)
 }
 
-func gate(rows []row, expect, packages int, out, summary *strings.Builder) error {
+// runFiles checks each file named against the budget, under its base name.
+func runFiles(paths []string, out, summary *strings.Builder, size func(string) (int64, error)) error {
+	if len(paths) == 0 {
+		return errors.New("-files: name at least one file")
+	}
+	var rows []row
+	for _, p := range paths {
+		n, err := size(p)
+		if err != nil {
+			return err
+		}
+		rows = append(rows, row{target: filepath.Base(p), path: p, size: n})
+	}
+	return gate(rows, "file", len(rows), 0, out, summary)
+}
+
+// gate checks rows against the budget; label heads the summary table's first column.
+func gate(rows []row, label string, expect, packages int, out, summary *strings.Builder) error {
 	pkgs := 0
 	for _, r := range rows {
 		if r.pkg {
@@ -139,7 +173,7 @@ func gate(rows []row, expect, packages int, out, summary *strings.Builder) error
 		return fmt.Errorf("expected %d Linux packages, found %d", packages, pkgs)
 	}
 	sort.Slice(rows, func(i, j int) bool { return rows[i].target < rows[j].target })
-	fmt.Fprintln(summary, "| target | bytes | MB | budget |")
+	fmt.Fprintf(summary, "| %s | bytes | MB | budget |\n", label)
 	fmt.Fprintln(summary, "|---|---:|---:|---|")
 	var failed []string
 	for _, r := range rows {

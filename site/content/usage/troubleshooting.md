@@ -17,16 +17,59 @@ the other printing options still work.
 session carries on where it was.
 
 **`wopr` is not found.** Open a new terminal window: the one you installed from may not know about the new
-program yet. The [install lines](/install) put it in `%LOCALAPPDATA%\Programs\wopr` on Windows,
-`~/.local/bin` on macOS and Linux (adding that folder to your `PATH` in `~/.zprofile`, `~/.bashrc` or
-`~/.zshrc` when it is not there), and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb`
-puts it in `/usr/games`, which is not on root's `PATH`: as root, or in a small container, run
-`/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}
+program yet. The [install lines](/install#command-line-install-methods) put it in
+`%LOCALAPPDATA%\Programs\wopr` on Windows, `~/.local/bin` on macOS and Linux (adding that folder to your
+`PATH` when it is not there: in `~/.zprofile` or `~/.bash_profile` on macOS, `~/.bashrc` or `~/.zshrc` on
+Linux), and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb` puts it in `/usr/games`,
+which is not on root's `PATH`: as root, or in a small container, run `/usr/games/wopr`. The `.rpm` puts it
+in `/usr/bin`.{{% /if-packages %}}
+{{% if-installers %}} The Windows installer uses the same folder as the install line, and puts it on
+your `PATH` only if its **Add WOPR to PATH** box was ticked: run the installer again to tick it. The Mac
+app adds no `wopr` command: open WOPR from Applications, or install the command with the Terminal line in
+[Command line install methods](/install#command-line-install-methods).{{% /if-installers %}}
 
-**Windows says Smart App Control blocked `wopr`.** Smart App Control, when it is on, blocks every program
-that is not signed, and `wopr` is not signed yet. It has no exception for one program: the only way to run
-`wopr` is to turn Smart App Control off (Windows Security, then App & browser control, then Smart App
-Control settings). Most PCs have it off, or in evaluation mode, which blocks nothing.
+**Windows protected your PC.** Microsoft Defender SmartScreen says this about a program from the
+internet that it does not recognise, such as `wopr.exe`{{% if-installers %}} or its installer{{% /if-installers %}}
+downloaded with a web browser. Click **More info**: it names the file, and the publisher as **Unknown
+publisher**, since `wopr` is not signed yet. Then click **Run anyway**.
+
+**Windows says Smart App Control blocked `wopr`{{% if-installers %}} or its installer{{% /if-installers %}}.**
+Smart App Control, when it is on, blocks every program that is not signed, and `wopr` is not signed
+yet{{% if-installers %}}, nor is its installer{{% /if-installers %}}. It has no exception for one program:
+the only way to run `wopr` is to turn Smart App Control off (Windows Security, then App & browser
+control, then Smart App Control settings). Recent Windows updates let you turn it back on later; before
+them, only reinstalling Windows could. Most PCs have it off, or in evaluation mode, which blocks nothing.
+
+{{% if-installers %}}
+**macOS says "WOPR" Not Opened, or that Apple could not verify WOPR.** macOS says this about an app
+that Apple has not checked, and WOPR is not signed by Apple yet. Click **Done**. Then open **System Settings**,
+then **Privacy & Security**, scroll down to **Security**, and click **Open Anyway** beside the line about
+WOPR. The button is there for about an hour after you tried to open WOPR, so if it is gone, open WOPR
+again first. macOS asks once more: confirm, and enter your password. Control-clicking WOPR and choosing
+**Open** no longer gets past this, since macOS 15 Sequoia. If macOS then blocks `wopr` again when
+Terminal starts it, allow that the same way.
+
+**macOS says WOPR "is damaged and can't be opened".** macOS also says this about some apps that Apple
+has not signed. Check the `.dmg` you downloaded, as
+[Verifying binaries](/install#verifying-binaries-attestation) says, or download it again. Then drag WOPR
+to Applications, and clear its download mark in Terminal:
+`xattr -dr com.apple.quarantine /Applications/WOPR.app`. That turns off macOS's malware check for WOPR
+alone, so do it only for a file you have checked. Please [report it](#getting-help) too, with your macOS
+version.
+
+**On a Mac, opening WOPR does nothing, or Terminal shows an error.** Drag WOPR to Applications in Finder,
+and open it from there. macOS runs a downloaded app that was not moved with Finder from a hidden copy,
+which can disappear while WOPR hands itself to Terminal.
+
+**WOPR always opens in Terminal on a Mac.** The app opens Apple's Terminal, whichever terminal you use.
+To play in another, such as iTerm2, run `/Applications/WOPR.app/Contents/MacOS/wopr` in it, or install
+the `wopr` command with the Terminal line in
+[Command line install methods](/install#command-line-install-methods).
+{{% /if-installers %}}
+{{% if-installers %}}
+**WOPR is not in the app menu after installing the `.deb` or the `.rpm`.** Log out and back in: some
+desktops notice a new app only then. The **Linux (any)** line adds no menu entry; only the packages do.
+{{% /if-installers %}}
 
 **`sudo` says you are not in the sudoers file.** On Debian, when a root password was set during
 installation, your account cannot use `sudo` until it is in the `sudo` group. Add it with the root
@@ -34,7 +77,8 @@ password, `su -c "adduser $USER sudo"`, then log out and back in, and paste the 
 
 **An old version still starts after you update.** Another copy comes first on your `PATH`. On Linux and
 macOS, `type -a wopr` lists every copy; in PowerShell, `Get-Command -All wopr`. Delete the ones you do not
-want.
+want: an earlier version of these pages put `wopr` in `/usr/local/bin`, which `sudo rm /usr/local/bin/wopr`
+removes.
 
 **Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
 
@@ -58,6 +102,11 @@ WOPR_DEBUG=1 wopr                                          # Linux and macOS
 ```powershell
 $env:WOPR_DEBUG = 1; wopr; Remove-Item Env:WOPR_DEBUG     # Windows PowerShell
 ```
+
+{{% if-installers %}}
+With the Mac app, which adds no `wopr` command, run this in Terminal:
+`WOPR_DEBUG=1 /Applications/WOPR.app/Contents/MacOS/wopr`.
+{{% /if-installers %}}
 
 It writes a debug log and prints the log's path when it exits. The log records the session's seed, the
 terminal's size and the slow work; it never records what you type. It is kept in your user cache folder:

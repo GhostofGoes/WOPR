@@ -1,0 +1,29 @@
+<!--
+  WOPR application icon: front-panel lamps, for 32 px and below. Provenance: original (drawn
+  for wopr). wopr.svg simplified to the frame, the panel and three by three flat lamps, with the
+  same lit diagonal and red lamp, on a 64-unit grid: whole pixels at 16 and 32 px. A size with
+  its own source, wopr-<N>.svg, is drawn from that instead. To change the icon, edit the sources
+  (packaging/icons/README.md), then run: go run ./internal/tools/icons
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>WOPR</title>
+  <defs>
+    <linearGradient id="frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6b717b"/>
+      <stop offset="0.5" stop-color="#474c54"/>
+      <stop offset="1" stop-color="#2e3137"/>
+    </linearGradient>
+  </defs>
+  <!-- cabinet: frame and panel; lamps on a 64-unit grid -->
+  <rect x="64" y="64" width="896" height="896" rx="192" ry="192" fill="url(#frame)"/>
+  <rect x="128" y="128" width="768" height="768" rx="128" ry="128" fill="#111317"/>
+  <rect x="192" y="192" width="128" height="128" rx="56" ry="56" fill="#3f3a33"/>
+  <rect x="448" y="192" width="128" height="128" rx="56" ry="56" fill="#3f3a33"/>
+  <rect x="704" y="192" width="128" height="128" rx="56" ry="56" fill="#ffb000"/>
+  <rect x="192" y="448" width="128" height="128" rx="56" ry="56" fill="#ff3b2a"/>
+  <rect x="448" y="448" width="128" height="128" rx="56" ry="56" fill="#ffb000"/>
+  <rect x="704" y="448" width="128" height="128" rx="56" ry="56" fill="#3f3a33"/>
+  <rect x="192" y="704" width="128" height="128" rx="56" ry="56" fill="#ffb000"/>
+  <rect x="448" y="704" width="128" height="128" rx="56" ry="56" fill="#3f3a33"/>
+  <rect x="704" y="704" width="128" height="128" rx="56" ry="56" fill="#3f3a33"/>
+</svg>

@@ -74,6 +74,9 @@ func Handle(in games.Info) string {
 	return h
 }
 
+// DocsURL is the documentation site: installing, every option, and how to play each game.
+const DocsURL = "https://ghostofgoes.github.io/WOPR/"
+
 // RenderHelp writes the usage text for --help.
 func RenderHelp(w io.Writer) error {
 	var b strings.Builder
@@ -110,7 +113,8 @@ Examples:
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene
-`)
+
+Documentation, with how to play each game: ` + DocsURL + "\n")
 	_, err := io.WriteString(w, b.String())
 	return err
 }

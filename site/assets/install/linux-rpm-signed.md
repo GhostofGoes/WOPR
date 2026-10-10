@@ -6,9 +6,9 @@ sudo rpm --import @KEYURL@ && sudo dnf install -y --disablerepo='*' --setopt=loc
 ```
 
 `dnf` checks the package's signature against the key and refuses a package it does not match. The key's
-fingerprint is `@FINGERPRINT@`. To play again, type `wopr`. The package puts it in `/usr/bin` and also
-installs the manual page, `man wopr`. To remove it: `sudo dnf remove wopr`. On Fedora Silverblue and the
-other atomic desktops, use the **Linux** tab.
+fingerprint is `@FINGERPRINT@`. To play again, type `wopr`.@APP-MENU@ The package puts the program in
+`/usr/bin` and also installs the manual page, `man wopr`. To remove it: `sudo dnf remove wopr`. On Fedora
+Silverblue and the other atomic desktops, use the **Linux (any)** tab.
 
 On openSUSE, use `zypper`, which checks the signature too:
 

@@ -51,7 +51,16 @@ jobs:
             tools/release/go.sum
             tools/docs/go.sum
             site/go.sum
+      # For the desktop-files hook: the validators of the menu entries and the AppStream metadata,
+      # Ubuntu 24.04's (Linux tools, not pinned, as in smoke.yml). With WOPR_DESKTOP_VALIDATORS=1, its
+      # test fails instead of skipping when one is missing.
+      - name: Install the desktop file validators
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends desktop-file-utils appstream appstream-util
       - uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        env:
+          WOPR_DESKTOP_VALIDATORS: "1"
         with:
           prek-version: 0.5.5
       - name: Lint rules still fire
@@ -154,6 +163,9 @@ jobs:
       - name: Manual page is current
         if: runner.os == 'Linux'
         run: go run ./internal/tools/manpage -check
+      - name: Icons are current
+        if: runner.os == 'Linux'
+        run: go run ./internal/tools/icons -check
 
   build:
     name: build
@@ -162,6 +174,8 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     env:
       # How long the platform downloads are kept: 30 days on main, 7 on other branches, 3 on PRs.
       RETENTION_DAYS: ${{ github.event_name == 'pull_request' && 3 || github.ref == 'refs/heads/main' && 30 || 7 }}
@@ -186,10 +200,30 @@ jobs:
         env:
           WOPR_NOTES_DIR: build/notes
         run: go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean --skip=publish
+      # GoReleaser's .Version (1.2.4-snapshot.abc1234), which names the installers and the snaps.
+      - name: Version
+        id: version
+        run: |
+          version="$(jq -r .version dist/metadata.json)"
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::dist/metadata.json has no usable version: ${version}"
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Size gate
         run: go run ./internal/tools/sizegate -expect 6 -packages 4
       - name: Stage binaries, end-to-end tests and Linux packages
         run: go run ./internal/tools/stage -archives -assets dist/release
+      # Every release file, checked against checksums.txt and still unsigned, as release.yml's build
+      # uploads them for a tag: the Windows, macOS and snap jobs package these bytes and never compile
+      # wopr again, and collect adds the installers to them before signing them as release.yml does.
+      - name: Upload the release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-dist
+          path: dist/release/
+          retention-days: 1
+          if-no-files-found: error
       # The release's signing step (packaging/sign-packages.sh), with a key made for this run: the
       # .rpm packages are signed, and the smoke jobs install them with dnf checking the signature,
       # and check the .deb's detached signature, with this public key.
@@ -253,7 +287,8 @@ jobs:
           archive: false
           retention-days: ${{ env.RETENTION_DAYS }}
           if-no-files-found: error
-      # Every staged binary with its e2e test, and the .deb and .rpm, for this run's smoke jobs only.
+      # Every staged binary with its e2e test, and the .deb and .rpm, for this run's smoke jobs and
+      # the end-to-end tests of its macOS and snap jobs.
       - name: Upload the smoke bundle
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -304,7 +339,12 @@ jobs:
           done
           grep -q 'rpm --import' "${RUNNER_TEMP}/site-true/install/index.html"
           test -f "${RUNNER_TEMP}/site-true/wopr-signing-key.asc"
-          ! grep -q 'rpm --import' "${RUNNER_TEMP}/site-false/install/index.html"
+          # Not "! grep": bash -e ignores a negated command's failure.
+          if grep -q 'rpm --import' "${RUNNER_TEMP}/site-false/install/index.html"; then
+            echo "::error::the unsigned build imports the signing key"
+            exit 1
+          fi
+          test ! -e "${RUNNER_TEMP}/site-false/wopr-signing-key.asc"
 
   smoke:
     name: smoke
@@ -314,6 +354,101 @@ jobs:
     with:
       artifact: smoke-bundle
 
+  # The installers and the snaps, built from the release files and tested on each platform, as
+  # release.yml builds them for a tag; the snaps are never published from here. Each called
+  # workflow checks out the repository for its packaging files, so it needs contents: read.
+  windows:
+    name: windows
+    needs: build
+    permissions:
+      contents: read
+    uses: $/.github/workflows/windows.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+
+  macos:
+    name: macos
+    needs: build
+    permissions:
+      contents: read
+    uses: $/.github/workflows/macos.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+      stage-artifact: smoke-bundle
+
+  snap:
+    name: snap
+    needs: build
+    permissions:
+      contents: read
+    uses: $/.github/workflows/snap.yml
+    with:
+      artifact: release-dist
+      version: ${{ needs.build.outputs.version }}
+      stage-artifact: smoke-bundle
+      publish: false
+
+  # release.yml's collect and sign jobs on this commit's installers: they must fit the size budget
+  # and join the release files and checksums.txt, which are then signed as release.yml signs them,
+  # with a key made for this run, so a tag never meets the problem first.
+  collect:
+    name: collect
+    needs: [build, windows, macos]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # stage and sizegate use the standard library only: no module downloads to cache.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: release-dist
+          path: dist/release
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-windows
+          path: build/installers
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: installer-macos
+          path: build/installers
+      - name: Size gate (installers)
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: >-
+          go run ./internal/tools/sizegate -files
+          "build/installers/wopr_${VERSION}_windows_setup.exe" "build/installers/wopr_${VERSION}_macos.dmg"
+      - name: Add the installers to the release files and checksums.txt
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: >-
+          go run ./internal/tools/stage -merge -assets dist/release
+          "build/installers/wopr_${VERSION}_windows_setup.exe" "build/installers/wopr_${VERSION}_macos.dmg"
+      # release.yml's sign step after collect: the installers stay as they are, and checksums.txt,
+      # rewritten for the signed .rpm packages and the .deb's .asc files, still lists them, so its
+      # signature and the attestation cover them.
+      - name: Sign the release files with a throwaway key
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y --no-install-recommends rpm
+          keys="$(mktemp -d)"
+          GNUPGHOME="${keys}" gpg --batch --quiet --pinentry-mode loopback --passphrase '' --quick-gen-key \
+            'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+          GNUPGHOME="${keys}" gpg --batch --armor --export > "${RUNNER_TEMP}/signing-key.asc"
+          WOPR_SIGNING_KEY="$(GNUPGHOME="${keys}" gpg --batch --armor --export-secret-keys)" \
+            packaging/sign-packages.sh dist/release "${RUNNER_TEMP}/signing-key.asc"
+          GNUPGHOME="${keys}" gpgconf --kill all
+          (cd dist/release && sha256sum --strict -c checksums.txt)
+          test "$(grep -cE '  wopr_[^ ]+_(windows_setup\.exe|macos\.dmg)$' dist/release/checksums.txt)" -eq 2
+
   ci-ok:
     # Skipped on a pull request from this repository, like the rest. A skipped job counts as
     # passed, so a skipped check named "ci-ok" could stand in for a failed push run. GitHub does
@@ -321,7 +456,7 @@ jobs:
     # the name must stay an expression and never become plain "ci-ok".
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
-    needs: [lint, secrets, test, build, smoke, docs]
+    needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}

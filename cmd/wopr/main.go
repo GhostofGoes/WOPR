@@ -26,6 +26,10 @@ const (
 )
 
 func main() {
+	// First: opened from WOPR.app in Finder, wopr has no terminal and reopens itself in Terminal.
+	if code, relaunched := relaunchInTerminal(); relaunched {
+		os.Exit(code)
+	}
 	ignoreSIGPIPE()
 	os.Exit(run(os.Args[1:], os.Stdout, os.Stderr, os.Getenv))
 }
