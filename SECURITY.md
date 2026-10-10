@@ -23,6 +23,11 @@ Only the latest release receives fixes.
     --source-ref refs/tags/v<version> --deny-self-hosted-runners
   ```
 
+- The Linux packages are signed with wopr's OpenPGP key, `packaging/wopr-signing-key.asc` (fingerprint
+  in `packaging/wopr-signing-key.fingerprint`): each `.rpm` carries its signature, which `dnf`, `zypper` and
+  `rpm -K` check once the key is imported, and each `.deb` and `checksums.txt` has a detached `.asc`
+  signature for `gpg --verify`. The secret key is only available to the release workflow's signing job,
+  in a GitHub environment limited to release tags.
 - Tags and releases are never moved or replaced. A bad release is fixed by the next patch version, and
   `go.mod` gains a `retract` directive for the bad one.
 

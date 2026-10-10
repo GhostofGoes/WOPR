@@ -2,7 +2,7 @@ For Debian, Ubuntu, Linux Mint and their relatives. Open a terminal, paste this 
 It asks for your password, to install the package:
 
 ```sh
-f=$(mktemp --suffix=.deb) && u="https://github.com/GhostofGoes/WOPR/releases/download/v@VERSION@/wopr_@VERSION@-1_$(dpkg --print-architecture).deb" && { if command -v wget >/dev/null; then wget -O "$f" "$u"; else curl -fL -o "$f" "$u"; fi; } && chmod 644 "$f" && sudo apt install -y "$f" && rm "$f" && wopr
+f=$(mktemp --suffix=.deb) && u="https://github.com/GhostofGoes/WOPR/releases/download/v@VERSION@/wopr_@VERSION@-1_$(dpkg --print-architecture).deb" && { if command -v wget >/dev/null; then wget --https-only -O "$f" "$u"; else curl -fL --proto '=https' -o "$f" "$u"; fi; } && chmod 644 "$f" && sudo apt install -y "$f" && rm "$f" && wopr
 ```
 
 To play again, type `wopr`.@APP-MENU@ The package puts the program in `/usr/games`; as root, or in a

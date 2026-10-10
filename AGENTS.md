@@ -27,6 +27,7 @@ There is no Makefile.
 | Lint | `go tool -modfile=tools/lint/go.mod golangci-lint run ./...` |
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
+| Dependency cooldown (no module newer than 14 days) | `go run ./internal/tools/cooldown` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`); CI runs it with `-check` |
 | Manual page (`docs/man/wopr.6`) | `go run ./internal/tools/manpage`; CI runs it with `-check`. Lint it with `mandoc -T lint -W all docs/man/wopr.6` |
@@ -78,6 +79,10 @@ channel, and review-tools from `latest/stable`.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose,
   and the self-test requires every rule to report it. Tools pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version.
+- **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
+  may be less than 14 days old at the commit being checked, by the time the module proxy gives its version:
+  `go run ./internal/tools/cooldown` (CI's `lint` job, and a prek hook on `go.mod` and `go.sum`). A fix that
+  cannot wait goes in `tools/cooldown-exceptions.txt` with its reason, until it is old enough.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
   copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
   quote the film from their provenance tags, so regenerate it when film text moves. It files each linked
@@ -97,9 +102,12 @@ channel, and review-tools from `latest/stable`.
   pages they link exist in `site/`. `stage -archives` checks that the packages hold `build/pkg`'s files
   (by digest), that each menu entry starts that package's own program, and every icon size. The sizes
   are also listed in the `.rpm`'s directories in `.goreleaser.yaml` and in `smoke.yml`: change all three
-  together. The smoke jobs install, run and remove both packages, and validate the installed menu entry
-  and metadata; `pkgdocs`'s `TestValidators` runs the same validators on its own files wherever they are
-  installed, and CI's lint job installs them, so none skips there.
+  together. A release signs the packages (`packaging/sign-packages.sh`: a signature inside each `.rpm`, a
+  `.deb.asc` beside each `.deb`, and `checksums.txt.asc`) with the key in `packaging/wopr-signing-key.asc`;
+  CI signs with a throwaway key. The smoke jobs install, run and remove both packages, with signature
+  checks on in CI, and validate the installed menu entry and metadata; `pkgdocs`'s `TestValidators` runs
+  the same validators on its own files wherever they are installed, and CI's lint job installs them, so
+  none skips there.
 - **Icons.** Everything in `packaging/icons/` except `src/`, and the docs site's `favicon.svg` (also its
   navbar logo), `favicon.ico` and `apple-touch-icon.png`, is drawn by `internal/tools/icons` from the SVG
   sources in `packaging/icons/src/`. Its tests and `-check` fail when a file is stale; pictures are
@@ -148,7 +156,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 
 - They get Events and return Outputs. They never block: anything slow is a `Think`, which runs off the UI
   goroutine. A `Think`'s `Fn` captures values only, never a pointer the program keeps using; copy a chess
-  position as a FEN string.
+  position as a FEN string. An Update or View that runs for 10 s (`internal/ui/watchdog.go`), or is still
+  running a second after SIGINT or SIGTERM, is taken for a hang: wopr restores the terminal and exits 1.
 - With `Env.Deterministic` (`--seed` or `WOPR_SEED`, tests, movie mode), searches stop at `Think.Limit`.
   Wall-clock `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never
@@ -213,10 +222,11 @@ below and open a pull request titled `vX.Y.Z`. (2) Read the notes as a player wo
 `.changes/vX.Y.Z.md` and run `changie merge` again. Wait for `ci-ok`, and keep the branch up to date with
 `main`; if `main` gains new notes meanwhile, start again from (1). (3) The owner merges the pull request,
 then (4) tags the merge commit `vX.Y.Z` and pushes the tag. (5) `release.yml` waits for `main`'s CI, then
-builds, checks and attests every file, the installers included. If all of that passes, it publishes the
-GitHub Release with the notes, starts its discussion and publishes the docs site again; then it packs and
-tests the snaps. (6) Do the checks in `docs/PLAN.md` §14, such as installing from the release page by
-hand. Only the merge, the tag and any store upload are the owner's; the details follow.
+builds and checks every file, signs the Linux packages and `checksums.txt`, and attests every file, the
+installers included. If all of that passes, it publishes the GitHub Release with the notes, starts its
+discussion and publishes the docs site again; then it packs and tests the snaps. (6) Do the checks in
+`docs/PLAN.md` §14, such as installing from the release page by hand. Only the merge, the tag and any store
+upload are the owner's; the details follow.
 
 1. **The release pull request**, titled `vX.Y.Z` (a milestone's version is in `docs/PLAN.md` §15), batches
    the notes and rebuilds the changelog and the manual page:
@@ -237,7 +247,8 @@ hand. Only the merge, the tag and any store upload are the owner's; the details 
    wait for the next one.
 3. **`release.yml` does the rest.** It waits for `main`'s CI, builds and checks every file (the `.deb` and
    `.rpm` included), builds the Windows installer and the macOS disk image from those files on their own
-   runners and tests them, and adds both to the release files and `checksums.txt` (`collect`). Then it
+   runners and tests them, and adds both to the release files and `checksums.txt` (`collect`). It signs
+   the Linux packages and `checksums.txt` (its `sign` job, in the `release` environment). Then it
    publishes the GitHub Release with every file attested and `.changes/vX.Y.Z.md` as its notes
    (`internal/tools/relnotes` adds a footer), and starts a discussion of it in the Discussions category
    Announcements. The packages' changelogs carry the same notes. Then it publishes the docs site again
@@ -284,7 +295,9 @@ screenshot fails the build.
   `linux-packages.md`): a download button, then each click and warning in order, with no command line. With
   `"command-line"`, it draws the Installation page's Command line install methods (Windows, macOS,
   Linux (any), Linux (apt), Linux (RPM), Go): each a line to paste into a terminal, which a person who has
-  never used one can follow, using only the tools each system installs by default (the Go tab needs Go). In
+  never used one can follow, using only the tools each system installs by default (the Go tab needs Go).
+  The macOS and Linux (any) lines put the program in `~/.local/bin` without `sudo`, over HTTPS only, and
+  add that folder to the shell's `PATH` when it is missing; only the package lines need root. In
   these files, `@VERSION@` becomes the latest release's version (shortcodes do not run there), and
   `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a paragraph,
   becomes a download button: a link to that release file, drawn by the shortcode (styled in
@@ -292,8 +305,15 @@ screenshot fails the build.
   Until the latest release has the installers (the `has-installers` partial: every release after v0.4.0), the
   Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry first ships in
   the same release (v0.4.0's packages have none), so `@APP-MENU@` in `linux-packages.md`, `linux-apt.md` and
-  `linux-rpm.md` becomes the sentence in `app-menu.md` only when `has-installers` is true, and nothing before.
-  Every build reads each file of a set, whichever it shows, and fails if one lacks its placeholder or a tab is
+  both RPM files becomes the sentence in `app-menu.md` only when `has-installers` is true, and nothing before.
+  Once the latest release is signed (the `has-signatures` partial: `docs.yml` passes whether the release has
+  `checksums.txt.asc`; other builds look for `packaging/wopr-signing-key.fingerprint`), `@SIGNATURES@` in
+  `linux-packages.md` becomes `packages-signed.md` (before, nothing), and the Linux (RPM) command line is
+  `linux-rpm-signed.md` in place of `linux-rpm.md`, where `@KEYURL@` becomes the signing key's address on
+  the site and `@FINGERPRINT@` its fingerprint. Text about the signatures in pages goes inside
+  `{{% if-signed %}}`, which works as `if-installers` does, and the fingerprint comes from the
+  `signing-fingerprint` shortcode. Every build reads each file of a set, both RPM files and
+  `packages-signed.md` included, whichever it shows, and fails if one lacks its placeholder or a tab is
   left with any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
   `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked before,
   saving nothing, and shows the packages' Arm buttons in place of the others on an Arm Linux computer. It
@@ -379,6 +399,24 @@ These live in GitHub settings, not in files. Check them at each milestone:
   list `pull_request` and `required_status_checks` rules.
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Turn on immutable releases.
 - **Security:** secret scanning with push protection, private vulnerability reporting.
+- **Release signing key** (`docs/PLAN.md` §8, "Signatures"). An environment named `release`
+  (Settings → Environments) with deployment tags limited to `v*`, holding the secret `WOPR_SIGNING_KEY`
+  (the armored secret key) and, if the key has one, `WOPR_SIGNING_PASSPHRASE`. Only `release.yml`'s `sign`
+  job uses the environment. The public key and its fingerprint are committed: `release.yml` stops at
+  `sign` without them. To make the key, on a trusted computer:
+
+  ```sh
+  export GNUPGHOME="$(mktemp -d)"
+  gpg --batch --pinentry-mode loopback --passphrase '' \
+    --quick-gen-key 'Christopher Goes (wopr release signing) <ghostofgoes@gmail.com>' rsa4096 sign 5y
+  gpg --armor --export > packaging/wopr-signing-key.asc
+  gpg --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }' > packaging/wopr-signing-key.fingerprint
+  gpg --armor --export-secret-keys   # paste into the WOPR_SIGNING_KEY secret
+  ```
+
+  Keep an offline copy of the secret key, then delete `$GNUPGHOME`. Before the key expires, extend it
+  (`gpg --quick-set-expire`) and commit the new `wopr-signing-key.asc`, which keeps the fingerprint. A
+  new key needs both files changed in one pull request, and the docs site then shows the new fingerprint.
 - **Issues and Discussions:** issues on, with the bug report and feature request forms in
   `.github/ISSUE_TEMPLATE/` (blank issues off); **Discussions on** (Settings → General → Features), since
   the forms, the docs site and the README send questions there, with its default **Announcements**
@@ -389,8 +427,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   - Require approval for workflow runs from all external contributors.
 - **Dependabot:** off (owner decision). The weekly `scheduled.yml` report covers updates and
   vulnerabilities.
-- **Installers:** the Windows installer, the Mac app and the Linux packages need no secret, variable or
-  environment. The stores do, and only when the owner turns them on:
+- **Installers:** the Windows installer and the Mac app need no secret, variable or environment, and the
+  Linux packages only the release signing key above. The stores do, and only when the owner turns them on:
   - **Snap Store**, when the name is registered. With an Ubuntu One account (two-factor on), run
     `snapcraft register wopr`; a person at the Store reviews new names, which can take days or weeks.
     Create the environment `snap-store` with the owner as required reviewer, deployments from tags `v*`
@@ -412,9 +450,13 @@ These live in GitHub settings, not in files. Check them at each milestone:
 
 At every milestone boundary:
 
-1. Update dependencies: `go get -u ./... && go mod tidy`, then update the tool modules with
-   `go get -tool <tool>@latest` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
-   docs theme with `go -C site get github.com/imfing/hextra@latest`. Re-vendor PhotoSwipe (its newest
+1. Update dependencies to versions at least 14 days old ([Dependency cooldown](#rules-that-tests-enforce)):
+   `go list -m -u -json all` shows each update and its `Time`. Update direct dependencies one by one with
+   `go get <module>@<version>`, never `go get -u ./...`, which also lifts indirect modules to their newest
+   untagged commits; then `go mod tidy`. Update the tool modules the same way, with
+   `go get -tool <tool>@<version>` in `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`, and the
+   docs theme with `go -C site get github.com/imfing/hextra@<version>`. Run
+   `go run ./internal/tools/cooldown` before pushing. Re-vendor PhotoSwipe (its newest
    5.x, the major version Hextra's script is written for) and FlexSearch (the version the new Hextra
    defaults to, in its `layouts/_partials/scripts/search.html`): download each npm tarball from
    `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, check its SHA-512 against the
@@ -422,8 +464,8 @@ At every milestone boundary:
    and update the versions and hashes in `site/hugo.yaml`. Build the docs site: a new Hugo can
    deprecate a setting, which `--panicOnWarning` turns into an error.
 2. Run `prek update`, and keep golangci-lint and gitleaks in step between `prek.toml` and their tool modules.
-3. Bump action SHAs from their release tags, and the Fedora image digest in `smoke.yml` to the newest
-   Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
+3. Bump action SHAs from their release tags, each at least 14 days old, and the Fedora image digest in
+   `smoke.yml` to the newest Fedora release's (`registry.fedoraproject.org/fedora:<N>`).
 4. Bump the installers' tools:
    - **Inno Setup**, if <https://jrsoftware.org/isdl.php> lists a newer one: in
      `packaging/windows/build-installer.ps1`, change `$InnoUrl`, `$InnoSha256` (the `file-hash` in the

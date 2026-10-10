@@ -43,13 +43,14 @@ jobs:
         with:
           go-version-file: go.mod
           # The hooks run `go mod tidy -diff` in every module and build changie (relnotes -check); the
-          # self-test builds golangci-lint.
+          # self-test builds golangci-lint; the cooldown lists every module's build list, the site's too.
           cache-dependency-path: |
             go.sum
             tools/go.sum
             tools/lint/go.sum
             tools/release/go.sum
             tools/docs/go.sum
+            site/go.sum
       # For the desktop-files hook: the validators of the menu entries and the AppStream metadata,
       # Ubuntu 24.04's (Linux tools, not pinned, as in smoke.yml). With WOPR_DESKTOP_VALIDATORS=1, its
       # test fails instead of skipping when one is missing.
@@ -71,6 +72,9 @@ jobs:
       # On main, and on a fork's pull request merged with it, the base is main itself.
       - name: Change note for user-visible changes
         run: go run ./internal/tools/relnotes -since origin/main
+      # No module in any build list may be newer than 14 days at this commit (AGENTS.md, "Dependency cooldown").
+      - name: Dependency cooldown
+        run: go run ./internal/tools/cooldown
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}
@@ -210,6 +214,34 @@ jobs:
         run: go run ./internal/tools/sizegate -expect 6 -packages 4
       - name: Stage binaries, end-to-end tests and Linux packages
         run: go run ./internal/tools/stage -archives -assets dist/release
+      # Every release file, checked against checksums.txt and still unsigned, as release.yml's build
+      # uploads them for a tag: the Windows, macOS and snap jobs package these bytes and never compile
+      # wopr again, and collect adds the installers to them before signing them as release.yml does.
+      - name: Upload the release files
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-dist
+          path: dist/release/
+          retention-days: 1
+          if-no-files-found: error
+      # The release's signing step (packaging/sign-packages.sh), with a key made for this run: the
+      # .rpm packages are signed, and the smoke jobs install them with dnf checking the signature,
+      # and check the .deb's detached signature, with this public key.
+      - name: Sign the Linux packages with a throwaway key
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y --no-install-recommends rpm
+          keys="$(mktemp -d)"
+          GNUPGHOME="${keys}" gpg --batch --quiet --pinentry-mode loopback --passphrase '' --quick-gen-key \
+            'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+          GNUPGHOME="${keys}" gpg --batch --armor --export > "${RUNNER_TEMP}/signing-key.asc"
+          WOPR_SIGNING_KEY="$(GNUPGHOME="${keys}" gpg --batch --armor --export-secret-keys)" \
+            packaging/sign-packages.sh dist/release "${RUNNER_TEMP}/signing-key.asc"
+          GNUPGHOME="${keys}" gpgconf --kill all
+          for arch in amd64:x86_64 arm64:aarch64; do
+            dir="stage/linux_${arch%%:*}"
+            cp dist/release/wopr-*."${arch##*:}".rpm dist/release/wopr_*_"${arch%%:*}".deb.asc "${dir}/"
+            cp "${RUNNER_TEMP}/signing-key.asc" "${dir}/signing-key.asc"
+          done
       # One download per platform: the bare binary, uploaded as-is rather than zipped, so the download
       # is the program itself (it prints its licences with --licenses). Each artifact is named after
       # its file, e.g. wopr_0.0.1-snapshot.1a2b3c4_linux_amd64. Downloads lose the executable bit.
@@ -264,15 +296,6 @@ jobs:
           path: stage/
           retention-days: 1
           if-no-files-found: error
-      # Every release file, checked against checksums.txt, as release.yml's build uploads them for a
-      # tag: the Windows, macOS and snap jobs package these bytes and never compile wopr again.
-      - name: Upload the release files
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: release-dist
-          path: dist/release/
-          retention-days: 1
-          if-no-files-found: error
 
   # The documentation site (site/), built as docs.yml builds it for GitHub Pages: a warning, a
   # broken link or a missing screenshot fails it. docs.yml publishes it from every push to main.
@@ -297,6 +320,31 @@ jobs:
         run: |
           go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings \
             --minify --destination "${RUNNER_TEMP}/site"
+      # docs.yml tells the site whether the latest release is signed (the has-signatures partial).
+      # Build it both ways, with a throwaway key in packaging/ while the real one is missing.
+      - name: Build the site as for a signed and an unsigned release
+        run: |
+          if [[ ! -f packaging/wopr-signing-key.asc ]]; then
+            export GNUPGHOME="${RUNNER_TEMP}/gnupg"
+            mkdir -m 700 "${GNUPGHOME}"
+            gpg --batch --quiet --pinentry-mode loopback --passphrase '' \
+              --quick-gen-key 'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+            gpg --batch --armor --export > packaging/wopr-signing-key.asc
+            gpg --batch --with-colons --list-keys | awk -F: '$1 == "fpr" { print $10; exit }' \
+              > packaging/wopr-signing-key.fingerprint
+          fi
+          for signed in true false; do
+            HUGO_PARAMS_SIGNEDRELEASE="${signed}" go tool -modfile=tools/docs/go.mod hugo --source site \
+              --panicOnWarning --printPathWarnings --minify --destination "${RUNNER_TEMP}/site-${signed}"
+          done
+          grep -q 'rpm --import' "${RUNNER_TEMP}/site-true/install/index.html"
+          test -f "${RUNNER_TEMP}/site-true/wopr-signing-key.asc"
+          # Not "! grep": bash -e ignores a negated command's failure.
+          if grep -q 'rpm --import' "${RUNNER_TEMP}/site-false/install/index.html"; then
+            echo "::error::the unsigned build imports the signing key"
+            exit 1
+          fi
+          test ! -e "${RUNNER_TEMP}/site-false/wopr-signing-key.asc"
 
   smoke:
     name: smoke
@@ -342,8 +390,9 @@ jobs:
       stage-artifact: smoke-bundle
       publish: false
 
-  # release.yml's collect job on this commit's installers: they must fit the size budget and join
-  # the release files and checksums.txt, so a tag never meets the problem first.
+  # release.yml's collect and sign jobs on this commit's installers: they must fit the size budget
+  # and join the release files and checksums.txt, which are then signed as release.yml signs them,
+  # with a key made for this run, so a tag never meets the problem first.
   collect:
     name: collect
     needs: [build, windows, macos]
@@ -384,6 +433,21 @@ jobs:
         run: >-
           go run ./internal/tools/stage -merge -assets dist/release
           "build/installers/wopr_${VERSION}_windows_setup.exe" "build/installers/wopr_${VERSION}_macos.dmg"
+      # release.yml's sign step after collect: the installers stay as they are, and checksums.txt,
+      # rewritten for the signed .rpm packages and the .deb's .asc files, still lists them, so its
+      # signature and the attestation cover them.
+      - name: Sign the release files with a throwaway key
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y --no-install-recommends rpm
+          keys="$(mktemp -d)"
+          GNUPGHOME="${keys}" gpg --batch --quiet --pinentry-mode loopback --passphrase '' --quick-gen-key \
+            'wopr CI throwaway <ci@invalid>' rsa3072 sign 1d
+          GNUPGHOME="${keys}" gpg --batch --armor --export > "${RUNNER_TEMP}/signing-key.asc"
+          WOPR_SIGNING_KEY="$(GNUPGHOME="${keys}" gpg --batch --armor --export-secret-keys)" \
+            packaging/sign-packages.sh dist/release "${RUNNER_TEMP}/signing-key.asc"
+          GNUPGHOME="${keys}" gpgconf --kill all
+          (cd dist/release && sha256sum --strict -c checksums.txt)
+          test "$(grep -cE '  wopr_[^ ]+_(windows_setup\.exe|macos\.dmg)$' dist/release/checksums.txt)" -eq 2
 
   ci-ok:
     # Skipped on a pull request from this repository, like the rest. A skipped job counts as

@@ -125,6 +125,10 @@ func newTargets() [numTargets]target {
 	}
 }
 
+// maxGroup caps a typed aircraft count, far above any squadron, so that a package's size
+// cannot overflow and fly a huge or negative number of aircraft.
+const maxGroup = 999
+
 // pack is a strike package; target is -1 until one is chosen.
 type pack struct{ target, strike, sead, escort int }
 
@@ -267,7 +271,7 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 			if i+1 < len(words) {
 				if n, err := strconv.Atoi(words[i+1]); err == nil {
 					i++
-					return n, true
+					return min(n, maxGroup), true
 				}
 			}
 			return 0, false

@@ -1,0 +1,5 @@
+# Modules that may skip the 14-day dependency cooldown (internal/tools/cooldown), one
+# module@version per line with the reason after '#'. A vulnerability fix that cannot wait
+# belongs here; remove its line once the version is 14 days old.
+github.com/gohugoio/hugo@v0.167.0  # docs only; pinned before the cooldown existed. Remove after 2026-10-12.
+github.com/imfing/hextra@v0.13.0   # docs only; pinned before the cooldown existed. Remove after 2026-10-13.

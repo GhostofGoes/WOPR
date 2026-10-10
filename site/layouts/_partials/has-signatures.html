@@ -1,0 +1,26 @@
+{{- /*
+  Whether the latest release is signed with wopr's OpenPGP key: its .rpm packages carry a
+  signature, and each .deb and checksums.txt has a detached .asc (packaging/sign-packages.sh).
+  docs.yml says so in HUGO_PARAMS_SIGNEDRELEASE ("true" or "false"), from whether the latest
+  release has checksums.txt.asc. Without it (CI's builds, a preview), it is whether the signing
+  key's fingerprint file is in the repository. The if-signed and install-tabs shortcodes use it,
+  so that no page asks anyone to check a signature that does not exist.
+*/ -}}
+{{- $signed := false -}}
+{{- with site.Params.signedRelease -}}
+  {{- $s := string . -}}
+  {{- if not (in (slice "true" "false") $s) -}}
+    {{- errorf "has-signatures: HUGO_PARAMS_SIGNEDRELEASE is %q, not true or false" $s -}}
+  {{- end -}}
+  {{- $signed = eq $s "true" -}}
+{{- else -}}
+  {{- $signed = ne (resources.Get "signing/fingerprint") nil -}}
+{{- end -}}
+{{- if $signed -}}
+  {{- range slice "wopr-signing-key.asc" "signing/fingerprint" -}}
+    {{- if not (resources.Get .) -}}
+      {{- errorf "has-signatures: the release is signed, but the signing key's %s is missing from packaging/" . -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+{{- return $signed -}}

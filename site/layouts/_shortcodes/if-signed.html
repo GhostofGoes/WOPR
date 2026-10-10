@@ -1,0 +1,15 @@
+{{- /*
+  Shows its content only when the latest release is signed with wopr's OpenPGP key (the
+  has-signatures partial); with "not", only when it is not. So no page asks anyone to check a
+  signature that does not exist. Call it with % delimiters, so that its Markdown joins the page:
+
+    {{% if-signed %}}Check checksums.txt.asc with gpg.{{% /if-signed %}}
+*/ -}}
+{{- $arg := .Get 0 | default "" -}}
+{{- if not (in (slice "" "not") $arg) -}}
+  {{- errorf "%s: if-signed: unknown argument %q (give none, or \"not\")" .Page.String $arg -}}
+{{- end -}}
+{{- $has := partial "has-signatures.html" . -}}
+{{- if eq $has (eq $arg "") -}}
+  {{- .Inner -}}
+{{- end -}}

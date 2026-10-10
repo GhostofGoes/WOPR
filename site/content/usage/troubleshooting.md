@@ -18,9 +18,11 @@ session carries on where it was.
 
 **`wopr` is not found.** Open a new terminal window: the one you installed from may not know about the new
 program yet. The [install lines](/install#command-line-install-methods) put it in
-`%LOCALAPPDATA%\Programs\wopr` on Windows, `/usr/local/bin` on macOS and Linux, and Go's `bin` folder with
-`go install`.{{% if-packages %}} The `.deb` puts it in `/usr/games`, which is not on root's `PATH`: as
-root, or in a small container, run `/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}
+`%LOCALAPPDATA%\Programs\wopr` on Windows, `~/.local/bin` on macOS and Linux (adding that folder to your
+`PATH` when it is not there: in `~/.zprofile` or `~/.bash_profile` on macOS, `~/.bashrc` or `~/.zshrc` on
+Linux), and Go's `bin` folder with `go install`.{{% if-packages %}} The `.deb` puts it in `/usr/games`,
+which is not on root's `PATH`: as root, or in a small container, run `/usr/games/wopr`. The `.rpm` puts it
+in `/usr/bin`.{{% /if-packages %}}
 {{% if-installers %}} The Windows installer uses the same folder as the install line, and puts it on
 your `PATH` only if its **Add WOPR to PATH** box was ticked: run the installer again to tick it. The Mac
 app adds no `wopr` command: open WOPR from Applications, or install the command with the Terminal line in
@@ -75,7 +77,8 @@ password, `su -c "adduser $USER sudo"`, then log out and back in, and paste the 
 
 **An old version still starts after you update.** Another copy comes first on your `PATH`. On Linux and
 macOS, `type -a wopr` lists every copy; in PowerShell, `Get-Command -All wopr`. Delete the ones you do not
-want: an earlier version of these pages put `wopr` in `~/.local/bin`.
+want: an earlier version of these pages put `wopr` in `/usr/local/bin`, which `sudo rm /usr/local/bin/wopr`
+removes.
 
 **Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
 

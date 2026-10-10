@@ -14,9 +14,13 @@
   Windows installer and the Mac app (the has-installers partial: every release after v0.4.0), their
   tabs show assets/install/download-later.md instead, with @LATER@ as what is to come. The same
   release is the first whose packages put WOPR in the app menu, so only then does @APP-MENU@ in the
-  packages' tabs become the sentence in assets/install/app-menu.md (and, before it, nothing). Every
-  build reads and checks each file of the set, whichever it shows, and fails if a placeholder is
-  missing from its file or left in a tab.
+  packages' tabs become the sentence in assets/install/app-menu.md (and, before it, nothing). Once
+  the latest release is signed (the has-signatures partial), @SIGNATURES@ in the download tab's
+  packages becomes assets/install/packages-signed.md (and, before, nothing), and the Linux (RPM)
+  command line is assets/install/linux-rpm-signed.md in place of linux-rpm.md, where @KEYURL@
+  becomes the signing key's address on this site and @FINGERPRINT@ its fingerprint. Every build
+  reads and checks each file of the set, both RPM files and packages-signed.md included, whichever
+  it shows, and fails if a placeholder is missing from its file or left in a tab.
 
     {{< install-tabs >}}
     {{< install-tabs "command-line" >}}
@@ -26,14 +30,14 @@
   "download" (slice
     (dict "name" "Windows" "file" "windows-installer" "downloads" (slice "INSTALLER") "later" "The Windows installer")
     (dict "name" "macOS" "file" "macos-app" "downloads" (slice "APP") "later" "The Mac app")
-    (dict "name" "Linux" "file" "linux-packages" "downloads" (slice "DEB" "RPM") "appMenu" true)
+    (dict "name" "Linux" "file" "linux-packages" "downloads" (slice "DEB" "RPM") "appMenu" true "signatures" true)
   )
   "command-line" (slice
     (dict "name" "Windows" "file" "windows")
     (dict "name" "macOS" "file" "macos")
     (dict "name" "Linux (any)" "file" "linux")
     (dict "name" "Linux (apt)" "file" "linux-apt" "appMenu" true)
-    (dict "name" "Linux (RPM)" "file" "linux-rpm" "appMenu" true)
+    (dict "name" "Linux (RPM)" "file" "linux-rpm" "signedFile" "linux-rpm-signed" "appMenu" true)
     (dict "name" "Go" "file" "go")
   )
 -}}
@@ -43,6 +47,7 @@
 {{- end -}}
 {{- $version := partial "latest-version.html" . -}}
 {{- $hasInstallers := partial "has-installers.html" . -}}
+{{- $signed := partial "has-signatures.html" . -}}
 {{- $repo := site.Params.repo -}}
 {{- if not $repo -}}
   {{- errorf "%s: install-tabs: hugo.yaml has no params.repo" .Position -}}
@@ -76,31 +81,82 @@
   {{- errorf "%s: install-tabs: assets/install/download-later.md has %s, which nothing fills" $.Position (index . 0) -}}
 {{- end -}}
 
+{{- /* The signatures: what the download tab says about them, and the key's address and fingerprint
+  for the signed RPM line. The key is published (at /wopr-signing-key.asc) only when a page asks for
+  its address, so only a signed build has it. */ -}}
+{{- $signatures := partial "inline/install-tab-file.html" (dict "file" "packages-signed" "position" .Position) | strings.TrimSpace -}}
+{{- if not $signatures -}}
+  {{- errorf "%s: install-tabs: assets/install/packages-signed.md is empty" .Position -}}
+{{- end -}}
+{{- $signatures = replace $signatures "@VERSION@" $version -}}
+{{- with findRE `@[A-Z][A-Z-]*@` $signatures 1 -}}
+  {{- errorf "%s: install-tabs: assets/install/packages-signed.md has %s, which nothing fills" $.Position (index . 0) -}}
+{{- end -}}
+{{- $keyURL := "" -}}
+{{- $fingerprint := "" -}}
+{{- if $signed -}}
+  {{- $keyURL = (resources.Get "wopr-signing-key.asc").Permalink -}}
+  {{- $fingerprint = partial "signing-fingerprint.html" . -}}
+{{- else -}}
+  {{- $signatures = "" -}}
+{{- end -}}
+
 {{- $tabs := slice -}}
 {{- $buttons := slice -}}
 {{- range $i, $item := $items -}}
-  {{- $text := partial "inline/install-tab-file.html" (dict "file" $item.file "position" $.Position) -}}
-  {{- if $item.appMenu -}}
-    {{- if not (strings.Contains $text "@APP-MENU@") -}}
-      {{- errorf "%s: install-tabs: assets/install/%s.md has no @APP-MENU@" $.Position $item.file -}}
-    {{- end -}}
-    {{- $text = replace $text "@APP-MENU@" $appMenu -}}
+  {{- /* Each file the tab could show, filled in and checked: the tab's own and, for a tab with a
+    signed version, that one too. */ -}}
+  {{- $files := slice $item.file -}}
+  {{- with $item.signedFile -}}
+    {{- $files = $files | append . -}}
   {{- end -}}
-  {{- $text = replace $text "@VERSION@" $version -}}
+  {{- $texts := dict -}}
+  {{- range $file := $files -}}
+    {{- $text := partial "inline/install-tab-file.html" (dict "file" $file "position" $.Position) -}}
+    {{- if $item.appMenu -}}
+      {{- if not (strings.Contains $text "@APP-MENU@") -}}
+        {{- errorf "%s: install-tabs: assets/install/%s.md has no @APP-MENU@" $.Position $file -}}
+      {{- end -}}
+      {{- $text = replace $text "@APP-MENU@" $appMenu -}}
+    {{- end -}}
+    {{- if $item.signatures -}}
+      {{- if or (ne (strings.Count "@SIGNATURES@" $text) 1) (not (strings.Contains (string ($text | markdownify)) "<p>@SIGNATURES@</p>")) -}}
+        {{- errorf "%s: install-tabs: assets/install/%s.md must have @SIGNATURES@ once, as a paragraph of its own" $.Position $file -}}
+      {{- end -}}
+      {{- $text = replace $text "@SIGNATURES@" $signatures -}}
+    {{- end -}}
+    {{- if eq $file $item.signedFile -}}
+      {{- range slice "@KEYURL@" "@FINGERPRINT@" -}}
+        {{- if not (strings.Contains $text .) -}}
+          {{- errorf "%s: install-tabs: assets/install/%s.md has no %s" $.Position $file . -}}
+        {{- end -}}
+      {{- end -}}
+      {{- $text = replace $text "@KEYURL@" $keyURL -}}
+      {{- $text = replace $text "@FINGERPRINT@" $fingerprint -}}
+    {{- end -}}
+    {{- $text = replace $text "@VERSION@" $version -}}
+    {{- $rest := $text -}}
+    {{- range $item.downloads -}}
+      {{- $placeholder := printf "@DOWNLOAD-%s@" . -}}
+      {{- /* Checked on the Markdown as rendered, so that every build checks it, even one that shows
+        download-later.md in its place. */ -}}
+      {{- if or (ne (strings.Count $placeholder $text) 1) (not (strings.Contains (string ($text | markdownify)) (printf "<p>%s</p>" $placeholder))) -}}
+        {{- errorf "%s: install-tabs: assets/install/%s.md must have %s once, as a paragraph of its own" $.Position $file $placeholder -}}
+      {{- end -}}
+      {{- $rest = replace $rest $placeholder "" -}}
+    {{- end -}}
+    {{- with findRE `@[A-Z][A-Z-]*@` $rest 1 -}}
+      {{- errorf "%s: install-tabs: assets/install/%s.md has %s, which nothing fills" $.Position $file (index . 0) -}}
+    {{- end -}}
+    {{- $texts = merge $texts (dict $file $text) -}}
+  {{- end -}}
+  {{- $text := index $texts $item.file -}}
+  {{- if and $item.signedFile $signed -}}
+    {{- $text = index $texts $item.signedFile -}}
+  {{- end -}}
   {{- $shown := slice -}}
-  {{- $rest := $text -}}
   {{- range $item.downloads -}}
-    {{- $placeholder := printf "@DOWNLOAD-%s@" . -}}
-    {{- /* Checked on the Markdown as rendered, so that every build checks it, even one that shows
-      download-later.md in its place. */ -}}
-    {{- if or (ne (strings.Count $placeholder $text) 1) (not (strings.Contains (string ($text | markdownify)) (printf "<p>%s</p>" $placeholder))) -}}
-      {{- errorf "%s: install-tabs: assets/install/%s.md must have %s once, as a paragraph of its own" $.Position $item.file $placeholder -}}
-    {{- end -}}
     {{- $shown = $shown | append . -}}
-    {{- $rest = replace $rest $placeholder "" -}}
-  {{- end -}}
-  {{- with findRE `@[A-Z][A-Z-]*@` $rest 1 -}}
-    {{- errorf "%s: install-tabs: assets/install/%s.md has %s, which nothing fills" $.Position $item.file (index . 0) -}}
   {{- end -}}
   {{- if and $item.later (not $hasInstallers) -}}
     {{- $text = replace $later "@LATER@" $item.later -}}

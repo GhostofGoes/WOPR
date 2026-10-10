@@ -75,6 +75,11 @@ jobs:
             echo "::error::want exactly one .deb in stage/${TARGET}"
             exit 1
           fi
+          # CI signs with a throwaway key and stages its public key; the release stage has neither.
+          if [[ -f "stage/${TARGET}/signing-key.asc" ]]; then
+            gpg --batch --dearmor -o "${RUNNER_TEMP}/signing-key.gpg" "stage/${TARGET}/signing-key.asc"
+            gpgv --keyring "${RUNNER_TEMP}/signing-key.gpg" "${debs[0]}.asc" "${debs[0]}"
+          fi
           sudo apt-get install -y --no-install-recommends "./${debs[0]}"
           dpkg -s wopr
           login_path="$(sed -n -E 's/^PATH="?([^"]*)"?$/\1/p' /etc/environment)"
@@ -128,8 +133,16 @@ jobs:
             test "${#pkgs[@]}" -eq 1
             rpm -qip "${pkgs[0]}"
             rpm -qlvp "${pkgs[0]}"
-            rpm -K --nosignature "${pkgs[0]}"
-            dnf install -y --setopt=tsflags= --disablerepo="*" "${pkgs[0]}"
+            # CI signs with a throwaway key and stages its public key; the release stage is unsigned.
+            if [[ -f /pkgs/signing-key.asc ]]; then
+              rpm --import /pkgs/signing-key.asc
+              rpm -K "${pkgs[0]}" | grep -F "${pkgs[0]}: digests signatures OK"
+              gpgcheck=1
+            else
+              rpm -K --nosignature "${pkgs[0]}"
+              gpgcheck=0
+            fi
+            dnf install -y --setopt=tsflags= --setopt=localpkg_gpgcheck="${gpgcheck}" --disablerepo="*" "${pkgs[0]}"
             test "$(command -v wopr)" = /usr/bin/wopr
             wopr --version
             rpm -V wopr

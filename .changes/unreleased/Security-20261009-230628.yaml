@@ -1,0 +1,3 @@
+kind: Security
+body: The debug log from `WOPR_DEBUG` no longer follows links to other files.
+time: 2026-10-09T23:06:28.996681222Z

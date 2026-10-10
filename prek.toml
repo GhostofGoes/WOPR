@@ -65,7 +65,7 @@ hooks = [{ id = "actionlint", priority = "lint" }]  # workflow syntax; zizmor co
 [[repos]]
 repo = "https://github.com/codespell-project/codespell"
 rev = "57b21406f092110c18776e39b0bda50d37c945c8"  # frozen: v2.4.3
-hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
+hooks = [{ id = "codespell", args = ["--ignore-words-list", "theaterwide,recognised,falken,wopr,norad,imsai,crasher,crashers,oder,fpr", "--ignore-regex", '\\\(bu'], exclude ='^(internal/wopr/lines\.go|internal/assets/|internal/movie/scenes/|docs/reviews/|site/assets/vendor/)|(^|/)go\.(mod|sum)$|(^|/)testdata/|\.golden$', priority = "lint" }]  # reviews quote tool output verbatim; vendor is third-party
 
 [[repos]]
 repo = "https://github.com/shellcheck-py/shellcheck-py"
@@ -99,6 +99,8 @@ hooks = [
   # -count=1, because Go's test cache sees no file outside the module: it would replay a skip after
   # the validators are installed, or a pass after they are updated.
   { id = "desktop-files", name = "menu entries and AppStream metadata", language = "system", entry = "go test -count=1 ./internal/tools/pkgdocs ./internal/tools/snapdir", files = '^(packaging/linux/|packaging/description\.txt$|internal/tools/(pkgdocs|snapdir)/)', pass_filenames = false, priority = "lint" },
+  # No module in any build list newer than 14 days (AGENTS.md, "Dependency cooldown"); asks the module proxy.
+  { id = "dependency-cooldown", name = "dependency cooldown (14 days)", language = "system", entry = "go run ./internal/tools/cooldown -now", files = '(^|/)go\.(mod|sum)$|^tools/cooldown-exceptions\.txt$|^internal/tools/cooldown/', pass_filenames = false, priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
 ]
