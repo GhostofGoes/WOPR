@@ -122,6 +122,12 @@ Source: "{#BinDir}\README.md"; DestDir: "{app}"; Flags: ignoreversion notimestam
 Source: "{#BinDir}\wopr_{#Version}_windows_amd64.exe"; DestDir: "{app}"; DestName: "wopr.exe"; Check: not IsArm64; Flags: ignoreversion notimestamp
 Source: "{#BinDir}\wopr_{#Version}_windows_arm64.exe"; DestDir: "{app}"; DestName: "wopr.exe"; Check: IsArm64; Flags: ignoreversion notimestamp
 
+[UninstallDelete]
+; The debug log that WOPR_DEBUG turns on (internal/debuglog), in os.UserCacheDir(), which is
+; %LOCALAPPDATA% on Windows. Only the log and then its folder, if nothing else is in it.
+Type: files; Name: "{localappdata}\wopr\debug.log"
+Type: dirifempty; Name: "{localappdata}\wopr"
+
 [Icons]
 ; One Start menu entry at the top level of All apps. wopr.exe is a console program, so Windows opens
 ; it in the default terminal: Windows Terminal on Windows 11, the console window on Windows 10.

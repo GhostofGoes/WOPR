@@ -54,12 +54,13 @@ func sitePage(t *testing.T, name string) string {
 }
 
 // The release notes (internal/tools/relnotes) and the README link to the Installation page's
-// verifying section by its anchor, which Hugo makes from the heading.
+// verifying section by its anchor, which the heading keeps from its old title, "Verifying binaries
+// (attestation)", so that links in releases already published still work.
 func TestSiteInstallHasVerifyingSection(t *testing.T) {
 	t.Parallel()
 	page := sitePage(t, "install.md")
-	if !strings.Contains(page, "\n## Verifying binaries (attestation)\n") {
-		t.Error("site/content/install.md has no \"## Verifying binaries (attestation)\" heading, " +
+	if !strings.Contains(page, "\n## Verifying binaries {#verifying-binaries-attestation}\n") {
+		t.Error("site/content/install.md has no \"## Verifying binaries {#verifying-binaries-attestation}\" heading, " +
 			"the target of #verifying-binaries-attestation in the release notes and the README")
 	}
 }

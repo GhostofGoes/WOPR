@@ -1,7 +1,5 @@
 @DOWNLOAD-INSTALLER@
 
-One installer for every Windows PC, Intel, AMD or Arm. Then:
-
 1. Open the file you downloaded, `wopr_@VERSION@_windows_setup.exe`: click it in your browser's
    downloads, or double-click it in your **Downloads** folder. If the browser says the file is not
    commonly downloaded, choose to keep it.

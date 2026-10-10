@@ -1428,7 +1428,8 @@ classified address it leads to; M5 settles it.
     to the user's `PATH`, on), a summary, the progress bar, and Finish with "Launch WOPR". One top-level
     Start menu shortcut runs `wopr.exe`, and Windows opens its default terminal: Windows Terminal on
     Windows 11 22H2 and later, the console host on 10. Settings → Apps lists and uninstalls it, which also
-    removes the `PATH` entry, the PowerShell line's included. An upgrade is the newer installer run over
+    removes the `PATH` entry, the PowerShell line's included, and the debug log (`%LOCALAPPDATA%\wopr\debug.log`,
+    then its folder if empty). An upgrade is the newer installer run over
     it; Setup closes a running wopr first.
   - `AppId` `{A7D86110-58E9-404E-9164-FBDDBDC6AC22}` never changes: upgrades and the uninstall entry
     depend on it.
@@ -1438,7 +1439,7 @@ classified address it leads to; M5 settles it.
     `repro` covers.
   - The smoke jobs on `windows-2025` and `windows-11-arm` install it silently, check the files, the
     shortcut, the uninstall entry, `PATH` and the program's CPU type, run `wopr --version`, uninstall it and
-    check that nothing is left, then do it again over a copy from the PowerShell line.
+    check that nothing is left, a debug log included, then do it again over a copy from the PowerShell line.
   - Inno Setup's licence lets anyone use it (jrsoftware asks only commercial users to buy one); the docs
     site's credits page names it.
 - **`wopr.exe`'s resources.** go-winres v0.3.3 (0BSD, in `tools/release/go.mod`) writes an icon, a manifest
@@ -1955,8 +1956,8 @@ image may lack, so `test-snap.sh` installs it when missing.
   packages and snaps are not release files. The Linux packages and `checksums.txt`, which lists every other
   file, are also signed with wopr's OpenPGP key (§8, "Signatures"); the Installation page says how to check
   them once the latest release is signed. Verifying is optional, for those who want proof, in the
-  Installation page's last section, "Verifying binaries (attestation)", which the README and each release's
-  notes link:
+  Installation page's section "Verifying binaries" (its anchor is still `#verifying-binaries-attestation`),
+  which the README and each release's notes link:
   - Command: `gh attestation verify <file> --repo GhostofGoes/WOPR`, plus
     `--signer-workflow GhostofGoes/WOPR/.github/workflows/release.yml`,
     `--source-ref refs/tags/vX.Y.Z` and `--deny-self-hosted-runners`.
@@ -2042,22 +2043,24 @@ image may lack, so `test-snap.sh` installs it when missing.
     `~/.zshrc` (Linux), when the shell does not already have it; only the package lines need root. Since the
     download buttons (next), they are the Installation page's "Command line install methods" section, after
     Uninstall.
-    Verifying an attestation is the Installation page's last section, for those who want it; the README
+    Verifying an attestation is the Installation page's next-to-last section, for those who want it, before
+    development builds; the README
     links there and to the guide.
   - **Download buttons first, no command line** (owner decision 2026-10-10). Quickstart and Installation lead
     with the same three tabs, Windows, macOS and Linux, each a button that downloads the latest release's
     file, then each click in order, warnings included: the browser's, SmartScreen's More info and Run anyway,
     and Smart App Control's block for the Windows installer; dragging to Applications first, then Gatekeeper's
-    Done and Open Anyway in Privacy & Security for the Mac app; the `.deb` and the `.rpm` (for Intel and AMD,
-    with a link to the Arm file), opened in the desktop's software app, for Linux, with a pointer to the
-    command lines for other distributions and the atomic desktops. A button is a plain link, drawn by the
-    `install-tabs` shortcode from a placeholder in the tab's text, at least 44 px tall, in Hextra's primary
-    colour. Until the latest release has the installer and the Mac app (every release after v0.4.0; the
+    Done and Open Anyway in Privacy & Security for the Mac app; the `.deb` and the `.rpm`, opened in the
+    desktop's software app, for Linux, with a pointer to the
+    command lines for other distributions and the atomic desktops. Each tab has two buttons, side by side
+    (owner decision 2026-10-10): "Intel/AMD" and "ARM" on Windows and Linux, "Apple Silicon" and "Intel" on
+    macOS, with no file name under them; the Windows installer and the Mac app are one file for both, so
+    their two buttons link to the same file. A button is a plain link, drawn by the `install-tabs` shortcode
+    from a placeholder in the tab's text, at least 44 px tall, in Hextra's primary colour. Until the latest release has the installer and the Mac app (every release after v0.4.0; the
     `has-installers` partial), the Windows and macOS tabs say they come with the next release and point to the
     command lines. A small script (`site/assets/js/install-platform.js`) picks the tab for the reader's system
     (Windows, macOS or Linux; Linux (apt) or (RPM) among the command lines when the browser names the
-    distribution) unless the reader picked one before, and on an Arm Linux computer shows the Arm packages'
-    buttons in place of the others; phones, tablets and ChromeOS keep the first tab, as does a browser without
+    distribution) unless the reader picked one before; phones, tablets and ChromeOS keep the first tab, as does a browser without
     JavaScript. The packages' menu entry is named only from the same release as the installers (v0.4.0's
     packages have none). The Installation page's uninstall steps (the download buttons' first, then the
     command lines'), the troubleshooting page (SmartScreen, Smart App Control, Gatekeeper, App Translocation,

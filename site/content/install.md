@@ -27,8 +27,8 @@ the network and collects no data.
 
 ## Uninstall
 
-`wopr` keeps no settings: removing the program removes everything except a debug log, if you ever made one
-([Troubleshooting](/usage/troubleshooting#debug-log) says where it is; delete its `wopr` folder).
+`wopr` keeps no settings. The only file it leaves behind is a
+[debug log](/usage/troubleshooting#debug-log), if you ever made one, and the steps below delete it too.
 
 If you installed WOPR with a download button:
 
@@ -38,8 +38,8 @@ If you installed WOPR with a download button:
 {{< if-installers >}}
 Open **Settings**, then **Apps**, then **Installed apps**. Click **...** next to **WOPR**, then
 **Uninstall**, **Uninstall** again, and **Yes**. On Windows 10, it is **Settings**, then **Apps**, then
-**Apps & features**, then **WOPR**, then **Uninstall**. This removes the Start menu entry too, and takes
-WOPR's folder off your `PATH`, even if the PowerShell line put it there.
+**Apps & features**, then **WOPR**, then **Uninstall**. This removes the Start menu entry and the debug
+log too, and takes WOPR's folder off your `PATH`, even if the PowerShell line put it there.
 {{< /if-installers >}}
 {{< if-installers "not" >}}
 The Windows installer comes with the next release. Until then, WOPR installs from PowerShell: see below.
@@ -48,7 +48,12 @@ The Windows installer comes with the next release. Until then, WOPR installs fro
 
 {{< tab name="macOS" >}}
 {{< if-installers >}}
-Drag **WOPR** from **Applications** to the Trash, and empty the Trash.
+Drag **WOPR** from **Applications** to the Trash, and empty the Trash. Then delete the debug log, if
+there is one, in Terminal:
+
+```sh
+rm -rf ~/Library/Caches/wopr
+```
 {{< /if-installers >}}
 {{< if-installers "not" >}}
 The Mac app comes with the next release. Until then, WOPR installs from Terminal: see below.
@@ -56,16 +61,16 @@ The Mac app comes with the next release. Until then, WOPR installs from Terminal
 {{< /tab >}}
 
 {{< tab name="Linux" >}}
-Open a terminal, and remove the package. For the `.deb`:
+Open a terminal, and remove the package and the debug log. For the `.deb`:
 
 ```sh
-sudo apt remove wopr
+sudo apt remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
 For the `.rpm`:
 
 ```sh
-sudo dnf remove wopr
+sudo dnf remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
 {{< if-installers >}}
@@ -80,10 +85,10 @@ If you installed it from the [command line](#command-line-install-methods):
 {{< tabs >}}
 
 {{< tab name="Windows" >}}
-In PowerShell, delete its folder and take the folder off your `PATH`:
+In PowerShell, delete its folder and its debug log, and take the folder off your `PATH`:
 
 ```powershell
-$d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue; $k = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment'); $p = $k.GetValue('Path', '', 'DoNotExpandEnvironmentNames'); $k.SetValue('Path', ((@($p -split ';') | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'ExpandString'); $k.Close(); [Environment]::SetEnvironmentVariable('WOPR_PATH_REFRESH', $null, 'User')
+$d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAction SilentlyContinue; $k = [Microsoft.Win32.Registry]::CurrentUser.CreateSubKey('Environment'); $p = $k.GetValue('Path', '', 'DoNotExpandEnvironmentNames'); $k.SetValue('Path', ((@($p -split ';') | Where-Object { $_ -and $_ -ne $d }) -join ';'), 'ExpandString'); $k.Close(); [Environment]::SetEnvironmentVariable('WOPR_PATH_REFRESH', $null, 'User'); Remove-Item -Recurse -Force "$env:LOCALAPPDATA\wopr" -ErrorAction SilentlyContinue
 ```
 
 {{< /tab >}}
@@ -91,7 +96,7 @@ $d = "$env:LOCALAPPDATA\Programs\wopr"; Remove-Item -Recurse -Force $d -ErrorAct
 {{< tab name="macOS" >}}
 
 ```sh
-rm -f ~/.local/bin/wopr
+rm -f ~/.local/bin/wopr; rm -rf ~/Library/Caches/wopr
 ```
 
 The `PATH` line the install line added to `~/.zprofile` (or `~/.bash_profile`) is harmless; delete it with
@@ -102,7 +107,7 @@ copy with `sudo rm -f /usr/local/bin/wopr`.
 {{< tab name="Linux (any)" >}}
 
 ```sh
-rm -f ~/.local/bin/wopr
+rm -f ~/.local/bin/wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
 The `PATH` line the install line may have added to `~/.bashrc` (or `~/.zshrc`) is harmless; delete it with a
@@ -113,7 +118,7 @@ with `sudo rm -f /usr/local/bin/wopr`.
 {{< tab name="Linux (apt)" >}}
 
 ```sh
-sudo apt remove wopr
+sudo apt remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
 {{< if-installers >}}
@@ -124,10 +129,10 @@ This also takes WOPR out of your app menu.
 {{< tab name="Linux (RPM)" >}}
 
 ```sh
-sudo dnf remove wopr
+sudo dnf remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
-On openSUSE: `sudo zypper remove wopr`.{{< if-installers >}} This also takes WOPR out of your app menu.{{< /if-installers >}}
+On openSUSE, use `sudo zypper remove wopr` in place of `sudo dnf remove wopr`.{{< if-installers >}} This also takes WOPR out of your app menu.{{< /if-installers >}}
 {{< /tab >}}
 
 {{< tab name="Go" >}}
@@ -137,10 +142,13 @@ Delete `wopr` from Go's `bin` folder, `~/go/bin` on Linux and macOS:
 rm "$(go env GOPATH)/bin/wopr"
 ```
 
-On Windows, in PowerShell:
+Then delete the debug log: `rm -rf ~/Library/Caches/wopr` on macOS, or
+`rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"` on Linux.
+
+On Windows, in PowerShell, this deletes both:
 
 ```powershell
-Remove-Item "$(go env GOPATH)\bin\wopr.exe"
+Remove-Item "$(go env GOPATH)\bin\wopr.exe"; Remove-Item -Recurse -Force "$env:LOCALAPPDATA\wopr" -ErrorAction SilentlyContinue
 ```
 
 {{< /tab >}}
@@ -155,15 +163,7 @@ on a Mac, or on a Linux that the download buttons do not cover.
 
 {{< install-tabs "command-line" >}}
 
-## Development builds
-
-Every CI run on `main` builds all six targets. Open a
-[CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
-and download your platform's file under **Artifacts**. It is the bare program: `chmod +x` it on Linux and
-macOS. The run also has the Windows installer, `installer-windows`, and the Mac app, `installer-macos`.
-Development builds are for testing; they carry no attestation.
-
-## Verifying binaries (attestation)
+## Verifying binaries {#verifying-binaries-attestation}
 
 This is for people who want proof that a file came from this project before they trust it. You do not
 need it to install `wopr`.
@@ -251,3 +251,11 @@ installer and the Mac app, the **Windows** and **macOS** tabs under [Install](#i
 click{{% /if-installers %}}. Windows' Smart App Control is different: when it is on, it blocks every
 program that is not signed, however it was downloaded ([Troubleshooting](/usage/troubleshooting) says
 more).
+
+## Development builds
+
+Every CI run on `main` builds all six targets. Open a
+[CI run on main](https://github.com/GhostofGoes/WOPR/actions/workflows/ci.yml?query=branch%3Amain+event%3Apush)
+and download your platform's file under **Artifacts**. It is the bare program: `chmod +x` it on Linux and
+macOS. The run also has the Windows installer, `installer-windows`, and the Mac app, `installer-macos`.
+Development builds are for testing; they carry no attestation.

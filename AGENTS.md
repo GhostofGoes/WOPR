@@ -300,8 +300,10 @@ screenshot fails the build.
   add that folder to the shell's `PATH` when it is missing; only the package lines need root. In
   these files, `@VERSION@` becomes the latest release's version (shortcodes do not run there), and
   `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a paragraph,
-  becomes a download button: a link to that release file, drawn by the shortcode (styled in
-  `site/assets/css/custom.css`), with the file's name under it and, for a package, a link to its Arm file.
+  becomes two download buttons, side by side, drawn by the shortcode (styled in
+  `site/assets/css/custom.css`): "Intel/AMD" and "ARM" on Windows and Linux, "Apple Silicon" and "Intel" on
+  macOS, each a plain link to its release file, with no file name under it. The Windows installer and the
+  Mac app are one file for both kinds of computer, so both of their buttons link to it.
   Until the latest release has the installers (the `has-installers` partial: every release after v0.4.0), the
   Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry first ships in
   the same release (v0.4.0's packages have none), so `@APP-MENU@` in `linux-packages.md`, `linux-apt.md` and
@@ -316,10 +318,11 @@ screenshot fails the build.
   `packages-signed.md` included, whichever it shows, and fails if one lacks its placeholder or a tab is
   left with any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
   `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked before,
-  saving nothing, and shows the packages' Arm buttons in place of the others on an Arm Linux computer. It
+  saving nothing. It
   picks a tab with Hextra's own `updateGroup`, which `head-end.html` copies from Hextra's `tabs.js` at build
   time, so a Hextra that changes it fails the build. Verifying an attestation is for the Installation page's
-  last section.
+  "Verifying binaries" section, which keeps the anchor `#verifying-binaries-attestation` that releases link;
+  development builds are its last section. The uninstall steps also delete the debug log.
 - Each game's page is built from `site/data/games/<slug>.json` by `site/content/games/_content.gotmpl`,
   which documents the schema; the manual page reads the same files. Change a game's text there.
 - Nothing is copied into the site. `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and this file's
