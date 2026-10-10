@@ -94,7 +94,8 @@ The persona, every game, the ending and the movie director are `proto.Program`s:
 
 - They get Events and return Outputs. They never block: anything slow is a `Think`, which runs off the UI
   goroutine. A `Think`'s `Fn` captures values only, never a pointer the program keeps using; copy a chess
-  position as a FEN string.
+  position as a FEN string. An Update or View that runs for 10 s (`internal/ui/watchdog.go`), or is still
+  running a second after SIGINT or SIGTERM, is taken for a hang: wopr restores the terminal and exits 1.
 - With `Env.Deterministic` (`--seed` or `WOPR_SEED`, tests, movie mode), searches stop at `Think.Limit`.
   Wall-clock `Budget` is only a cap.
 - Input mode is dynamic: `Prompt` asks for a line, `AwaitKeys` for keys. The host owns Esc; programs never

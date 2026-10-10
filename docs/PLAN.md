@@ -606,6 +606,10 @@ Rules:
     safety cap instead of `Budget`. `-race` slows a depth-3 chess search to a p99 of about 1 s, so a 1.5 s
     budget there would flake (AR-8). `testkit` fails the test if a deterministic `Think` reaches the cap.
   - `Fn` must capture values only. A `*chess.Position` lazily caches its moves and is not goroutine-safe.
+  - A program's `Handle` itself runs on the event loop, where a loop that never ends would freeze wopr past
+    Ctrl+C (a key in raw mode) and SIGINT or SIGTERM (messages queued behind it). The UI's watchdog
+    (`internal/ui/watchdog.go`) times every Update and View: one running 10 s, or still running a second after
+    SIGINT or SIGTERM, makes wopr restore the terminal, say it stopped responding, and exit 1.
 - **Seeds and streams** (AR-10). The host derives each launched program's `Env.Seed` from the session seed,
   the slug and how many times that slug has been played (`NewRand(session, GameStream(slug, n)).Uint64()`), so
   chess, checkers and each replay draw different sequences while a seeded session still reproduces exactly. A
