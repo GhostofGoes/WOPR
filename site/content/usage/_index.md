@@ -24,7 +24,7 @@ every game with how to play it and tips, and movie mode; on Linux and macOS, rea
 
 ## Options
 
-Every option has a one-letter form, and options can come before or after the game.
+Options can come before or after the game.
 
 | Option | What it does |
 |---|---|
