@@ -69,7 +69,7 @@ empty value counts as unset.
 know drops the line, and WOPR dials again. Every third failed try, it gives you a hint. At `LOGON:` you
 can also type `HELP LOGON`, `HELP GAMES` and `LIST GAMES`, as David does in the film.
 
-{{< screenshot src="img/logon-2.png" caption="`HELP GAMES` and `LIST GAMES` at the `LOGON:` prompt, before logging on." >}}
+{{< screenshot src="img/logon-2.png" caption="`HELP GAMES` at the `LOGON:` prompt, then `LIST GAMES` on the open line that follows, as in the film." >}}
 
 ## Talking to WOPR
 
