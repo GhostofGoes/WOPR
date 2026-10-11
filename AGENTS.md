@@ -42,7 +42,7 @@ system. There is no Makefile.
 | Check the menu entries and the AppStream metadata (Linux, after a release build. The tools are not pinned) | `desktop-file-validate build/pkg/deb/*.desktop build/pkg/rpm/*.desktop` (prints nothing when they pass), `appstreamcli validate --no-net --pedantic build/pkg/*.metainfo.xml` and `appstream-util validate-relax --nonet build/pkg/*.metainfo.xml`. The `desktop-files` hook runs them on what `pkgdocs` writes (its `TestValidators`, which skips a validator that is not installed unless `WOPR_DESKTOP_VALIDATORS=1`). The smoke jobs run them on the installed `.deb` |
 | Windows installer and MSIX packages (Windows, PowerShell 7, after a release build and `stage -archives -assets dist/release`) | `pwsh -File packaging/windows/check-release-files.ps1 -Version <V> -BinDir dist/release`, then `pwsh -File packaging/windows/build-installer.ps1 -Version <V> -BinDir dist/release -OutputDir build/installer` (downloads the pinned Inno Setup) and `pwsh -File packaging/windows/build-msix.ps1 -Version <V> -BinDir dist/release -OutputDir build/msix` (needs the Windows SDK) |
 | Test them (Windows, only on a machine without WOPR, such as a CI runner) | `pwsh -File packaging/windows/test-installer.ps1 -Installer build/installer/wopr_<V>_windows_setup.exe -Version <V>` (changes the user's `PATH` while it runs) and, as an administrator, `pwsh -File packaging/windows/test-msix.ps1 -PackageDir build/msix -Version <V>` (trusts a throwaway certificate while it runs) |
-| `wopr.exe`'s icon, manifest and version details by hand | `go tool -modfile=tools/release/go.mod go-winres make --in packaging/windows/winres.json --out cmd/wopr/rsrc --arch amd64,arm64` (GoReleaser's before hook runs it. Git ignores the `.syso` files it writes) |
+| `wopr.exe`'s icon, manifest and version details by hand | `go tool -modfile=tools/release/go.mod go-winres make --in packaging/windows/winres.json --out cmd/wopr/rsrc --arch amd64,arm64` (GoReleaser's before hook runs it. Git ignores the `.syso` files go-winres writes) |
 | macOS app bundle (any OS) | `go run ./internal/tools/macapp -binary <darwin program> -version <V> -out build/WOPR.app` (`-notices dist/release` takes the notices from the release files) |
 | macOS disk image (macOS, after a release build and `stage -archives -assets dist/release`) | `packaging/macos/build-dmg.sh dist/release <V> build/dmg`, then `packaging/macos/test-dmg.sh build/dmg/wopr_<V>_macos.dmg <V> [stage/darwin_<arch>/e2e.test]`. `packaging/macos/test-launch.sh build/dmg/wopr_<V>_macos.dmg` opens the app as Finder does, and it stops Terminal afterwards. Run it on a CI runner, or on a Mac where that does not matter |
 | Snaps (Linux with snapd, after a release build and `stage -archives -assets dist/release`) | `go run ./internal/tools/snapdir -dist dist/release -version <V> -arch amd64 -out build/snap/amd64`, then `snap pack build/snap/amd64 build/snaps` (without snapd, `mksquashfs build/snap/amd64 build/snaps/wopr_<V>_amd64.snap -noappend -comp xz -no-fragments -all-root -no-xattrs` packs it as snapd does). The Store's checks: `sudo snap install review-tools`, then `review-tools.snap-review <snap>` |
@@ -103,8 +103,8 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
   AppStream's rules. The tests also check that the screenshots and pages the files link exist in `site/`.
   `stage -archives` checks that the packages hold `build/pkg`'s files (by digest). It also checks that
   each menu entry starts that package's own program, and that the packages hold every icon size. The
-  `.rpm`'s directories in `.goreleaser.yaml` and `smoke.yml` also list the sizes. Change all three
-  together. A release signs the packages with the key in `packaging/wopr-signing-key.asc`
+  `.rpm`'s directories in `.goreleaser.yaml` also list the sizes, and so does `smoke.yml`. Change all
+  three together. A release signs the packages with the key in `packaging/wopr-signing-key.asc`
   (`packaging/sign-packages.sh`: a signature inside each `.rpm`, a `.deb.asc` beside each `.deb`, and
   `checksums.txt.asc`). CI signs with a throwaway key. The smoke jobs install, run and remove both
   packages, with signature checks on in CI. They also check the installed menu entry and metadata.
@@ -388,7 +388,7 @@ screenshot fails the build.
 ## Secret scanning
 
 The `secrets` job runs gitleaks over the checked-out history (the pushed branch, or a fork's pull request
-merged with `main`), with `--no-color` so the job can detect its `ERR` lines. It fails on a finding, on
+merged with `main`), with `--no-color` so the job can detect gitleaks's `ERR` lines. It fails on a finding, on
 any error, and on an empty scan. Handle a finding as `SECURITY.md` describes: rotate the secret, then add
 its fingerprint to `.gitleaksignore` by pull request.
 
@@ -461,8 +461,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
 - **Dependabot:** off (owner decision). The weekly `scheduled.yml` report covers updates and
   vulnerabilities.
 - **Installers:** the Windows installer and the Mac app need no secret, variable or environment. The
-  Linux packages need only the release signing key above. Each store needs some of them, and only when
-  the owner enables that store:
+  Linux packages need only the release signing key above. Each store needs a secret, a variable or an
+  environment, and only when the owner enables that store:
   - **Snap Store**, when the name is registered. With an Ubuntu One account (two-factor on), run
     `snapcraft register wopr`. A person at the Store reviews new names, which can take days or weeks.
     Create the environment `snap-store` with the owner as required reviewer, and deployments from tags
