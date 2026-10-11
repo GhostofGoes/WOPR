@@ -426,6 +426,8 @@ screenshot fails the build.
   The push run tests the branch as it is, not merged with `main`, so the ruleset requires branches to be
   up to date. Updating one is a push, which tests the result.
 - Run `prek run --all-files` and `go test ./...` before pushing.
+- OpenSSF Best Practices compliance is a project goal, so check each change against the
+  [criteria](https://www.bestpractices.dev/en/criteria/0) before you open a PR.
 - Never re-tag a release. Fix a bad release with the next patch version and a `retract` in `go.mod`.
 
 ## Secret scanning

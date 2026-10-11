@@ -2025,6 +2025,8 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
 
 ## 12. Security and public-repository hygiene
 
+- **OpenSSF Best Practices.** WOPR holds the passing badge (project 15394 on bestpractices.dev).
+  Compliance is a project goal. Each change is checked against the criteria before its PR opens.
 - **Secrets.** None in the tree, ever.
   - gitleaks runs as a pre-commit hook (staged changes) and in the `secrets` job (the checked-out history,
     §11.2).

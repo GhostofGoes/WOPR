@@ -1,5 +1,7 @@
 # wopr
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394/badge)](https://www.bestpractices.dev/projects/15394)
+
 > SHALL WE PLAY A GAME?
 
 `wopr` is a terminal recreation of the WOPR (War Operation Plan Response) computer from the 1983 film

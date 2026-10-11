@@ -6,6 +6,8 @@ tabs:
   sync: true
 ---
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394/badge)](https://www.bestpractices.dev/projects/15394)
+
 We welcome bug reports, fixes, new tests and improvements to the games. When you take part, you agree to
 follow the [Code of Conduct](/contributing/code-of-conduct).
 
