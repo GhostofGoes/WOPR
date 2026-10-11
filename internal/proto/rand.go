@@ -16,7 +16,7 @@ const (
 // top-level math/rand/v2 functions). The same seed and stream always produce the same
 // sequence, across Go releases.
 func NewRand(seed, stream uint64) *rand.Rand {
-	return rand.New(rand.NewPCG(seed, stream))
+	return rand.New(rand.NewPCG(seed, stream)) //nolint:gosec // seeded on purpose for replays; never used for security
 }
 
 // GameStream returns the stream id for the playIndex-th game of slug in a session.

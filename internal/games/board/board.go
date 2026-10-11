@@ -150,7 +150,7 @@ func ParseSquare(s string) (file, rank int, ok bool) {
 
 // SquareName is the inverse of ParseSquare.
 func SquareName(file, rank int) string {
-	return string([]byte{byte('a' + file), byte('1' + rank)})
+	return string([]byte{byte('a' + file), byte('1' + rank)}) //nolint:gosec // file and rank are 0..7
 }
 
 // Text renders a View as plain lines for the console: the final position a game hands to

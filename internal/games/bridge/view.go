@@ -75,7 +75,7 @@ func drawSuits(c *proto.Canvas, x, y int, hand []cards.Card, style proto.Style) 
 		if i > 0 {
 			x += 2
 		}
-		s := cards.Suit(len(cards.Suits) - 1 - i) // spades first
+		s := cards.Suit(len(cards.Suits) - 1 - i) //nolint:gosec // spades first; i is 0..3
 		x = c.Put(x, y, part[:1], cards.SuitStyle(s), 0)
 		x = c.Put(x, y, part[1:], style, 0)
 	}

@@ -69,7 +69,7 @@ func (g *Game) drawBoard(c *proto.Canvas, x int) {
 	pos := g.g.Position()
 	b := pos.Board()
 	board.DrawCompact(c, x+boardX, 0, func(file, rank int) board.Glyph {
-		sq := cg.NewSquare(cg.File(file), cg.Rank(rank))
+		sq := cg.NewSquare(cg.File(file), cg.Rank(rank)) //nolint:gosec // file and rank are 0..7
 		gl := board.Glyph{Mark: g.last != cg.NoSquare && (sq == g.last || sq == g.from)}
 		if p := b.Piece(sq); p != cg.NoPiece {
 			gl.R, gl.S = letter(p), proto.StyleBright

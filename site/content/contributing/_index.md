@@ -113,13 +113,17 @@ go run ./cmd/wopr
 
 ## Making a change
 
-1. Branch from `main`. Keep each change focused. Add or update tests with the change.
-2. When a screen changes on purpose, regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`.
+1. Branch from `main`. Keep each change focused. New functionality must come with automated tests. A
+   bug fix must come with a regression test.
+2. Go code must follow [Effective Go](https://go.dev/doc/effective_go), the
+   [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments) and the rules in AGENTS.md. The
+   formatters and linters in the hooks and in CI enforce them.
+3. When a screen changes on purpose, regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`.
    Then read the diff.
-3. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
+4. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
    `go test -race ./...`.
-4. If players will notice the change, add a change note (see below).
-5. Open a pull request. Write the title and description to say what changed and why. We squash-merge
+5. If players will notice the change, add a change note (see below).
+6. Open a pull request. Write the title and description to say what changed and why. We squash-merge
    pull requests, so the title and description become the commit on `main`.
 
 {{% repo-file "AGENTS.md" "section:Pull requests" %}}

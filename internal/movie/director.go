@@ -136,7 +136,7 @@ func (d *Director) Handle(ev proto.Event) []proto.Output {
 // begin starts scene i on a clean page, with the board put away.
 func (d *Director) begin(i int) []proto.Output {
 	d.phase, d.scene, d.step = playing, i, 0
-	d.rng = proto.NewRand(Seed, proto.DomainMovie|uint64(i+1))
+	d.rng = proto.NewRand(Seed, proto.DomainMovie|uint64(i+1)) //nolint:gosec // a stream ID; i is a scene index
 	d.film, d.target, d.board, d.clock = nil, 0, false, nil
 	outs := []proto.Output{
 		proto.AwaitKeys{Capture: true},
@@ -204,7 +204,7 @@ func (d *Director) showBoard(s scenes.Board) []proto.Output {
 	}
 	var outs []proto.Output
 	if d.film == nil {
-		d.film = gtw.NewFilm(proto.NewRand(Seed, proto.DomainMovie|1<<32|uint64(d.scene)).Uint64(), d.env.ReduceMotion)
+		d.film = gtw.NewFilm(proto.NewRand(Seed, proto.DomainMovie|1<<32|uint64(d.scene)).Uint64(), d.env.ReduceMotion) //nolint:gosec // a stream ID; the scene is an index
 	}
 	if !d.board {
 		d.board, d.clock = true, nil
