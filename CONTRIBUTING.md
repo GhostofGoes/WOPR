@@ -11,6 +11,9 @@ When you take part, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md
   [bug report or feature request form](https://github.com/GhostofGoes/WOPR/issues/new/choose). This lets us
   agree on the approach before you spend time on it. Ask questions in
   [Discussions](https://github.com/GhostofGoes/WOPR/discussions).
+- **A first task:** issues with the
+  [good first issue](https://github.com/GhostofGoes/WOPR/labels/good%20first%20issue) label are small
+  tasks for new contributors.
 - **Security problems:** do not open a public issue. Follow [SECURITY.md](SECURITY.md).
 - **Design:** the architecture, scope and milestones are in [docs/PLAN.md](docs/PLAN.md). The day-to-day
   conventions are in [AGENTS.md](AGENTS.md): the package rules, the single clock, how to add a game, and
@@ -51,19 +54,23 @@ prek run --all-files   # run everything on demand
 2. Keep each change focused. New functionality must come with automated tests. A bug fix must come
    with a regression test. Regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`. Then read
    the diff.
-3. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
+3. Start each new source file with the two SPDX lines that the other files have. A test checks them.
+4. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
    [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments), and AI agents must follow the
    rules in [AGENTS.md](AGENTS.md). The formatters and linters in the hooks and in CI enforce them.
-4. If players will notice the change, add a change note with
+5. If players will notice the change, add a change note with
    `go tool -modfile=tools/release/go.mod changie new`. A note is one short, plain line that says what
    changed for them, such as "Fixed an issue with the Chess game". [AGENTS.md](AGENTS.md#change-notes) has
    the rules. Do not edit `CHANGELOG.md`. Releases build it from the notes.
-5. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
+6. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
    `go test -race ./...`. The installers' scripts in `packaging/windows/`, `packaging/macos/` and
    `packaging/snap/` run only on their own systems. Because of that, CI's `windows`, `macos` and `snap`
    jobs are their real test. When you change those files, check those jobs on your branch's run.
-6. Write commit messages that say what changed and why. We squash-merge PRs, so the PR title and
+7. Write commit messages that say what changed and why. We squash-merge PRs, so the PR title and
    description become the commit on `main`.
+
+A maintainer reviews every pull request before it merges. [AGENTS.md](AGENTS.md#pull-requests) says what
+the review checks, and what a pull request needs before it can merge.
 
 ## Film text and other third-party content
 

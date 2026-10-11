@@ -4,6 +4,9 @@ This roadmap covers October 2026 to October 2027. The maintainer reviews it at e
 milestones and their details are in [docs/PLAN.md](docs/PLAN.md#15-milestones), and each item below links
 its issue when it has one.
 
+WOPR has the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394) silver badge. The
+gold badge is not a goal.
+
 ## Planned
 
 - **v1.0.0.** Finish milestone M5: quality checks of every game on Linux, macOS and Windows, and the
@@ -17,7 +20,6 @@ its issue when it has one.
   ([#12](https://github.com/GhostofGoes/WOPR/issues/12)).
 - **A start screen** for people who open WOPR from a menu
   ([#13](https://github.com/GhostofGoes/WOPR/issues/13)).
-- **The OpenSSF Best Practices silver badge.**
 - **A DCO sign-off requirement** for every commit, with a rule for AI-assisted changes
   ([#29](https://github.com/GhostofGoes/WOPR/issues/29)).
 
