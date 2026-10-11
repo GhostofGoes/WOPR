@@ -41,7 +41,7 @@ func RenderGames(w io.Writer, reg *games.Registry) error {
 		row("", e.Info)
 	}
 	if anyPlanned {
-		b.WriteString("\n* not playable yet; WOPR will tell you so.\n")
+		b.WriteString("\n* not playable yet. WOPR will tell you so.\n")
 	}
 	_, err := io.WriteString(w, b.String())
 	return err
@@ -50,7 +50,7 @@ func RenderGames(w io.Writer, reg *games.Registry) error {
 // RenderScenes writes the plain-text scene list for --scenes: number, slug and what happens,
 // in the film's order.
 func RenderScenes(w io.Writer) error {
-	_, err := io.WriteString(w, sceneList()+"\nPlay from one with wopr -m <number or name>; add -o to play just that one.\n"+
+	_, err := io.WriteString(w, sceneList()+"\nPlay from one with wopr -m <number or name>. Add -o to play just that one.\n"+
 		"wopr -m alone opens a menu.\n")
 	return err
 }
@@ -97,15 +97,15 @@ func RenderHelp(w io.Writer) error {
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
 
-With -r nothing blinks, the front panel's lights stand still and the ending
-keeps a steady pace; the typing and the animations still play. -i skips them.
+With -r nothing blinks, the front panel's lights stand still, and the ending
+keeps a steady pace. The typing and the animations still play. -i skips them.
 
-Movie mode plays the film's scenes from the one named to the end, then exits;
-without one, it opens a menu of scenes. With -o, each scene plays alone, then
-wopr exits, or returns to the menu if you came from it. Space pauses, n or
-Right skips to the next scene, p or Left goes back, and Esc opens the menu,
-except during the climax's games, which play to the end. With -i the text
-appears at once, but scenes still pause.
+Movie mode plays the film's scenes from the one named to the end, then exits.
+Without a scene, it opens a menu of scenes. With -o, each scene plays alone.
+Then wopr exits, or it returns to the menu if you came from it. Space pauses.
+n or Right skips to the next scene, p or Left goes back one, and Esc opens
+the menu. The climax's games play to the end: those keys do nothing there.
+With -i the text appears at once, but the scenes still pause.
 
 Examples:
   wopr                 dial in and log on

@@ -1,5 +1,5 @@
-# The choices on the "New issue" page. Only the two forms open an issue; questions go to
-# Discussions, and security problems to a private report (SECURITY.md).
+# The choices on the "New issue" page. Only the two forms open an issue. Questions go to
+# Discussions, and security problems go to a private report (SECURITY.md).
 blank_issues_enabled: false
 contact_links:
   - name: Ask a question

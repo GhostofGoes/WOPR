@@ -7,9 +7,9 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report a problem. Please check the
-        [issues](https://github.com/GhostofGoes/WOPR/issues?q=is%3Aissue) first, and the
+        [issues](https://github.com/GhostofGoes/WOPR/issues?q=is%3Aissue) first. Also check the
         [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/), which has fixes
-        for common problems. Security problems go in a
+        for common problems. For a security problem, use a
         [private report](https://github.com/GhostofGoes/WOPR/security/advisories/new) instead.
   - type: textarea
     id: what-happened
@@ -23,7 +23,7 @@ body:
     id: steps
     attributes:
       label: How can we make it happen?
-      description: The steps that lead to the problem, from starting wopr (or from installing it). Include what you typed.
+      description: The steps that lead to the problem, from the time you start wopr (or install it). Include what you typed.
       placeholder: |
         1. Run `wopr`
         2. Log on as Joshua
@@ -41,7 +41,7 @@ body:
     attributes:
       label: wopr version
       description: >-
-        What `wopr --version` prints. If wopr will not install or run, write "not installed" and put the
+        What `wopr --version` prints. If wopr will not install or run, write "not installed". Then put the
         command you ran under "How can we make it happen?".
       placeholder: wopr v0.3.0 (commit 3eb36c3, built 2026-10-07, go1.27.1)
     validations:
@@ -113,8 +113,8 @@ body:
     attributes:
       label: Command and settings
       description: >-
-        How you started wopr, with any options, and any WOPR_... or NO_COLOR setting you set (for example
-        WOPR_THEME=amber). Add the seed if you used one.
+        How you started wopr, with any options. Include any WOPR_... or NO_COLOR setting you set, for
+        example WOPR_THEME=amber. If you used a seed, add it.
       placeholder: wopr --theme green --seed 1983 chess
     validations:
       required: false
@@ -131,11 +131,11 @@ body:
     attributes:
       label: Debug log and screenshots
       description: |
-        Run wopr again with `WOPR_DEBUG=1` set and make the problem happen. When wopr exits, it prints where
-        it saved debug.log (the
+        Run wopr again with `WOPR_DEBUG=1` set, and make the problem happen. When wopr exits, it prints
+        where it saved debug.log. The
         [troubleshooting page](https://ghostofgoes.github.io/WOPR/usage/troubleshooting/#debug-log) says
-        where too). Drag that file here; the log never records what you type. A screenshot of the problem
-        helps a lot too: crop out anything private, such as your name or other windows.
+        where too. Drag that file here. The log never records what you type. A screenshot of the problem
+        helps a lot too. Remove anything private from it first, such as your name or other windows.
     validations:
       required: false
   - type: checkboxes
@@ -145,5 +145,5 @@ body:
       options:
         - label: I searched the issues and did not find this problem.
           required: true
-        - label: I am using the [latest release](https://github.com/GhostofGoes/WOPR/releases/latest).
+        - label: I use the [latest release](https://github.com/GhostofGoes/WOPR/releases/latest).
           required: false

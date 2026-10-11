@@ -338,7 +338,7 @@ func writeScenes(p *page) {
 		"Add `-o` (`--only`) to play just one scene. " +
 		"`wopr --scenes` lists the scenes.")
 	p.macro("PP")
-	p.text("While a scene plays, Space pauses and resumes, `n` or Right skips to the next scene, `p` or Left goes back one, and Esc opens the menu. " +
+	p.text("While a scene plays, Space pauses and resumes. `n` or Right skips to the next scene. `p` or Left goes back one scene. Esc opens the menu. " +
 		"Once the climax reaches tic-tac-toe, it plays to the end. " +
 		"Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`.")
 }
@@ -348,8 +348,9 @@ func writeEnd(p *page) {
 	for _, s := range [][2]string{
 		{"0", "The session ended normally: `LOGOFF`, the end of movie mode, a print-and-exit option, or SIGTERM."},
 		{"1", "A runtime error or a crash."},
-		{"2", "A usage error, such as an unknown option, game, scene or theme, a seed that is not a whole number, too many arguments, " +
-			"options that cannot be combined, a name that fits more than one, or no terminal to run in (standard output is not a terminal, or `TERM` is `dumb`)."},
+		{"2", "A usage error. The command line has an unknown option, game, scene or theme, a seed that is not a whole number, or too many arguments. " +
+			"Or it combines options that cannot go together, or it names something that fits more than one. " +
+			"Or there is no terminal to run in: standard output is not a terminal, or `TERM` is `dumb`."},
 		{"130", "Ctrl+C or SIGINT."},
 	} {
 		p.macro("TP")
@@ -372,9 +373,9 @@ func writeEnd(p *page) {
 		}
 	}
 	for _, e := range [][2]string{
-		{"WOPR_PANEL", "Shows the front panel when true and hides it when false, in any theme. Unset or empty, the theme decides: `norad` shows it."},
+		{"WOPR_PANEL", "When true, it shows the front panel in any theme. When false, it hides the panel in any theme. When it is unset or empty, the theme decides: `norad` shows the panel."},
 		{"WOPR_DEBUG", "When true, `wopr` writes a debug log (never what you type) and prints its path when it exits. See FILES."},
-		{"NO_COLOR", "Set to any non-empty value, it turns colour off."},
+		{"NO_COLOR", "When it is set to any value but an empty one, it turns colour off."},
 		{"TERM", "When it is `dumb`, `wopr` does not start its full-screen interface, and it exits with status 2. The options that print and exit still work."},
 	} {
 		p.macro("TP")
@@ -397,7 +398,7 @@ func writeEnd(p *page) {
 	// The URL ends its line, with no full stop that a terminal could take as part of it.
 	p.text("Report bugs in the issue tracker: " + issuesURL)
 	p.macro("PP")
-	p.text("Run `wopr` with `WOPR_DEBUG=1` and attach the debug log it names when it exits, with the seed if you used one. " +
+	p.text("Run `wopr` with `WOPR_DEBUG=1`. Attach the debug log that it names when it exits, and the seed if you used one. " +
 		"Nobody has tried the full-screen interface with a screen reader yet.")
 
 	p.macro("SH", "EXAMPLES")

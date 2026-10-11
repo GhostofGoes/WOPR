@@ -48,7 +48,7 @@ type screenshot struct {
 	Caption string `json:"caption"`
 }
 
-// manTips is how many tips the manual page gives for each game; every file has at least
+// manTips is how many tips the manual page gives for each game. Every file has at least
 // this many.
 const manTips = 3
 

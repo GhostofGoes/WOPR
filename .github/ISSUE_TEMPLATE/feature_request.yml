@@ -7,8 +7,8 @@ body:
     attributes:
       value: |
         Thanks for the idea. Please check the [issues](https://github.com/GhostofGoes/WOPR/issues?q=is%3Aissue)
-        first. For a question, ask in [Q&A](https://github.com/GhostofGoes/WOPR/discussions/categories/q-a);
-        to talk an idea over first, start a discussion in
+        first. For a question, ask in [Q&A](https://github.com/GhostofGoes/WOPR/discussions/categories/q-a).
+        To discuss an idea first, start a discussion in
         [Ideas](https://github.com/GhostofGoes/WOPR/discussions/categories/ideas).
   - type: dropdown
     id: area
@@ -46,8 +46,8 @@ body:
     attributes:
       label: In the film
       description: |
-        If this is about something in WarGames (1983), say which scene and what happens in it. A
-        timestamp helps. Please describe it in your own words rather than pasting the film's script.
+        If this is about something in WarGames (1983), say which scene it is and what happens in it. A
+        timestamp helps. Please describe it in your own words. Please do not paste the film's script.
     validations:
       required: false
   - type: textarea
