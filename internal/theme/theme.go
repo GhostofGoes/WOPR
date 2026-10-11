@@ -133,7 +133,7 @@ func (t *Theme) Lip(s proto.Style, a proto.Attr, p colorprofile.Profile) lipglos
 	case colorprofile.TrueColor, colorprofile.ANSI256:
 		st = st.Foreground(lipgloss.Color(spec.FG.Hex)).Background(lipgloss.Color(t.bg(spec).Hex))
 	case colorprofile.ANSI:
-		st = st.Foreground(ansi.BasicColor(spec.FG.ANSI)).Background(ansi.BasicColor(t.bg(spec).ANSI))
+		st = st.Foreground(ansi.BasicColor(spec.FG.ANSI)).Background(ansi.BasicColor(t.bg(spec).ANSI)) //nolint:gosec // ANSI colours are 0..15 (theme tests check)
 	default: // ASCII and NoTTY: no colour at all
 		attr |= spec.NoColAttr
 		if s == proto.StyleDim || s == proto.StyleLand {

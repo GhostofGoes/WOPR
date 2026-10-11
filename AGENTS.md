@@ -10,6 +10,10 @@ disagree on day-to-day practice, this file wins. Update both in the same PR when
 binary. Bubble Tea v2 renders it, and Lip Gloss v2 styles it. There is no network code. It is built in
 the milestones of `docs/PLAN.md` §15.
 
+`SECURITY.md` states what users can expect from `wopr`'s security, and `docs/ASSURANCE.md` explains why it
+holds. A change that moves a trust boundary updates both: new network access, a new file or environment
+variable, or a new program that `wopr` starts. `GOVERNANCE.md` names the roles, and `ROADMAP.md` the plans.
+
 ## Commands
 
 All commands run from the repository root. They work on Linux, macOS and Windows, unless a row names a
@@ -471,6 +475,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   "Require branches to be up to date before merging". Block force pushes and deletion. Allow squash merges
   only (merge commits and rebase merging off). `gh api 'repos/{owner}/{repo}/rules/branches/main'` should
   list `pull_request` and `required_status_checks` rules.
+- **Collaborators:** the backup maintainer in `GOVERNANCE.md` has write access. Keep the emergency access
+  that its Continuity section describes current.
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Enable immutable releases.
 - **Security:** enable secret scanning with push protection, and private vulnerability reporting.
 - **Release signing key** (`docs/PLAN.md` §8, "Signatures"). Create an environment named `release`

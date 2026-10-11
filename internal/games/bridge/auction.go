@@ -123,7 +123,7 @@ func Auction(hands [cards.Seats][]cards.Card, dealer int) (calls []Bid, c Contra
 	if opener < 0 {
 		return []Bid{Pass, Pass, Pass, Pass}, Contract{}, false
 	}
-	goal := target(hands[opener], hands[partner(opener)])
+	goal := target(hands[opener], hands[partner(opener)]) //nolint:gosec // hands is an array of cards.Seats; opener is a seat
 	seat := dealer
 	for ; seat != opener; seat = (seat + 1) % cards.Seats {
 		calls = append(calls, Pass)

@@ -267,7 +267,7 @@ func (g *Game) drawTrajectories(c *proto.Canvas) {
 }
 
 func heading(seed uint64, i int) [4]int {
-	r := proto.NewRand(seed, uint64(1000+i))
+	r := proto.NewRand(seed, uint64(1000+i)) //nolint:gosec // a stream ID; i is a non-negative index
 	return [4]int{r.IntN(1000), r.IntN(1000), r.IntN(1000), r.IntN(1000)}
 }
 

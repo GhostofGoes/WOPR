@@ -28,7 +28,7 @@ const (
 type Score uint32
 
 // Category is the hand's class.
-func (s Score) Category() Category { return Category(s >> 20) }
+func (s Score) Category() Category { return Category(s >> 20) } //nolint:gosec // Score puts the category (0..9) at bit 20
 
 // rank returns the i-th rank that decides the hand (0 is the most important).
 func (s Score) rank(i int) cards.Rank { return cards.Rank(s >> (16 - 4*i) & 0xf) }

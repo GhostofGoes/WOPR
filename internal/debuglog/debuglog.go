@@ -39,7 +39,7 @@ func Open(dir string) (*Log, error) {
 	} else if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|oNoFollow, 0o600)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|oNoFollow, 0o600) //nolint:gosec // the path is the user's own cache directory, checked above
 	if err != nil {
 		return nil, fmt.Errorf("debug log: %w", err)
 	}

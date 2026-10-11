@@ -47,7 +47,7 @@ func (m Move) to() int    { return int(m.path[m.n-1]) }
 func (m Move) jump() bool { return abs(rankOf(int(m.path[1]))-rankOf(int(m.path[0]))) == 2 }
 
 func (m Move) add(sq int) Move {
-	m.path[m.n] = int8(sq)
+	m.path[m.n] = int8(sq) //nolint:gosec // squares are 0..31
 	m.n++
 	return m
 }

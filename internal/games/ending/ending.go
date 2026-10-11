@@ -175,7 +175,7 @@ func (g *Game) playStep() {
 			finished++
 			continue
 		}
-		r := proto.NewRand(g.env.Seed, proto.DomainAI|uint64(g.games*boards+i))
+		r := proto.NewRand(g.env.Seed, proto.DomainAI|uint64(g.games*boards+i)) //nolint:gosec // a stream ID from non-negative counters
 		sq := tictactoe.Best(b, g.toMove[i], r)
 		b[sq] = g.toMove[i]
 		g.boards[i], g.toMove[i], g.last[i] = b, tictactoe.Other(g.toMove[i]), sq

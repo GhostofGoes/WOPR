@@ -57,7 +57,7 @@ type Unit struct {
 
 // Name is the unit as the map shows it: ARM1, ARM1* when reduced, GUE1~ when hidden.
 func (u *Unit) Name() string {
-	n := u.Type.Name + string(rune('0'+u.ID))
+	n := u.Type.Name + string(rune('0'+u.ID)) //nolint:gosec // unit IDs are small and positive
 	if u.Steps == 1 {
 		n += "*"
 	}
@@ -129,7 +129,7 @@ func (s *State) Lose(u *Unit, steps int) {
 }
 
 // Label names a unit in a report, with WOPR'S before WOPR's units: ARM1, WOPR'S ARM1.
-func (s *State) Label(u *Unit) string { return s.owner(u) + u.Type.Name + string(rune('0'+u.ID)) }
+func (s *State) Label(u *Unit) string { return s.owner(u) + u.Type.Name + string(rune('0'+u.ID)) } //nolint:gosec // unit IDs are small and positive
 
 // Wound takes one step from u and says so (or that it is destroyed).
 func (s *State) Wound(u *Unit) {

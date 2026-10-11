@@ -1762,8 +1762,11 @@ classified address it leads to.
   `TestToolModulesFitTheToolchain` enforces it. Tools pinned twice (golangci-lint and gitleaks, in `prek.toml`
   and in a tool module) must agree. `TestToolPinsAgree` checks that (TO-8).
 - **golangci-lint** (`.golangci.yml`, v2.14.0):
-  - `default: standard` plus revive, gocritic, misspell, forbidigo and depguard. The formatters are gofmt,
-    goimports and gofumpt. `run.build-tags: [e2e]` brings the e2e tests under lint (TO-6).
+  - `default: standard` plus revive, gocritic, misspell, forbidigo, depguard and gosec. The formatters are
+    gofmt, goimports and gofumpt. `run.build-tags: [e2e]` brings the e2e tests under lint (TO-6).
+  - **gosec** looks for common security weaknesses in the code that ships. It skips tests and the test-only
+    and build-time packages (`internal/tools`, `archtest`, `e2e`, `golden`, `testkit`, `gamestest`). A false
+    positive gets `//nolint:gosec` with the reason on the same line.
   - **forbidigo** (T-2, A-11), with `analyze-types: true`:
     - `^tea\.(Tick|Every|Sequence)$` with `pkg: ^charm\.land/bubbletea/v2$`, exempt in `internal/ui/clock.go`.
     - the top-level `math/rand/v2` functions, and every `math/rand` (v1) function (TO-5).

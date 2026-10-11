@@ -3,7 +3,7 @@ run:
   build-tags: [e2e]            # lint the end-to-end tests too
 linters:
   default: standard            # errcheck, govet, ineffassign, staticcheck, unused
-  enable: [revive, gocritic, misspell, forbidigo, depguard]
+  enable: [revive, gocritic, misspell, forbidigo, depguard, gosec]
   settings:
     forbidigo:
       analyze-types: true      # match text is "<declared pkg name>.<func>", even via alias or dot import
@@ -36,6 +36,12 @@ linters:
       - path: _test\.go$
         linters: [forbidigo]
         text: 'time\.'
+      # gosec checks the code that ships in wopr. Tests and the test-only and build-time packages
+      # read and write files by path and convert integers freely, on inputs the repository controls.
+      - path: _test\.go$
+        linters: [gosec]
+      - path: ^internal/(tools|archtest|e2e|golden|games/testkit|games/gamestest)/
+        linters: [gosec]
 formatters:
   enable: [gofmt, goimports, gofumpt]
 issues:

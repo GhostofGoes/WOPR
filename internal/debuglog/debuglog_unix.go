@@ -24,7 +24,7 @@ func checkDir(d string) error {
 		return fmt.Errorf("%s belongs to another user", d)
 	}
 	if info.Mode().Perm()&0o077 != 0 {
-		return os.Chmod(d, 0o700)
+		return os.Chmod(d, 0o700) //nolint:gosec // a directory needs its x bit; 0700 is owner only
 	}
 	return nil
 }
