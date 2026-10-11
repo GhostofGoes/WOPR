@@ -117,9 +117,9 @@ go run ./cmd/wopr
 
 1. Branch from `main`. Keep each change focused. New functionality must come with automated tests. A
    bug fix must come with a regression test.
-2. Go code must follow [Effective Go](https://go.dev/doc/effective_go), the
-   [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments) and the rules in AGENTS.md. The
-   formatters and linters in the hooks and in CI enforce them.
+2. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
+   [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments), and AI agents must follow the
+   rules in AGENTS.md. The formatters and linters in the hooks and in CI enforce them.
 3. When a screen changes on purpose, regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`.
    Then read the diff.
 4. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run

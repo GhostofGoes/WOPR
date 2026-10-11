@@ -51,9 +51,9 @@ prek run --all-files   # run everything on demand
 2. Keep each change focused. New functionality must come with automated tests. A bug fix must come
    with a regression test. Regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`. Then read
    the diff.
-3. Go code must follow [Effective Go](https://go.dev/doc/effective_go), the
-   [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments) and the rules in
-   [AGENTS.md](AGENTS.md). The formatters and linters in the hooks and in CI enforce them.
+3. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
+   [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments), and AI agents must follow the
+   rules in [AGENTS.md](AGENTS.md). The formatters and linters in the hooks and in CI enforce them.
 4. If players will notice the change, add a change note with
    `go tool -modfile=tools/release/go.mod changie new`. A note is one short, plain line that says what
    changed for them, such as "Fixed an issue with the Chess game". [AGENTS.md](AGENTS.md#change-notes) has
