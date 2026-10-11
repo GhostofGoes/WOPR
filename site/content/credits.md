@@ -6,8 +6,8 @@ description: Who owns what in wopr and on this site, and the licences that apply
 editURL: https://github.com/GhostofGoes/WOPR/edit/main/NOTICE.md
 ---
 
-The `wopr` code is MIT licensed. The film's text and the third-party text and art it uses are not covered
-by that licence. This page is the repository's `NOTICE.md`, which also ships with every download; the
+The `wopr` code is MIT licensed. That licence does not cover the film's text, or the third-party text and
+art that `wopr` uses. This page is the repository's `NOTICE.md`, which also ships with every download. The
 screenshots on this site show some of that material.
 
 {{% repo-file "NOTICE.md" %}}
@@ -16,8 +16,8 @@ screenshots on this site show some of that material.
 
 ## The Windows installer
 
-The Windows installer is made with [Inno Setup](https://jrsoftware.org/isinfo.php), by Jordan Russell and
-Martijn Laan.
+[Inno Setup](https://jrsoftware.org/isinfo.php), by Jordan Russell and Martijn Laan, builds the Windows
+installer.
 
 {{% /if-installers %}}
 

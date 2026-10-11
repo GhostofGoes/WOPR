@@ -7,6 +7,6 @@ $a = if ("$env:PROCESSOR_ARCHITECTURE $env:PROCESSOR_ARCHITEW6432" -match 'ARM64
 It puts `wopr.exe` in `%LOCALAPPDATA%\Programs\wopr`, adds that folder to your `PATH`, and starts it. To
 play again, open PowerShell and type `wopr`.
 
-If **Smart App Control** is turned on, Windows blocks `wopr`: it blocks every program that is not signed,
-with no exception for one program, and `wopr` is not signed yet.
+If **Smart App Control** is on, Windows blocks `wopr`. Smart App Control blocks every program that is not
+signed, with no exception for one program, and `wopr` is not signed yet.
 [Troubleshooting](/usage/troubleshooting) says more.

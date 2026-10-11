@@ -9,7 +9,7 @@ Movie mode replays the film's scenes at WOPR's terminal as a show that runs itse
 themselves, WOPR answers, and the war and the ending play through the same console and games you play
 with. Nothing needs typing.
 
-The scenes show only what WOPR's terminal shows on screen, David's typing included; there is no dialogue
+The scenes show only what WOPR's terminal shows on screen, David's typing included. There is no dialogue
 that is only spoken. The dial, the strike exchange, tic-tac-toe's prompts and the game clock's seconds
 are this project's own text.
 
@@ -26,9 +26,9 @@ are this project's own text.
  6. climax           DEFCON 1, TIC-TAC-TOE AND A STRANGE GAME
 ```
 
-1. **First contact** (`first-contact`). David's first connection. A number at `LOGON:` is refused and
+1. **First contact** (`first-contact`). David's first connection. WOPR refuses a number at `LOGON:`, and
    the line drops. After the dial, he asks for help on logging on and on games, lists the games, and
-   tries a game's name, which is refused too.
+   tries a game's name. WOPR refuses that too.
 2. **Joshua** (`joshua`). The backdoor. The connection header and the status lines, WOPR's greeting,
    the small talk, and Global Thermonuclear War asked for twice.
 3. **First strike** (`first-strike`). Global Thermonuclear War: David picks a side and two targets, and
@@ -54,7 +54,7 @@ are this project's own text.
 | `wopr -m 3` | From scene 3 to the end of the list, then exits. |
 | `wopr -m first-strike` | The same, by name. Any start of a name that fits only one scene works: `wopr -m first-s`. |
 | `wopr -m 3 --only` | Scene 3 alone, then exits. `-o` is short for `--only`. |
-| `wopr -m --only` | The menu, where each scene you pick plays alone and then the menu comes back. |
+| `wopr -m --only` | The menu, where each scene you pick plays alone, and then the menu comes back. |
 | `wopr --scenes` | Lists the scenes and exits. |
 
 {{< screenshot src="img/movie-menu.png" caption="`wopr -m`: the scene menu and its keys." >}}
@@ -71,7 +71,7 @@ While a scene plays:
 | Esc | Open the scene menu. |
 | Ctrl+C | Quit at once. |
 
-With `--only`, the scene that `n` or `p` reaches plays alone too. Once the climax reaches tic-tac-toe, it
+With `--only`, the scene that `n` or `p` reaches also plays alone. Once the climax reaches tic-tac-toe, it
 plays to the end, and any other key only says so.
 
 ## Options
@@ -79,9 +79,9 @@ plays to the end, and any other key only says so.
 Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`. These options still apply:
 
 - `--theme` picks the colours, as in play. `--theme norad` suits the NORAD scenes.
-- `--instant` shows each line at once instead of typing it, but the scenes still pause so that every page
-  can be read.
-- `--reduce-motion` stops blinking and keeps the ending at a steady pace.
+- `--instant` shows each line at once instead of typing it, but the scenes still pause, so that you can
+  read every page.
+- `--reduce-motion` stops the blinking and keeps the ending at a steady pace.
 
-The film's lines in the scenes carry provenance tags, and they are still to be checked one by one against
+Every film line in the scenes carries a provenance tag. The lines are not yet checked one by one against
 the film. See [Credits and notices](/credits).

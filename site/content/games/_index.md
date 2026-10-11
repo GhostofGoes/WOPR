@@ -13,7 +13,7 @@ There are three ways to start a game:
 - Log on, type `LIST GAMES`, and type a game's number or name.
 - Ask WOPR for it by name: `Let's play chess.`
 
-`wopr --games` prints the list with the shortest name each game answers to. Inside a game, press Esc twice
-to leave it and go back to WOPR.
+`wopr --games` prints the list, with the shortest name each game answers to. Inside a game, press Esc
+twice to leave it and return to WOPR.
 
 {{% games-list %}}

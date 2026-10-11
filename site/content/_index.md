@@ -18,15 +18,15 @@ cascade:
 {{< /hextra/hero-headline >}}
 
 {{< hextra/hero-subtitle style="margin: 0.5rem 0 1.5rem;" >}}
-  `wopr` brings back the WOPR computer from *WarGames* (1983), in your terminal.
-  Dial in, get past `LOGON:`, talk to WOPR, and play the games on its list.
+  `wopr` recreates the WOPR computer from *WarGames* (1983) in your terminal.
+  Dial in, log on, talk to WOPR, and play the games on its list.
 {{< /hextra/hero-subtitle >}}
 
 {{< hextra/hero-button text="Install" link="install/" style="margin: 0 0.5rem 1rem 0;" >}}
 {{< hextra/hero-button text="Quickstart" link="quickstart/" style="margin: 0 0 1rem; background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor;" >}}
 
 {{< screenshot src="screenshots/global-thermonuclear-war.png"
-  caption="Global Thermonuclear War's big board: outgoing missiles are `+`, incoming `*`, and DEFCON stands at 4."
+  caption="Global Thermonuclear War's big board: outgoing missiles are `+`, incoming missiles are `*`, and DEFCON stands at 4."
   credit="The big board's map: Map (C) 1998 Matthew Thomas. Freely usable if this line is included." >}}
 
 {{< hextra/feature-grid >}}
@@ -44,7 +44,7 @@ cascade:
   >}}
   {{< hextra/feature-card
     title="Linux, macOS and Windows"
-    subtitle="One small program. It never uses the network and collects no data."
+    subtitle="One small program. It never uses the network, and it collects no data."
     link="install/"
     icon="desktop-computer"
   >}}

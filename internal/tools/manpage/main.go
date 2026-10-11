@@ -200,16 +200,16 @@ func writeIntro(p *page) {
 	p.macro("B", "wopr")
 	p.text("is a terminal recreation of the WOPR (War Operation Plan Response) computer from the 1983 film")
 	p.macro("IR", "WarGames", ".")
-	p.text("You dial in, find your way past the LOGON: prompt, talk to WOPR, and play the games on its list. " +
+	p.text("You dial in, log on at the LOGON: prompt, talk to WOPR, and play the games on its list. " +
 		"One of them is Global Thermonuclear War, which cannot be won.")
 	p.macro("PP")
 	p.text("At the LOGON: prompt, the film's backdoor still works: `Joshua`. " +
 		"Once you are logged on, type `LIST GAMES` and pick a game by its name or its number on the list. " +
-		"Esc twice leaves a game and goes back to WOPR. " +
-		"Type `LOGOFF`, `QUIT` or `EXIT` to leave; Ctrl+C quits at any time.")
+		"Esc twice leaves a game and returns to WOPR. " +
+		"Type `LOGOFF`, `QUIT` or `EXIT` to leave. Ctrl+C quits at any time.")
 	p.macro("PP")
 	p.text("A game named on the command line starts at once, without the dial, the logon and the greeting. " +
-		"`wopr` needs a terminal of at least 80 columns and 24 rows, and it never uses the network.")
+		"`wopr` needs a terminal of at least 80 columns and 24 rows. It never uses the network.")
 }
 
 // optionDetails says more about each option than the help's one line, in page.text's markup.
@@ -220,17 +220,17 @@ var optionDetails = map[string]string{
 	"games":    "List the games in the order of the film's `LIST GAMES`, with the shortest name each one answers to, then exit.",
 	"scenes":   "List movie mode's scenes, with their numbers and names, then exit.",
 	"licenses": "Print `wopr`'s licence, <NOTICE.md>, and the licences of the third-party code built into it, then exit.",
-	"play": "Start the <game> at once. A game can be named by its number on the list, its name, an alias, or the start of a name that fits only one game; GAMES below gives the shortest. " +
+	"play": "Start the <game> at once. Name a game by its number on the list, its name, an alias, or the start of a name that fits only one game. GAMES below gives the shortest name. " +
 		"Without `--play`, a game named on the command line starts the same way: `wopr chess` is `wopr --play chess`.",
 	"movie": "Replay the film's scenes at WOPR's terminal, from the scene named to the end of the film, then exit. " +
 		"Without a scene, open a menu of scenes. See MOVIE SCENES below.",
 	"only": "With `--movie`, play just the chosen scene, then exit. From the menu, each scene picked plays alone, then the menu returns.",
-	"instant": "Show text at once instead of typing it out, and skip the animations. " +
-		"Any key also finishes the line being typed.",
-	"seed": "Run deterministically with the seed <n>, a whole number of 0 or more: the same seed gives the same deals, mazes and replies. " +
+	"instant": "Show text at once, instead of one character at a time, and skip the animations. " +
+		"Any key also finishes the line that WOPR is typing.",
+	"seed": "Play a repeatable session with the seed <n>, a whole number of 0 or more. The same seed gives the same deals, mazes and replies. " +
 		"The games' searches then stop at a fixed depth. Movie mode ignores the seed.",
 	"reduce-motion": "Stop the blinking, hold the front panel's lights still, and keep the ending at a steady pace. " +
-		"The typing and the animations still play; `--instant` skips them.",
+		"The typing and the animations still play. `--instant` skips them.",
 }
 
 func writeOptions(p *page) error {
@@ -254,7 +254,7 @@ func writeOptions(p *page) error {
 		p.line(p.phrase(short + ", " + long))
 		p.text(detail)
 		if f.Env != "" {
-			p.text("The environment variable `" + f.Env + "` sets it too; the option wins.")
+			p.text("The environment variable `" + f.Env + "` sets it too. The option wins.")
 		}
 	}
 	if len(missing) > 0 {
@@ -375,7 +375,7 @@ func writeEnd(p *page) {
 		{"WOPR_PANEL", "Shows the front panel when true and hides it when false, in any theme. Unset or empty, the theme decides: `norad` shows it."},
 		{"WOPR_DEBUG", "When true, `wopr` writes a debug log (never what you type) and prints its path when it exits. See FILES."},
 		{"NO_COLOR", "Set to any non-empty value, it turns colour off."},
-		{"TERM", "When it is `dumb`, `wopr` does not start its full-screen interface and exits with status 2; the options that print and exit still work."},
+		{"TERM", "When it is `dumb`, `wopr` does not start its full-screen interface, and it exits with status 2. The options that print and exit still work."},
 	} {
 		p.macro("TP")
 		p.macro("B", e[0])
@@ -389,7 +389,7 @@ func writeEnd(p *page) {
 
 	p.macro("SH", "NOTES")
 	p.text("`wopr` is a fan-made homage. It is not affiliated with or endorsed by the makers or owners of <WarGames>. " +
-		"The code is under the MIT licence. Film quotations and third-party text are not covered by it; " +
+		"The code is under the MIT licence, which does not cover the film quotations and the third-party text. " +
 		"`wopr --licenses` prints the licence, <NOTICE.md>, which says what they are and who they belong to, " +
 		"and the licences of the third-party code built into `wopr`.")
 
@@ -398,7 +398,7 @@ func writeEnd(p *page) {
 	p.text("Report bugs in the issue tracker: " + issuesURL)
 	p.macro("PP")
 	p.text("Run `wopr` with `WOPR_DEBUG=1` and attach the debug log it names when it exits, with the seed if you used one. " +
-		"The full-screen interface has not yet been tried with a screen reader.")
+		"Nobody has tried the full-screen interface with a screen reader yet.")
 
 	p.macro("SH", "EXAMPLES")
 	for _, ex := range [][2]string{

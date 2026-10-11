@@ -6,5 +6,5 @@ f=$(mktemp) && u="https://github.com/GhostofGoes/WOPR/releases/download/v@VERSIO
 ```
 
 To play again, open a new terminal and type `wopr`. If `~/.local/bin` was not on your `PATH`, the line
-adds it in `~/.bashrc` (or `~/.zshrc` if you use zsh). This works on Fedora Silverblue and the other atomic desktops too, where
-`dnf install` does not.
+adds it in `~/.bashrc` (or in `~/.zshrc` if you use zsh). This works on Fedora Silverblue and the other
+atomic desktops too, where `dnf install` does not.
