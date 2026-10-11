@@ -33,12 +33,15 @@ const CodeMode = "code:"
 // then hands off to the ending in the same mode, which types the film's last line.
 const MovieMode = "movie"
 
-// Script text (docs/PLAN.md Appendix B). Lines lists every block for the provenance test.
+// Script text (docs/PLAN.md Appendix B). Lines lists every block for the provenance test. The
+// film's big screen shows the prompts in these lines, as the one transcription of the scene
+// (abs0's) has them; nothing else covers them, so they stay reconstructed. The notice is the
+// film's own line.
 var (
-	linePlayers      = script.Recon("ONE OR TWO PLAYERS?")
-	promptPlayers    = script.Recon("PLEASE LIST NUMBER OF PLAYERS: ")
-	lineStalemate    = script.Recon("STALEMATE. WANT TO PLAY AGAIN?")
-	lineImproper     = script.Recon("** IMPROPER REQUEST **")
+	linePlayers      = script.Recon("ONE OR TWO PLAYERS?", "PLEASE LIST NUMBER")
+	promptPlayers    = script.Recon("OF PLAYERS: ")
+	lineStalemate    = script.Recon("STALEMATE.", "WANT TO PLAY AGAIN?")
+	lineImproper     = script.FromFilm("** IMPROPER REQUEST **")
 	lineWOPRWins     = script.Orig("WINNER: WOPR.", "WANT TO PLAY AGAIN?")
 	linePickSquare   = script.Orig("CHOOSE AN EMPTY SQUARE, 1 TO 9.")
 	promptMove       = script.Orig("YOUR MOVE: ")

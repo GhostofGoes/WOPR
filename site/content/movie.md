@@ -83,5 +83,6 @@ Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`. These opt
   read every page.
 - `--reduce-motion` stops the blinking and keeps the ending at a steady pace.
 
-Every film line in the scenes carries a provenance tag. The lines are not yet checked one by one against
-the film. See [Credits and notices](/credits).
+Every film line in the scenes carries a provenance tag. The lines are the film's own screen text, checked
+against frame-by-frame transcriptions of the film, and they are never changed. See
+[Credits and notices](/credits).

@@ -266,7 +266,7 @@ func TestBoardAndRun(t *testing.T) {
 		scenes.Say{Lines: script.Orig("AFTER."), Pace: proto.PaceSpeech},
 	}}}
 	s := play(t, Options{Scene: "war", Scenes: scene})
-	for _, want := range []string{"FIRST STRIKE LAUNCHED.", "DEFCON 4.", "PLEASE LIST NUMBER OF PLAYERS: 1", "STALEMATE.", "NOT TO PLAY.", "AFTER."} {
+	for _, want := range []string{"FIRST STRIKE LAUNCHED.", "DEFCON 4.", "OF PLAYERS: 1", "STALEMATE.", "NOT TO PLAY.", "AFTER."} {
 		if !s.Contains(want) {
 			t.Errorf("missing %q:\n%s", want, s.Transcript())
 		}
@@ -378,8 +378,8 @@ func TestInstantKeepsThePauses(t *testing.T) {
 func TestGameClock(t *testing.T) {
 	t.Parallel()
 	clock := scenes.Clock{
-		Lines: script.Recon("ELAPSED 1 MIN # SEC", "REMAINING 2 MIN # SEC"), Start: [2]int{0, 59},
-		D: 2 * time.Second, Prov: script.Original,
+		Lines: script.Recon("ELAPSED 1 MIN 00 SEC", "REMAINING 2 MIN 59 SEC"),
+		D:     2 * time.Second, Prov: script.Original,
 	}
 	scene := []scenes.Scene{{Slug: "clock", Steps: []scenes.Step{
 		clock, scenes.Say{Lines: script.Orig("AFTER."), Pace: proto.PaceSpeech},

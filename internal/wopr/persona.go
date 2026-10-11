@@ -133,13 +133,16 @@ func (p *Persona) dial(pause time.Duration) []proto.Output {
 
 func (p *Persona) logon(input string) []proto.Output {
 	again := []proto.Output{blank, proto.Prompt{Text: lineLogon.Text}}
+	// After HELP GAMES the film shows no LOGON: prompt: David types List Games on an open line.
+	// After HELP NOT AVAILABLE, LOGON: comes back. What follows the list the film does not show.
+	open := []proto.Output{blank, proto.Prompt{}}
 	switch prompt.Normalize(input) {
 	case "":
 		return []proto.Output{proto.Prompt{Text: lineLogon.Text}}
 	case "HELP LOGON":
 		return append([]proto.Output{say(lineHelpNA)}, again...)
 	case "HELP GAMES":
-		return append([]proto.Output{say(lineHelpGames)}, again...)
+		return append([]proto.Output{say(lineHelpGames)}, open...)
 	case "LIST GAMES":
 		return append([]proto.Output{p.listGames()}, again...)
 	case "JOSHUA":

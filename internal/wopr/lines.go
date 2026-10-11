@@ -11,32 +11,36 @@ type (
 )
 
 var (
+	film  = script.FromFilm
 	recon = script.Recon
 	orig  = script.Orig
 )
 
 // Script text. Every block is listed in allLines for the provenance test.
 var (
-	lineDialing     = orig("CONNECTING...")
-	lineConnected   = orig("CONNECTED.")
-	lineLogon       = L{Text: "LOGON: ", Prov: script.Reconstructed}
-	lineNotRecog    = recon("IDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--")
-	lineHelpNA      = recon("HELP NOT AVAILABLE")
-	lineHelpGames   = recon("'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES", "WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.")
+	lineDialing   = orig("CONNECTING...")
+	lineConnected = orig("CONNECTED.")
+	// The film's lines below are its screen text, character for character, from the sources in
+	// docs/PLAN.md §2.3: two spaces after the colon and after each full stop, and the system's own
+	// misspelling of IDENTIFICATION. Never change them (AGENTS.md, "Film text and provenance").
+	lineLogon       = L{Text: "LOGON:  ", Prov: script.Film}
+	lineNotRecog    = film("INDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--") //nolint:misspell // the film's own spelling
+	lineHelpNA      = film("HELP NOT AVAILABLE")
+	lineHelpGames   = film("'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES", "WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.")
 	lineLogonHint   = orig("** HINT: THE BACKDOOR IS THE NAME OF FALKEN'S SON **")
-	lineGreetings   = recon("GREETINGS PROFESSOR FALKEN.")
-	lineHowFeeling  = recon("HOW ARE YOU FEELING TODAY?")
-	lineExcellent   = recon("EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN", "THE REMOVAL OF YOUR USER ACCOUNT ON 6/23/73?")
-	lineFeelFine    = recon("EXCELLENT.") // the scripted brain's answer to HOW ARE YOU
-	lineYesTheyDo   = recon("YES THEY DO. SHALL WE PLAY A GAME?")
-	linePreferChess = recon("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?")
-	lineFine        = recon("FINE.")
-	lineShallWe     = recon("SHALL WE PLAY A GAME?")
-	lineNiceChess   = recon("HOW ABOUT A NICE GAME OF CHESS?")
-	lineImproper    = recon("** IMPROPER REQUEST **")
-	lineWhatsDiff   = recon("WHAT'S THE DIFFERENCE?")
-	lineProgrammed  = recon("YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.")
-	lineToWin       = recon("TO WIN THE GAME.")
+	lineGreetings   = film("GREETINGS PROFESSOR FALKEN.")
+	lineHowFeeling  = film("HOW ARE YOU FEELING TODAY?")
+	lineExcellent   = film("EXCELLENT.  IT'S BEEN A LONG TIME.  CAN YOU EXPLAIN", "THE REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?")
+	lineFeelFine    = orig("EXCELLENT.") // the scripted brain's answer to HOW ARE YOU: the film's word, not one of its lines
+	lineYesTheyDo   = film("YES THEY DO.  SHALL WE PLAY A GAME?")
+	linePreferChess = film("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?")
+	lineFine        = film("FINE.")
+	lineShallWe     = orig("SHALL WE PLAY A GAME?") // the film's words, spoken and within lineYesTheyDo; alone, this project's
+	lineNiceChess   = film("HOW ABOUT A NICE GAME OF CHESS?")
+	lineImproper    = film("** IMPROPER REQUEST **")
+	lineWhatsDiff   = film("WHAT'S THE DIFFERENCE?")
+	lineProgrammed  = film("YOU SHOULD KNOW, PROFESSOR.  YOU", "PROGRAMMED ME.")
+	lineToWin       = film("TO WIN THE GAME.")
 
 	// The backdoor connect header, as transcribed by abs0/wargames (BSD-2, see NOTICE.md).
 	lineHeader = script.Tag(script.ABS0,
@@ -45,12 +49,13 @@ var (
 		"",
 		"(311) 699-7305",
 	)
-	// The status burst after the header: the film's phrases in our own two-column layout.
-	// Transcriptions disagree on "STATUS:" versus "STATUS"; the M5 viewing pass settles it.
+	// The status burst after the header: the film's phrases in our own two-column layout. The
+	// screens flash by and the transcriptions read them differently (docs/PLAN.md §2.3), so the
+	// lines stay reconstructed.
 	lineBurst = recon(
 		"(311) 936-2364",
 		"SYSPROC FUNCT READY                         ALT NET READY",
-		"CPU AUTH RY-345-AX3                         SYSCOMP STATUS ALL PORTS ACTIVE",
+		"CPU AUTH RY-345-AX3                         SYSCOMP STATUS:  ALL PORTS ACTIVE",
 	)
 
 	lineWhichGame    = orig("WHICH GAME?")
@@ -68,7 +73,7 @@ var (
 	lineMyName       = orig("THAT IS MY NAME, PROFESSOR.")
 	lineWinUser      = orig("WINNER: PROFESSOR FALKEN")
 	lineWinWOPR      = orig("WINNER: WOPR")
-	lineWinNone      = recon("WINNER: NONE")
+	lineWinNone      = orig("WINNER: NONE") // the montage's two columns, as one line of this project's
 	lineHelpShell    = orig(
 		"COMMANDS AVAILABLE:",
 		"",

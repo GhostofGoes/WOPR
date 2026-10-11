@@ -3,16 +3,19 @@
 // internal/movie plays them.
 //
 // The only film text in the scenes is what WOPR's terminal shows on screen, David's typing
-// included; there is no spoken-only dialogue. The dial, GTW's strike exchange, tic-tac-toe's
-// prompts and the game clock's seconds are this project's own text and are tagged original.
-// David's lines are Type steps in mixed case, as on screen (RF-9), except his entries at the
-// NORAD console in the climax, which are in capitals as the transcription has them. Film lines
-// not yet confirmed against the film in the M5 viewing pass are tagged reconstructed.
+// included; there is no spoken-only dialogue. A line tagged film is that text, character for
+// character, checked against the film's transcriptions (docs/PLAN.md §2.3), and it is never
+// changed (AGENTS.md). A line only one transcription covers, or that the screens flash by too
+// fast to read, is tagged reconstructed. The dial, GTW's strike exchange and tic-tac-toe's
+// prompts are this project's own text and are tagged original. David's lines are Type steps in
+// mixed case, as on screen (RF-9), except his entries at the NORAD console in the climax,
+// which are in capitals as the film and the transcription have them.
 package scenes
 
 import (
 	"fmt"
-	"strings"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games/gtw"
@@ -55,28 +58,49 @@ type Board struct {
 	Prov script.Prov
 }
 
-// Clock is the game clock WOPR shows on David's screen: two readings that tick, elapsed up and
-// remaining down, for D, and stay up until the scene ends. Lines are the readings with # where
-// the seconds go; Start is the seconds they start at. The labels, hours and minutes are the
-// film's; the seconds are this project's own until the M5 viewing pass reads them off the film.
+// Clock is the game clock WOPR shows on David's screen: the film's lines, whose two readings
+// tick, elapsed up and remaining down, for D, and stay up until the scene ends. The seconds
+// start at the film's and this project ticks them on, so Prov is D's: the film shows no
+// ticking.
 type Clock struct {
 	Lines script.Ls
-	Start [2]int        // the seconds of each reading at the start
 	D     time.Duration // how long the clock runs before the scene goes on
-	Prov  script.Prov   // of Start and D
+	Prov  script.Prov   // of D
 }
 
-// Reading is the clock's lines after it has run for t: the first reading's seconds count up from
-// its start, the second's down, and neither passes a minute (the package's tests check that D
-// keeps them within it).
+// seconds matches a reading's seconds, "50 SEC".
+var seconds = regexp.MustCompile(`\b(\d\d) SEC\b`)
+
+// Reading is the clock's lines after it has run for t: the first reading's seconds count up
+// from the film's, the second's down, and neither passes a minute (the package's tests check
+// that D keeps them within it).
 func (c Clock) Reading(t time.Duration) []string {
 	n := int(t / time.Second)
-	secs := [2]int{min(c.Start[0]+n, 59), max(c.Start[1]-n, 0)}
 	out := make([]string, len(c.Lines))
+	k := 0
 	for i, l := range c.Lines {
-		out[i] = l.Text
-		if i < len(secs) {
-			out[i] = strings.Replace(l.Text, "#", fmt.Sprintf("%02d", secs[i]), 1)
+		out[i] = seconds.ReplaceAllStringFunc(l.Text, func(m string) string {
+			s, _ := strconv.Atoi(m[:2])
+			switch k {
+			case 0:
+				s = min(s+n, 59)
+			case 1:
+				s = max(s-n, 0)
+			}
+			k++
+			return fmt.Sprintf("%02d SEC", s)
+		})
+	}
+	return out
+}
+
+// Readings are the clock's two seconds readings as the film shows them, in order.
+func (c Clock) Readings() []int {
+	var out []int
+	for _, l := range c.Lines {
+		for _, m := range seconds.FindAllStringSubmatch(l.Text, -1) {
+			s, _ := strconv.Atoi(m[1])
+			out = append(out, s)
 		}
 	}
 	return out

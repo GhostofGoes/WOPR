@@ -28,7 +28,8 @@ Two items of the film's screen text come from the transcription made by the `abs
 project (<https://github.com/abs0/wargames>, `wargames.sh`, commit `010ed92`):
 
 - the "backdoor" connection header block shown after log-on.
-- the list of scenario names shown in the closing montage.
+- the list of scenario names shown in the closing montage. Thirteen of the names are spelt as two other
+  readings of the montage have them, where both differ from abs0's (`docs/PLAN.md` §2.3).
 
 abs0's BSD 2-clause licence, reproduced below, covers the transcription. The text itself is the film's,
 so like the other film text it is not covered by the MIT grant.

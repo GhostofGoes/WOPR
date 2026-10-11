@@ -99,7 +99,6 @@ type Game struct {
 	cracked  int        // characters of the launch code shown
 	climaxT  int        // climax frames elapsed
 	rejected int        // climax inputs refused, for the hint
-	other    int        // refusals of input that names no game, for the notice rotation
 	listing  bool       // LIST GAMES moved the climax to the console
 	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
 }
@@ -598,9 +597,7 @@ func (g *Game) climaxReply(norm string) []proto.Output {
 	case name != "":
 		outs = append(outs, say(lineNotRecog, lineDenied))
 	default:
-		notice := []script.Ls{lineImproper, lineMustRun, lineDenied}[g.other%3]
-		g.other++
-		outs = append(outs, say(notice))
+		outs = append(outs, say(lineImproper, lineMustRun, lineDenied))
 	}
 	g.rejected++
 	if g.rejected%3 == 0 {

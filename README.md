@@ -13,8 +13,9 @@ The **[documentation site](https://ghostofgoes.github.io/WOPR/)** explains how t
 option, how to play each game (with tips for winning), movie mode, and how to contribute.
 
 > **Status: under construction.** Every game on the list is playable, since v0.1.0, and movie mode
-> (`--movie`) replays the film's terminal scenes. The film's lines are not yet checked one by one against
-> the film. [docs/PLAN.md](docs/PLAN.md) has the plan and the milestones.
+> (`--movie`) replays the film's terminal scenes. WOPR's lines are the film's own, checked against
+> frame-by-frame transcriptions of its screens. [docs/PLAN.md](docs/PLAN.md) has the plan and the
+> milestones.
 
 ## Install
 
@@ -144,8 +145,9 @@ console and games you play with. `wopr --scenes` lists them:
 
 The only film text in the scenes is what WOPR's terminal shows on screen, David's typing included. There
 is no dialogue that is only spoken. The dial, GTW's strike exchange, tic-tac-toe's prompts and the game
-clock's seconds are this project's own text. Every line carries a provenance tag ([NOTICE.md](NOTICE.md)).
-The film's lines are not yet checked one by one against the film.
+clock's ticking are this project's own. Every line carries a provenance tag ([NOTICE.md](NOTICE.md)). The
+film's lines are its own screen text, checked against frame-by-frame transcriptions of the film
+([docs/PLAN.md](docs/PLAN.md) §2.3), and they are never changed.
 
 ## Command-line flags
 

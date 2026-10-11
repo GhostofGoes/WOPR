@@ -60,7 +60,7 @@ func TestLogonFailuresAndHint(t *testing.T) {
 	s := start(t, catalog.Registry(), Options{})
 	s.Type("000001").Type("Falkens-Maze").Type("Armageddon")
 	golden.AssertString(t, "logon_fail_x3_hint", s.Transcript())
-	if strings.Count(s.Transcript(), "IDENTIFICATION NOT RECOGNIZED BY SYSTEM") != 3 || !s.Contains("FALKEN'S SON") {
+	if strings.Count(s.Transcript(), "INDENTIFICATION NOT RECOGNIZED BY SYSTEM") != 3 || !s.Contains("FALKEN'S SON") {
 		t.Error("three terminations then a hint expected")
 	}
 	if s.Runner().Depth() != 1 {
@@ -76,7 +76,7 @@ func TestLogonCommandsDoNotArmSelection(t *testing.T) {
 	if !s.Contains("HELP NOT AVAILABLE") || !s.Contains("TACTICAL AND STRATEGIC") || !s.Contains("GLOBAL THERMONUCLEAR WAR") {
 		t.Error("LOGON commands missing")
 	}
-	if strings.Count(s.Transcript(), "IDENTIFICATION NOT RECOGNIZED") != 1 {
+	if strings.Count(s.Transcript(), "INDENTIFICATION NOT RECOGNIZED") != 1 {
 		t.Error("'7' at LOGON is a failed log-on, not a game choice")
 	}
 }
@@ -216,6 +216,8 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	for _, err := range script.Validate(allLines, string(notice)) {
 		t.Error(err)
 	}
+	// The film's lines, frozen: a change here is a change to the film's text (AGENTS.md).
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(allLines), "\n")+"\n")
 }
 
 // The film path (docs/PLAN.md §14.4): the greeting, GTW past the chess offer, the first
@@ -245,7 +247,7 @@ func TestFilmPath(t *testing.T) {
 	s.Type("Hello.")
 	for _, want := range []string{
 		"WOULDN'T YOU PREFER A GOOD GAME OF CHESS?", "FINE.", "WHICH SIDE DO YOU WANT?", "STRIKE ASSESSMENT COMPLETE.",
-		"** IDENTIFICATION NOT RECOGNISED **", "** GAME ROUTINE RUNNING **", "ONE OR TWO PLAYERS?",
+		"** IDENTIFICATION NOT RECOGNIZED **", "** GAME ROUTINE RUNNING **", "ONE OR TWO PLAYERS?",
 		"GREETINGS PROFESSOR FALKEN.", "A STRANGE GAME.", "NOT TO PLAY.", "HOW ABOUT A NICE GAME OF CHESS?",
 	} {
 		if !s.Contains(want) {

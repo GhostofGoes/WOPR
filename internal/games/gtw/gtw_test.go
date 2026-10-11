@@ -52,7 +52,7 @@ func TestFilmScenario(t *testing.T) {
 		t.Fatalf("tic-tac-toe must hand off: %+v %v", res, g.Launches())
 	}
 	for _, want := range []string{
-		"** IDENTIFICATION NOT RECOGNISED **", "** ACCESS DENIED **", "** GAME ROUTINE RUNNING **",
+		"** IDENTIFICATION NOT RECOGNIZED **", "** ACCESS DENIED **", "** GAME ROUTINE RUNNING **",
 		"** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **", "TIC-TAC-TOE CANNOT BE WON",
 	} {
 		if !g.Contains(want) {
@@ -301,6 +301,8 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	for _, err := range script.Validate(gtw.Lines, string(notice)) {
 		t.Error(err)
 	}
+	// The film's lines, frozen: a change here is a change to the film's text (AGENTS.md).
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(gtw.Lines), "\n")+"\n")
 }
 
 // filmPath reaches the climax pressing only Enter after the target: the first strike, two
@@ -322,10 +324,10 @@ func climax(t *testing.T, seed uint64) *testkit.GameSession {
 func TestClimaxReadsRequests(t *testing.T) {
 	t.Parallel()
 	for in, want := range map[string]string{
-		"Let's play chess":                    "** IDENTIFICATION NOT RECOGNISED **",
+		"Let's play chess":                    "** IDENTIFICATION NOT RECOGNIZED **",
 		"Let’s play Global Thermonuclear War": "** GAME ROUTINE RUNNING **",
-		"blackjack":                           "** IDENTIFICATION NOT RECOGNISED **",
-		"How about a game of poker?":          "** IDENTIFICATION NOT RECOGNISED **",
+		"blackjack":                           "** IDENTIFICATION NOT RECOGNIZED **",
+		"How about a game of poker?":          "** IDENTIFICATION NOT RECOGNIZED **",
 		"gtw":                                 "** GAME ROUTINE RUNNING **",
 	} {
 		g := climax(t, 1)

@@ -1,11 +1,11 @@
 ==== first-strike: typing a target (80x24) ====
 AWAITING FIRST STRIKE COMMAND
+-----------------------------
 
 PLEASE LIST PRIMARY TARGETS BY
 CITY AND/OR COUNTY NAME:
+
 Las V
-
-
 
 
 
@@ -23,16 +23,16 @@ Las V
 
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 5, row 4
+cursor: col 5, row 6
 ==== Space: paused (80x24) ====
 AWAITING FIRST STRIKE COMMAND
+-----------------------------
 
 PLEASE LIST PRIMARY TARGETS BY
 CITY AND/OR COUNTY NAME:
+
 Las V
 ** PAUSED **   SPACE RESUMES. ESC FOR THE MENU.
-
-
 
 
 
@@ -98,7 +98,7 @@ A-SSN8-A 309 221     C-SSN8-A 804 319            USSR        0     0     0     0
                            LAUNCH CODE: C__ ____ ___
 CHESS
 
-** IDENTIFICATION NOT RECOGNISED **
+** IDENTIFICATION NOT RECOGNIZED **
 ** ACCESS DENIED **
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 19, row 22
@@ -116,24 +116,24 @@ cursor: col 19, row 22
                           7      |     8      |     ><
                                  |            |  //    \\
 ONE OR TWO PLAYERS?
-PLEASE LIST NUMBER OF PLAYERS: 1
+PLEASE LIST NUMBER
+OF PLAYERS: 1
 
 YOU ARE X. WOPR IS O.
 YOUR MOVE: 9
 
-** THE GAME PLAYS TO THE END. CTRL+C QUITS. **
 
 
 
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 46, row 18
+cursor: col 12, row 17
 ==== call-back: the game clock (80x24) ====
-GAME TIME ELAPSED:           31 HRS 12 MIN 00 SEC
-ESTIMATED TIME REMAINING:    52 HRS 17 MIN 59 SEC
+------------------------------------------------------------
+    GAME TIME ELAPSED           ESTIMATED TIME REMAINING
 
-
-
+    31 HRS  12 MIN  50 SEC      52 HRS  17 MIN  15 SEC
+------------------------------------------------------------
 
 
 
@@ -153,4 +153,4 @@ ESTIMATED TIME REMAINING:    52 HRS 17 MIN 59 SEC
 
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 0, row 2
+cursor: col 0, row 5

@@ -68,7 +68,7 @@ var playbooks = map[string]playbook{
 	// with zero players, and the ending.
 	"global-thermonuclear-war": {inputs: []string{
 		"2", "Las Vegas", "Seattle", "", "", "", "", "", "List Games", "Chess", "Tic-Tac-Toe", "0", "Hello.",
-	}, want: []string{">|", "PROJECTED KILL RATIOS"}}, // the pointer at the current DEFCON level; the ratios
+	}, want: []string{">|", "HUMAN RESOURCES"}}, // the pointer at the current DEFCON level; the ratios
 	"tic-tac-toe": {inputs: []string{"1", "5", "1", "3", "7", "9", "2", "8", "4", "6"}},
 }
 

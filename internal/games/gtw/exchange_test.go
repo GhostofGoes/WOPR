@@ -96,7 +96,7 @@ func TestDoctrine(t *testing.T) {
 }
 
 // Whatever the orders and the noise, your civilian and human rows are never better than
-// the other side's, and your dead are never under 120 million.
+// the other side's, and your dead are never under 75 million.
 func TestRatiosFavourNoOne(t *testing.T) {
 	t.Parallel()
 	r := proto.NewRand(3, 4)
@@ -113,11 +113,11 @@ func TestRatiosFavourNoOne(t *testing.T) {
 				t.Fatalf("row %d favours you: %v", row, got)
 			}
 		}
-		if got[0][11] < 1200 {
-			t.Fatalf("your dead %d tenths of a million", got[0][11])
+		if got[0][11] < 75 {
+			t.Fatalf("your dead %d million", got[0][11])
 		}
-		if got[0][0] != w.t[you].BombersLost || got[0][1] != w.t[you].ICBMLost {
-			t.Fatalf("the BOMBERS and ICBM rows are the exchange's counts: %v, %+v", got, w.t)
+		if f := startForces[you]; got[0][0] != min(100*w.t[you].BombersLost/f.Ground, 100) || got[0][1] != min(100*w.t[you].ICBMLost/f.ICBM, 100) {
+			t.Fatalf("the BOMBERS and ICBM'S rows are the exchange's losses in percent: %v, %+v", got, w.t)
 		}
 	}
 	// The military rows take the worse of city and silo damage. Firing every ICBM at strike 2
@@ -127,8 +127,8 @@ func TestRatiosFavourNoOne(t *testing.T) {
 		t.Fatalf("WOPR's tally %+v", tl)
 	}
 	noise := [10]int{100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
-	if r := w.ratios(noise); [3]int(r[1][2:5]) != [3]int{65, 1564, 117} {
-		t.Errorf("WOPR's ATTACK SUBS, TACTICAL AIRCRAFT and GROUND FORCES: %v, want silo damage's [65 1564 117]", r[1][2:5])
+	if r := w.ratios(noise); [3]int(r[1][2:5]) != [3]int{26, 61, 45} {
+		t.Errorf("WOPR's ATTACK SUBS, TACTICAL AIRCRAFT and GROUND FORCES: %v, want silo damage's [26 61 45]", r[1][2:5])
 	}
 }
 

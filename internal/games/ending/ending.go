@@ -45,16 +45,19 @@ const (
 	steadyPerFrame = 3 // with --reduce-motion: no acceleration
 )
 
-// Script text (docs/PLAN.md Appendix B).
+// Script text (docs/PLAN.md Appendix B). A line tagged film is the film's screen text, checked
+// against its transcriptions (docs/PLAN.md §2.3): never change one (AGENTS.md).
 var (
-	lineGreetings = script.Recon("GREETINGS PROFESSOR FALKEN.")
-	lineStrange   = script.Recon("A STRANGE GAME.", "THE ONLY WINNING MOVE IS", "NOT TO PLAY.")
-	lineChess     = script.Recon("", "HOW ABOUT A NICE GAME OF CHESS?")
-	lineStrategy  = script.Recon("STRATEGY:", "WINNER:", "NONE")
+	lineGreetings = script.FromFilm("GREETINGS PROFESSOR FALKEN.")
+	lineStrange   = script.FromFilm("A STRANGE GAME.", "THE ONLY WINNING MOVE IS", "NOT TO PLAY.")
+	lineChess     = script.FromFilm("", "HOW ABOUT A NICE GAME OF CHESS?")
+	lineStrategy  = script.FromFilm("STRATEGY:", "WINNER:", "NONE") // the montage's headings and every row's result
 	lineSelfPlay  = script.Orig("LEARNING...")
 	lineCodeLabel = script.Orig("LAUNCH CODE: ")
-	lineCode      = script.Recon("CPE1704TKS")
-	lineHello     = script.User(script.Reconstructed, "Hello.") // typed by the ending itself in movie mode
+	lineCode      = script.FromFilm("CPE1704TKS")
+	// Typed by the ending itself in movie mode. One transcription records it in capitals,
+	// another as the earlier greeting's answer, so it stays reconstructed.
+	lineHello = script.User(script.Reconstructed, "Hello.")
 )
 
 // Lines is every script block, for the provenance test.

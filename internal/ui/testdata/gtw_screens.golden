@@ -23,7 +23,7 @@ PLEASE CHOOSE ONE:
 
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 19, row 18
+cursor: col 20, row 18
 ==== big board: strike 2 orders (DEFCON 4) (80x24) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
 |           . _..::__:  ++++********************+     _,.__             |  +---+
@@ -129,25 +129,25 @@ STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 0, row 22
 ==== kill ratios (80x24) ====
-                             PROJECTED KILL RATIOS
-
-    SOVIET UNION                                      UNITED STATES
-    UNITS DESTROYED                                   UNITS DESTROYED
-                            MILITARY ASSETS
-              150           BOMBERS                              93
-              500           ICBM                                400
-               76           ATTACK SUBS                          65
-             1782           TACTICAL AIRCRAFT                  1533
-              140           GROUND FORCES                       120
-                            CIVILIAN ASSETS
-              72%           HOUSING                             62%
-              75%           COMMUNICATIONS                      64%
-              68%           TRANSPORTATION                      58%
-              59%           FOOD STOCKPILES                     51%
-              76%           HOSPITALS                           65%
-                            HUMAN RESOURCES (MILLIONS)
-             46.4           NON-FATAL INJURED                  39.9
-            135.3           POPULATION DEATHS                 116.3
+ UNITED STATES                                         SOVIET UNION
+UNITS DESTROYED            MILITARY FORCES            UNITS DESTROYED
+--------------------------------------------------------------------------------
+      24%                  BOMBERS                          50%
+      32%                  ICBM'S                           50%
+      26%                  ATTACK SUBS                      30%
+      60%                  TACTICAL AIRCRAFT                70%
+      47%                  GROUND FORCES                    54%
+UNITS DESTROYED            CIVILIAN ASSETS            UNITS DESTROYED
+--------------------------------------------------------------------------------
+      62%                  HOUSING                          72%
+      64%                  COMMUNICATIONS                   75%
+      58%                  TRANSPORTATION                   68%
+      51%                  FOOD STOCKPILES                  59%
+      65%                  HOSPITALS                        76%
+UNITED STATES              HUMAN RESOURCES            SOVIET UNION
+--------------------------------------------------------------------------------
+ 41 MILLION                NON-FATAL INJURED           48 MILLION
+ 73 MILLION                POPULATION DEATHS           85 MILLION
 
 
 PRESS ENTER TO CONTINUE.
@@ -227,7 +227,7 @@ A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
        B 985 453            B 063 518            US          0     0     0     0
                            LAUNCH CODE: CPE 1704 ___
 
-** IDENTIFICATION NOT RECOGNISED **
+** IDENTIFICATION NOT RECOGNIZED **
 ** ACCESS DENIED **
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .

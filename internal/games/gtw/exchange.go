@@ -175,26 +175,29 @@ func (w *war) land(r *report) {
 // damage is a side's damage in per mille: rising with hits, never reaching 1000.
 func damage(hits int) int { return 1000 * hits / (hits + kPerMil) }
 
-// ratioScale are the full-scale values of kill-ratio rows 2-11; civilian rows are weights
-// in percent.
-var ratioScale = [10]int{100, 2400, 180, 95, 100, 90, 80, 100, 625, 1750}
+// ratioScale weights kill-ratio rows 2-9 as a percentage of full damage, and rows 10-11 as
+// the millions at full damage.
+var ratioScale = [10]int{40, 95, 70, 95, 100, 90, 80, 100, 65, 110}
 
-// ratios derives the kill-ratio table: rows 0-1 are exact counts; the others scale with
-// damage, times one noise factor per row (97..103 percent) that both sides share, so a
-// side that took more hits on its cities never shows less civilian or human loss.
+// ratios derives the kill-ratio table, in the film's rows: five military systems and five
+// civilian assets destroyed, in percent, then the injured and the dead in millions. The
+// BOMBERS and ICBM'S rows are the exchange's own losses as a percentage of the force; the
+// others scale with damage, times one noise factor per row (97..103 percent) that both sides
+// share, so a side that took more hits on its cities never shows less civilian or human loss.
 func (w *war) ratios(noise [10]int) [2][12]int {
 	var out [2][12]int
 	for s := range 2 {
-		t := w.t[s]
+		t, f := w.t[s], startForces[s]
 		c, m := damage(t.Cities), damage(t.SiloHits)
-		out[s][0], out[s][1] = t.BombersLost, t.ICBMLost
+		out[s][0] = min(100*t.BombersLost/f.Ground, 100)
+		out[s][1] = min(100*t.ICBMLost/f.ICBM, 100)
 		for i, scale := range ratioScale {
 			x := c
 			if i < 3 { // military units: the worse of city and silo damage
 				x = max(c, m)
 			}
 			v := scale * x * noise[i] / 100000
-			if i >= 3 && i < 8 {
+			if i < 8 {
 				v = min(v, 99)
 			}
 			out[s][2+i] = v
