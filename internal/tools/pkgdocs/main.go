@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command pkgdocs writes the documents that the release archives and the .deb and .rpm packages
 // carry, and the packages' menu entry and AppStream metadata. The packages carry the documents
 // compressed, as `gzip -9n` would: maximum compression, and no file name or time stamp in the

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package blackjack is Black Jack against WOPR's dealer: one deck, the dealer stands on soft
 // 17 (DefaultRules; Rules.StandSoft17 changes it), black jack pays 3 to 2, double down on
 // any first two cards, and one split of a pair a round. The player sits down with $100 and

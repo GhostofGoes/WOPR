@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package host runs proto programs. It is the protocol's only interpreter and it does
 // not import Bubble Tea: internal/ui adapts it to the terminal, and games/testkit drives
 // the same code in tests.

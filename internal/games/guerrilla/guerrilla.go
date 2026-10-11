@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package guerrilla is Guerrilla Engagement on the sim engine: an asymmetric campaign. The
 // player's cells start hidden in the hills; a hidden cell cannot be attacked, and patrols
 // find cells near them. Raids that hurt WOPR win popular support, losses cost it, and

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package testkit drives proto programs through the real host runner, with no terminal,
 // and records a transcript: what WOPR printed and what the user typed, as the console
 // would show it. Every game's definition of done includes a testkit transcript test.

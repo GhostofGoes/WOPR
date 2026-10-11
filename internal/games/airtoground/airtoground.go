@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package airtoground is Air-to-Ground Actions: a short air campaign against WOPR's
 // defended targets (docs/PLAN.md §6.3, a bespoke game on the sim engine's combat-results
 // and kill-ratio tables). Each sortie sends one package at one target: strike aircraft bomb

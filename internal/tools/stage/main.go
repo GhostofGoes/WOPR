@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command stage turns GoReleaser output into the layout the smoke job runs:
 //
 //	stage/<goos>_<goarch>/wopr[.exe]       the binary from dist/

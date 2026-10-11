@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Checks wopr_<version>_macos.dmg: it mounts, holds WOPR.app and a link to /Applications, the
 # app's Info.plist names this version, its signature verifies, and its program is universal and
 # runs. Given an e2e.test (internal/e2e, built for this Mac), it also runs the end-to-end tests

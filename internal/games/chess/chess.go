@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package chess is chess against WOPR. The rules, SAN and coordinate notation come from
 // github.com/corentings/chess/v2; the search is games/ai's alpha-beta with quiescence.
 // The player is White and moves first.

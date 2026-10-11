@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package lintfixture deliberately breaks every custom lint rule, so the self-test in
 // internal/archtest can prove each rule still fires. Go wildcards (./...) skip testdata,
 // so the normal lint run never sees this package.

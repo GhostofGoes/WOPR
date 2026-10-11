@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package assets holds the art and data the film set pieces draw: the big board's map and
 // its cities, GTW's side-choice outlines, and the closing montage's scenario names. Every
 // item carries provenance (docs/PLAN.md §2.1).

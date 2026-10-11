@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Finds a tool of the Windows SDK (makeappx.exe, makepri.exe, signtool.exe) for build-msix.ps1 and
 # test-msix.ps1: the newest SDK's build for this computer's CPU, or else its x64 build, which Arm64
 # Windows 11 runs too. The SDK's folder comes from the registry, as the SDK records it.

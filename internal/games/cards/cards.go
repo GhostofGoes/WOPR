@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package cards is the playing cards the card games share: cards and their text, decks,
 // shuffling with the session's seed, tricks (trick.go), and the cards drawn in ASCII (art.go).
 //

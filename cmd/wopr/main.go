@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command wopr is a terminal recreation of the WOPR computer from WarGames (1983).
 package main
 

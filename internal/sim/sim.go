@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package sim is the engine the war-game scenarios share (docs/PLAN.md §6.3.1): a strip of
 // regions, units with two steps, orders, one combat-results table, an event deck, a turn
 // limit, a victory hook and kill ratios in GTW's table format. A scenario is data plus a

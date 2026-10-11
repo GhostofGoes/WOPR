@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package version reports what build of wopr is running.
 //
 // Release builds set Version, Commit and Date with -ldflags -X (see .goreleaser.yaml).

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command icons draws wopr's application icon from the SVG sources in packaging/icons/src and
 // writes every icon file the packages and the docs site use:
 //

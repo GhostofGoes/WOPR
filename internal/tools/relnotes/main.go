@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command relnotes turns the change notes that changie keeps in .changes/ into a release's notes,
 // and checks that the notes are in order. AGENTS.md ("Change notes" and "Releasing") is the guide.
 //
