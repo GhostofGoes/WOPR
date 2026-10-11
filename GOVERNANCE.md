@@ -23,10 +23,10 @@ The day-to-day rules are in [AGENTS.md](AGENTS.md). The plans for the next year 
 | Maintainer | Christopher Goes ([@GhostofGoes](https://github.com/GhostofGoes)) | Decides the scope and the design. Reviews and merges pull requests. Answers issues and Discussions. Tags releases and checks them (`AGENTS.md`, "Releasing"). Holds the repository's owner rights and the offline copy of the release signing key. Keeps the repository settings in `AGENTS.md` up to date. |
 | Security contact | The maintainer | Receives private vulnerability reports and handles them as [SECURITY.md](SECURITY.md#how-reports-are-handled) says. |
 | Code of conduct contact | The maintainer | Receives and handles reports under the [Code of Conduct](CODE_OF_CONDUCT.md). |
-| Contributor | Anyone who opens an issue, a discussion or a pull request | Follows [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md) and the Code of Conduct. |
+| Contributor | Anyone who opens an issue, a discussion or a pull request | Follows [CONTRIBUTING.md](CONTRIBUTING.md) and the Code of Conduct. |
 
-AI agents that change the repository are contributors. They follow the same rules, and the maintainer
-reviews their changes before they merge.
+AI agents that change the repository are contributors. They follow the same rules and
+[AGENTS.md](AGENTS.md), and the maintainer reviews their changes before they merge.
 
 ## Continuity
 
