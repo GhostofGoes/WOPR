@@ -7,6 +7,19 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.6.0 - 2026-10-11
+
+### Changed
+
+- The manual page, `--help` and the docs now use shorter, plainer sentences.
+- The projected kill ratios now use the film's table of percentages.
+- Movie mode shows the film's game clock in the call-back and NORAD scenes.
+
+### Fixed
+
+- Fixed WOPR's lines that differed from the film, in spacing and spelling.
+- Fixed thirteen misspelt strategy names in the ending's list.
+
 ## v0.5.0 - 2026-10-10
 
 ### Added
