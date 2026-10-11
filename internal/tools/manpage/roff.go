@@ -34,7 +34,7 @@ func (p *page) line(s string) {
 }
 
 // leftAlign keeps the right margin ragged, so that groff does not widen the spaces in a line
-// to fill it, and goes right after .TH. Groff 1.22 keeps the .ad l request to the end; groff
+// to fill it, and goes right after .TH. Groff 1.22 keeps the .ad l request to the end. Groff
 // 1.23 sets the adjustment again at .TH and at each paragraph's tag, and groff 1.24 at each
 // paragraph, from the AD string, which .ds sets. mandoc does not stretch lines, and neither
 // request changes what it shows.
@@ -142,7 +142,7 @@ func (p *page) write(s string, markup bool) {
 // phrase is a few words of marked-up text, such as a tag line, as one input line.
 func (p *page) phrase(s string) string { return strings.Join(p.words(s, true), " ") }
 
-// wrap joins words into lines of at most width bytes; a longer word keeps a line to itself.
+// wrap joins words into lines of at most width bytes. A longer word keeps a line to itself.
 func wrap(words []string, width int) []string {
 	var out []string
 	line := ""
@@ -249,7 +249,7 @@ var plainWord = regexp.MustCompile(`^[A-Z]?[a-z]*(?:'[a-z]+)?$`)
 // a name (wopr, a theme, a game, a scene). Its letters are what can be hyphenated, so a word
 // with none is left alone.
 //
-// \% at the start of a word stops groff hyphenating it, in every version; mandoc reads it
+// \% at the start of a word stops groff hyphenating it, in every version. mandoc reads it
 // too. Turning hyphenation off for the whole page would not last: groff 1.24 turns it on
 // again at each paragraph, from the HY register, which groff 1.23 reads at .TH and groff 1.22
 // once, at start-up. It would also take the reader's choice away for plain words.
@@ -265,7 +265,7 @@ func (p *page) literal(w string, styled bool) bool {
 // \-, so that options and commands copied from the page still work. A tilde, a caret and a
 // grave accent become the characters that print as themselves: groff 1.23 and later print
 // the plain ones as a small tilde, a modifier circumflex and an opening quote, which a shell
-// does not read as ~, ^ and ` (Debian's man.local maps them back; groff's own does not).
+// does not read as ~, ^ and ` (Debian's man.local maps them back, and groff's own does not).
 var roffText = strings.NewReplacer(`\`, `\e`, "-", `\-`, "~", `\(ti`, "^", `\(ha`, "`", `\(ga`)
 
 func escape(s string) string { return roffText.Replace(s) }

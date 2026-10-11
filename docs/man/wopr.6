@@ -20,21 +20,21 @@ wopr \- the WOPR computer from WarGames (1983), in your terminal
 is a terminal recreation of the \%WOPR (War Operation Plan Response) computer
 from the 1983 film
 .IR \%WarGames .\&
-You dial in, find your way past the \%LOGON: prompt, talk to \%WOPR, and play
-the games on its list.\&
+You dial in, log on at the \%LOGON: prompt, talk to \%WOPR, and play the games
+on its list.\&
 One of them is Global \%Thermonuclear War, which cannot be won.\&
 .PP
 At the \%LOGON: prompt, the film's backdoor still works: \%\fBJoshua\fR.\&
 Once you are logged on, type \%\fBLIST\fR \%\fBGAMES\fR and pick a game by its
 name or its number on the list.\&
-Esc twice leaves a game and goes back to \%WOPR.\&
-Type \%\fBLOGOFF\fR, \%\fBQUIT\fR or \%\fBEXIT\fR to leave; \%Ctrl+C quits at
-any time.\&
+Esc twice leaves a game and returns to \%WOPR.\&
+Type \%\fBLOGOFF\fR, \%\fBQUIT\fR or \%\fBEXIT\fR to leave.\&
+\%Ctrl+C quits at any time.\&
 .PP
 A game named on the command line starts at once, without the dial, the logon and
 the greeting.\&
-\%\fBwopr\fR needs a terminal of at least 80 columns and 24 rows, and it never
-uses the network.\&
+\%\fBwopr\fR needs a terminal of at least 80 columns and 24 rows.\&
+It never uses the network.\&
 .SH OPTIONS
 Options can come before or after the game or scene.\&
 .TP
@@ -57,8 +57,9 @@ Print \%\fBwopr\fR's licence, \%\fINOTICE.md\fR, and the licences of the
 .TP
 \%\fB\-p\fR \%\fIgame\fR, \%\fB\-\-play\fR \%\fIgame\fR
 Start the \%\fIgame\fR at once.\&
-A game can be named by its number on the list, its name, an alias, or the start
-of a name that fits only one game; \%GAMES below gives the shortest.\&
+Name a game by its number on the list, its name, an alias, or the start of a
+name that fits only one game.\&
+\%GAMES below gives the shortest name.\&
 Without \%\fB\-\-play\fR, a game named on the command line starts the same way:
 \%\fBwopr\fR \%\fBchess\fR is \%\fBwopr\fR \%\fB\-\-play\fR \%\fBchess\fR.\&
 .TP
@@ -77,35 +78,40 @@ Use the colour theme \%\fIname\fR: \%\fBimsai\fR, \%\fBgreen\fR, \%\fBamber\fR
 or \%\fBnorad\fR.\&
 The default is \%\fBimsai\fR.\&
 The \%\fBnorad\fR theme also shows the front panel.\&
-The environment variable \%\fBWOPR_THEME\fR sets it too; the option wins.\&
+The environment variable \%\fBWOPR_THEME\fR sets it too.\&
+The option wins.\&
 .TP
 \%\fB\-i\fR, \%\fB\-\-instant\fR
-Show text at once instead of typing it out, and skip the animations.\&
-Any key also finishes the line being typed.\&
-The environment variable \%\fBWOPR_INSTANT\fR sets it too; the option wins.\&
+Show text at once, instead of one character at a time, and skip the
+animations.\&
+Any key also finishes the line that \%WOPR is typing.\&
+The environment variable \%\fBWOPR_INSTANT\fR sets it too.\&
+The option wins.\&
 .TP
 \%\fB\-s\fR \%\fIn\fR, \%\fB\-\-seed\fR \%\fIn\fR
-Run deterministically with the seed \%\fIn\fR, a whole number of 0 or more: the
-same seed gives the same deals, mazes and replies.\&
+Play a repeatable session with the seed \%\fIn\fR, a whole number of 0 or
+more.\&
+The same seed gives the same deals, mazes and replies.\&
 The games' searches then stop at a fixed depth.\&
 Movie mode ignores the seed.\&
-The environment variable \%\fBWOPR_SEED\fR sets it too; the option wins.\&
+The environment variable \%\fBWOPR_SEED\fR sets it too.\&
+The option wins.\&
 .TP
 \%\fB\-r\fR, \%\fB\-\-reduce\-motion\fR
 Stop the blinking, hold the front panel's lights still, and keep the ending at a
 steady pace.\&
-The typing and the animations still play; \%\fB\-\-instant\fR skips them.\&
-The environment variable \%\fBWOPR_REDUCE_MOTION\fR sets it too; the option
-wins.\&
+The typing and the animations still play. \%\fB\-\-instant\fR skips them.\&
+The environment variable \%\fBWOPR_REDUCE_MOTION\fR sets it too.\&
+The option wins.\&
 .SH GAMES
 .SS "1. Falken's Maze"
 Start it with
 .BR "\%wopr \%maze" .\&
 It also answers to \fB1\fR and \%\fBfalkens\-maze\fR.\&
 .PP
-A \%maze hidden in fog: you see only the cells you have stood on and where their
+A \%maze hidden in fog: you see only the cells you stood on, and where their
 passages lead.\&
-Every six moves \%WOPR moves a wall you have not seen yet, to make your way out
+Every six moves \%WOPR moves a wall still in the fog, to make your way out
 longer.\&
 .PP
 How to play:
@@ -114,12 +120,14 @@ Walk the @ from \%START at the top left to the [] \%EXIT at the bottom right.\&
 The \%maze is 19 cells wide and 5 cells high.\&
 .IP \(bu 2
 Each key press moves one cell.\&
-A wall stops you, and bumping into one does not count as a move.\&
+A wall stops you.\&
+A move into a wall does not count as a move.\&
 .IP \(bu 2
-Cells you have not seen show as a dim dot.\&
-Walls you have seen never change, and the exit can always be reached.\&
+Cells not yet seen show as a dim dot.\&
+Walls you saw never change.\&
+You can always reach the exit.\&
 .IP \(bu 2
-Every 6 moves \%WOPR moves a wall you have not seen, at most 12 times a game.\&
+Every 6 moves \%WOPR moves a wall not yet seen, at most 12 times a game.\&
 The bottom of the frame counts your \%MOVES, \%YOUR \%TURNS at junctions
 \%(LEFT, \%STRAIGHT, \%RIGHT) and \%WALLS \%MOVED.\&
 .IP \(bu 2
@@ -130,30 +138,31 @@ Tips:
 .IP \(bu 2
 Keep one hand on the wall: always take the \%left\-most way (or always the
 \%right\-most).\&
-The \%maze never has loops, even after \%WOPR moves a wall, so following one
-wall always gets you out.\&
+The \%maze never has loops, even after \%WOPR moves a wall.\&
+So if you follow one wall, you always get out.\&
 .IP \(bu 2
-Walls only move where you have not looked.\&
-Every cell you have seen keeps its walls, so a dead end you have found stays a
-dead end, and only the fog needs searching.\&
+Walls move only where you did not look yet.\&
+Every cell you saw keeps its walls.\&
+So a dead end you found stays a dead end.\&
+You need to search only the fog.\&
 .IP \(bu 2
 \%WOPR moves at most 12 walls, one every 6 moves.\&
-After 72 moves the \%maze stops changing, so a slow, careful search still finds
-the exit.\&
+After 72 moves the \%maze stops changing.\&
+So a slow, careful search still finds the exit.\&
 .SS "2. Black Jack"
 Start it with
 .BR "\%wopr \%blackjack" .\&
 It also answers to \fB2\fR and \%\fBblack\-jack\fR.\&
 .PP
 Black Jack from one deck against \%WOPR's dealer.\&
-You sit down with $100 and bet $1 to $25 a hand.\&
+You bring $100 to the table and bet $1 to $25 a hand.\&
 .PP
 How to play:
 .IP \(bu 2
-Get closer to 21 than the dealer without going over.\&
+Get closer to 21 than the dealer, but not more than 21.\&
 Number cards count their number, faces count 10, and an ace counts 1 or 11.\&
-An ace and a \%ten\-count card as your first two cards is a black jack, which
-pays 3 to 2.\&
+An ace and a \%ten\-count card as your first two cards is a black jack.\&
+A black jack pays 3 to 2.\&
 .IP \(bu 2
 At \%YOUR \%BET: type a whole number of dollars from 1 to 25.\&
 Press Enter on an empty line to bet the same as last time.\&
@@ -163,19 +172,19 @@ The prompt also offers D to double down and P to split when your hand and your
 money allow them.\&
 .IP \(bu 2
 Doubling down doubles your bet and gives you exactly one more card.\&
-Splitting turns a pair of the same rank into two hands, once a round; split aces
-get one card each.\&
+Splitting turns a pair of the same rank into two hands, once a round.\&
+Split aces get one card each.\&
 .IP \(bu 2
-The dealer checks for black jack when it shows an ace or a \%ten\-count card,
-draws to 17, and stands on soft 17.\&
+The dealer checks for black jack when it shows an ace or a \%ten\-count card.\&
+The dealer draws to 17 and stands on soft 17.\&
 .IP \(bu 2
 Type \%LEAVE at \%YOUR \%BET: to cash out.\&
 The game also ends when you have less than $1.\&
 .PP
 Tips:
 .IP \(bu 2
-Stand on 13 to 16 when the dealer shows a 2 to 6, and hit them when it shows 7
-or higher.\&
+Stand on 13 to 16 when the dealer shows a 2 to 6.\&
+Hit 13 to 16 when the dealer shows 7 or higher.\&
 The dealer must draw to 17, so a low card showing often means it busts.\&
 .IP \(bu 2
 Double down on 11, and on 10 unless the dealer shows a \%ten\-count card or an
@@ -189,8 +198,8 @@ Start it with
 It also answers to \fB3\fR, \%\fBgin\-rummy\fR and \%\fBrummy\fR.\&
 .PP
 \%Gin \%Rummy against \%WOPR, first to 100 points.\&
-The panel shows \%WOPR's \%face\-down hand, the stock, the top discard, and your
-hand sorted into melds with your deadwood count.\&
+The panel shows \%WOPR's \%face\-down hand, the stock and the top discard.\&
+It also shows your hand sorted into melds, with your deadwood count.\&
 .PP
 How to play:
 .IP \(bu 2
@@ -200,40 +209,41 @@ suit.\&
 Aces are low: \%A\-2\-3 is a run, \%Q\-K\-A is not.\&
 .IP \(bu 2
 Cards outside your melds are deadwood.\&
-Aces count 1, faces 10, and other cards their number.\&
+Aces count 1, face cards count 10, and other cards count their number.\&
 The panel shows your \%DEADWOOD and which positions are \%MELDS.\&
 .IP \(bu 2
-On your turn, answer \%STOCK \%OR \%DISCARD? with S to draw from the stock or D
-to take the top discard.\&
+On your turn, \%WOPR asks \%STOCK \%OR \%DISCARD?\&
+Answer S to draw from the stock, or D to take the top discard.\&
 Then at \%DISCARD: name a card \%(7H) or its position on the panel.\&
-You cannot throw back the card you just took from the discard pile.\&
+You cannot discard the card you just took from the discard pile.\&
 .IP \(bu 2
 With 10 or less deadwood after your discard, type \%KNOCK and the card \%(KNOCK
 \%7H) to end the hand.\&
 With no deadwood, \%GIN \%7H goes \%gin.\&
-The other side's cards are laid off on the knocker's melds for it, except after
-\%gin.\&
+Except after \%gin, the other side's cards are laid off on the knocker's melds
+for it.\&
 .IP \(bu 2
 The knocker scores the difference in deadwood.\&
-If the other side has as little or less, that is an undercut, and it scores the
-difference plus 25.\&
+If the other side has as little or less, that is an undercut.\&
+Then the other side scores the difference plus 25.\&
 \%Gin scores 25 plus the other side's deadwood.\&
 .IP \(bu 2
 At \%NEXT \%HAND? press Enter to deal again, or type \%LEAVE.\&
-A hand ends with no score when the stock is down to two cards.\&
+A hand ends with no score when the stock has only two cards left.\&
 .PP
 Tips:
 .IP \(bu 2
 \%WOPR knocks as soon as its deadwood is 10 or less, so hands are short.\&
-Throw away high cards that are not in a meld (kings, queens and jacks) early.\&
+Discard high cards that are not in a meld (kings, queens and jacks) early.\&
 .IP \(bu 2
 Keep your deadwood low even when you cannot knock.\&
 If \%WOPR knocks and you have as little deadwood or less after laying off, you
-score an undercut: the difference plus 25.\&
+score an undercut.\&
+An undercut scores the difference plus 25.\&
 .IP \(bu 2
 \%WOPR takes the discard only when it goes straight into a meld.\&
-Watch which cards it takes, and do not throw it cards of the same rank or next
-to them in the same suit.\&
+Watch which cards it takes.\&
+Do not discard cards of the same rank, or cards next to them in the same suit.\&
 .SS "4. Hearts"
 Start it with
 .BR "\%wopr \%hearts" .\&
@@ -244,25 +254,28 @@ Take as few points as you can.\&
 .PP
 How to play:
 .IP \(bu 2
-Each heart you take is 1 point and the queen of spades is 13.\&
-Take all 26 and you shoot the moon: you score 0 and the other three score 26
+Each heart you take is 1 point.\&
+The queen of spades is 13.\&
+Take all 26 and you shoot the moon: you score 0, and the other three score 26
 each.\&
 When someone reaches 100 at the end of a hand, the lowest score wins.\&
 .IP \(bu 2
-Each hand starts by passing three cards: to the left (West), then the right
-(East), then across (North), then no pass.\&
-At \%PASS \%THREE \%CARDS \%TO \%WEST: name three cards \%(QS \%AH \%KH) or
-their positions on the panel (1 5 6).\&
+Each hand opens with a pass of three cards.\&
+The pass goes to the left (West), then to the right (East), then across (North),
+then there is no pass.\&
+At \%PASS \%THREE \%CARDS \%TO \%WEST: name three cards \%(QS \%AH \%KH).\&
+Their positions on the panel work too (1 5 6).\&
 .IP \(bu 2
-The \%2C leads the first trick, and no points may be played on it unless you
-have nothing else.\&
+The \%2C leads the first trick.\&
+No points may be played on it unless you have nothing else.\&
 Follow suit if you can.\&
-\%Hearts cannot be led until one has been played.\&
+Nobody can lead a heart until someone plays one.\&
 .IP \(bu 2
 At \%YOUR \%PLAY: name one card \%(7H, \%10D, \%QS) or its position under your
 hand.\&
-\%WOPR plays its three seats and says each trick, for example \%YOU \%2C, \%WEST
-\%6C, \%NORTH \%5C, \%EAST \%4C.\&
+\%WOPR plays its three seats.\&
+It says each trick, for example \%YOU \%2C, \%WEST \%6C, \%NORTH \%5C, \%EAST
+\%4C.\&
 \%WEST \%TAKES \%IT.\&
 .IP \(bu 2
 After the last trick \%WOPR shows this hand's points and the scores.\&
@@ -270,44 +283,47 @@ At \%NEXT \%HAND? press Enter to deal again, or type \%LEAVE to stop.\&
 .PP
 Tips:
 .IP \(bu 2
-Pass the queen, king and ace of spades and your high \%hearts, unless you hold
-several low spades to cover them.\&
+Pass the queen, king and ace of spades, and your high \%hearts.\&
+The exception is when you hold several low spades to cover them.\&
 \%WOPR's seats pass the same kind of cards, so expect some back.\&
 .IP \(bu 2
-Empty a short suit early, by passing it or playing it out.\&
-Once you are out of a suit, you can throw away the queen of spades or a high
-heart whenever that suit is led.\&
+Empty a short suit early, by passing its cards or by playing them.\&
+Once you hold no card of a suit, you can discard the queen of spades or a high
+heart whenever someone leads that suit.\&
 .IP \(bu 2
 If you do not hold the queen, king or ace of spades, lead low spades.\&
-\%WOPR's seats play the highest card that still loses, so a seat with the queen
-and no lower spade may have to play it.\&
+\%WOPR's seats play the highest card that still loses.\&
+So a seat with the queen and no lower spade may have to play it.\&
 .SS "5. Bridge"
 Start it with
 .BR "\%wopr \%bridge" .\&
 It also answers to \fB5\fR.\&
 .PP
 Contract \%bridge, kept simple.\&
-\%WOPR deals and bids all four hands, your side always declares, and you play
-both your hand and dummy's while \%WOPR defends; one deal is one game.\&
+\%WOPR deals and bids all four hands, and your side always declares.\&
+You play both your hand and dummy's while \%WOPR defends.\&
+One deal is one game.\&
 .PP
 How to play:
 .IP \(bu 2
-\%WOPR bids by point count and shows the auction and the contract, for example
-\%CONTRACT: \%3NT \%BY \%SOUTH.\&
+\%WOPR bids by point count.\&
+It shows the auction and the contract, for example \%CONTRACT: \%3NT \%BY
+\%SOUTH.\&
 \%WEST \%LEADS.\&
 If East and West hold more points, \%WOPR turns the table so that your side
 declares.\&
 .IP \(bu 2
 Make the contract: take at least 6 tricks plus its level \%(3NT needs 9).\&
-The contract's suit is trumps; \%NT has none.\&
+The contract's suit is trumps.\&
+\%NT has no trumps.\&
 .IP \(bu 2
 The panel shows North's and South's hands a suit at a time.\&
 The > marks the hand to play, and the prompt names it: \%SOUTH \%PLAYS: or
 \%DUMMY \%(NORTH) \%PLAYS:.\&
 .IP \(bu 2
 Name a card as \%7H, \%10D or \%KS.\&
-A rank alone (K, 7) also works when it fits one card: the one in the suit led,
-or the only card of that rank in the hand.\&
+A rank alone (K, 7) also works when it fits one card.\&
+That is the one in the suit led, or the only card of that rank in the hand.\&
 .IP \(bu 2
 Follow suit if you can.\&
 The winner of a trick leads the next.\&
@@ -316,42 +332,44 @@ score.\&
 .PP
 Tips:
 .IP \(bu 2
-Before you play to the first trick, count the sure tricks in both hands and
-compare them with the tricks the contract needs.\&
+Before you play to the first trick, count the sure tricks in both hands.\&
+Compare them with the tricks the contract needs.\&
 .IP \(bu 2
 Lead toward your high cards.\&
-\%WOPR's defender who plays second always plays low, so with the ace and queen
-in dummy, lead a low card from your hand: if West holds the king, your queen
-wins.\&
+\%WOPR's defender who plays second always plays low.\&
+So with the ace and queen in dummy, lead a low card from your hand.\&
+If West holds the king, your queen wins.\&
 .IP \(bu 2
 In a suit contract, draw trumps early.\&
-\%WOPR's defenders trump your winners whenever they are out of a suit and their
-partner is not already winning the trick.\&
+\%WOPR's defenders trump your winners whenever they are out of a suit.\&
+But they do not trump when their partner is already winning the trick.\&
 .SS "6. Checkers"
 Start it with
 .BR "\%wopr \%checkers" .\&
 It also answers to \fB6\fR and \%\fBdraughts\fR.\&
 .PP
 \%Checkers (English \%draughts) on an 8 by 8 board.\&
-You play Black and move first; \%WOPR plays White and looks several moves ahead
-before each reply.\&
+You play Black and move first.\&
+\%WOPR plays White and looks several moves ahead before each reply.\&
 .PP
 How to play:
 .IP \(bu 2
 Win by leaving \%WOPR with no legal move, usually by taking all its pieces.\&
-If 40 moves each go by with no capture and no man moving, the game is a draw.\&
+If each side makes 40 moves with no capture and no man moving, the game is a
+draw.\&
 .IP \(bu 2
 Men move one square diagonally forward.\&
-At \%YOUR \%MOVE: type the start and end squares: \%C3\-D4 or \%C3D4.\&
+At \%YOUR \%MOVE: type the man's square, then the square it moves to: \%C3\-D4
+or \%C3D4.\&
 \%WOPR answers with a line such as \%WOPR: \%B6\-C5.\&
 .IP \(bu 2
-Jumps are compulsory.\&
+You must jump when you can.\&
 Type \%C3XE5 to jump, and \%C3XE5XG7 to jump twice.\&
-When a jump can go on more than one way, \%WOPR lists the ways after \%THE
+When a jump can continue in more than one way, \%WOPR lists the ways after \%THE
 \%JUMP \%GOES \%ON:.\&
 .IP \(bu 2
-A man that reaches the far row becomes a king, shown as a capital B or W, and
-moves both ways.\&
+A man that reaches the far row becomes a king, shown as a capital B or W.\&
+A king moves both ways.\&
 Crowning ends the move.\&
 .IP \(bu 2
 The board brackets the last move's squares and marks each man it jumped with
@@ -365,36 +383,38 @@ Keep the men on your back row (row 1) at home as long as you can.\&
 squares.\&
 .IP \(bu 2
 Use forced jumps.\&
-\%WOPR must jump when it can, just as you must, so you can offer a man to pull a
-white piece onto a square that sets up a double jump for you.\&
+\%WOPR must jump when it can, just as you must.\&
+So you can offer a man to pull a white piece onto a square that gives you a
+double jump.\&
 .IP \(bu 2
 When you are ahead, trade men.\&
-With fewer pieces on the board, your extra man counts for more.\&
+With fewer pieces on the board, your extra man is worth more.\&
 .SS "7. Chess"
 Start it with
 .BR "\%wopr \%chess" .\&
 It also answers to \fB7\fR.\&
 .PP
 \%Chess against \%WOPR.\&
-You play White (the capital letters) and move first, and \%WOPR answers with its
-move as squares, such as \%WOPR: \%D7D5.\&
+You play White (the capital letters) and move first.\&
+\%WOPR answers with its move as squares, such as \%WOPR: \%D7D5.\&
 .PP
 How to play:
 .IP \(bu 2
 Checkmate \%WOPR's king.\&
 Stalemate, too few pieces to mate, a position repeated three times and the
-\%fifty\-move rule are draws; \%WOPR claims the last two at once.\&
+\%fifty\-move rule are draws.\&
+\%WOPR claims the last two at once.\&
 .IP \(bu 2
-At \%YOUR \%MOVE: type a move as its squares \%(E2E4, \%E2\-E4 or \%E2 \%E4) or
-in algebraic notation \%(NF3, \%EXD5, \%O\-O, \%O\-O\-O).\&
+At \%YOUR \%MOVE: type a move as its squares \%(E2E4, \%E2\-E4 or \%E2 \%E4).\&
+Algebraic notation also works \%(NF3, \%EXD5, \%O\-O, \%O\-O\-O).\&
 .IP \(bu 2
 To promote a pawn, type \%E7E8Q or \%E8=Q.\&
 \%E7E8 alone makes a queen.\&
 .IP \(bu 2
 The board marks the square the last move left with [] and the square it reached
 with <.\&
-Beside the board, each side's \%TAKEN pieces are listed, and \%CHECK shows when
-you are in check.\&
+Beside the board, \%TAKEN lists the pieces each side took, and \%CHECK shows
+when you are in check.\&
 .IP \(bu 2
 A move that is not legal gets \%ILLEGAL \%MOVE.\&
 Type \%RESIGN to give up.\&
@@ -403,16 +423,16 @@ Tips:
 .IP \(bu 2
 \%WOPR looks only four \%half\-moves ahead (three with a seed), plus any
 captures after that.\&
-A plan that needs several quiet moves, such as building an attack on its king or
-pushing a pawn to promote, can get past it.\&
+A plan that needs several quiet moves can succeed against it.\&
+For example, build an attack on its king, or push a pawn to promote.\&
 .IP \(bu 2
-\%WOPR grabs any piece it can win within that short look ahead.\&
-After each move, check that every one of your pieces is defended or out of
+\%WOPR takes any piece it can win within that short look ahead.\&
+After each move, check that each of your pieces has a defender or is out of
 reach.\&
 .IP \(bu 2
 When you are ahead, do not repeat positions.\&
-\%WOPR counts a repeated position as a draw, and when it is losing it steers
-toward one.\&
+\%WOPR counts a repeated position as a draw.\&
+When it is losing, it steers toward one.\&
 .SS "8. Poker"
 Start it with
 .BR "\%wopr \%poker" .\&
@@ -420,25 +440,26 @@ It also answers to \fB8\fR.\&
 .PP
 \%Heads\-up \%five\-card draw against \%WOPR, with 100 chips each and fixed
 bets.\&
-\%WOPR judges its own hand, bluffs now and then, and sometimes stands pat on
+\%WOPR judges its own hand, sometimes bluffs, and sometimes stands pat on
 nothing.\&
 .PP
 How to play:
 .IP \(bu 2
 Each hand costs an ante of 1 chip.\&
-The deal changes hands each time, \%WOPR dealing first, and the player who is
-not dealing acts first.\&
+\%WOPR deals the first hand.\&
+After that, the deal passes to the other player each hand.\&
+The player who is not dealing acts first.\&
 .IP \(bu 2
-Bets are 5 before the draw and 10 after it, with at most a bet and three raises
-a round.\&
+Bets are 5 before the draw and 10 after it.\&
+Each round has at most a bet and three raises.\&
 Answer \%CHECK \%OR \%BET? or \%CALL n, \%RAISE \%OR \%FOLD?.\&
 .IP \(bu 2
-At \%DISCARD (1\-5, \%OR \%NONE): throw away up to three cards by position (1 3
-5 or 135) or by name \%(7H \%KD).\&
+At \%DISCARD (1\-5, \%OR \%NONE): discard up to three cards.\&
+Give them by position (1 3 5 or 135) or by name \%(7H \%KD).\&
 \%NONE, or an empty line, keeps all five.\&
 .IP \(bu 2
-A second round of betting follows the draw, then the showdown: the better hand
-takes the pot, and equal hands split it.\&
+A second round of betting follows the draw, then the showdown.\&
+The better hand takes the pot, and equal hands split it.\&
 .IP \(bu 2
 At \%ANOTHER \%HAND? press Enter to deal, or type \%LEAVE to cash out.\&
 The game ends when either side cannot pay the ante.\&
@@ -446,219 +467,250 @@ The game ends when either side cannot pay the ante.\&
 Tips:
 .IP \(bu 2
 Bet before the draw when you have a good hand.\&
-\%WOPR folds most hands weaker than a pair of sevens to a bet, unless it is
-bluffing or holds four cards of one suit.\&
+\%WOPR folds most hands weaker than a pair of sevens to a bet.\&
+The exceptions are when it is bluffing, and when it holds four cards of one
+suit.\&
 .IP \(bu 2
-Draw the way the odds say: keep a pair and draw three; draw one to four cards of
-a flush or of a straight open at both ends; otherwise keep your two highest
-cards.\&
+Draw the way the odds say.\&
+Keep a pair and draw three.\&
+Draw one to four cards of a flush, or of a straight open at both ends.\&
+Otherwise keep your two highest cards.\&
 .IP \(bu 2
-\%WOPR plays its hand as weaker after the draw when you drew no cards, so
-standing pat can make it fold.\&
-But it always calls a bet that is a quarter of the pot or less, so a bluff only
-works in a small pot.\&
+When you drew no cards, \%WOPR plays its hand as weaker after the draw.\&
+So standing pat can make it fold.\&
+But it always calls a bet that is a quarter of the pot or less.\&
+So a bluff only works in a small pot.\&
 .SS "9. Fighter Combat"
 Start it with
 .BR "\%wopr \%dogfight" .\&
 It also answers to \fB9\fR and \%\fBfighter\-combat\fR.\&
 .PP
 A \%turn\-based \%dogfight, one on one.\&
-Each turn you and \%WOPR choose a manoeuvre at the same time, and a side view
-shows height, range and who is on whose tail.\&
+Each turn you and \%WOPR choose a manoeuvre at the same time.\&
+A side view shows height, range and who is on whose tail.\&
 .PP
 How to play:
 .IP \(bu 2
-Two hits bring an aircraft down: bring \%WOPR's down to win.\&
-\%DISENGAGE at long range ends the fight even, and so does running out of fuel
-after 15 turns.\&
+Two hits destroy an aircraft.\&
+Destroy \%WOPR's to win.\&
+\%DISENGAGE at long range ends the fight even.\&
+The fuel lasts 15 turns, and when it is gone the fight also ends even.\&
 .IP \(bu 2
-At \%MANOEUVRE: type \%PRESS to close in, \%EXTEND to open the range, \%CLIMB to
-build energy, \%BREAK to turn hard, \%FIRE to shoot, or \%DISENGAGE to leave.\&
+At \%MANOEUVRE: type \%PRESS to close the range, \%EXTEND to open it, or \%CLIMB
+to build energy.\&
+Or type \%BREAK to turn hard, \%FIRE to shoot, or \%DISENGAGE to leave.\&
 .IP \(bu 2
-\%FIRE uses a missile at medium or long range (you have two), unless you are on
-the defensive, and guns at close range, but only from \%WOPR's tail.\&
-A shot you do not have is refused with \%NO \%SHOT: and a reason, and costs no
-turn.\&
+At medium or long range, \%FIRE uses a missile (you have two), unless you are on
+the defensive.\&
+At close range, \%FIRE uses guns, but only from \%WOPR's tail.\&
+If you have no shot, \%WOPR refuses \%FIRE with \%NO \%SHOT: and a reason.\&
+You lose no turn.\&
 .IP \(bu 2
 Shots happen first, then both manoeuvres.\&
-Each turn \%WOPR prints both moves, the range, your position \%(ON \%ITS \%TAIL,
-\%NEUTRAL or \%ON \%THE \%DEFENSIVE), and each side's energy and missiles.\&
+Each turn \%WOPR prints both moves, the range, and your position \%(ON \%ITS
+\%TAIL, \%NEUTRAL or \%ON \%THE \%DEFENSIVE).\&
+It also prints each side's energy and missiles.\&
 .IP \(bu 2
-\%CLIMB adds 2 energy and \%EXTEND 1; \%PRESS costs 1 and \%BREAK 2.\&
+\%CLIMB adds 2 energy and \%EXTEND adds 1.\&
+\%PRESS costs 1 and \%BREAK costs 2.\&
 Energy runs from 0 to 6.\&
 A damaged aircraft trails smoke (\(ti\(ti) in the picture.\&
 .PP
 Tips:
 .IP \(bu 2
 Keep your energy at 4 or more.\&
-\%WOPR fires a missile most turns it has a shot, and a missile hits about one
-time in two against a slow aircraft but one time in six against one with 4
-energy or more.\&
+\%WOPR fires a missile most turns it has a shot.\&
+A missile hits about one time in two against a slow aircraft.\&
+Against an aircraft with 4 energy or more, it hits about one time in six.\&
 A \%BREAK spoils a shot just as well, but costs 2 energy.\&
 .IP \(bu 2
 Climb early.\&
-A climb that leaves you 3 energy above \%WOPR moves you a step toward its tail,
-and so does pressing in with more energy than \%WOPR, unless it breaks.\&
+A climb that leaves you 3 energy above \%WOPR moves you a step toward its
+tail.\&
+So does a \%PRESS with more energy than \%WOPR, unless \%WOPR breaks.\&
 .IP \(bu 2
-Once you are on \%WOPR's tail, close in and use guns: they hit harder than
-missiles and never run out, and you have only two missiles.\&
+Once you are on \%WOPR's tail, close the range and use guns.\&
+Guns hit harder than missiles and have no limit, and you have only two
+missiles.\&
 .SS "10. Guerrilla Engagement"
 Start it with
 .BR "\%wopr \%guerrilla" .\&
 It also answers to \fB10\fR and \%\fBguerrilla\-engagement\fR.\&
 .PP
 A \%twelve\-turn insurgency on a strip of six regions.\&
-Your \%guerrilla cells start hidden in the hills, \%WOPR's patrols hunt them,
-and its garrisons hold the towns.\&
+At first, your \%guerrilla cells are hidden in the hills.\&
+\%WOPR's patrols hunt them, and its garrisons hold the towns.\&
 .PP
 How to play:
 .IP \(bu 2
-You win when \%SUPPORT reaches 10, when your cells hold the \%CAPITAL (region
-6), or when any cell is still alive after turn 12.\&
+You win when \%SUPPORT reaches 10, or when your cells hold the \%CAPITAL (region
+6).\&
+You also win when any cell is still alive after turn 12.\&
 You lose when your last cell is gone.\&
 .IP \(bu 2
 Each turn \%WOPR asks for one order per cell \%(GUE1\(ti \%IN \%BORDER
 \%CAMPS:).\&
-Then all orders take effect together: every move first, then every attack, then
-\%HIDE and \%RECRUIT, then an event card and the new map.\&
+Then all orders take effect together.\&
+Every move comes first, then every attack, then \%HIDE and \%RECRUIT.\&
+An event card and the new map come last.\&
 .IP \(bu 2
 Orders are \%MOVE, \%ATTACK, \%HOLD, \%HIDE and \%RECRUIT.\&
 Name a region by its number on the map or its name \%(ATTACK 2, \%MOVE
 \%HIGHLANDS).\&
-\%HELP lists the orders, \%STATUS shows the map, and \%END holds every cell not
-yet ordered.\&
+\%HELP lists the orders.\&
+\%STATUS shows the map.\&
+\%END holds every cell not yet ordered.\&
 .IP \(bu 2
-A \(ti after a cell \%(GUE2\(ti) means it is hidden: it cannot be attacked, and
-its ambush strikes twice as hard.\&
-Attacking gives it away, and a patrol nearby may find it.\&
+A \(ti after a cell \%(GUE2\(ti) means it is hidden.\&
+\%WOPR cannot attack a hidden cell, and its ambush strikes twice as hard.\&
+A cell that attacks becomes visible, and a patrol nearby may find a hidden
+cell.\&
 .IP \(bu 2
-Every step \%WOPR loses raises \%SUPPORT by one, and every step you lose lowers
-it.\&
+Every step \%WOPR loses raises \%SUPPORT by one.\&
+Every step you lose lowers it.\&
 \%RECRUIT spends 3 \%SUPPORT on a new hidden cell where \%WOPR does not hold the
 ground.\&
 .IP \(bu 2
-Combat results: \%NE no effect, \%AE the attacker loses a step, \%EX both do,
-\%DR the defender falls back (or loses a step), \%DE the defender loses a
+Combat results: \%NE means no effect, and \%AE means the attacker loses a
 step.\&
-A * marks a unit that has lost one of its two steps.\&
+\%EX means both lose a step.\&
+\%DR means the defender falls back (or loses a step).\&
+\%DE means the defender loses a step.\&
+A * marks a unit that lost one of its two steps.\&
 .PP
 Tips:
 .IP \(bu 2
 Surviving is a win.\&
-If the odds are bad, keep your cells hidden and spread out, and wait for turn
-12.\&
+If the odds are bad, keep your cells hidden, and keep them apart.\&
+Then wait for turn 12.\&
 .IP \(bu 2
 Ambush from hiding: a hidden cell attacks at 6 against a patrol's defence of
 3.\&
-Ambush in the open \%RIVER \%VALLEY when you can; in the hills and the jungle
-the ground shifts the odds one column toward the patrol.\&
+Ambush in the open \%RIVER \%VALLEY when you can.\&
+In the hills and the jungle, the ground shifts the odds one column toward the
+patrol.\&
 .IP \(bu 2
 A cell that attacks loses its \(ti.\&
-\%HIDE it the next turn, and keep hidden cells out of a patrol's region where
-you can: a patrol finds a hidden cell in its own region half the time, and next
-door one time in six.\&
+\%HIDE it the next turn.\&
+Keep hidden cells out of a patrol's region where you can.\&
+A patrol finds a hidden cell in its own region half the time.\&
+It finds one in the next region one time in six.\&
 .SS "11. Desert Warfare"
 Start it with
 .BR "\%wopr \%desert" .\&
 It also answers to \fB11\fR and \%\fBdesert\-warfare\fR.\&
 .PP
-Armour against armour along a coast road of seven regions, from your depot at
-Alexandria to \%WOPR's at Benghazi, over ten turns.\&
+Armour against armour along a coast road of seven regions, over ten turns.\&
+The road runs from your depot at Alexandria to \%WOPR's at Benghazi.\&
 Units cut off from their depot attack at half strength.\&
 .PP
 How to play:
 .IP \(bu 2
-Take \%BENGHAZI (region 7) to win; you lose if \%WOPR takes \%ALEXANDRIA (region
-1).\&
-After ten turns, whoever holds more of the road wins, and an even split is a
-draw.\&
+Take \%BENGHAZI (region 7) to win.\&
+You lose if \%WOPR takes \%ALEXANDRIA (region 1).\&
+After ten turns, whoever holds more of the road wins.\&
+An even split is a draw.\&
 .IP \(bu 2
 Each turn \%WOPR asks for one order per unit \%(ARM1 \%IN \%EL \%ALAMEIN:).\&
-Then both sides' orders take effect together: every move first, then every
-attack, then an event card and the new map.\&
+Then both sides' orders take effect together.\&
+Every move happens first, then every attack, then an event card and the new
+map.\&
 .IP \(bu 2
 Orders are \%MOVE, \%ATTACK and \%HOLD.\&
-Name a region by its number \%(MOVE 4), its name, or the start of a word in it
-\%(MOVE \%SOLLUM, \%MOVE \%MERSA).\&
-\%HELP lists the orders, \%STATUS shows the map, and \%END holds every unit not
-yet ordered.\&
+Name a region by its number \%(MOVE 4) or its name.\&
+The first letters of a word in its name also work \%(MOVE \%SOLLUM, \%MOVE
+\%MERSA).\&
+\%HELP lists the orders.\&
+\%STATUS shows the map.\&
+\%END holds every unit not yet ordered.\&
 .IP \(bu 2
-Your units: \%ARM armour (attack 6, defence 4, moves 2), \%INF infantry (attack
-3, defence 5, moves 1) and \%ART artillery (attack 5, defence 2, moves 1,
-attacks up to two regions away).\&
-A unit has two steps; a * marks one that has lost a step and fights at half.\&
+Your units are \%ARM, \%INF and \%ART.\&
+\%ARM armour has attack 6, defence 4 and moves 2.\&
+\%INF infantry has attack 3, defence 5 and moves 1.\&
+\%ART artillery has attack 5, defence 2 and moves 1, and it attacks up to two
+regions away.\&
+A unit has two steps.\&
+A * marks a unit that lost a step and fights at half.\&
 .IP \(bu 2
-A unit is cut off when \%WOPR holds any region between it and Alexandria, and
-then it attacks at half.\&
+A unit is cut off when \%WOPR holds any region between it and Alexandria.\&
+A unit that is cut off attacks at half.\&
 The map's heading counts them: \%SUPPLY: 0 \%OF \%YOUR \%UNITS \%CUT \%OFF.\&
 .IP \(bu 2
 An attack hits the strongest enemy unit in the region.\&
-\%ROUGH ground shifts the odds one column toward the defender, and a \%CITY
-two.\&
+\%ROUGH ground shifts the odds one column toward the defender.\&
+A \%CITY shifts them two columns.\&
 .PP
 Tips:
 .IP \(bu 2
 Keep infantry with your armour.\&
-\%WOPR attacks only at 2 to 1 or better (its artillery at any odds), and an
-attack always hits the strongest unit in a region, so infantry on the rough
-ground at \%EL \%ALAMEIN is very hard to attack.\&
+\%WOPR attacks only at 2 to 1 or better (its artillery at any odds).\&
+An attack always hits the strongest unit in a region.\&
+So infantry on the rough ground at \%EL \%ALAMEIN is very hard to attack.\&
 .IP \(bu 2
 Attack in the open.\&
-\%MERSA \%MATRUH and \%SIDI \%BARRANI are open ground, but \%SOLLUM is rough and
-\%TOBRUK and \%BENGHAZI are cities, which shift the odds one or two columns
-toward the defender.\&
+\%MERSA \%MATRUH and \%SIDI \%BARRANI are open ground.\&
+\%SOLLUM is rough, and \%TOBRUK and \%BENGHAZI are cities.\&
+Rough ground and cities shift the odds one or two columns toward the defender.\&
 .IP \(bu 2
 Watch your supply.\&
-A region stays \%WOPR's until one of your units takes it, and every unit beyond
-it attacks at half, so do not run ahead of a region \%WOPR still holds.\&
+A region stays \%WOPR's until one of your units takes it.\&
+Every unit beyond that region attacks at half.\&
+So do not advance beyond a region \%WOPR still holds.\&
 .SS "12. Air\-to\-Ground Actions"
 Start it with
 .BR "\%wopr \%air\-to\-ground" .\&
 It also answers to \fB12\fR and \%\fBair\-to\-ground\-actions\fR.\&
 .PP
 A \%six\-sortie air campaign: twelve aircraft against six defended targets.\&
-Each sortie sends one package at one target, while \%WOPR scrambles
-interceptors, fires its \%SAM sites and hides a mobile \%SAM battery where it
-expects your next raid.\&
+Each sortie sends one package at one target.\&
+\%WOPR scrambles interceptors and fires its \%SAM sites.\&
+It also hides a mobile \%SAM battery where it expects your next raid.\&
 .PP
 How to play:
 .IP \(bu 2
-Destroy targets worth 10 points within six sorties to win; 6 to 9 points is a
-draw, and fewer is a loss.\&
-Lost aircraft are not replaced, and losing all twelve loses the campaign.\&
+Destroy targets worth 10 points within six sorties to win.\&
+With 6 to 9 points the campaign is a draw, and with fewer it is a loss.\&
+Lost aircraft are not replaced.\&
+If you lose all twelve, you lose the campaign.\&
 .IP \(bu 2
 At \%PACKAGE: set the package, then type \%GO.\&
-\%TARGET, \%STRIKE, \%SEAD and \%ESCORT can go on one line \%(TARGET 5 \%STRIKE
-4 \%SEAD 2 \%ESCORT 2), and the line may end with \%GO.\&
-Anything you leave out keeps its last value.\&
+You can type \%TARGET, \%STRIKE, \%SEAD and \%ESCORT on one line \%(TARGET 5
+\%STRIKE 4 \%SEAD 2 \%ESCORT 2).\&
+The line may end with \%GO.\&
+Any setting you do not type keeps its last value.\&
 .IP \(bu 2
-A sortie goes in order: each escort ties up one interceptor, the other
-interceptors attack your strike and \%SEAD aircraft, \%SEAD aircraft attack the
-target's \%SAM sites, the sites left fire at the strike aircraft, and the strike
-aircraft that get through bomb the target.\&
+A sortie goes in this order.\&
+Each escort ties up one interceptor.\&
+The other interceptors attack your strike and \%SEAD aircraft.\&
+Your \%SEAD aircraft attack the target's \%SAM sites.\&
+The remaining \%SAM sites fire at the strike aircraft.\&
+The remaining strike aircraft bomb the target.\&
 .IP \(bu 2
 The table shows each target's \%VALUE, its \%DAMAGE against the hits it needs
 (0/2), and its \%SAM sites.\&
-Destroying the \%RADAR halves \%SAM fire, the \%AIRFIELD grounds the
-interceptors, and the \%FUEL \%DEPOT stops \%WOPR replacing them.\&
+Destroying the \%RADAR halves \%SAM fire.\&
+Destroying the \%AIRFIELD grounds the interceptors.\&
+Destroying the \%FUEL \%DEPOT stops \%WOPR replacing its interceptors.\&
 .IP \(bu 2
-\%STATUS shows the targets again, \%HELP the commands, and \%END calls off the
-campaign.\&
+\%STATUS shows the targets again.\&
+\%HELP shows the commands.\&
+\%END ends the campaign.\&
 .PP
 Tips:
 .IP \(bu 2
 Send one escort for each interceptor \%WOPR has (the status shows how many).\&
-Each interceptor left free knocks out almost one of your strike or \%SEAD
-aircraft, and when your last escort outnumbered them, \%WOPR usually keeps them
-on the ground.\&
+Each interceptor that no escort ties up stops almost one of your strike or
+\%SEAD aircraft.\&
+When the escort on your last sortie outnumbered the interceptors, \%WOPR usually
+keeps them on the ground.\&
 .IP \(bu 2
-Send one \%SEAD aircraft for each \%SAM site at the target, and one more if the
-mobile battery may be there.\&
-Each site left firing stops almost one strike aircraft.\&
+Send one \%SEAD aircraft for each \%SAM site at the target.\&
+Send one more if the mobile battery may be there.\&
+Each site that still fires stops almost one strike aircraft.\&
 .IP \(bu 2
 Hit the \%RADAR first.\&
-It needs only one hit, and once it is gone every \%SAM site fires at half
-strength.\&
+It needs only one hit.\&
+Once it is gone, every \%SAM site fires at half strength.\&
 .SS "13. Theaterwide Tactical Warfare"
 Start it with
 .BR "\%wopr \%tactical" .\&
@@ -666,53 +718,59 @@ It also answers to \fB13\fR and \%\fBtheaterwide\-tactical\-warfare\fR.\&
 .PP
 Corps and air wings fight over seven regions of a European front, with an
 escalation ladder.\&
-\%WOPR answers every rung you climb with one of its own, and the top rung ends
-the game with no winner.\&
+\%WOPR answers every rung you climb with one of its own.\&
+The top rung ends the game with no winner.\&
 .PP
 How to play:
 .IP \(bu 2
 Win by holding five of the seven regions, or more regions than \%WOPR after ten
 turns.\&
-If the ladder reaches \%STRATEGIC, every unit and every city is lost and nobody
+If the ladder reaches \%STRATEGIC, every unit and every city is lost, and nobody
 wins.\&
 .IP \(bu 2
 Each turn \%WOPR asks for one order per unit \%(AIR1 \%IN \%CHANNEL \%PORTS:).\&
-Then both sides' orders take effect together: every move first, then every
-attack, then everything else, then an event card.\&
+Then both sides' orders take effect together.\&
+Every move comes first, then every attack, then everything else.\&
+An event card comes last.\&
 .IP \(bu 2
-Name a region by its number (1 is your rear, 7 is \%WOPR's), its name, or the
-start of a word in it: \%MOVE 4, \%ATTACK 5, \%MOVE \%FULDA.\&
-\%MOVE, \%ATTACK and \%HOLD can be shortened to M, A and H.\&
+Name a region by its number or by its name: \%MOVE 4, \%ATTACK 5.\&
+Region 1 is your rear, and 7 is \%WOPR's.\&
+The first letters of a word in the name work too: \%MOVE \%FULDA.\&
+You can shorten \%MOVE, \%ATTACK and \%HOLD to M, A and H.\&
 .IP \(bu 2
-Corps \%(COR) move one region and attack next door.\&
-Air wings \%(AIR) move up to three regions and attack up to two away.\&
-A * after a unit means it has lost one of its two steps and fights at half.\&
+Corps \%(COR) move one region and attack the next region.\&
+Air wings \%(AIR) move up to three regions and attack up to two regions away.\&
+A * after a unit means it lost one of its two steps.\&
+It then fights at half.\&
 .IP \(bu 2
-\%ESCALATE must be typed in full and works once a turn.\&
+You must type \%ESCALATE in full, and it works once a turn.\&
 The ladder climbs \%CONVENTIONAL, \%CHEMICAL, \%TACTICAL \%NUCLEAR,
 \%STRATEGIC.\&
-Each rung adds 2 to every attack on both sides; from \%CHEMICAL on, civilians
-die every turn, and at \%TACTICAL \%NUCLEAR fallout costs a random unit a step
-every turn.\&
+Each rung adds 2 to every attack on both sides.\&
+From \%CHEMICAL on, civilians die every turn.\&
+At \%TACTICAL \%NUCLEAR, fallout costs a random unit a step every turn.\&
 .IP \(bu 2
 \%ROUGH ground shifts the odds one column toward the defender, and a \%CITY
-two.\&
-Results: \%NE no effect, \%AE the attacker loses a step, \%EX both do, \%DR the
-defender falls back (or loses a step), \%DE the defender loses a step.\&
+shifts them two.\&
+Results: \%NE means no effect, and \%AE means the attacker loses a step.\&
+\%EX means both lose a step.\&
+\%DR means the defender falls back (or loses a step).\&
+\%DE means the defender loses a step.\&
 .PP
 Tips:
 .IP \(bu 2
 Do not escalate twice.\&
-\%WOPR answers every \%ESCALATE with one of its own on its next turn, so your
-second rung reaches \%STRATEGIC, and nobody wins.\&
+\%WOPR answers every \%ESCALATE with one of its own on its next turn.\&
+So your second rung reaches \%STRATEGIC, and nobody wins.\&
 .IP \(bu 2
 Do not get far ahead without winning.\&
 Once \%WOPR has 3 steps fewer than you, it climbs the ladder by itself, a rung a
-turn, so take five regions quickly when you lead.\&
+turn.\&
+So take five regions quickly when you lead.\&
 .IP \(bu 2
 Take the \%FULDA \%GAP (4) on turn 1.\&
-It is rough ground, so \%WOPR's corps will not attack your corps there, and from
-it your corps can attack the \%INNER \%GERMAN \%BORDER (5).\&
+It is rough ground, so \%WOPR's corps will not attack your corps there.\&
+From it, your corps can attack the \%INNER \%GERMAN \%BORDER (5).\&
 .SS "14. Theaterwide Biotoxic and Chemical Warfare"
 Start it with
 .BR "\%wopr \%biotoxic" .\&
@@ -731,12 +789,14 @@ left, or after eight turns.\&
 The kill ratios then count the units and civilians each side lost.\&
 .IP \(bu 2
 Each turn \%WOPR asks for one order per unit \%(CHM1 \%IN \%FARMLAND:).\&
-Then both sides' orders take effect, an event card is drawn (the wind can turn,
-rain can wash some away), and the contamination spreads.\&
+Then both sides' orders take effect.\&
+Then there is an event card: the wind can turn, or rain can wash some of the
+agent away.\&
+Then the contamination spreads.\&
 .IP \(bu 2
-\%RELEASE must be typed in full.\&
-Only \%chemical troops \%(CHM) can release, on a region up to two away, and it
-raises that region's contamination by two levels.\&
+You must type \%RELEASE in full.\&
+Only \%chemical troops \%(CHM) can release, on a region up to two away.\&
+A release raises that region's contamination by two levels.\&
 A region at \(ti\(ti or more spreads one region downwind each turn.\&
 .IP \(bu 2
 \%DECON cleans the unit's own region by one level.\&
@@ -750,24 +810,25 @@ Name a region by number or by name: \%MOVE 3, \%MOVE \%DELTA, \%ATTACK 4.\&
 Tips:
 .IP \(bu 2
 The best move is not to release at all.\&
-\%WOPR releases only after its own half of the front is contaminated, so if you
-hold back, the ground stays clean unless an event card leaks an agent.\&
+\%WOPR releases only after its own half of the front is contaminated.\&
+So if you do not release, the ground stays clean unless an event card leaks an
+agent.\&
 .IP \(bu 2
 Move units out of contaminated ground.\&
 Each turn, a unit there loses a step one time in four for each \(ti on its
 region.\&
 .IP \(bu 2
 Watch the wind.\&
-It starts blowing east, toward \%WOPR, but an event card can turn it west and
-blow your own agent onto your units.\&
+At first it blows east, toward \%WOPR.\&
+But an event card can turn it west and blow your own agent onto your units.\&
 .SS "15. Global Thermonuclear War"
 Start it with
 .BR "\%wopr \%gtw" .\&
 It also answers to \fB15\fR, \%\fBglobal\-thermonuclear\-war\fR and
 \%\fBthermonuclear\fR.\&
 .PP
-The film's set piece: pick a side, name the enemy's cities as targets, and watch
-the missiles fly on the big board while \%DEFCON falls from 5 to 1.\&
+The film's set piece: pick a side, and name the enemy's cities as targets.\&
+Then watch the missiles fly on the big board while \%DEFCON falls from 5 to 1.\&
 \%WOPR holds a quarter more of everything, so the war cannot be won.\&
 .PP
 How to play:
@@ -775,41 +836,45 @@ How to play:
 At \%PLEASE \%CHOOSE \%ONE: type 1 for the \%UNITED \%STATES or 2 for the
 \%SOVIET \%UNION.\&
 .IP \(bu 2
-Name up to eight targets on the enemy's side, one per line or several on a line
-split by commas \%(LAS \%VEGAS, \%SEATTLE).\&
-\%LIST shows the enemy targets on file; your own cities and names not on file
-are refused.\&
+Name up to eight targets on the enemy's side.\&
+Type one per line, or several on a line with commas between them \%(LAS \%VEGAS,
+\%SEATTLE).\&
+\%LIST shows the enemy targets on file.\&
+\%WOPR refuses your own cities, and names not on file.\&
 An empty line ends the list and launches the first strike on \%WOPR's war
 plan.\&
 .IP \(bu 2
-Strikes 2 and 3 ask for orders at \%STRIKE 2 \%OF 3 [50 50 100]: give the
-percentages of the \%ICBMs, \%SLBMs and bombers you still hold (50 25 100), or
-\%ALL, \%HOLD or \%AUTO.\&
-Enter carries out the plan in brackets.\&
+Strikes 2 and 3 ask for orders at \%STRIKE 2 \%OF 3 [50 50 100].\&
+Give the percentages of the \%ICBMs, \%SLBMs and bombers you still hold (50 25
+100).\&
+Or answer \%ALL, \%HOLD or \%AUTO.\&
+Enter uses the plan in brackets.\&
 .IP \(bu 2
-After each of your launches \%WOPR launches on warning and \%DEFCON falls; the >
-beside the ladder marks the current level.\&
-At \%DEFCON 1, \%WOPR alone fires everything it has left.\&
+After each of your launches, \%WOPR launches on warning and \%DEFCON falls.\&
+The > beside the ladder marks the current level.\&
+At \%DEFCON 1, \%WOPR alone fires everything it still holds.\&
 .IP \(bu 2
-Press Enter for the \%PROJECTED \%KILL \%RATIOS, and Enter again: the board
-returns at \%DEFCON 1 while \%WOPR cracks the launch code and refuses every
-request to stop.\&
+Press Enter for the \%PROJECTED \%KILL \%RATIOS, then Enter again.\&
+The board returns at \%DEFCON 1 while \%WOPR cracks the launch code.\&
+\%WOPR refuses every request to stop.\&
 .IP \(bu 2
-Only \%TIC\-TAC\-TOE gets through.\&
+\%WOPR accepts only \%TIC\-TAC\-TOE.\&
 Answer 0 at \%PLEASE \%LIST \%NUMBER \%OF \%PLAYERS: and \%WOPR plays itself to
-the film's ending, then offers a game of \%chess.\&
+the film's ending.\&
+Then it offers a game of \%chess.\&
 .PP
 Tips:
 .IP \(bu 2
 The war cannot be won.\&
-Whatever you order, your cities take at least 1,144 warheads and the enemy's at
-most 750.\&
-The warhead counts have no dice, so the same orders always give the same counts,
-and you can see what each order changes.\&
+Whatever you order, your cities take at least 1,144 warheads, and the enemy's
+take at most 750.\&
+The warhead counts have no dice, so the same orders always give the same
+counts.\&
+So you can see what each order changes.\&
 .IP \(bu 2
 To spare your cities, hold your \%ICBMs.\&
-While they sit in their silos, \%WOPR aims its own \%ICBMs at your silo field;
-fire yours, and \%WOPR's land on your cities instead.\&
+While they sit in their silos, \%WOPR aims its own \%ICBMs at your silo field.\&
+Fire yours, and \%WOPR's land on your cities instead.\&
 .IP \(bu 2
 Your \%SLBMs and bombers decide what lands on the enemy's cities.\&
 Your \%ICBMs only ever hit its silos.\&
@@ -828,15 +893,16 @@ How to play:
 \%ALSO \%AVAILABLE).\&
 Start it with \%wopr \%ttt, or ask \%WOPR for it by name.\&
 .IP \(bu 2
-At \%PLEASE \%LIST \%NUMBER \%OF \%PLAYERS: type 1 to play \%WOPR, 2 for two
-people taking turns at one keyboard, or 0 to let \%WOPR play itself, as at the
-end of the film.\&
+At \%PLEASE \%LIST \%NUMBER \%OF \%PLAYERS: type 1 to play \%WOPR.\&
+Type 2 for two people taking turns at one keyboard.\&
+Type 0 to let \%WOPR play itself, as at the end of the film.\&
 .IP \(bu 2
 With one player you are X and move first.\&
 \%WOPR is O and answers each move with a line such as \%WOPR: 3.\&
 .IP \(bu 2
-At \%YOUR \%MOVE: type a square from 1 to 9, numbered left to right from the top
-row, or a column letter and row number from \%A1 (top left) to \%C3 (bottom
+At \%YOUR \%MOVE: type a square from 1 to 9.\&
+The squares are numbered left to right from the top row.\&
+Or type a column letter and a row number, from \%A1 (top left) to \%C3 (bottom
 right).\&
 A taken square gets \%CHOOSE \%AN \%EMPTY \%SQUARE, 1 \%TO 9.\&
 .IP \(bu 2
@@ -847,16 +913,18 @@ Tips:
 .IP \(bu 2
 \%WOPR never makes a mistake, so a draw is the best result.\&
 Before each move, check whether \%WOPR has two in a row with the third square
-empty, and block it.\&
+empty.\&
+If it has, block that square.\&
 .IP \(bu 2
 Open in a corner.\&
-The only safe answer is the centre: \%WOPR always finds it, but a friend playing
-O in a \%two\-player game often does not.\&
+The only safe answer is the centre.\&
+\%WOPR always finds it, but a friend playing O in a \%two\-player game often
+does not.\&
 .IP \(bu 2
 \%WOPR picks at random among its best moves, so games differ even though it
 never loses.\&
-With a seed \%(wopr \%ttt \%\-s 7) it makes the same choices every time, which
-helps you study a line of play.\&
+With a seed \%(wopr \%ttt \%\-s 7), it makes the same choices every time.\&
+That helps you study a line of play.\&
 .SH "MOVIE SCENES"
 \%\fBwopr\fR \%\fB\-\-movie\fR replays the film's scenes at \%WOPR's terminal,
 typed and paced as on screen, through the same console and games you play
@@ -888,8 +956,9 @@ With no scene, \%\fBwopr\fR \%\fB\-m\fR opens a menu of the scenes.\&
 Add \%\fB\-o\fR \%(\fB\-\-only\fR) to play just one scene.\&
 \%\fBwopr\fR \%\fB\-\-scenes\fR lists the scenes.\&
 .PP
-While a scene plays, Space pauses and resumes, \%\fBn\fR or Right skips to the
-next scene, \%\fBp\fR or Left goes back one, and Esc opens the menu.\&
+While a scene plays, Space pauses and resumes. \%\fBn\fR or Right skips to the
+next scene. \%\fBp\fR or Left goes back one scene.\&
+Esc opens the menu.\&
 Once the \%climax reaches \%tic\-tac\-toe, it plays to the end.\&
 Every replay is the same: movie mode ignores \%\fB\-\-seed\fR and
 \%\fBWOPR_SEED\fR.\&
@@ -903,10 +972,13 @@ The session ended normally: \%\fBLOGOFF\fR, the end of movie mode, a
 A runtime error or a crash.\&
 .TP
 .B 2
-A usage error, such as an unknown option, game, scene or theme, a seed that is
-not a whole number, too many arguments, options that cannot be combined, a name
-that fits more than one, or no terminal to run in (standard output is not a
-terminal, or \%\fBTERM\fR is \%\fBdumb\fR).\&
+A usage error.\&
+The command line has an unknown option, game, scene or theme, a seed that is not
+a whole number, or too many arguments.\&
+Or it combines options that cannot go together, or it names something that fits
+more than one.\&
+Or there is no terminal to run in: standard output is not a terminal, or
+\%\fBTERM\fR is \%\fBdumb\fR.\&
 .TP
 .B 130
 \%Ctrl+C or \%SIGINT.\&
@@ -922,7 +994,7 @@ Empty is the same as unset.\&
 When true, it turns on \%\fB\-\-instant\fR (no typewriter pacing).\&
 .TP
 .B \%WOPR_SEED
-It gives \%\fB\-\-seed\fR its value (deterministic run with this seed).\&
+It gives \%\fB\-\-seed\fR its value (a repeatable run with this seed).\&
 Empty is the same as unset.\&
 .TP
 .B \%WOPR_REDUCE_MOTION
@@ -930,8 +1002,9 @@ When true, it turns on \%\fB\-\-reduce\-motion\fR (no blinking or
 \%speed\-ups).\&
 .TP
 .B \%WOPR_PANEL
-Shows the front panel when true and hides it when false, in any theme.\&
-Unset or empty, the theme decides: \%\fBnorad\fR shows it.\&
+When true, it shows the front panel in any theme.\&
+When false, it hides the panel in any theme.\&
+When it is unset or empty, the theme decides: \%\fBnorad\fR shows the panel.\&
 .TP
 .B \%WOPR_DEBUG
 When true, \%\fBwopr\fR writes a debug log (never what you type) and prints its
@@ -939,11 +1012,12 @@ path when it exits.\&
 See \%FILES.\&
 .TP
 .B \%NO_COLOR
-Set to any \%non\-empty value, it turns colour off.\&
+When it is set to any value but an empty one, it turns colour off.\&
 .TP
 .B \%TERM
 When it is \%\fBdumb\fR, \%\fBwopr\fR does not start its \%full\-screen
-interface and exits with status 2; the options that print and exit still work.\&
+interface, and it exits with status 2.\&
+The options that print and exit still work.\&
 .SH FILES
 .TP
 .I \%\(ti/.cache/wopr/debug.log
@@ -954,17 +1028,18 @@ It is under \%\fI$XDG_CACHE_HOME\fR when that is set, and in
 \%\fBwopr\fR is a \%fan\-made homage.\&
 It is not affiliated with or endorsed by the makers or owners of
 \%\fIWarGames\fR.\&
-The code is under the \%MIT licence.\&
-Film quotations and \%third\-party text are not covered by it; \%\fBwopr\fR
-\%\fB\-\-licenses\fR prints the licence, \%\fINOTICE.md\fR, which says what they
-are and who they belong to, and the licences of the \%third\-party code built
-into \%\fBwopr\fR.\&
+The code is under the \%MIT licence, which does not cover the film quotations
+and the \%third\-party text.\&
+\%\fBwopr\fR \%\fB\-\-licenses\fR prints the licence, \%\fINOTICE.md\fR, which
+says what they are and who they belong to, and the licences of the
+\%third\-party code built into \%\fBwopr\fR.\&
 .SH BUGS
 Report bugs in the issue tracker: \%https://github.com/GhostofGoes/WOPR/issues
 .PP
-Run \%\fBwopr\fR with \%\fBWOPR_DEBUG=1\fR and attach the debug log it names
-when it exits, with the seed if you used one.\&
-The \%full\-screen interface has not yet been tried with a screen reader.\&
+Run \%\fBwopr\fR with \%\fBWOPR_DEBUG=1\fR.\&
+Attach the debug log that it names when it exits, and the seed if you used
+one.\&
+Nobody has tried the \%full\-screen interface with a screen reader yet.\&
 .SH EXAMPLES
 .TP
 .B \%wopr

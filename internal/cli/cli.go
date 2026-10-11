@@ -67,7 +67,7 @@ var flagPairs = []flagPair{
 	{"only", "o", "", "with -m, play just the chosen scene, then stop", ""},
 	{"theme", "t", "name", strings.Join(theme.Names(), ", "), "WOPR_THEME"},
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
-	{"seed", "s", "n", "deterministic run with this seed", "WOPR_SEED"},
+	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 }
 

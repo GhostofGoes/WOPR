@@ -5,12 +5,12 @@ line, and press Enter. It asks for your password, to install the package:
 sudo dnf install -y --disablerepo='*' "https://github.com/GhostofGoes/WOPR/releases/download/v@VERSION@/wopr-@VERSION@-1.$(uname -m).rpm" && wopr
 ```
 
-`dnf` may say it skipped the OpenPGP checks for one package: that is expected, since the package has no
-GPG signature. To play again, type `wopr`.@APP-MENU@ The package puts the program in `/usr/bin` and also
-installs the manual page, `man wopr`. To remove it: `sudo dnf remove wopr`. On Fedora Silverblue and the
-other atomic desktops, use the **Linux (any)** tab.
+`dnf` may say that it skipped the OpenPGP checks for one package. That is expected: the package has no
+GPG signature. To play again, type `wopr`.@APP-MENU@ The package puts the program in `/usr/bin`, and it
+also installs the manual page, `man wopr`. To remove it, run `sudo dnf remove wopr`. On Fedora Silverblue
+and the other atomic desktops, use the **Linux (any)** tab.
 
-On openSUSE, use `zypper`. The package has no GPG signature, so `zypper` needs `--allow-unsigned-rpm`; to
+On openSUSE, use `zypper`. The package has no GPG signature, so `zypper` needs `--allow-unsigned-rpm`. To
 check the package first, see [Verifying binaries](/install#verifying-binaries-attestation).
 
 ```sh

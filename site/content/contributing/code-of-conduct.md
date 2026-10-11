@@ -1,7 +1,7 @@
 ---
 title: Code of Conduct
 weight: 1
-description: The Contributor Covenant 3.0, which everyone taking part in wopr agrees to follow.
+description: The Contributor Covenant 3.0, which everyone who takes part in wopr agrees to follow.
 editURL: https://github.com/GhostofGoes/WOPR/edit/main/CODE_OF_CONDUCT.md
 ---
 

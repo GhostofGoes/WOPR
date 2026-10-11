@@ -7,42 +7,44 @@ description: Install wopr, log on, and play your first game in two minutes.
 ## 1. Get it
 
 {{% if-installers %}}
-Pick your system, click the download button, and follow the steps under it. To install from a terminal
+Pick your system. Click the download button, and follow the steps under it. To install from a terminal
 instead, see [Command line install methods](/install#command-line-install-methods).
 {{% /if-installers %}}
 {{% if-installers "not" %}}
 Pick your system. On Linux, click a download button and follow the steps under it. The downloads for
-Windows and macOS come with the next release; until then, see
+Windows and macOS come with the next release. Until then, see
 [Command line install methods](/install#command-line-install-methods).
 {{% /if-installers %}}
 
 {{< install-tabs >}}
 
-[Installation](/install) also says how to remove it, and how to check that a download is genuine.
+[Installation](/install) also says how to remove WOPR, and how to check that a download is genuine.
 
 ## 2. Dial in
 
 {{% if-installers %}}
-The Windows installer starts WOPR when you click **Finish**, and the Mac app starts it when you open it,
-so it may be dialing already. The lines in
+WOPR may be dialing already: the Windows installer starts it when you click **Finish**, and the Mac app
+starts it when you open the app. The lines in
 [Command line install methods](/install#command-line-install-methods) start it too, except Go's. The
-Linux packages do not.
+Linux packages do not start it.
 {{% /if-installers %}}
 {{% if-installers "not" %}}
-The lines in [Command line install methods](/install#command-line-install-methods) start WOPR, except
-Go's, so it may be dialing already. The Linux packages do not start it.
+WOPR may be dialing already: the lines in
+[Command line install methods](/install#command-line-install-methods) start it, except Go's. The Linux
+packages do not start it.
 {{% /if-installers %}}
 
-To start it yourself, or to play again later, open a terminal at least 80 columns wide and 24 rows tall,
-and type:
+To start it yourself, or to play again later, open a terminal at least 80 columns wide and 24 rows tall.
+Then type:
 
 ```sh
 wopr
 ```
 
 {{% if-installers %}}
-Or open **WOPR** from the Start menu on Windows, from Applications on a Mac, or from your app menu if you
-installed a Linux package. With the Mac app, that is the way to start it: it adds no `wopr` command.
+Or open **WOPR** from the Start menu on Windows, from Applications on a Mac, or from your app menu on
+Linux, if you installed a package. With the Mac app, that is the only way to start it: the app adds no
+`wopr` command.
 {{% /if-installers %}}
 
 WOPR dials in, connects, and asks `LOGON:`.
@@ -51,9 +53,9 @@ WOPR dials in, connects, and asks `LOGON:`.
 
 ## 3. Log on
 
-If you have seen the film, you know what to type. If not: the password is the name of Professor
-Falken's son, `Joshua`. A wrong name drops the line and WOPR dials again; every third try it gives you a
-hint. You can also type `HELP GAMES` or `LIST GAMES` at `LOGON:`, as David does in the film.
+If you saw the film, you know what to type. If not: the password is the name of Professor Falken's son,
+`Joshua`. A wrong name drops the line, and WOPR dials again. Every third try, WOPR gives you a hint. You
+can also type `HELP GAMES` or `LIST GAMES` at `LOGON:`, as David does in the film.
 
 Once you are in, WOPR greets you and talks the way it does in the film. Answer it, and it asks:
 `SHALL WE PLAY A GAME?`
@@ -62,9 +64,9 @@ Once you are in, WOPR greets you and talks the way it does in the film. Answer i
 
 ## 4. Play a game
 
-Type `LIST GAMES` to see what WOPR knows, then type a game's number or its name. You can also just ask:
-`Let's play chess.` Ask for Global Thermonuclear War and WOPR suggests chess first, as in the film; ask
-again and it says `FINE.`
+Type `LIST GAMES` to see what WOPR knows. Then type a game's number or its name. You can also ask:
+`Let's play chess.` Ask for Global Thermonuclear War, and WOPR suggests chess first, as in the film. Ask
+again, and it says `FINE.`
 
 Each game prints its own instructions, and the [Games](/games) pages explain them all. To leave a game,
 press Esc twice.
@@ -83,5 +85,5 @@ Type `LOGOFF` to end the session. Ctrl+C quits at any time.
 
 - [Usage](/usage): every option, the themes, and what WOPR understands.
 - [Movie scenes](/movie): watch the film's terminal scenes replay themselves.
-- [Accessibility](/usage/accessibility): reduced motion, instant text and running without colour.
+- [Accessibility](/usage/accessibility): reduced motion, instant text, and play without colour.
 - [Troubleshooting](/usage/troubleshooting): what to do when something goes wrong, and where to ask.

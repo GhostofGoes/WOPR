@@ -6,4 +6,4 @@ f=$(mktemp) && curl -fL --proto '=https' -o "$f" "https://github.com/GhostofGoes
 ```
 
 To play again, open a new Terminal window and type `wopr`. The line adds `~/.local/bin` to your `PATH`
-in `~/.zprofile` (or `~/.bash_profile` if you use bash), unless it is there already.
+in `~/.zprofile` (or in `~/.bash_profile` if you use bash), unless it is there already.
