@@ -36,6 +36,7 @@ If you installed WOPR with a download button:
 
 {{< tab name="Windows" >}}
 {{< if-installers >}}
+
 1. Open **Settings**, then **Apps**, then **Installed apps**.
 2. Click **...** next to **WOPR**, then **Uninstall**.
 3. Click **Uninstall** again, then **Yes**.
