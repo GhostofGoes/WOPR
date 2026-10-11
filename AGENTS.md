@@ -24,6 +24,7 @@ system. There is no Makefile.
 | Run | `go run ./cmd/wopr` |
 | Test | `go test ./...` |
 | Test with the race detector | `go test -race ./...` (Linux and macOS. Windows amd64 needs a C compiler. It does not run on windows/arm64) |
+| Branch coverage of the code that ships ([gobco](https://github.com/rillig/gobco)) | `go run ./internal/tools/branchcov` (`-v` also lists each branch that no test takes). CI runs it with `-min 80` |
 | End-to-end tests (real binary in a pty) | `go test -tags e2e ./internal/e2e` |
 | Lint rules self-test | `WOPR_LINT_SELFTEST=1 go test -run TestLintRulesFire ./internal/archtest` |
 | Regenerate golden files | `WOPR_UPDATE_GOLDEN=1 go test ./...`, then review the diff |
@@ -59,7 +60,7 @@ system. There is no Makefile.
 them (`windows.yml`, `macos.yml`, `snap.yml`).
 
 `go.mod` pins Go 1.27.1 (`toolchain go1.27.1`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
-fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck),
+fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck, gobco),
 `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod` (GoReleaser, changie, go-winres) and
 `tools/docs/go.mod` (Hugo, the standard edition). Never use `go run …@latest`. The four modules are
 separate because their dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module that

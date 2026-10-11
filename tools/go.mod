@@ -5,6 +5,7 @@ go 1.27
 toolchain go1.27.1
 
 tool (
+	github.com/rillig/gobco
 	github.com/zricethezav/gitleaks/v8
 	golang.org/x/vuln/cmd/govulncheck
 )
@@ -52,6 +53,7 @@ require (
 	github.com/nwaples/rardecode/v2 v2.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
+	github.com/rillig/gobco v1.3.5-0.20260503204557-7a099954a61f // indirect
 	github.com/rivo/uniseg v0.2.0 // indirect
 	github.com/rs/zerolog v1.33.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
