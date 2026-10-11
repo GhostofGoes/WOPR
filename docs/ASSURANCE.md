@@ -96,7 +96,8 @@ positive from gosec carries a `//nolint:gosec` comment with its reason.
 
 ## Residual risks
 
-- The bus factor is one: one person holds the release signing key and the owner rights.
+- One person holds the owner rights and the release signing key. The backup maintainer can reach them
+  through emergency access ([GOVERNANCE.md](../GOVERNANCE.md#continuity)).
 - The Windows installer and the Mac app are not signed by Microsoft or Apple yet (issues #10 and #14),
   so the systems warn about them. The attestation still proves where they came from.
 - Optional milestone M7 (`docs/PLAN.md` §4.7) would add network access for an opt-in LLM brain. That

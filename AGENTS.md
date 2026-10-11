@@ -475,6 +475,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   "Require branches to be up to date before merging". Block force pushes and deletion. Allow squash merges
   only (merge commits and rebase merging off). `gh api 'repos/{owner}/{repo}/rules/branches/main'` should
   list `pull_request` and `required_status_checks` rules.
+- **Collaborators:** the backup maintainer in `GOVERNANCE.md` has write access. Keep the emergency access
+  that its Continuity section describes current.
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Enable immutable releases.
 - **Security:** enable secret scanning with push protection, and private vulnerability reporting.
 - **Release signing key** (`docs/PLAN.md` §8, "Signatures"). Create an environment named `release`
