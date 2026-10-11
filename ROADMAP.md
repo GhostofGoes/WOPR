@@ -4,8 +4,7 @@ This roadmap covers October 2026 to October 2027. The maintainer reviews it at e
 milestones and their details are in [docs/PLAN.md](docs/PLAN.md#15-milestones), and each item below links
 its issue when it has one.
 
-WOPR has the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394) silver badge. The
-gold badge is not a goal.
+WOPR has the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394) silver badge.
 
 ## Planned
 
@@ -30,6 +29,9 @@ gold badge is not a goal.
 - **Translations** of the parts that are not film text: the docs, the help output, the manual page,
   the package metadata, the installers, the error messages and the games that do not come from the film
   ([#31](https://github.com/GhostofGoes/WOPR/issues/31)). The film's text stays in English.
+- **The OpenSSF Best Practices gold badge.** It needs a second significant contributor from another
+  organization, a review by a second person for most changes, hardening headers on the docs site, and
+  80% branch coverage ([#35](https://github.com/GhostofGoes/WOPR/issues/35)).
 - **An optional LLM brain** (milestone M7, `docs/PLAN.md` §4.7). It would be off unless the user turns it
   on, and it would be the only network access in `wopr`.
 
