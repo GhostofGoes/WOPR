@@ -27,7 +27,7 @@ const (
 // The provenance tags of text that wopr's licence does not cover, as Go code outside package
 // script spells them.
 var (
-	filmTag = regexp.MustCompile(`\bscript\.(Film|Recon|Reconstructed)\b`)
+	filmTag = regexp.MustCompile(`\bscript\.(Film|FromFilm|Recon|Reconstructed)\b`)
 	abs0Tag = regexp.MustCompile(`\bscript\.ABS0\b`)
 	mapTag  = regexp.MustCompile(`\bscript\.MatthewThomasMap\b`)
 )

@@ -189,7 +189,7 @@ func TestClimaxIsTheGames(t *testing.T) {
 	if len(movie) < len(game) || strings.Join(movie[:len(game)], "\n") != strings.Join(game, "\n") {
 		t.Errorf("the scene:\n%s\nthe game:\n%s", strings.Join(movie, "\n"), strings.Join(game, "\n"))
 	}
-	if !strings.Contains(strings.Join(movie, "\n"), "STALEMATE. WANT TO PLAY AGAIN?\nZERO") {
+	if !strings.Contains(strings.Join(movie, "\n"), "STALEMATE.\nWANT TO PLAY AGAIN?\nZERO") {
 		t.Errorf("the climax plays tic-tac-toe to zero players:\n%s", strings.Join(movie, "\n"))
 	}
 }

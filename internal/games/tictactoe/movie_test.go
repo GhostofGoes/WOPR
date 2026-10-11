@@ -25,7 +25,7 @@ func TestMovieModePlaysTheFilmsClimax(t *testing.T) {
 			t.Fatalf("seed %d: launches %v", seed, l)
 		}
 		tr := g.Transcript()
-		for _, want := range []string{"PLEASE LIST NUMBER OF PLAYERS: 1\n\n", "STALEMATE. WANT TO PLAY AGAIN?\nZERO\n\n"} {
+		for _, want := range []string{"PLEASE LIST NUMBER\nOF PLAYERS: 1\n\n", "STALEMATE.\nWANT TO PLAY AGAIN?\nZERO\n\n"} {
 			if !strings.Contains(tr, want) {
 				t.Fatalf("seed %d: missing %q:\n%s", seed, want, tr)
 			}

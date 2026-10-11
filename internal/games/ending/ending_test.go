@@ -167,6 +167,8 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	for _, err := range script.Validate(Lines, string(notice)) {
 		t.Error(err)
 	}
+	// The film's lines, frozen: a change here is a change to the film's text (AGENTS.md).
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(Lines), "\n")+"\n")
 	if Slug != tictactoe.EndingSlug {
 		t.Error("tic-tac-toe hands off to this slug")
 	}

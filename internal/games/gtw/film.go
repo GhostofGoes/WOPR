@@ -30,9 +30,10 @@ const (
 )
 
 // Film is the film's scenario as movie mode shows it: the real game, given the film's side and
-// targets and then WOPR's war plan at every strike, played a frame at a time. The board, the
-// strip lines and the kill ratios are therefore the game's own. Film is not a program: the
-// movie's director draws it and asks it for frames.
+// targets and then WOPR's war plan at every strike, played a frame at a time. The board and
+// the strip lines are therefore the game's own; the kill ratios take the film's figures where
+// its frame shows them. Film is not a program: the movie's director draws it and asks it for
+// frames.
 type Film struct {
 	g       *Game
 	stage   FilmStage // the furthest stage reached
@@ -125,6 +126,7 @@ func (f *Film) step() []string {
 	case orders:
 		outs = f.g.onOrder("")
 	case assessed:
+		f.g.ratios = withFilmFigures(f.g.ratios)
 		outs = f.g.showRatios()
 	case ratios:
 		outs = f.g.startClimax()
@@ -170,4 +172,22 @@ func (f *Film) take(outs []proto.Output) []string {
 		}
 	}
 	return lines
+}
+
+// The kill ratios the film's frame shows (docs/PLAN.md Appendix B): the United States' ten
+// percentages, and both nations' injured and dead in millions. The frame cuts the Soviet
+// percentages off at its edge.
+var (
+	filmRatiosUS    = [10]int{68, 54, 12, 39, 58, 69, 22, 45, 70, 89}
+	filmRatiosHuman = [2][2]int{{49, 72}, {65, 110}} // United States, Soviet Union: injured, dead
+)
+
+// withFilmFigures puts the film's figures into the game's table where the frame shows them.
+// The film's side is the Soviet Union, so WOPR's column is the United States'. The Soviet
+// percentages stay the game's own.
+func withFilmFigures(r [2][12]int) [2][12]int {
+	copy(r[wopr][:10], filmRatiosUS[:])
+	copy(r[wopr][10:], filmRatiosHuman[0][:])
+	copy(r[you][10:], filmRatiosHuman[1][:])
+	return r
 }

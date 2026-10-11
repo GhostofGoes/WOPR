@@ -6,9 +6,9 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-// firstContact: David's first connection. A number at LOGON: is refused and the line drops;
-// after the re-dial, HELP LOGON, HELP GAMES and LIST GAMES; then a game's name, refused too.
-// The persona answers each line the same way.
+// firstContact: David's first connections. A number at LOGON: is refused and the line drops;
+// after the re-dial, HELP LOGON, HELP GAMES, and LIST GAMES on an open line; then, from the
+// library, two names at LOGON:, each refused. The persona answers each line the same way.
 var firstContact = Scene{
 	Slug:        "first-contact",
 	Title:       "FIRST CONTACT",
@@ -16,22 +16,21 @@ var firstContact = Scene{
 	Interactive: true,
 	Steps: steps(
 		dial(dialPause),
-		[]Step{
-			typedAt(logon, "000001"),
-			say(notRecognized),
-			pause(redialPause, script.Original),
-			page(script.Original),
-		},
-		dial(redialPause),
+		[]Step{typedAt(logon, "000001")},
+		refused(),
 		[]Step{
 			typedAt(logon, "Help Logon"),
-			say(recon("HELP NOT AVAILABLE"), blank),
+			say(filmText("HELP NOT AVAILABLE"), blank),
 			typedAt(logon, "Help Games"),
-			say(recon("'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES", "WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS."), blank),
-			typedAt(logon, "List Games"),
+			say(filmText("'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES", "WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS."), blank),
+			typed("List Games"),
 			table(gamesList, blank),
 			pause(2*time.Second, script.Original),
 			typedAt(logon, "Falkens-Maze"),
+		},
+		refused(),
+		[]Step{
+			typedAt(logon, "Armageddon"),
 			say(notRecognized),
 			pause(2*time.Second, script.Original),
 		},
@@ -62,21 +61,21 @@ var joshua = Scene{
 			table(recon( // the film's status phrases in the persona's layout
 				"(311) 936-2364",
 				"SYSPROC FUNCT READY                         ALT NET READY",
-				"CPU AUTH RY-345-AX3                         SYSCOMP STATUS ALL PORTS ACTIVE",
+				"CPU AUTH RY-345-AX3                         SYSCOMP STATUS:  ALL PORTS ACTIVE",
 			)),
 			pause(1500*time.Millisecond, script.Reconstructed),
 			page(script.Reconstructed),
 			say(greetings, blank),
 			typed("Hello."),
-			say(recon("HOW ARE YOU FEELING TODAY?"), blank),
-			typed("I'm fine. How are you?"),
-			say(recon("EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN", "THE REMOVAL OF YOUR USER ACCOUNT ON 6/23/73?"), blank),
+			say(filmText("HOW ARE YOU FEELING TODAY?"), blank),
+			typed("I'm fine.  How are you?"),
+			say(filmText("EXCELLENT.  IT'S BEEN A LONG TIME.  CAN YOU EXPLAIN", "THE REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?"), blank),
 			typed("People sometimes make mistakes."),
-			say(recon("YES THEY DO. SHALL WE PLAY A GAME?"), blank),
-			typed("Love to. How about Global Thermonuclear War?"),
-			say(recon("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?"), blank),
-			typed("Later. Let's play Global Thermonuclear War."),
-			say(recon("FINE."), blank),
+			say(filmText("YES THEY DO.  SHALL WE PLAY A GAME?"), blank),
+			typed("Love to.  How about Global Thermonuclear War?"),
+			say(filmText("WOULDN'T YOU PREFER A GOOD GAME OF CHESS?"), blank),
+			typed("Later.  Let's play Global Thermonuclear War."),
+			say(filmText("FINE."), blank),
 			pause(2*time.Second, script.Original),
 		},
 	),

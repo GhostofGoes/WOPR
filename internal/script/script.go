@@ -15,8 +15,8 @@ type Prov string
 // Provenance values. A third-party tag names its source: "third-party:<repo>@<commit>:<path>"
 // for text from a repository, or "third-party:<https URL>" for art from a web page.
 const (
-	Film          Prov = "film"          // confirmed against the film (M5 viewing pass)
-	Reconstructed Prov = "reconstructed" // from transcripts or subtitles; not yet confirmed
+	Film          Prov = "film"          // the film's screen text, checked character by character (docs/PLAN.md §2.3)
+	Reconstructed Prov = "reconstructed" // from one transcript, not yet checked against a second source
 	ABS0          Prov = "third-party:abs0/wargames@010ed92:wargames.sh"
 	// MatthewThomasMap is the big board's world map: "Map (C) 1998 Matthew Thomas. Freely
 	// usable if this line is included."
@@ -43,8 +43,27 @@ func (ls Ls) Texts() []string {
 	return out
 }
 
+// FromFilm tags lines as the film's own screen text, checked against the film's transcriptions
+// (docs/PLAN.md §2.3). Such a line is never changed: each package that holds some lists them in
+// a film_lines golden, and AGENTS.md says why.
+func FromFilm(texts ...string) Ls { return Tag(Film, texts...) }
+
 // Recon tags lines as reconstructed from transcripts.
 func Recon(texts ...string) Ls { return Tag(Reconstructed, texts...) }
+
+// FilmTexts returns the text of every line tagged Film in blocks, in order, one entry per line,
+// for a package's film_lines golden. A typed line keeps its mixed case.
+func FilmTexts(blocks []Ls) []string {
+	var out []string
+	for _, block := range blocks {
+		for _, l := range block {
+			if l.Prov == Film {
+				out = append(out, l.Text)
+			}
+		}
+	}
+	return out
+}
 
 // Orig tags lines as written for this project.
 func Orig(texts ...string) Ls { return Tag(Original, texts...) }

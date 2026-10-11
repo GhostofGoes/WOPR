@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
@@ -33,10 +34,12 @@ func TestEveryStepHasProvenance(t *testing.T) {
 	}
 	slug := regexp.MustCompile(`^[a-z]+(-[a-z]+)*$`)
 	seen := map[string]bool{}
+	var filmLines []script.Ls
 	for _, s := range All() {
 		for _, err := range script.Validate(s.Lines(), string(notice)) {
 			t.Errorf("%s: %v", s.Slug, err)
 		}
+		filmLines = append(filmLines, s.Lines()...)
 		if !slug.MatchString(s.Slug) || seen[s.Slug] {
 			t.Errorf("slug %q must be unique, lower case and hyphenated", s.Slug)
 		}
@@ -75,6 +78,8 @@ func TestEveryStepHasProvenance(t *testing.T) {
 			}
 		}
 	}
+	// The film's lines, frozen: a change here is a change to the film's text (AGENTS.md).
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(filmLines), "\n")+"\n")
 }
 
 // Every page is left up for a pause before a new page, a launched program or the end of the
@@ -103,33 +108,37 @@ func TestEveryPageIsHeld(t *testing.T) {
 	}
 }
 
-// checkClock: a game clock has two readings, each with one # for its seconds, which stay within
-// their minute for as long as the clock runs, and fits 80 columns.
+// checkClock: a game clock has two seconds readings, the film's, which stay within their
+// minute for as long as the clock runs; its lines are the film's and fit 80 columns.
 func checkClock(t *testing.T, c Clock) {
 	t.Helper()
 	runs := int(c.D / time.Second)
-	if len(c.Lines) != 2 || c.Start[0] < 0 || c.Start[0]+runs > 59 || c.Start[1] > 59 || c.Start[1]-runs < 0 {
-		t.Errorf("a clock of %d readings from %v for %v passes a minute", len(c.Lines), c.Start, c.D)
+	if r := c.Readings(); len(r) != 2 || r[0]+runs > 59 || r[1]-runs < 0 {
+		t.Errorf("a clock of readings %v for %v passes a minute", r, c.D)
 	}
 	for _, l := range c.Lines {
-		if strings.Count(l.Text, "#") != 1 || len(l.Text)+1 > 80 {
-			t.Errorf("reading %q: one # for the seconds, within 80 columns", l.Text)
+		if l.Prov != script.Film || len(l.Text) > 80 {
+			t.Errorf("clock line %q: the film's, within 80 columns", l.Text)
 		}
 	}
 }
 
-// The clock's readings tick, the first up and the second down, a second at a time.
+// The clock's readings tick from the film's, the first up and the second down, a second at a
+// time.
 func TestClockReading(t *testing.T) {
 	t.Parallel()
-	c := Clock{Lines: script.Recon("UP # SEC", "DOWN # SEC"), Start: [2]int{0, 59}, D: 4 * time.Second}
+	c := Clock{Lines: script.Recon("UP 00 SEC", "", "DOWN 59 SEC"), D: 4 * time.Second}
+	if r := c.Readings(); len(r) != 2 || r[0] != 0 || r[1] != 59 {
+		t.Errorf("readings %v", r)
+	}
 	for _, tc := range []struct {
 		t    time.Duration
 		want string
 	}{
-		{0, "UP 00 SEC|DOWN 59 SEC"},
-		{999 * time.Millisecond, "UP 00 SEC|DOWN 59 SEC"},
-		{time.Second, "UP 01 SEC|DOWN 58 SEC"},
-		{75 * time.Second, "UP 59 SEC|DOWN 00 SEC"},
+		{0, "UP 00 SEC||DOWN 59 SEC"},
+		{999 * time.Millisecond, "UP 00 SEC||DOWN 59 SEC"},
+		{time.Second, "UP 01 SEC||DOWN 58 SEC"},
+		{75 * time.Second, "UP 59 SEC||DOWN 00 SEC"},
 	} {
 		if got := strings.Join(c.Reading(tc.t), "|"); got != tc.want {
 			t.Errorf("after %v: %q, want %q", tc.t, got, tc.want)

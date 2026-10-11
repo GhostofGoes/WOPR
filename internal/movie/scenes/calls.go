@@ -7,48 +7,60 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-// callBack: WOPR phones David at home to finish yesterday's game, and shows how long it has
-// left. (The plan's provisional table put "Is this a game or is it real?" here; the
-// transcriptions put it in the NORAD session, which is where it now is. M5 settles it.)
+// callBack: WOPR phones David at home to finish yesterday's game. The game clock is on his
+// screen when he comes in, and it stays up, ticking, through the conversation.
 var callBack = Scene{
 	Slug:  "call-back",
 	Title: "CALL-BACK",
 	Blurb: "WOPR CALLS BACK TO FINISH THE GAME",
 	Steps: []Step{
+		homeClock,
 		say(greetings, blank),
 		pause(time.Second, script.Original),
-		typed("Incorrect identification. I am not Falken."),
+		typed("Incorrect identification.  I am not Falken."),
 		typed("Falken is dead."),
-		say(recon("I'M SORRY TO HEAR THAT, PROFESSOR."), blank),
+		say(filmText("I'M SORRY TO HEAR THAT, PROFESSOR."), blank),
 		pause(time.Second, script.Reconstructed),
-		say(recon("YESTERDAY'S GAME WAS INTERRUPTED."), blank),
+		say(filmText("YESTERDAY'S GAME WAS INTERRUPTED."), blank),
 		pause(time.Second, script.Reconstructed),
-		say(recon("ALTHOUGH PRIMARY GOAL HAS NOT YET BEEN ACHIEVED, SOLUTION IS NEAR."), blank),
+		say(filmText("ALTHOUGH PRIMARY GOAL HAS NOT YET", "BEEN ACHIEVED, SOLUTION IS NEAR."), blank),
 		typed("What is the primary goal?"),
-		say(recon("YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME."), blank), // the persona's answer to WHY
+		say(filmText("YOU SHOULD KNOW, PROFESSOR.  YOU", "PROGRAMMED ME."), blank), // the persona's answer to WHY
 		typed("What is the primary goal?"),
-		say(recon("TO WIN THE GAME."), blank), // and to the primary goal
-		pause(2*time.Second, script.Original),
-		page(script.Reconstructed),
-		gameClock,
+		say(filmText("TO WIN THE GAME."), blank), // and to the primary goal
+		pause(4*time.Second, script.Original),
 	},
 }
 
-// gameClock is the clock on David's screen. The hours and minutes are the two transcriptions'
-// (abs0's and elfuska's); the seconds tick from this project's own start, elapsed up from 00
-// and remaining down from 59, until the M5 viewing pass reads the film's.
-var gameClock = Clock{
-	Lines: recon(
-		"GAME TIME ELAPSED:           31 HRS 12 MIN # SEC",
-		"ESTIMATED TIME REMAINING:    52 HRS 17 MIN # SEC",
-	),
-	Start: [2]int{0, 59},
-	D:     4 * time.Second,
-	Prov:  script.Original,
-}
+// The game clock on David's screen, and on McKittrick's at the end of the NORAD session: the
+// film's readings, which this project ticks on from there, elapsed up and remaining down.
+var (
+	homeClock = Clock{
+		Lines: filmText(
+			"------------------------------------------------------------",
+			"    GAME TIME ELAPSED           ESTIMATED TIME REMAINING",
+			"",
+			"    31 HRS  12 MIN  50 SEC      52 HRS  17 MIN  15 SEC",
+			"------------------------------------------------------------",
+		),
+		D:    4 * time.Second,
+		Prov: script.Original,
+	}
+	noradClock = Clock{
+		Lines: filmText(
+			"------------------------------------------------------------",
+			"    GAME TIME ELAPSED           ESTIMATED TIME REMAINING",
+			"",
+			"    45 HRS  34 MIN  09 SEC      27 HRS  58 MIN  17 SEC",
+			"------------------------------------------------------------",
+		),
+		D:    4 * time.Second,
+		Prov: script.Original,
+	}
+)
 
-// noradTerminal: David, held at NORAD, reaches Joshua again: the war goes on, the projected
-// kill ratios, and the address that leads him to Falken.
+// noradTerminal: David, held at NORAD, reaches Joshua again on McKittrick's terminal: the war
+// goes on, the projected kill ratios, the address that leads him to Falken, and the clock.
 var noradTerminal = Scene{
 	Slug:  "norad-terminal",
 	Title: "NORAD TERMINAL",
@@ -58,9 +70,11 @@ var noradTerminal = Scene{
 		pause(time.Second, script.Original),
 		page(script.Reconstructed),
 		say(greetings, blank),
-		typed("Are you still playing the game?"),
-		say(recon(
-			"OF COURSE. I SHOULD REACH DEFCON 1 AND LAUNCH MY MISSILES IN 28 HOURS.",
+		typed("Hello, are you still playing the game?"),
+		say(filmText(
+			"OF COURSE.  I SHOULD REACH DEFCON 1 AND",
+			"LAUNCH MY MISSILES IN 28 HOURS.",
+			"",
 			"WOULD YOU LIKE TO SEE SOME PROJECTED KILL RATIOS?",
 		), blank),
 		pause(1500*time.Millisecond, script.Original),
@@ -68,21 +82,24 @@ var noradTerminal = Scene{
 		pause(8*time.Second, script.Original),
 		Board{Prov: script.Original},
 		typed("Is this a game or is it real?"),
-		say(recon("WHAT'S THE DIFFERENCE?"), blank), // the persona's answer too
+		say(filmText("WHAT'S THE DIFFERENCE?"), blank), // the persona's answer too
 		pause(time.Second, script.Reconstructed),
-		say(recon(
-			"YOU ARE A HARD MAN TO REACH. COULD NOT FIND YOU",
-			"IN SEATTLE AND NO TERMINAL IS IN OPERATION AT",
-			"YOUR CLASSIFIED ADDRESS.",
+		say(filmText(
+			"YOU ARE A HARD MAN TO REACH.  COULD NOT FIND",
+			"YOU IN SEATTLE AND NO TERMINAL IS IN",
+			"OPERATION AT YOUR CLASSIFIED ADDRESS.",
 		), blank),
 		typed("What classified address?"),
-		say(recon(
-			"DOD PENSION FILES INDICATE CURRENT MAILING AS:",
+		say(filmText(
+			"DOD PENSION FILES INDICATE",
+			"CURRENT MAILING AS:",
 			"",
 			"DR. ROBERT HUME (A.K.A. STEPHEN W. FALKEN)",
 			"5 TALL CEDAR ROAD",
 			"GOOSE ISLAND, OREGON 97014",
 		), blank),
 		pause(4*time.Second, script.Original),
+		page(script.Reconstructed),
+		noradClock,
 	},
 }

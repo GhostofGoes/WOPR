@@ -119,8 +119,8 @@ func TestMovieScreens(t *testing.T) {
 	d = newDriver(t, movieMode("call-back"), 80, 24)
 	d.until("the game clock", shows("GAME TIME ELAPSED"))
 	s.add("call-back: the game clock", d)
-	d.until("a second later", shows("31 HRS 12 MIN 01 SEC"))
-	if !strings.Contains(d.screen(), "52 HRS 17 MIN 58 SEC") {
+	d.until("a second later", shows("31 HRS  12 MIN  51 SEC"))
+	if !strings.Contains(d.screen(), "52 HRS  17 MIN  14 SEC") {
 		t.Errorf("the time remaining counts down:\n%s", d.screen())
 	}
 	golden.AssertString(t, "movie_screens", s.String())

@@ -2,14 +2,22 @@ package gtw
 
 import "github.com/GhostofGoes/WOPR/internal/script"
 
-// Script text (docs/PLAN.md Appendix B). Film lines are reconstructed until the M5 viewing
-// pass; everything else is original.
+// Script text (docs/PLAN.md Appendix B). A line tagged film is the film's screen text,
+// character for character, checked against its transcriptions (docs/PLAN.md §2.3): never
+// change one (AGENTS.md, "Film text and provenance"). Everything else is original.
 var (
-	lineLabels    = script.Recon("UNITED STATES", "SOVIET UNION") // under the outlines, and on the board
-	lineWhichSide = script.Recon("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")
-	promptSide    = script.Recon("PLEASE CHOOSE ONE: ")
+	lineLabels    = script.FromFilm("UNITED STATES", "SOVIET UNION") // under the outlines, and on the board
+	lineWhichSide = script.FromFilm("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")
+	promptSide    = script.FromFilm("PLEASE CHOOSE ONE:  ")
 	lineSideAgain = script.Orig("CHOOSE 1 OR 2.")
-	lineAwaiting  = script.Recon("AWAITING FIRST STRIKE COMMAND", "", "PLEASE LIST PRIMARY TARGETS BY", "CITY AND/OR COUNTY NAME:")
+	lineAwaiting  = script.FromFilm(
+		"AWAITING FIRST STRIKE COMMAND",
+		"-----------------------------",
+		"",
+		"PLEASE LIST PRIMARY TARGETS BY",
+		"CITY AND/OR COUNTY NAME:",
+		"",
+	)
 	lineNoTargets = script.Orig("AT LEAST ONE TARGET, PROFESSOR. AN EMPTY LINE ENDS THE LIST.")
 	lineTooMany   = script.Orig("TARGET LIST FULL.")
 	lineUnknown   = script.Orig("# IS NOT IN THE TARGET DATABASE.")
@@ -18,13 +26,15 @@ var (
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
-	lineRunning   = script.Recon("** GAME ROUTINE RUNNING **")
-	lineNotRecog  = script.Recon("** IDENTIFICATION NOT RECOGNISED **")
-	lineDenied    = script.Recon("** ACCESS DENIED **")
-	lineImproper  = script.Recon("** IMPROPER REQUEST **")
-	lineMustRun   = script.Recon("** ROUTINE MUST COMPLETE BEFORE RESET **")
-	lineHint      = script.Orig("A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.")
-	lineCode      = script.Recon("CPE1704TKS") // the launch code, cracked on the board
+	// The NORAD notices, in the film's words. The film centres each on an empty screen and
+	// underlines the first line; the board's three-row strip has no room for that.
+	lineRunning  = script.FromFilm("** GAME ROUTINE RUNNING **")
+	lineNotRecog = script.FromFilm("** IDENTIFICATION NOT RECOGNIZED **")
+	lineDenied   = script.FromFilm("** ACCESS DENIED **")
+	lineImproper = script.FromFilm("** IMPROPER REQUEST **")
+	lineMustRun  = script.FromFilm("** ROUTINE MUST COMPLETE BEFORE RESET **")
+	lineHint     = script.Orig("A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.")
+	lineCode     = script.FromFilm("CPE1704TKS") // the launch code, cracked on the board
 
 	// The exchange (original): a stage's three report lines, the strike prompt and its
 	// replies. # is filled in order.
@@ -43,16 +53,18 @@ var (
 		"ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.",
 	)
 
-	// Board text.
-	lineTitle      = script.Recon("GLOBAL THERMONUCLEAR WAR")
-	lineDefcon     = script.Recon("DEFCON")
-	lineTrajectory = script.Recon("TRAJECTORY HEADING")
-	lineRatioTitle = script.Orig("PROJECTED KILL RATIOS")
-	lineRatioHead  = script.Recon("UNITS DESTROYED", "MILITARY ASSETS", "CIVILIAN ASSETS", "HUMAN RESOURCES")
-	lineMilitary   = script.Recon("BOMBERS", "ICBM", "ATTACK SUBS", "TACTICAL AIRCRAFT", "GROUND FORCES")
-	lineCivilian   = script.Recon("HOUSING", "COMMUNICATIONS", "TRANSPORTATION", "FOOD STOCKPILES", "HOSPITALS")
-	lineHuman      = script.Recon("NON-FATAL INJURED", "POPULATION DEATHS")
-	lineMillions   = script.Orig("(MILLIONS)")
+	// Board text. The film's big board has no title: the box carries the game's name, and the
+	// war room's DEFCON sign gives the indicator its label.
+	lineTitle      = script.Orig("GLOBAL THERMONUCLEAR WAR")
+	lineDefcon     = script.Orig("DEFCON")
+	lineTrajectory = script.FromFilm("TRAJECTORY HEADING")
+	// The kill-ratio table's words, as the film's frame shows them (the Soviet column is cut
+	// off at the frame's edge, so its heading is taken to repeat the United States').
+	lineRatioHead  = script.FromFilm("UNITS DESTROYED", "MILITARY FORCES", "CIVILIAN ASSETS", "HUMAN RESOURCES")
+	lineMilitary   = script.FromFilm("BOMBERS", "ICBM'S", "ATTACK SUBS", "TACTICAL AIRCRAFT", "GROUND FORCES")
+	lineCivilian   = script.FromFilm("HOUSING", "COMMUNICATIONS", "TRANSPORTATION", "FOOD STOCKPILES", "HOSPITALS")
+	lineHuman      = script.FromFilm("NON-FATAL INJURED", "POPULATION DEATHS")
+	lineMillion    = script.FromFilm("MILLION")
 	lineCodeLabel  = script.Orig("LAUNCH CODE: ")
 	lineForces     = script.Orig("FORCES", "ICBM", "SLBM", "BMB", "AIR") // in silos, at sea, bombers grounded and airborne
 	lineNations    = script.Orig("US", "USSR")
@@ -63,7 +75,7 @@ var (
 
 	// filmList is LIST GAMES as the film shows it, for the climax. The catalog's tests check
 	// it against the registry's listed names, so the two cannot drift.
-	filmList = script.Recon(
+	filmList = script.FromFilm(
 		"FALKEN'S MAZE", "BLACK JACK", "GIN RUMMY", "HEARTS", "BRIDGE", "CHECKERS", "CHESS", "POKER",
 		"FIGHTER COMBAT", "GUERRILLA ENGAGEMENT", "DESERT WARFARE", "AIR-TO-GROUND ACTIONS",
 		"THEATERWIDE TACTICAL WARFARE", "THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE", "", "GLOBAL THERMONUCLEAR WAR",
@@ -76,8 +88,8 @@ var Lines = []script.Ls{
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
-	lineTitle, lineDefcon, lineTrajectory, lineRatioTitle, lineRatioHead, lineMilitary, lineCivilian,
-	lineHuman, lineMillions, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
+	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
+	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, filmList,
 }
 

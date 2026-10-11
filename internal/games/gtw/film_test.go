@@ -85,8 +85,15 @@ func TestFilmClimax(t *testing.T) {
 	f.Skip(gtw.FilmRatios)
 	c := proto.NewCanvas(80, 19)
 	f.View(c)
-	if f.Stage() != gtw.FilmRatios || !strings.Contains(c.String(), "PROJECTED KILL RATIOS") {
+	if f.Stage() != gtw.FilmRatios || !strings.Contains(c.String(), "HUMAN RESOURCES") {
 		t.Fatalf("stage %d:\n%s", f.Stage(), c.String())
+	}
+	// The film's figures, where its frame shows them: the United States' column and both
+	// nations' human cost.
+	for _, want := range []string{"      68%                  BOMBERS", "      89%                  HOSPITALS", " 49 MILLION", " 72 MILLION", " 65 MILLION", "110 MILLION"} {
+		if !strings.Contains(c.String(), want) {
+			t.Errorf("missing %q:\n%s", want, c.String())
+		}
 	}
 	if lines := f.Run(gtw.FilmClimax); len(lines) != 1 || lines[0] != "** GAME ROUTINE RUNNING **" {
 		t.Errorf("the climax opens with %q", lines)

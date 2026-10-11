@@ -271,36 +271,40 @@ func heading(seed uint64, i int) [4]int {
 	return [4]int{r.IntN(1000), r.IntN(1000), r.IntN(1000), r.IntN(1000)}
 }
 
-// drawRatios is the projected kill-ratio table: units destroyed on each side, civilian
-// losses in percent, people in millions.
+// drawRatios is the projected kill-ratio table in the film's layout: the United States on the
+// left and the Soviet Union on the right, whichever side you took; units destroyed in percent
+// for the military forces and the civilian assets; and the human cost in millions. The film's
+// frame repeats the nations' names above each section and leaves blank lines under the rules,
+// which 19 rows have no room for.
 func (g *Game) drawRatios(c *proto.Canvas) {
-	title := lineRatioTitle[0].Text
-	c.Put((c.W-len(title))/2, 0, title, proto.StyleBright, 0)
-	player, wopr := "UNITED STATES", "SOVIET UNION"
+	us, ussr := you, wopr
 	if g.side == assets.USSR {
-		player, wopr = wopr, player
+		us, ussr = wopr, you
 	}
+	style := [2]proto.Style{proto.StyleOutgoing, proto.StyleIncoming} // yours, WOPR's
+	rule := strings.Repeat("-", c.W)
 	head := lineRatioHead.Texts()
-	c.Put(4, 2, player, proto.StyleLabel, 0)
-	c.Put(54, 2, wopr, proto.StyleLabel, 0)
-	c.Put(4, 3, head[0], proto.StyleDim, 0)
-	c.Put(54, 3, head[0], proto.StyleDim, 0)
-
-	y := 4
-	section := func(name string, rows []string, first int, format func(int) string) {
-		c.Put(28, y, name, proto.StyleLabel, proto.AttrUnderline)
-		y++
+	y := 0
+	// A section: its heading row, its rule, and a row per asset with both sides' figures.
+	section := func(left, name, right string, rows []string, first int, format func(int) string) {
+		c.Put(0, y, left, proto.StyleDim, 0)
+		c.Put(27, y, name, proto.StyleLabel, 0)
+		c.Put(54, y, right, proto.StyleDim, 0)
+		c.Put(0, y+1, rule, proto.StyleDim, 0)
+		y += 2
 		for i, row := range rows {
-			c.Put(28, y, row, proto.StyleText, 0)
-			c.Put(8, y, fmt.Sprintf("%9s", format(g.ratios[0][first+i])), proto.StyleOutgoing, 0)
-			c.Put(58, y, fmt.Sprintf("%9s", format(g.ratios[1][first+i])), proto.StyleIncoming, 0)
+			c.Put(0, y, format(g.ratios[us][first+i]), style[us], 0)
+			c.Put(27, y, row, proto.StyleText, 0)
+			c.Put(54, y, format(g.ratios[ussr][first+i]), style[ussr], 0)
 			y++
 		}
 	}
-	count := func(v int) string { return fmt.Sprint(v) }
-	section(head[1], lineMilitary.Texts(), 0, count)
-	section(head[2], lineCivilian.Texts(), 5, func(v int) string { return fmt.Sprintf("%d%%", v) })
-	section(head[3]+" "+lineMillions[0].Text, lineHuman.Texts(), 10, func(v int) string {
-		return fmt.Sprintf("%d.%d", v/10, v%10)
-	})
+	percent := func(v int) string { return fmt.Sprintf("     %3d%%", v) }
+	millions := func(v int) string { return fmt.Sprintf("%3d %s", v, lineMillion[0].Text) }
+	c.Put(1, y, lineLabels[0].Text, proto.StyleLabel, 0)
+	c.Put(55, y, lineLabels[1].Text, proto.StyleLabel, 0)
+	y++
+	section(head[0], head[1], head[0], lineMilitary.Texts(), 0, percent)
+	section(head[0], head[2], head[0], lineCivilian.Texts(), 5, percent)
+	section(lineLabels[0].Text, head[3], lineLabels[1].Text, lineHuman.Texts(), 10, millions)
 }

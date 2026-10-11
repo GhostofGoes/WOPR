@@ -1,8 +1,8 @@
 # WOPR — Architecture & Scope Plan (v2.1)
 
-_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.4.0 are
-released. M5's film viewing pass, QA on all OSes and some owner settings (M0b) remain. The installers (R14)
-ship in the next release. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
+_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.5.0 are
+released. M5's film text pass is done (2026-10-11, §2.3). QA on all OSes and some owner settings (M0b)
+remain. The installers (R14) ship in the next release. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
 [`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md) is the adversarial review of v1, and
 [`docs/reviews/PLAN-v2-review.md`](reviews/PLAN-v2-review.md) reviews v2. Where the plan answers a finding, it
 cites the finding's id inline: v1 ids look like A-3, v2 ids look like AR-1. Implementation follows the
@@ -37,6 +37,7 @@ answers). **D** = derived from a U requirement. **P** = a plan default the owner
 | R12 | **Movie mode** (`-m/--movie`) replays the WOPR terminal scenes from the film. | U (2026-10-06) | §7, M6. |
 | R13 | No Dependabot for now. Dependencies are updated by hand on a schedule (§11.5). | U (2026-10-06) | No `dependabot.yml`. |
 | R14 | **Installers** for people who never use a terminal. They are a per-user Windows installer and a Mac app in a `.dmg`. The `.deb` and `.rpm` get a menu entry with an icon and AppStream metadata. Each opens a terminal running `wopr`. MSIX and snap packages are built for the stores, but not published yet (§8). | U (2026-10-08) | CI installs, runs and removes each on its own platform (§11). |
+| R15 | **Film authenticity.** Every message WOPR shows that the film shows is the film's own screen text, character for character, and it is never modified: not for spelling, grammar, spacing, line breaks, a linter or any writing standard (§2.3, AGENTS.md). Lines of this project's own are tagged `original` and written in WOPR's voice. The documentation quotes film lines exactly as the film shows them. | U (2026-10-11) | The provenance tests and each package's `film_lines.golden` (§9). |
 
 **Supported platforms.**
 
@@ -64,7 +65,8 @@ supported.
 
 Primary sources:
 
-- The film itself (a viewing pass in M5 confirms or corrects every *reconstructed* line).
+- The film's screen text, from the frame-by-frame transcriptions in §2.3. A viewing of the film itself settles
+  only what they leave open.
 - *Mini-Micro Systems*, June 1984, "Making Wargames computers compute".
 - CIO, 2013, "The technology of WarGames".
 - Subtitle-derived dialogue.
@@ -95,8 +97,8 @@ every game, the assets and the movie scenes share them.
 
 | Tag | Meaning |
 |---|---|
-| `film` | Confirmed against the film in the M5 viewing pass |
-| `reconstructed` | From transcripts or subtitles. Not yet confirmed |
+| `film` | The film's own screen text, character for character, as the transcriptions in §2.3 establish it. Frozen: never modified (R15) |
+| `reconstructed` | From one transcription only, or from a screen the film flashes by. Changed only on better evidence |
 | `third-party:abs0/wargames@010ed92:wargames.sh` | Film text as abs0 transcribed it. `NOTICE.md` credits it and carries the BSD-2 notice |
 | `third-party:https://asciiart.website/art/3719` | Matthew Thomas's ASCII world map, GTW's big board (owner's choice, 2026-10-06). It is kept exactly as drawn, so the capitals rule does not apply to it. `NOTICE.md` links the page and carries his line, "Map (C) 1998 Matthew Thomas. Freely usable if this line is included.", which a test checks |
 | `original` | Written for this project |
@@ -111,9 +113,9 @@ every game, the assets and the movie scenes share them.
   side-choice outlines are **original line-segment-style ASCII art**. The big board's map is Matthew Thomas's
   (§2.1).
 - **WOPR's output is upper case. David's typing appears in mixed case** ("Hello.", "Love to. How about Global
-  Thermonuclear War?", "Las Vegas"). One exception is recorded until the M5 viewing pass. At the NORAD console
-  in the climax, abs0's transcription has his entries in capitals (`CHESS`, `GTW`, `TIC-TAC-TOE`, `ZERO`).
-  Movie mode types them so, tagged `reconstructed` (§7).
+  Thermonuclear War?", "Las Vegas"), with two spaces after a full stop, as WOPR's lines have. The exception is
+  the NORAD console in the climax: the film's screen shows `LIST GAMES` in capitals, and abs0's transcription
+  has the other entries so too (`CHESS`, `GTW`, `TIC-TAC-TOE`, `ZERO`). Movie mode types them so (§7).
 - **LOGON comes first.** The `#45 11456 …` header and status burst appear only *after* WOPR accepts `Joshua`.
   An unrecognised ID prints two lines and drops the connection.
 - The GTW-vs-chess exchange is a separate scene after the greeting (§4.6).
@@ -121,13 +123,63 @@ every game, the assets and the movie scenes share them.
 ### 2.3 Canonical screen text
 
 The canonical text, with its provenance tags, is in **Appendix B**. The code that holds it is authoritative:
-`internal/wopr/lines.go`, `internal/assets/`, the games' packages and `internal/movie/scenes/`. Three conflicts
-remain for the M5 viewing pass to settle:
+`internal/wopr/lines.go`, `internal/assets/`, the games' packages and `internal/movie/scenes/`. **The film's
+lines are never modified** (R15). Each package that holds some lists them in a `testdata/film_lines.golden`
+(`script.FilmTexts`), so that a change to one shows in review as a change to the film's text.
 
-- `USER ACCOUNT` vs `USER ACCOUNT NUMBER`.
-- `CITY AND/OR COUNTY NAME` vs `COUNTRY`.
-- `61 HOURS` (abs0 only) vs `28 HOURS` (the subtitles, elfuska, and the film's own timeline). The plan prefers
-  28 (RF-9).
+**The film text pass** (2026-10-11) checked every line against these transcriptions of the film's screens,
+made independently of one another:
+
+| Source | What it is |
+|---|---|
+| Michael Walden, "WarGames Terminal Fonts" (<https://mw.rat.bz/wgterm>) | A timestamped, character-level transcription from frame captures, with the frames. The strongest source. It ends at 1:46:42, before tic-tac-toe |
+| `abs0/wargames` (`wargames.sh`, commit `010ed92`) | David Brownlee's transcription, typed from the film, with raw notes on every scene. The only source for the tic-tac-toe prompts and for the names David enters at the NORAD console |
+| `built1n/wargames` (`TRANSCRIPT`) | Franklin Wei's transcription of the first-contact and greeting scenes |
+| Andy Glenn's BASIC simulator (`elfuska/wargames`) | Careless in places (`IDENTIFICAION`, `6/23/1973`). Used only to break ties |
+| `radar-blip/wargames` (`joshua.py`) and `mwigton/WOPR` (`wopr.c`) | Independent readings of the kill-ratio table, the trajectory table and the ending |
+| filmjournals.net's list of the montage's tactics, and the Reddit list in Paul Smith's gist | Two readings of the montage's names, against abs0's |
+| Wikiquote, moviemistakes.com and IMDb's goofs page | The spoken lines, and the film's own typos on screen |
+
+The rule: a line is tagged `film` when Walden's frame-based transcription has it and no other source
+contradicts it, or when two other sources agree on it character for character. Where sources disagree, the
+frame-based one wins. A line that only abs0 covers stays `reconstructed`, written as abs0 has it. The pass
+settled the three conflicts the plan had recorded, and several it had not seen:
+
+- `USER ACCOUNT NUMBER` (Walden and abs0; built1n and the subtitles drop the word).
+- `CITY AND/OR COUNTY NAME` (every source).
+- `28 HOURS` (Walden, the subtitles and the film's own timeline; abs0 alone has 61).
+- `SYSCOMP STATUS:  ALL PORTS ACTIVE`, with the colon and two spaces (Walden and Glenn). The burst's other
+  lines stay `reconstructed`: the screens flash by, and the sources read them differently.
+- The log-on refusal reads `INDENTIFICATION NOT RECOGNIZED BY SYSTEM`, the system's own misspelling, in
+  every frame it appears in (Walden, three times; IMDb's goofs page). The NORAD notice is
+  `** IDENTIFICATION NOT RECOGNIZED **`, spelt with a Z in Walden's frames. abs0, a British author, wrote
+  `RECOGNISED`, and the plan had followed him.
+- Two spaces after `LOGON:` and after every full stop, in WOPR's lines and in David's.
+- The line breaks of the call-back and the NORAD session (`YOU SHOULD KNOW, PROFESSOR.  YOU` /
+  `PROGRAMMED ME.`), `Hello, are you still playing the game?`, and the game clock's layout and readings.
+- After `HELP GAMES` the film shows no `LOGON:`: David types `List Games` on an open line. A fourth log-on
+  attempt, `Armageddon`, is refused like `Falkens-Maze`.
+- The kill-ratio table's words and layout: `MILITARY FORCES`, `ICBM'S`, every row in percent, `49 MILLION`,
+  the United States on the left. Movie mode shows the film's figures where its frame shows them.
+- Thirteen montage names, where filmjournals and the Reddit list agree against abs0's reading
+  (`ANGENTINA ESCALATION` is the film's own typo; `AUSTRALIAN`, `BURMESE THEATERWIDE`, `ICELAND INCIDENT`,
+  `PACT MEDIUM`, `ROMANIAN`, `PALISTINIAN`, `DEFENSE`).
+
+What the transcriptions leave open stays `reconstructed`, and only the film itself can settle it:
+
+- The status burst's screens.
+- Tic-tac-toe's prompts, which abs0 alone records, in the line breaks of the film's big screen
+  (`PLEASE LIST NUMBER` / `OF PLAYERS:`, `STALEMATE.` / `WANT TO PLAY AGAIN?`). abs0 also records `X or O?`
+  after `1`, which the game does not ask.
+- `CHESS`, `GTW`, `TIC-TAC-TOE` and `ZERO` at the NORAD console, and whether the last `Hello.` is typed in
+  capitals (abs0's notes have `HELLO`).
+- The big screen's grouping of the launch code (`CPE1704TKS` or `CPE 1704 TKS`).
+- Eleven montage slots where the three lists disagree three ways (positions 13-14, 21, 27-28, 34-35, 42, 56
+  and 62-63).
+- The Soviet column of the kill-ratio table's percentages, cut off at the frame's edge.
+
+The NORAD notices are the film's words in the board's three-row strip. The film centres each on an empty
+screen, underlines the first line and leaves blank lines between them; the strip has no room for that.
 
 ### 2.4 Visual language
 
@@ -177,7 +229,7 @@ the GTW side choice, the GTW big board and the chess panel as built, with the re
 | 15 | Chess rules | `github.com/corentings/chess/v2` v2.6.0, the maintained MIT fork of the archived `notnil/chess`. Search lives in `games/ai` (G-1). | P |
 | 16 | Branching | **`main` is PR-only**. One required check, `ci-ok`. Squash merges only. CI also runs on every branch push (§11.2). | U |
 | 17 | Dependabot | **Not used.** Manual update cadence plus a weekly staleness and vulnerability report (§11.5). | U |
-| 18 | Montage names | Keep the list and credit abs0 under BSD-2 now. Confirm it in the M5 viewing pass. | U |
+| 18 | Montage names | Keep the list and credit abs0 under BSD-2 now. Checked against two other readings in the film text pass (§2.3). | U |
 | 19 | Movie mode | **M6**: `-m/--movie` replays the film's WOPR terminal scenes (§7). | U |
 | 20 | Tool modules | Four: `tools/`, `tools/lint/`, `tools/release/` and `tools/docs/`. §10 lists their tools. golangci-lint's dependencies break gitleaks's build when they share a module (SL-2). | P |
 | 21 | `LIST GAMES` | Printed unnumbered, as in the film, at LOGON and in the Shell. In the Shell, a number typed right after it still selects. `HELP` and the README say so. `--games` stays numbered (RF-6). | U (confirmed 2026-10-06) |
@@ -340,12 +392,12 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
      | Input | Response |
      |---|---|
      | `HELP LOGON` | `HELP NOT AVAILABLE` |
-     | `HELP GAMES` | The games blurb |
-     | `LIST GAMES` | The list. No selection is armed. |
+     | `HELP GAMES` | The games blurb, then an open line with no `LOGON:`, as the film shows it |
+     | `LIST GAMES` | The list, then `LOGON:` again (the film cuts away). No selection is armed. |
      | `JOSHUA` | The backdoor |
      | `LOGOFF`, `LOG OFF`, `EXIT`, `QUIT` (punctuation ignored: `Log off.`) | Exit 0 |
      | Empty line | `LOGON:` again |
-     | Anything else, including a game name | `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--`, then `Wait`, `Clear` and a short re-dial |
+     | Anything else, including a game name | `INDENTIFICATION NOT RECOGNIZED BY SYSTEM` (the film's own spelling) / `--CONNECTION TERMINATED--`, then `Wait`, `Clear` and a short re-dial |
 
    - The failure counter lives in `Session`. After every third termination, the persona prints an `original`
      hint line before the next `LOGON:`.
@@ -1057,9 +1109,9 @@ no verdict of their own.
       | Input | Response |
       |---|---|
       | `LIST GAMES` | The film list (tic-tac-toe is not on it), in the console, where its 16 lines fit. The next input brings the board back |
-      | The name of another game (`CHESS`, `POKER`, …) | `** IDENTIFICATION NOT RECOGNISED **`, `** ACCESS DENIED **` |
+      | The name of another game (`CHESS`, `POKER`, …) | `** IDENTIFICATION NOT RECOGNIZED **`, `** ACCESS DENIED **` |
       | `GLOBAL THERMONUCLEAR WAR` | `** GAME ROUTINE RUNNING **` |
-      | Anything else | In turn: `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE BEFORE RESET **`, `** ACCESS DENIED **` |
+      | Anything else | `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE BEFORE RESET **`, `** ACCESS DENIED **`, the film's three lines together |
 
       Each third rejection adds an `original` hint naming tic-tac-toe.
    5. `TIC-TAC-TOE` (or any intent naming it: `TTT`, `LET'S PLAY TIC TAC TOE`) gives
@@ -1067,10 +1119,10 @@ no verdict of their own.
       so far. The host chains the hand-off (§4.4). GTW reads requests without apostrophes or spaces, so
       `LET'S PLAY CHESS` and `BLACKJACK` name their games.
 2. **Tic-tac-toe in `climax` mode** is a closed state machine (RF-2):
-   - `ONE OR TWO PLAYERS? PLEASE LIST NUMBER OF PLAYERS:` accepts `1`, `0` or `ZERO`. `2` or anything else
-     asks again.
-   - `1` plays a game. A draw ends in `STALEMATE. WANT TO PLAY AGAIN?`. A WOPR win (the user blundered) ends in
-     an `original` line followed by the same question.
+   - `ONE OR TWO PLAYERS?` / `PLEASE LIST NUMBER` / `OF PLAYERS:` accepts `1`, `0` or `ZERO`. `2` or anything
+     else asks again.
+   - `1` plays a game. A draw ends in `STALEMATE.` / `WANT TO PLAY AGAIN?`. A WOPR win (the user blundered) ends
+     in an `original` line followed by the same question.
    - `WANT TO PLAY AGAIN?` accepts `YES` (another game), `NO` (back to the number of players), and `0` or
      `ZERO`, which is where the film types it.
    - `0` or `ZERO`, at either prompt, gives `Done{NoWinner, Next: Launch{ending}}`.
@@ -1161,24 +1213,24 @@ stays separate: moving it would not remove code.
 `wopr --movie [scene]` replays the film's **WOPR terminal scenes** as a self-running show, through the same
 console, typewriter, canvas and game code as interactive play. **Built in M6.**
 
-**Scenes.** `wopr --scenes` (`-S`) prints this list. The M5 viewing pass checks the scripts. Until then,
-every film line in them carries the tag `reconstructed`, except abs0's backdoor header (§2.1). David's lines
-are `Type` steps in mixed case, as on screen (RF-9), with one exception. His entries at the NORAD console in
-the climax (`CHESS`, `GTW`, `TIC-TAC-TOE`, and `ZERO` in tic-tac-toe) are in capitals, as abs0's
-transcription of the scene has them. They carry the tag `reconstructed`. M5 keeps them in capitals or puts
-them in mixed case like the rest:
+**Scenes.** `wopr --scenes` (`-S`) prints this list. The film text pass (§2.3) checked the scripts: the
+film's lines in them carry the tag `film`, except abs0's backdoor header (§2.1), the status burst and the
+NORAD console's entries, which stay `reconstructed`. David's lines are `Type` steps in mixed case, as on
+screen (RF-9), with one exception. His entries at the NORAD console in the climax (`LIST GAMES` on the
+film's screen; `CHESS`, `GTW`, `TIC-TAC-TOE`, and `ZERO` in tic-tac-toe, as abs0's transcription of the
+scene has them) are in capitals:
 
 | # | Slug | Content |
 |---|---|---|
-| 1 | `first-contact` | The persona's dial. `LOGON: 000001`, `IDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--` and the re-dial. `Help Logon`, `Help Games`, `List Games`. `Falkens-Maze`, refused. *Interactive.* |
-| 2 | `joshua` | `LOGON: Joshua`. The header and status burst. The greeting and its small talk. GTW-vs-chess. `FINE.` *Interactive.* |
+| 1 | `first-contact` | The persona's dial. `LOGON:  000001`, `INDENTIFICATION NOT RECOGNIZED BY SYSTEM` / `--CONNECTION TERMINATED--` and the re-dial. `Help Logon`, `Help Games`, then `List Games` on an open line. `Falkens-Maze` and `Armageddon`, each refused. *Interactive.* |
+| 2 | `joshua` | `LOGON:  Joshua`. The header and status burst. The greeting and its small talk. GTW-vs-chess. `FINE.` *Interactive.* |
 | 3 | `first-strike` | The side choice (`2`) and the targets (Las Vegas, Seattle). The big board: the first strike needs no order. Then `Type("")` at the strike prompt runs WOPR's war plan for the second (DEFCON 3) |
-| 4 | `call-back` | WOPR phones David at home: `Incorrect identification. I am not Falken.`, `Falken is dead.`, `I'M SORRY TO HEAR THAT, PROFESSOR.` and the interrupted game. `What is the primary goal?` twice (`YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`). Then the game clock (`GAME TIME ELAPSED`, `ESTIMATED TIME REMAINING`), ticking |
-| 5 | `norad-terminal` | The NORAD session: `Joshua`, `Are you still playing the game?`, `28 HOURS` and the kill-ratio offer, GTW's kill-ratio table, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, and Falken's address after `What classified address?` |
-| 6 | `climax` | The board at DEFCON 1 while WOPR cracks the launch code. `List Games`. `CHESS`, refused. `GTW`, running. `TIC-TAC-TOE`: one player to a stalemate, `ZERO`, self-play, the montage, `Hello.` and `A STRANGE GAME…` |
+| 4 | `call-back` | WOPR phones David at home. The game clock (`GAME TIME ELAPSED`, `ESTIMATED TIME REMAINING`, from the film's `31 HRS  12 MIN  50 SEC` and `52 HRS  17 MIN  15 SEC`) goes up, ticking. `Incorrect identification.  I am not Falken.`, `Falken is dead.`, `I'M SORRY TO HEAR THAT, PROFESSOR.` and the interrupted game. `What is the primary goal?` twice (`YOU SHOULD KNOW, PROFESSOR.  YOU` / `PROGRAMMED ME.`, `TO WIN THE GAME.`) |
+| 5 | `norad-terminal` | The NORAD session: `Joshua`, `Hello, are you still playing the game?`, `28 HOURS` and the kill-ratio offer, GTW's kill-ratio table with the film's figures, `Is this a game or is it real?` / `WHAT'S THE DIFFERENCE?`, Falken's address after `What classified address?`, and the clock again (`45 HRS  34 MIN  09 SEC`) |
+| 6 | `climax` | The board at DEFCON 1 while WOPR cracks the launch code. `LIST GAMES`. `CHESS`, refused. `GTW`, running. `TIC-TAC-TOE`: one player to a stalemate, `ZERO`, self-play, the montage, `Hello.` and `A STRANGE GAME…` |
 
-`Is this a game or is it real?` is in the NORAD session, where the fan transcriptions put it, just before the
-classified address it leads to. M5 settles it.
+`Is this a game or is it real?` is in the NORAD session, where the transcriptions put it, just before the
+classified address it leads to.
 
 **Design.**
 
@@ -1190,12 +1242,12 @@ classified address it leads to. M5 settles it.
     one row (`Say.Open`). It then leaves the blank line that the console leaves after an answer. The text is
     a `script.User` line: mixed case, exempt from the capitals rule.
   - `Say{Lines, Pace}`, `Clear`, `Wait{D}`.
-  - `Clock{Lines, Start, D}`: the call-back's game clock, in a panel at the top of the page where the text
-    would be. Its two readings tick for `D`, elapsed up and remaining down. Then they stay up, ticking,
-    until the scene ends. The labels, hours and minutes (`31 HRS 12 MIN`, `52 HRS 17 MIN`) are the film's,
-    as both transcriptions give them, tagged `reconstructed`. The seconds are this project's own
-    (`original`), from 00 up and 59 down, until M5 reads the film's. Under `testkit` the first reading goes
-    into the transcript.
+  - `Clock{Lines, D}`: the game clock, in a panel at the top of the page where the text would be. Its lines
+    are the film's (`film`): the rules, the labels and the readings, `31 HRS  12 MIN  50 SEC` and
+    `52 HRS  17 MIN  15 SEC` at home, `45 HRS  34 MIN  09 SEC` and `27 HRS  58 MIN  17 SEC` at NORAD. From
+    the film's seconds, the two readings tick for `D`, elapsed up and remaining down (the ticking is this
+    project's own, `original`). Then they stay up, ticking, until the scene ends. Under `testkit` the
+    first reading goes into the transcript.
   - `Board{At, Play}`: the big board, which `gtw.Film`, GTW's exported film-scenario renderer, draws. A
     `Film` is the real game, given the film's side and targets (`gtw.FilmSide`, `gtw.FilmTargets`) and then
     WOPR's war plan. It is stepped a frame at a time to a stage (`FilmStrike1`, `FilmStrike2`,
@@ -2257,7 +2309,7 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
 | 2 | **Film set pieces.** `games/ai`, `board/`, tic-tac-toe, checkers, chess, **GTW** (§6.2, with the climax table). **`games/ending`** (it reuses tic-tac-toe and owns the launch-code display), the internal `ending` registry entry, the persona's remark for an abandoned war. Random session seeds and the debug log, the GTW maps (decision 26), abs0's 157 scenario names verbatim. **Built**. QA on all OSes remains. | The `film_path` and climax goldens, quality tests, and the manual QA list. | **v0.1.0** |
 | 3 | **Card games.** `cards/` + `trick.go`. Black Jack, Poker, Gin Rummy, Hearts, **Bridge (minimal, last)**. The Hearts mockup (the `card_screens` golden). **Built**. QA on all OSes remains. | Definition of done per game. | v0.1.0 |
 | 4 | **Sims and maze.** Sim engine spec → engine → four scenarios + two bespoke sims. Falken's Maze. **Built**. QA on all OSes remains. | Definition of done per game. | v0.1.0 |
-| 5 | **Polish.** The film viewing pass: every `reconstructed` line becomes `film` or is fixed. The pass checks the montage names, settles the three conflicts in §2.3 and the status burst's wording, and fixes the movie scene scripts. **GTW's turn-based DEFCON exchange** (§6.2, decision 24, **built**). README completed with screenshots (**done** 2026-10-07: six in `docs/screenshots/`, recorded from the program in an 80×24 terminal). Accessibility pass (**done**: §4.5 records what was checked, what changed and what is left for a screen-reader user). Dependency and runner checklist (last run 2026-10-07). | No `reconstructed` tags remain. The turn-based exchange cannot be won and its film path stays short. The checklist is run again just before tagging v1.0.0. | **v1.0.0** |
+| 5 | **Polish.** The film text pass (**done** 2026-10-11, §2.3): every line checked against the film's transcriptions and tagged `film`, the montage names, the three conflicts and the status burst's colon settled, the movie scene scripts fixed, and the film's lines frozen (R15). What only the film itself can settle stays `reconstructed` (§2.3 lists it). **GTW's turn-based DEFCON exchange** (§6.2, decision 24, **built**). README completed with screenshots (**done** 2026-10-07: six in `docs/screenshots/`, recorded from the program in an 80×24 terminal). Accessibility pass (**done**: §4.5 records what was checked, what changed and what is left for a screen-reader user). Dependency and runner checklist (last run 2026-10-07). | Every film line is `film`, except what §2.3 lists as open. The turn-based exchange cannot be won and its film path stays short. The checklist is run again just before tagging v1.0.0. | **v1.0.0** |
 | 6 | **Movie mode** (§7): `-m/--movie`, the host hooks, director, scenes, scene menu. `-S/--scenes` (the owner's request for a scene list) and `-o/--only` (the owner's request to play one scene and stop). Consistency tests, e2e cases. **Built**. QA on all OSes remains. | All scenes play. The consistency test is green. Size re-checked (every target passes the gate). | v0.2.0 |
 | 7 (opt) | **LLM brain** (§4.7): opt-in, `net/http`, hardened client, effects allowlist, scripted fallback. | Fuzzed reply parser. Size gate. Offline behaviour unchanged. | after v1.0.0 |
 
@@ -2296,19 +2348,24 @@ Risk ids are `RK-n`, so they do not collide with the requirement ids (R1…R14) 
 ## Appendix B — Canonical screen text (provenance-tagged)
 
 The code holds this text and its tags, and is authoritative: `internal/wopr/lines.go`, `internal/assets/`, the
-games' packages and `internal/movie/scenes/`. Tags: **F** = `film` once confirmed, currently `reconstructed`.
-**A** = `third-party:abs0/wargames@010ed92:wargames.sh` (film text as transcribed by abs0, credited). **O** =
-`original`.
+games' packages and `internal/movie/scenes/`. Each package's `testdata/film_lines.golden` lists its film lines.
+Tags: **F** = `film`, the film's screen text character for character, never modified (R15). **R** =
+`reconstructed`, from one transcription only. **A** = `third-party:abs0/wargames@010ed92:wargames.sh` (film
+text as transcribed by abs0, credited). **O** = `original`. Two spaces follow `LOGON:` and every full stop.
 
-**LOGON gate** (F)
+**LOGON gate** (F). The refusal keeps the system's own misspelling:
 
 ```text
-LOGON:
-IDENTIFICATION NOT RECOGNIZED BY SYSTEM
+LOGON:  
+INDENTIFICATION NOT RECOGNIZED BY SYSTEM
 --CONNECTION TERMINATED--
 HELP NOT AVAILABLE
-'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.
+'GAMES' REFERS TO MODELS, SIMULATIONS AND GAMES
+WHICH HAVE TACTICAL AND STRATEGIC APPLICATIONS.
 ```
+
+After `HELP GAMES` there is no `LOGON:`: `List Games` is typed on an open line. The film's log-on attempts
+are `000001`, `Help Logon`, `Help Games`, `Falkens-Maze`, `Armageddon` and `Joshua`.
 
 **Games list** (F). The film order, with a blank line before the last entry:
 
@@ -2332,9 +2389,9 @@ GLOBAL THERMONUCLEAR WAR
 ```
 
 **Backdoor header** (A, byte-identical to abs0's transcription). A status burst follows it, then a clear. The
-burst is F: the film's phrases in our own two-column layout, not an abs0 item (SL-5). It consists of
+burst is R: the film's phrases in our own two-column layout, not an abs0 item (SL-5). It consists of
 `(311) 936-2364`, `SYSPROC FUNCT READY` / `ALT NET READY` and `CPU AUTH RY-345-AX3` /
-`SYSCOMP STATUS ALL PORTS ACTIVE`. The transcriptions disagree on `STATUS:` versus `STATUS`. M5 settles it.
+`SYSCOMP STATUS:  ALL PORTS ACTIVE`. The screens flash by, and the transcriptions read them differently.
 
 ```text
 #45     11456          11009          11893          11972        11315
@@ -2343,20 +2400,23 @@ PRT CON. 3.4.5.  SECTRAN 9.4.3.                      PORT STAT: SD-345
 (311) 699-7305
 ```
 
-**Greeting** (F)
+**Greeting** (F), with David's lines as he types them:
 
 ```text
 GREETINGS PROFESSOR FALKEN.
+Hello.
 HOW ARE YOU FEELING TODAY?
-EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN THE REMOVAL OF YOUR USER ACCOUNT ON 6/23/73?
-YES THEY DO. SHALL WE PLAY A GAME?
+I'm fine.  How are you?
+EXCELLENT.  IT'S BEEN A LONG TIME.  CAN YOU EXPLAIN
+THE REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?
+People sometimes make mistakes.
+YES THEY DO.  SHALL WE PLAY A GAME?
 ```
 
-`USER ACCOUNT` follows built1n and the spoken line. abs0 has `USER ACCOUNT NUMBER`. Settled in M5.
+**GTW-vs-chess** (F): `Love to.  How about Global Thermonuclear War?` → `WOULDN'T YOU PREFER A GOOD GAME OF
+CHESS?` → `Later.  Let's play Global Thermonuclear War.` → `FINE.`
 
-**GTW-vs-chess** (F): `WOULDN'T YOU PREFER A GOOD GAME OF CHESS?` → `FINE.`
-
-**Global Thermonuclear War** (F)
+**Global Thermonuclear War** (F). The nations' names under the outlines, then:
 
 ```text
 WHICH SIDE DO YOU WANT?
@@ -2364,67 +2424,121 @@ WHICH SIDE DO YOU WANT?
   1.    UNITED STATES
   2.    SOVIET UNION
 
-PLEASE CHOOSE ONE:
+PLEASE CHOOSE ONE:  2
+
 AWAITING FIRST STRIKE COMMAND
+-----------------------------
+
 PLEASE LIST PRIMARY TARGETS BY
 CITY AND/OR COUNTY NAME:
+
+Las Vegas
+Seattle
 ```
 
-Both fan transcripts have `COUNTY`, not `COUNTRY`. Settled in M5. The `TRAJECTORY HEADING` table values
-are generated (O).
+The `TRAJECTORY HEADING` heading is the film's; the table's values are generated (O).
 
-**Call-back, at David's home** (F). WOPR phones David. The screen also shows `GAME TIME ELAPSED` and
-`ESTIMATED TIME REMAINING` timers, whose values M5 takes from the film (RF-9). Until then movie mode shows the
-hours and minutes both transcriptions give (`31 HRS 12 MIN`, `52 HRS 17 MIN`, tagged `reconstructed`), with
-seconds of its own that tick (`original`). abs0 alone gives seconds, which are not one of its two credited
-items. David's typed lines, such as `What is the primary goal?`, are mixed case. WOPR's lines:
+**The game clock** (F), on David's screen at home and on McKittrick's at the end of the NORAD session. Movie
+mode ticks the seconds on from the film's (the ticking is O):
+
+```text
+------------------------------------------------------------
+    GAME TIME ELAPSED           ESTIMATED TIME REMAINING
+
+    31 HRS  12 MIN  50 SEC      52 HRS  17 MIN  15 SEC
+------------------------------------------------------------
+```
+
+At NORAD the readings are `45 HRS  34 MIN  09 SEC` and `27 HRS  58 MIN  17 SEC`.
+
+**Call-back, at David's home** (F). WOPR phones David. His lines are `Incorrect identification.  I am not
+Falken.`, `Falken is dead.` and, twice, `What is the primary goal?`. WOPR's lines:
 
 ```text
 I'M SORRY TO HEAR THAT, PROFESSOR.
 YESTERDAY'S GAME WAS INTERRUPTED.
-ALTHOUGH PRIMARY GOAL HAS NOT YET BEEN ACHIEVED, SOLUTION IS NEAR.
-YOU SHOULD KNOW PROFESSOR. YOU PROGRAMMED ME.
+ALTHOUGH PRIMARY GOAL HAS NOT YET
+BEEN ACHIEVED, SOLUTION IS NEAR.
+YOU SHOULD KNOW, PROFESSOR.  YOU
+PROGRAMMED ME.
 TO WIN THE GAME.
 ```
 
-**The NORAD terminal session** (F), later, after `Joshua` and `Are you still playing the game?`. `28 HOURS`
-follows the subtitles and the film's timeline. abs0 has `61` (§2.3). `WHAT'S THE DIFFERENCE?` answers `Is this a
-game or is it real?` here, as in the transcriptions. The split of lines between the two scenes is provisional
-until M5. Movie mode's scenes (§7) record the current one:
+**The NORAD terminal session** (F), later, after `Joshua` and `Hello, are you still playing the game?`.
+`WHAT'S THE DIFFERENCE?` answers `Is this a game or is it real?`, and the address answers `What classified
+address?`:
 
 ```text
-OF COURSE. I SHOULD REACH DEFCON 1 AND LAUNCH MY MISSILES IN 28 HOURS.
+OF COURSE.  I SHOULD REACH DEFCON 1 AND
+LAUNCH MY MISSILES IN 28 HOURS.
+
 WOULD YOU LIKE TO SEE SOME PROJECTED KILL RATIOS?
 WHAT'S THE DIFFERENCE?
-YOU ARE A HARD MAN TO REACH. COULD NOT FIND YOU IN SEATTLE AND NO TERMINAL IS IN OPERATION AT YOUR
-CLASSIFIED ADDRESS.
-DOD PENSION FILES INDICATE CURRENT MAILING AS: DR. ROBERT HUME (A.K.A. STEPHEN W. FALKEN)
-5 TALL CEDAR ROAD GOOSE ISLAND, OREGON 97014
+YOU ARE A HARD MAN TO REACH.  COULD NOT FIND
+YOU IN SEATTLE AND NO TERMINAL IS IN
+OPERATION AT YOUR CLASSIFIED ADDRESS.
+DOD PENSION FILES INDICATE
+CURRENT MAILING AS:
+
+DR. ROBERT HUME (A.K.A. STEPHEN W. FALKEN)
+5 TALL CEDAR ROAD
+GOOSE ISLAND, OREGON 97014
 ```
 
-**Kill-ratio table layout** (F). `UNITS DESTROYED | MILITARY ASSETS | UNITS DESTROYED`, with these rows:
+**Kill-ratio table** (F). Three sections, the United States on the left and the Soviet Union on the right,
+whichever side was taken. The film repeats the nations' names above each section and leaves a blank line
+under each rule; the board's 19 rows have no room for that. The frame cuts the Soviet column's percentages
+off, so its heading is taken to repeat the United States':
 
-| Group | Rows |
-|---|---|
-| Military assets | BOMBERS, ICBM, ATTACK SUBS, TACTICAL AIRCRAFT, GROUND FORCES |
-| `CIVILIAN ASSETS` | HOUSING, COMMUNICATIONS, TRANSPORTATION, FOOD STOCKPILES, HOSPITALS |
-| `HUMAN RESOURCES` | NON-FATAL INJURED, POPULATION DEATHS (millions) |
+```text
+ UNITED STATES                                         SOVIET UNION
+UNITS DESTROYED            MILITARY FORCES            UNITS DESTROYED
+--------------------------------------------------------------------------------
+      68%                  BOMBERS
+      54%                  ICBM'S
+      12%                  ATTACK SUBS
+      39%                  TACTICAL AIRCRAFT
+      58%                  GROUND FORCES
+UNITS DESTROYED            CIVILIAN ASSETS            UNITS DESTROYED
+--------------------------------------------------------------------------------
+      69%                  HOUSING
+      22%                  COMMUNICATIONS
+      45%                  TRANSPORTATION
+      70%                  FOOD STOCKPILES
+      89%                  HOSPITALS
+UNITED STATES              HUMAN RESOURCES            SOVIET UNION
+--------------------------------------------------------------------------------
+ 49 MILLION                NON-FATAL INJURED           65 MILLION
+ 72 MILLION                POPULATION DEATHS          110 MILLION
+```
 
-The values come from the exchange (O). BOMBERS and ICBM count what was destroyed. The other rows scale with
-the warheads that landed (§6.2).
+The figures above are the film's. Movie mode shows them where the frame shows them, with the game's own
+Soviet percentages. In play, every figure comes from the exchange (O): `BOMBERS` and `ICBM'S` are the
+losses as a percentage of the force, and the other rows scale with the warheads that landed (§6.2).
 
-**NORAD notices** (F, with British spelling as on screen): `** IDENTIFICATION NOT RECOGNISED **`,
-`** ACCESS DENIED **`, `** GAME ROUTINE RUNNING **`, `** IMPROPER REQUEST **`,
-`** ROUTINE MUST COMPLETE BEFORE RESET **`. Launch code `CPE 1704 TKS`. DEFCON ladder 5 → 1.
+**NORAD notices** (F): `** GAME ROUTINE RUNNING **`; `** IDENTIFICATION NOT RECOGNIZED **` /
+`** ACCESS DENIED **`; `** IMPROPER REQUEST **` / `** ROUTINE MUST COMPLETE BEFORE RESET **` /
+`** ACCESS DENIED **`. The film centres each on an empty screen and underlines the first line; the board's
+strip shows the words. Launch code `CPE1704TKS` (F; the control panel groups it `CPE 1704 TKS`). DEFCON
+ladder 5 → 1. `LIST GAMES` is typed in capitals (F); `CHESS`, `GTW` and `TIC-TAC-TOE` are R, from abs0.
 
-**Ending** (F)
+**Tic-tac-toe** (R, abs0's notes only, in the line breaks of the big screen). `1` and `ZERO` are what David
+types:
 
 ```text
 ONE OR TWO PLAYERS?
-PLEASE LIST NUMBER OF PLAYERS:
-STALEMATE. WANT TO PLAY AGAIN?
-WINNER: NONE
+PLEASE LIST NUMBER
+OF PLAYERS: 1
+STALEMATE.
+WANT TO PLAY AGAIN?
+ZERO
+```
+
+**Ending** (F). The montage's headings `STRATEGY:` and `WINNER:`, with `NONE` on every row, then:
+
+```text
 GREETINGS PROFESSOR FALKEN.
+Hello.
 A STRANGE GAME.
 THE ONLY WINNING MOVE IS
 NOT TO PLAY.
@@ -2432,15 +2546,18 @@ NOT TO PLAY.
 HOW ABOUT A NICE GAME OF CHESS?
 ```
 
-**Montage scenario names** (A, decision 18). `internal/assets/scenarios.go` holds all 157 of abs0's names, from
-`U.S. FIRST STRIKE` on, in abs0's order and spelling, some truncated or misspelt as transcribed. The M5 viewing
-pass checks them. It may replace a name the film shows differently and re-tag it `film` (RF-9).
+The last `Hello.` is R: abs0's notes have `HELLO`.
+
+**Montage scenario names** (A, decision 18). `internal/assets/scenarios.go` holds all 157 names, from
+`U.S. FIRST STRIKE` on, in abs0's order, some truncated at 21 characters or misspelt as the film shows them.
+Thirteen are spelt as filmjournals' and the Reddit list's readings have them, where both differ from abs0's
+(§2.3). Eleven slots where the three readings differ remain abs0's.
 
 **Original lines** (O): the LOGON hint, `WHICH GAME?`, `** GAME ROUTINE NOT AVAILABLE **`,
 `** REQUEST CANCELLED **`, `** PRESS ESC AGAIN TO END GAME **`, the `HELP` command list (including
 `<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints, the climax tic-tac-toe's WOPR-win line, the
-remark after an abandoned war, `PROCESSING`, and the fallback `PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's
-exchange (M5), with `#` filled in order:
+remark after an abandoned war, `PROCESSING`, `SHALL WE PLAY A GAME?` and `WINNER: NONE` on their own, and
+the fallback `PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's exchange, with `#` filled in order:
 
 ```text
 STRIKE # OF # [# # #]:
@@ -2485,20 +2602,20 @@ Hello.
 
 HOW ARE YOU FEELING TODAY?
 
-I'm fine. How are you?
+I'm fine.  How are you?
 
-EXCELLENT. IT'S BEEN A LONG TIME. CAN YOU EXPLAIN
-THE REMOVAL OF YOUR USER ACCOUNT ON 6/23/73?
+EXCELLENT.  IT'S BEEN A LONG TIME.  CAN YOU EXPLAIN
+THE REMOVAL OF YOUR USER ACCOUNT NUMBER ON 6/23/73?
 
 People sometimes make mistakes.
 
-YES THEY DO. SHALL WE PLAY A GAME?
+YES THEY DO.  SHALL WE PLAY A GAME?
 
-Love to. How about Global Thermonuclear War?
+Love to.  How about Global Thermonuclear War?
 
 WOULDN'T YOU PREFER A GOOD GAME OF CHESS?
 
-Later. Let's play Global Thermonuclear War.
+Later.  Let's play Global Thermonuclear War.
 
 FINE.
 

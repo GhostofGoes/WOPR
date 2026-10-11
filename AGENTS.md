@@ -79,6 +79,10 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose.
   The self-test requires every rule to report it. A tool pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version in both.
+- **Film lines are frozen.** Each package that holds lines tagged `film` lists them in its
+  `testdata/film_lines.golden`, through `script.FilmTexts`. A change to that file is a change to the film's
+  text, which never happens without new evidence from the film and the owner's decision ([Film text and
+  provenance](#film-text-and-provenance)).
 - **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
   may be less than 14 days old at the commit being checked. A module's age counts from the time the
   module proxy gives for its version. `go run ./internal/tools/cooldown` checks it (CI's `lint` job, and
@@ -198,6 +202,41 @@ page gets `third-party:<https URL>` instead. Such art is kept as drawn, and it i
 rule. Do not copy text or art from other projects without a licence and a `NOTICE.md` entry that credits
 the source. Do not commit any line adapted from the brother's prompt (the `prompt` tag) until he grants
 written permission and a licence (`docs/PLAN.md` §2.1).
+
+**The film's lines are never modified.** A line tagged `film` is the film's own screen text, character for
+character, checked against the transcriptions in `docs/PLAN.md` §2.3 (design goal R15). Do not change its
+words, spelling, punctuation, spacing, capitals or line breaks, for any reason:
+
+- Not to fix what looks like a typo. `INDENTIFICATION NOT RECOGNIZED BY SYSTEM` is what the film's screen
+  says, and `ANGENTINA ESCALATION` is what the montage shows.
+- Not for a spell checker or a linter. Exempt the line instead, as `prek.toml`'s codespell ignore list and
+  the `//nolint:misspell` comments do.
+- Not for any writing standard or style rule ([Writing style](#writing-style)).
+
+Every message WOPR shows that the film shows must be the film's. Where the film shows a line for a moment,
+use the film's line; do not write one. The `film_lines.golden` files freeze the lines, so that a change to
+one shows in review as a change to the film's text. Such a change needs new evidence from the film itself
+and the owner's decision before it is made. The documentation quotes film lines exactly as the film shows
+them, two spaces and misspellings included.
+
+A line tagged `reconstructed` comes from one transcription only, or from a screen the film flashes by.
+Change it only on better evidence, and tag it `film` once the rule in `docs/PLAN.md` §2.3 is met. That
+section lists what is still open. A line tagged `original` is this project's own. Write it in WOPR's voice:
+capitals, terse, and PROFESSOR for the user.
+
+## Writing style
+
+Technical documentation follows ASD-STE100, Simplified Technical English: the README, the docs site, the
+manual page, the packages' descriptions, the change notes and the contributor docs. Write short sentences,
+of at most 20 words, in the active voice and the simple tenses. Use one meaning per word, a list for a
+sequence of steps, and no semicolons, phrasal verbs or idioms. Write for a reader who has never used a
+terminal, except in the advanced subjects: verifying binaries, contributing and developing.
+
+**This directive never overrides film authenticity, under any circumstances.** A quoted film line is
+reproduced exactly as the film shows it, even where it breaks every rule above, in the documentation as in
+the program. No documentation pass, rewrite, linter or spell check edits the film's text, the lines WOPR
+shows or the goldens that hold them. If a film line reads badly inside a sentence, change the sentence
+around the quote, never the quote.
 
 ## Change notes
 

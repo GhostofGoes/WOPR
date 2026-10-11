@@ -135,7 +135,7 @@ func TestClimax(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, tictactoe.New(), info, tictactoe.Climax, 3)
 	g.Type("2").Type("three").Type("1") // 2 is refused at the climax
-	if strings.Count(g.Transcript(), "PLEASE LIST NUMBER OF PLAYERS:") < 3 {
+	if strings.Count(g.Transcript(), "PLEASE LIST NUMBER\nOF PLAYERS:") < 3 {
 		t.Fatalf("2 and nonsense must re-ask:\n%s", g.Transcript())
 	}
 	for _, sq := range []string{"5", "1", "2", "3", "4", "6", "7", "8", "9"} {
@@ -144,11 +144,11 @@ func TestClimax(t *testing.T) {
 		}
 		g.Type(sq)
 	}
-	if !g.Contains("STALEMATE. WANT TO PLAY AGAIN?") && !g.Contains("WINNER: WOPR.") {
+	if !g.Contains("STALEMATE.\nWANT TO PLAY AGAIN?") && !g.Contains("WINNER: WOPR.") {
 		t.Fatalf("the game must end with the film's question:\n%s", g.Transcript())
 	}
 	g.Type("maybe").Type("no")
-	if asking, p := g.Asking(); !asking || p != "PLEASE LIST NUMBER OF PLAYERS: " {
+	if asking, p := g.Asking(); !asking || p != "OF PLAYERS: " {
 		t.Fatalf("NO goes back to the number of players: %q\n%s", p, g.Transcript())
 	}
 	g.Type("1").Type("1").Type("9").Type("3").Type("7").Type("4").Type("6").Type("2").Type("8")
@@ -175,6 +175,8 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	for _, err := range script.Validate(tictactoe.Lines, string(notice)) {
 		t.Error(err)
 	}
+	// The film's lines, frozen: a change here is a change to the film's text (AGENTS.md).
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(tictactoe.Lines), "\n")+"\n")
 }
 
 func TestViewFitsItsPanel(t *testing.T) {

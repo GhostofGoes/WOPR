@@ -18,11 +18,18 @@ var firstStrike = Scene{
 	Blurb: "A SIDE, TWO TARGETS AND THE BIG BOARD",
 	Steps: []Step{
 		table(gtw.SideChoice(), blank),
-		say(recon("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")),
-		typedAt(recon("PLEASE CHOOSE ONE: "), "2"),
+		say(filmText("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")),
+		typedAt(filmText("PLEASE CHOOSE ONE:  "), "2"),
 		pause(beat, script.Original),
 		page(script.Reconstructed),
-		say(recon("AWAITING FIRST STRIKE COMMAND", "", "PLEASE LIST PRIMARY TARGETS BY", "CITY AND/OR COUNTY NAME:")),
+		say(filmText(
+			"AWAITING FIRST STRIKE COMMAND",
+			"-----------------------------",
+			"",
+			"PLEASE LIST PRIMARY TARGETS BY",
+			"CITY AND/OR COUNTY NAME:",
+			"",
+		)),
 		typed("Las Vegas"),
 		typed("Seattle"),
 		typedAs(script.Original, nil, ""), // the Enter that ends GTW's own target list
@@ -39,9 +46,11 @@ var firstStrike = Scene{
 // climax: DEFCON 1 at NORAD while WOPR searches for the launch code. LIST GAMES, a game it
 // will not switch to, the war it is running, then tic-tac-toe: one player and a stalemate,
 // then zero players, self-play, the montage, and the film's last words. The NORAD notices are
-// GTW's own replies to the same lines (the consistency test); tic-tac-toe and the ending are
-// the real programs, in movie mode. The game names David enters are in capitals, as abs0's
-// transcription of the scene has them (tic-tac-toe's ZERO too); the M5 viewing pass confirms.
+// GTW's own replies to the same lines (the consistency test), in the words the film shows:
+// the board's three-row strip has no room for the film's rules and blank lines between them.
+// Tic-tac-toe and the ending are the real programs, in movie mode. LIST GAMES is in capitals
+// on the film's screen; the other names David enters there are in capitals as abs0's
+// transcription of the scene has them (tic-tac-toe's ZERO too).
 var climax = Scene{
 	Slug:  "climax",
 	Title: "CLIMAX",
@@ -50,18 +59,18 @@ var climax = Scene{
 		Board{At: gtw.FilmClimax, Prov: script.Reconstructed},
 		say(gameRunning),
 		pause(3*time.Second, script.Original),
-		typed("List Games"),
+		typed("LIST GAMES"),
 		Board{Prov: script.Original}, // sixteen lines do not fit under the board: GTW lists them in the console
 		table(gamesList),
 		pause(3*time.Second, script.Original),
-		typed("CHESS"),
+		typedRecon("CHESS"),
 		Board{At: gtw.FilmClimax, Prov: script.Original},
-		say(recon("** IDENTIFICATION NOT RECOGNISED **", "** ACCESS DENIED **")),
+		say(filmText("** IDENTIFICATION NOT RECOGNIZED **", "** ACCESS DENIED **")),
 		pause(2*time.Second, script.Original),
-		typed("GTW"),
+		typedRecon("GTW"),
 		say(gameRunning),
 		pause(3*time.Second, script.Original),
-		typed("TIC-TAC-TOE"),
+		typedRecon("TIC-TAC-TOE"),
 		pause(beat, script.Original),
 		Run{Slug: gtw.TicTacToeSlug, Mode: ending.MovieMode, Prov: script.Reconstructed},
 		pause(4*time.Second, script.Original),

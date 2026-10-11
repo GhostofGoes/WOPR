@@ -7,7 +7,9 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-// Constructors for the scene data. Film lines are reconstructed until the M5 viewing pass.
+// Constructors for the scene data. A line tagged film is the film's screen text, checked
+// against its transcriptions character by character (docs/PLAN.md §2.3). Never change one
+// (AGENTS.md, "Film text and provenance").
 
 // say is WOPR speaking.
 func say(ls ...script.Ls) Say { return Say{Lines: join(ls), Pace: proto.PaceSpeech} }
@@ -23,11 +25,15 @@ func join(ls []script.Ls) script.Ls {
 	return out
 }
 
-// typed is a line the user types with no prompt before it.
-func typed(text string) Type { return Type{Text: script.User(script.Reconstructed, text)[0]} }
+// typed is a line the user types with no prompt before it, as the film shows it.
+func typed(text string) Type { return Type{Text: script.User(script.Film, text)[0]} }
 
 // typedAt is a line the user types at prompt, as the film shows it.
-func typedAt(prompt script.Ls, text string) Type { return typedAs(script.Reconstructed, prompt, text) }
+func typedAt(prompt script.Ls, text string) Type { return typedAs(script.Film, prompt, text) }
+
+// typedRecon is a line the user types with no prompt before it, as one transcription has it:
+// the NORAD console's entries, which the film's frames do not show in full.
+func typedRecon(text string) Type { return Type{Text: script.User(script.Reconstructed, text)[0]} }
 
 // typedAs is a line the user types at prompt, tagged p: the film's, or ours (Enter at a prompt
 // of this project's own).
@@ -55,25 +61,27 @@ func steps(runs ...[]Step) []Step {
 }
 
 var (
-	recon = script.Recon
-	orig  = script.Orig
-	blank = script.Orig("")
+	filmText = script.FromFilm
+	recon    = script.Recon
+	orig     = script.Orig
+	blank    = script.Orig("")
 )
 
 // Text more than one scene shows. The persona prints the same lines (internal/wopr/lines.go),
 // which this package may not import, and the consistency tests in internal/movie keep the two
 // equal: first-contact and joshua play them through the persona, the call-back's and the NORAD
-// session's answers come from its scripted brain, and the climax's notices from GTW.
+// session's answers come from its scripted brain, and the climax's notices from GTW. The
+// refusal keeps the system's own misspelling of IDENTIFICATION, as the film shows it.
 var (
-	logon         = script.Recon("LOGON: ")
-	notRecognized = script.Recon("IDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--")
-	greetings     = script.Recon("GREETINGS PROFESSOR FALKEN.")
-	gamesList     = script.Recon(
+	logon         = filmText("LOGON:  ")
+	notRecognized = filmText("INDENTIFICATION NOT RECOGNIZED BY SYSTEM", "--CONNECTION TERMINATED--") //nolint:misspell // the film's own spelling
+	greetings     = filmText("GREETINGS PROFESSOR FALKEN.")
+	gamesList     = filmText(
 		"FALKEN'S MAZE", "BLACK JACK", "GIN RUMMY", "HEARTS", "BRIDGE", "CHECKERS", "CHESS", "POKER",
 		"FIGHTER COMBAT", "GUERRILLA ENGAGEMENT", "DESERT WARFARE", "AIR-TO-GROUND ACTIONS",
 		"THEATERWIDE TACTICAL WARFARE", "THEATERWIDE BIOTOXIC AND CHEMICAL WARFARE", "", "GLOBAL THERMONUCLEAR WAR",
 	)
-	gameRunning = script.Recon("** GAME ROUTINE RUNNING **")
+	gameRunning = filmText("** GAME ROUTINE RUNNING **")
 )
 
 // The persona's dial-up (original): its pauses before the first LOGON: and after a failed one.
@@ -85,4 +93,13 @@ const (
 // dial is the modem connecting, as the persona prints it before LOGON:.
 func dial(p time.Duration) []Step {
 	return []Step{say(orig("CONNECTING...")), pause(p, script.Original), say(orig("CONNECTED."), blank)}
+}
+
+// refused is a failed LOGON: as the persona plays it: the refusal, the line dropping, and the
+// re-dial.
+func refused() []Step {
+	return steps(
+		[]Step{say(notRecognized), pause(redialPause, script.Original), page(script.Original)},
+		dial(redialPause),
+	)
 }
