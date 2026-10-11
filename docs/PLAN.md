@@ -2023,6 +2023,19 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
 
 ---
 
+### 11.6 `scorecard.yml` (OpenSSF Scorecard)
+
+[OpenSSF Scorecard](https://scorecard.dev/) scores the repository's supply-chain practices: pinned
+dependencies, token permissions, branch protection, dangerous workflow patterns, signed releases and more.
+`scorecard.yml` runs `ossf/scorecard-action` on each push to `main`, weekly, on a change to branch protection,
+and by hand. It uploads the results as SARIF to code scanning, through `github/codeql-action/upload-sarif`.
+With `publish_results: true`, it also publishes them to the Scorecard API, which serves the README's badge.
+The job has `contents: read`, `security-events: write` (the upload) and `id-token: write` (publishing). The
+Scorecard API refuses results from a workflow that breaks its restrictions: top-level `env` or `defaults`,
+workflow-level write permissions, `run` steps, or actions other than checkout, upload-artifact,
+upload-sarif and Scorecard's own. It uses `GITHUB_TOKEN` only, so the Branch-Protection check sees only
+what that token can read.
+
 ## 12. Security and public-repository hygiene
 
 - **OpenSSF Best Practices.** WOPR holds the passing badge (project 15394 on bestpractices.dev).
@@ -2060,7 +2073,8 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
     Discussions are on, since the forms, the docs site's Troubleshooting page and the README send questions
     there.
   - **Actions**:
-    - allow only listed actions (`actions/*`, `j178/prek-action`).
+    - allow only listed actions (`actions/*`, `j178/prek-action`, and for `scorecard.yml` (§11.6)
+      `ossf/scorecard-action` and `github/codeql-action/upload-sarif`).
     - require actions pinned to a full-length commit SHA.
     - default `GITHUB_TOKEN` read-only.
     - workflows may not create or approve PRs.
