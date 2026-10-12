@@ -69,7 +69,8 @@ prek run --all-files   # run everything on demand
 7. Write commit messages that say what changed and why. We squash-merge PRs, so the PR title and
    description become the commit on `main`.
 
-A maintainer reviews every pull request before it merges. [AGENTS.md](AGENTS.md#pull-requests) says what
+A maintainer reviews every pull request before it merges. The code owner in
+[.github/CODEOWNERS](.github/CODEOWNERS) must approve it. [AGENTS.md](AGENTS.md#pull-requests) says what
 the review checks, and what a pull request needs before it can merge.
 
 ## Film text and other third-party content

@@ -2075,7 +2075,9 @@ wopr itself.
     - go-winres's `.syso` files.
     - editor/OS files.
 - **Repository settings** (S-3, S-7, S-8). The owner applies them (M0b, §15). AGENTS.md lists them.
-  - **`main` ruleset**: pull request required. Required check `ci-ok` (from GitHub Actions), with branches
+  - **`main` ruleset**: pull request required, with a code owner's approval (`.github/CODEOWNERS`, decided
+    2026-10-12). The owner is the only code owner, and the Repository admin role may bypass the rule for
+    pull requests only, so that the owner can merge their own. Required check `ci-ok` (from GitHub Actions), with branches
     required to be up to date before merging (§11.2). No force-push. No deletion. Merges are **squash
     only**, which keeps `main`'s history linear. It does not keep v1's commits out of the public repository.
     PR #1's ref still serves them, and the v1 review quotes three fragments of the CC BY-SA map.

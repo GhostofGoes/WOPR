@@ -431,6 +431,9 @@ screenshot fails the build.
 ## Pull requests
 
 - `main` is PR-only. The required check is `ci-ok`. Merges are squash merges.
+- **Code owners.** `.github/CODEOWNERS` names the code owners (`GOVERNANCE.md`, "Code owners"). GitHub
+  asks a code owner to review each pull request, and `main`'s ruleset requires a code owner's approval
+  before it merges. Change the file only by pull request, and change `GOVERNANCE.md` in the same one.
 - A change players can notice adds a change note ([Change notes](#change-notes)).
 - CI (`ci.yml`) runs on every branch push, so a branch is checked before its PR. That branch's push run
   checks a PR from a branch here (its `pull_request` run skips every job). A PR from a fork runs in full.
@@ -494,10 +497,14 @@ If a rights holder asks you to remove material:
 
 These live in GitHub settings, not in files. Check them at each milestone:
 
-- **Branch ruleset on `main`:** require a pull request. Require the `ci-ok` check from GitHub Actions, with
-  "Require branches to be up to date before merging". Block force pushes and deletion. Allow squash merges
-  only (merge commits and rebase merging off). `gh api 'repos/{owner}/{repo}/rules/branches/main'` should
-  list `pull_request` and `required_status_checks` rules.
+- **Branch ruleset on `main`:** require a pull request, with "Require review from Code Owners"
+  (`.github/CODEOWNERS`). Require the `ci-ok` check from GitHub Actions, with "Require branches to be up to
+  date before merging". Block force pushes and deletion. Allow squash merges only (merge commits and rebase
+  merging off). GitHub does not let an author approve their own pull request, and the owner is the only
+  code owner. So the ruleset's bypass list holds the Repository admin role, set to "For pull requests
+  only". The owner then merges their own pull requests from the pull request page, and the bypass shows
+  there. `gh api 'repos/{owner}/{repo}/rules/branches/main'` should list `pull_request` (with
+  `require_code_owner_review` true) and `required_status_checks` rules.
 - **Collaborators:** the backup maintainer in `GOVERNANCE.md` has write access. Keep the emergency access
   that its Continuity section describes current.
 - **Tag ruleset on `v*`:** restrict creation, update and deletion to the owner. Enable immutable releases.
