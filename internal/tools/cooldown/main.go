@@ -13,9 +13,9 @@
 // enough, so updating a dependency waits out the cooldown, as `prek update` does for hooks
 // (prek.toml's cooldown_days).
 //
-// tools/cooldown-exceptions.txt lists module@version pairs exempt from the wait, one per line,
-// each with a reason after '#': a fix for a vulnerability that cannot wait, say. Remove a line
-// once its version is old enough.
+// The cooldown is for regular updates. A security fix skips it: tools/cooldown-exceptions.txt
+// lists module@version pairs exempt from the wait, one per line, each with a reason after '#'
+// (the advisory IDs it fixes). Remove a line once its version is old enough.
 //
 // It exits 0 when every module is old enough, 1 when one is not, and 2 when it could not
 // check (go list or git failed).
@@ -186,7 +186,7 @@ func report(found []finding, at time.Time, days int) string {
 		fmt.Fprintf(&w, "  %s: %s@%s, from %s (allowed from %s)\n",
 			f.list, f.path, f.version, f.time.Format(time.DateOnly), ready.Format(time.DateOnly))
 	}
-	fmt.Fprintf(&w, "Use an older version, wait, or add module@version with a reason to %s.\n", exceptionsFile)
+	fmt.Fprintf(&w, "Use an older version or wait. A security fix may skip the wait: add module@version to %s,\nwith the advisory IDs it fixes as the reason.\n", exceptionsFile)
 	return w.String()
 }
 

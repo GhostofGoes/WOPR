@@ -1,5 +1,7 @@
 # Modules that may skip the 14-day dependency cooldown (internal/tools/cooldown), one
-# module@version per line with the reason after '#'. A vulnerability fix that cannot wait
-# belongs here; remove its line once the version is 14 days old.
+# module@version per line with the reason after '#'. The cooldown is for regular updates: a
+# security fix skips it. List the fix here with the advisory IDs it fixes (GO-, GHSA- or CVE-)
+# as the reason. Remove its line once the version is 14 days old (AGENTS.md, "Dependency cooldown").
 github.com/gohugoio/hugo@v0.167.0  # docs only; pinned before the cooldown existed. Remove after 2026-10-12.
 github.com/imfing/hextra@v0.13.0   # docs only; pinned before the cooldown existed. Remove after 2026-10-13.
+golang.org/x/net@v0.60.0  # security fix: GO-2026-6603, GO-2026-6610, GO-2026-6611, GO-2026-6612, GO-2026-6617. Remove after 2026-10-22.
