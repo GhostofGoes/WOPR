@@ -1,0 +1,8 @@
+# osv-scanner (and OpenSSF Scorecard's Vulnerabilities check, which runs it) reads this file for go.mod in
+# this directory. Each entry is a known vulnerability with no fix, in a build tool, not in wopr.
+# govulncheck checks wopr itself (scheduled.yml, ci.yml). Review each entry before it expires.
+
+[[IgnoredVulns]]
+id = "GO-2026-5932"
+ignoreUntil = 2027-04-12T00:00:00Z
+reason = "golang.org/x/crypto/openpgp has no fixed version. This module pins build tools only; nothing from it is linked into wopr, and wopr never verifies or signs with this package."

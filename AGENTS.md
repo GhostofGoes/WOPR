@@ -525,7 +525,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
   **Announcements** category, where `release.yml` starts each release's discussion.
 - **Actions:**
   - Allow only `actions/*`, `j178/prek-action`, `ossf/scorecard-action` and
-    `github/codeql-action/upload-sarif` (both for `scorecard.yml`). Require full-length commit-SHA pinning.
+    `github/codeql-action/upload-sarif` (both for `scorecard.yml`), and `github/codeql-action/init` and
+    `github/codeql-action/analyze` (for `codeql.yml`). Require full-length commit-SHA pinning.
   - Set the default `GITHUB_TOKEN` to read-only. Workflows may not create or approve pull requests.
   - Require approval for workflow runs from all external contributors.
 - **Dependabot:** off (owner decision). The weekly `scheduled.yml` report covers updates and
