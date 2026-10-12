@@ -219,7 +219,7 @@ the GTW side choice, the GTW big board and the chess panel as built, with the re
 | 5 | Platforms | Linux and Windows (amd64, arm64). **macOS 26 only** (amd64, arm64). | U |
 | 6 | Arg parsing | Stdlib `flag`. Every long flag has a shorthand. One bare positional means `--play`, and flags may follow it (C-1). | v1 |
 | 7 | Persistence | None. Flags and `WOPR_*` environment variables only. | P |
-| 8 | Toolchain | `go 1.27` + `toolchain go1.27.1` (D-1 closed by the owner). CI must not set `GOTOOLCHAIN` before `setup-go` (D-6). | U |
+| 8 | Toolchain | `go 1.27` + `toolchain go1.27.2` (D-1 closed by the owner). CI must not set `GOTOOLCHAIN` before `setup-go` (D-6). | U |
 | 9 | Lint | **prek** with **`prek.toml`** (authoritative in the repository since M0). | U |
 | 10 | Size | Target ≤ 10 MB, hard limit 15 MB. | U |
 | 11 | CI topology | Build once with GoReleaser. Run each binary natively on its OS/arch (B-2). | U |
@@ -1746,8 +1746,10 @@ classified address it leads to.
   date. It measures a module's age by the version time the module proxy reports. It runs in CI's `lint` job
   and as a prek hook on `go.mod`/`go.sum`. As a hook, it measures at the current time. A compromised
   upstream commit then has two weeks to be noticed before it can reach a release.
-  `tools/cooldown-exceptions.txt` lists `module@version` pairs that may skip the wait, each with its reason
-  (a vulnerability fix).
+  The cooldown applies to regular updates only. A security fix (an update that fixes a published `GO-`,
+  `GHSA-` or `CVE-` advisory) may skip it, at the oldest version that has the fix. The same applies to a Go
+  toolchain release. `tools/cooldown-exceptions.txt` lists those `module@version` pairs, each with its
+  advisory IDs as the reason. Its line is removed once the version is 14 days old.
 - **Go tools** (T-4, T-11, decision 20). Four tool modules, pinned and checksummed by their `go.sum`, run as
   `go tool -modfile=<module> <tool>`:
   - `tools/go.mod`: gitleaks and govulncheck.
@@ -1813,7 +1815,7 @@ classified address it leads to.
   `SNAPCRAFT_STORE_CREDENTIALS`, a secret of the `snap-store` environment that only `snap.yml`'s publish job
   reads (§12). No `pull_request_target`.
 - **`actions/setup-go`** uses `go-version-file: go.mod`, and **nothing sets `GOTOOLCHAIN` before it** (D-6).
-  setup-go exports `GOTOOLCHAIN=local` itself after installing 1.27.1. `archtest` asserts the exact toolchain in
+  setup-go exports `GOTOOLCHAIN=local` itself after installing 1.27.2. `archtest` asserts the exact toolchain in
   CI.
 - **Caching.** `cache: false` in `release.yml` and in any job that runs GoReleaser (B-4, B-9). Compiling
   GoReleaser from a cold cache costs about 1.5–2 minutes per such job. That cost is accepted (CR-4). Every
@@ -2025,8 +2027,11 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
 
 ## 12. Security and public-repository hygiene
 
-- **OpenSSF Best Practices.** WOPR holds the passing badge (project 15394 on bestpractices.dev).
-  Compliance is a project goal. Each change is checked against the criteria before its PR opens.
+- **OpenSSF Best Practices.** WOPR holds the silver badge (project 15394 on bestpractices.dev).
+  Compliance is a project goal. Each change is checked against the criteria before its PR opens. The gold
+  badge is under consideration (`ROADMAP.md`). The gold criteria that need only repository changes are
+  met: every source file carries SPDX copyright and licence lines (`internal/archtest/license_test.go`),
+  code review is documented in `AGENTS.md`, and `GOVERNANCE.md` requires two-factor authentication.
 - **Secrets.** None in the tree, ever.
   - gitleaks runs as a pre-commit hook (staged changes) and in the `secrets` job (the checked-out history,
     §11.2).

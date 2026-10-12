@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command branchcov measures the branch coverage of every package that ships, with gobco.
 //
 //	go run ./internal/tools/branchcov [-j 2] [-min 80] [-v] [package...]

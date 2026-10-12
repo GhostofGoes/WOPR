@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package fightercombat is Fighter Combat: a turn-based dogfight of energy and aspect
 // against WOPR (docs/PLAN.md §6.3, a bespoke game on the sim engine's combat-results and
 // kill-ratio tables). Each turn both pilots pick a manoeuvre at once: PRESS closes the

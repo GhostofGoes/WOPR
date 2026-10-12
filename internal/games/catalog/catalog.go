@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package catalog is the one place where game constructors are wired into a registry.
 // It imports every game package; nothing else does.
 package catalog

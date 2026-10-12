@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package ending is the film's climax after zero players (docs/PLAN.md §6.2): WOPR plays
 // tic-tac-toe against itself faster and faster while it cracks the last of the launch
 // code, runs every war scenario to WINNER: NONE, and concludes that the only winning move

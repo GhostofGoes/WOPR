@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package gamestest provides stub programs for tests of the host, persona and ui. It is
 // imported only by tests (internal/archtest enforces this).
 package gamestest

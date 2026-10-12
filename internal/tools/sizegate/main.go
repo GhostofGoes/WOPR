@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command sizegate enforces the binary size budget on GoReleaser output.
 //
 //	go run ./internal/tools/sizegate [-expect 6] [-packages 4] [dist/artifacts.json]

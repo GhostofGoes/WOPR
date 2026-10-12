@@ -59,7 +59,7 @@ system. There is no Makefile.
 `1.2.4-snapshot.abc1234` for a snapshot. The installers' scripts run only on their own systems. CI runs
 them (`windows.yml`, `macos.yml`, `snap.yml`).
 
-`go.mod` pins Go 1.27.1 (`toolchain go1.27.1`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
+`go.mod` pins Go 1.27.2 (`toolchain go1.27.2`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
 fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck, gobco),
 `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod` (GoReleaser, changie, go-winres) and
 `tools/docs/go.mod` (Hugo, the standard edition). Never use `go run …@latest`. The four modules are
@@ -81,6 +81,10 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
   timers (tests may use `time`'s). forbidigo bans `tea.Sequence` everywhere.
 - **Seeded randomness.** Use `proto.NewRand(seed, streamID)` with a stream from the domains in
   `internal/proto/rand.go`. The top-level `math/rand/v2` functions are banned.
+- **Licence headers.** Every source file that git tracks (Go, shell, PowerShell, Inno Setup, the docs
+  site's JavaScript, CSS and layouts) starts with an `SPDX-FileCopyrightText:` line and
+  `SPDX-License-Identifier: MIT`, after any `#!` line (`internal/archtest/license_test.go`). Vendored
+  files keep their own.
 - **Lint rules must fire.** `internal/archtest/testdata/lintfixture` breaks each custom rule on purpose.
   The self-test requires every rule to report it. A tool pinned both in `prek.toml` and in a tool module
   (golangci-lint, gitleaks) must have the same version in both.
@@ -88,11 +92,17 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
   `testdata/film_lines.golden`, through `script.FilmTexts`. A change to that file is a change to the film's
   text, which never happens without new evidence from the film and the owner's decision ([Film text and
   provenance](#film-text-and-provenance)).
-- **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
-  may be less than 14 days old at the commit being checked. A module's age counts from the time the
-  module proxy gives for its version. `go run ./internal/tools/cooldown` checks it (CI's `lint` job, and
-  a prek hook on `go.mod` and `go.sum`). A fix that cannot wait goes in `tools/cooldown-exceptions.txt`
-  with its reason, until it is old enough.
+- **Dependency cooldown.** Regular updates wait 14 days. No module in any build list (wopr's, the four
+  tool modules' and `site/go.mod`'s) may be less than 14 days old at the commit being checked. A module's
+  age counts from the time the module proxy gives for its version. `go run ./internal/tools/cooldown`
+  checks it (CI's `lint` job, and a prek hook on `go.mod` and `go.sum`). The Go toolchain follows the same
+  rule, from its release date.
+  - **Security fixes do not wait.** An update that fixes a published vulnerability (a `GO-`, `GHSA-` or
+    `CVE-` ID) may be newer than 14 days. Use the oldest version that has the fix. Put each such module
+    in `tools/cooldown-exceptions.txt`, with the advisory IDs as its reason. Remove the line when the
+    version is 14 days old. A toolchain fix needs no line: name the advisories in the commit message.
+  - Any other update waits, even one that a security fix brings. Update only the modules that carry
+    the fix.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
   copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
   quote the film. The tool finds them from their provenance tags, so regenerate the file when film text
@@ -427,6 +437,18 @@ screenshot fails the build.
   The push run tests the branch as it is, not merged with `main`, so the ruleset requires branches to be
   up to date. Updating one is a push, which tests the result.
 - Run `prek run --all-files` and `go test ./...` before pushing.
+- **Code review.** A maintainer (`GOVERNANCE.md`) reviews every pull request in GitHub's review tools
+  before it merges. The reviewer reads the whole diff and checks these things:
+  - The change does what its description says, and the project needs it (`ROADMAP.md`, `docs/PLAN.md`).
+  - New behaviour has tests, and a bug fix has a regression test.
+  - The change keeps the rules in this file, and film text stays as the film shows it.
+  - The change moves no trust boundary, or it updates `SECURITY.md` and `docs/ASSURANCE.md`.
+  - Players get a change note when they will notice the change.
+  - Documentation that the change makes wrong is updated.
+
+  A pull request is acceptable when `ci-ok` passes on its latest commit, the branch is up to date with
+  `main`, and every review comment is answered or resolved. The maintainer reviews pull requests that
+  an AI agent wrote, and the backup maintainer reviews the maintainer's own when possible.
 - OpenSSF Best Practices compliance is a project goal, so check each change against the
   [criteria](https://www.bestpractices.dev/en/criteria/0) before you open a PR.
 - Never re-tag a release. Fix a bad release with the next patch version and a `retract` in `go.mod`.
@@ -534,6 +556,7 @@ These live in GitHub settings, not in files. Check them at each milestone:
 At every milestone boundary:
 
 1. Update dependencies to versions at least 14 days old ([Dependency cooldown](#rules-that-tests-enforce)).
+   Security fixes are the exception, at any time.
    `go list -m -u -json all` shows each update and its `Time`. Update direct dependencies one by one with
    `go get <module>@<version>`. Never use `go get -u ./...`, which also lifts indirect modules to their
    newest untagged commits. Then run `go mod tidy`. Update the tool modules the same way, with

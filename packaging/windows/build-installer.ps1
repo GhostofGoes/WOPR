@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Builds wopr_<version>_windows_setup.exe with Inno Setup from the release files: the two Windows
 # programs and the notices, already checked against checksums.txt by the caller.
 #

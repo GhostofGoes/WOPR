@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package scenes holds movie mode's scenes as data (docs/PLAN.md §7): the film's WOPR
 // terminal scenes, step by step, with a provenance tag on every step. The director in
 // internal/movie plays them.

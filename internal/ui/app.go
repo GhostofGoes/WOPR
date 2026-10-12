@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package ui is the Bubble Tea application: the only package that imports Bubble Tea.
 // It adapts the host runner (internal/proto/host) and the console (internal/ui/console)
 // to the terminal: input, the single clock, layout and rendering.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package desertwarfare is Desert Warfare on the sim engine: armour against armour along
 // a coast road, with supply lines. A unit is in supply when no enemy holds a region
 // between it and its depot; out of supply it attacks at half. Take the enemy depot to win,

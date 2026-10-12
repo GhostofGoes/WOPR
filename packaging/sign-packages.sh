@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Signs the Linux packages of a release with wopr's OpenPGP key (docs/PLAN.md §8, "Signatures").
 #
 #   WOPR_SIGNING_KEY=<armored secret key> [WOPR_SIGNING_PASSPHRASE=...] \

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command macapp writes WOPR.app, the macOS application bundle that the release's .dmg holds
 // (packaging/macos/build-dmg.sh). It runs on any system, so its tests run on Linux:
 //

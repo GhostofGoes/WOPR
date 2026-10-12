@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package console holds the pure parts of WOPR's text console: sanitising, wrapping,
 // scrollback, the typewriter and the line editor. It does not import Bubble Tea, so it
 // is tested without a terminal.

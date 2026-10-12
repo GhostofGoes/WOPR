@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package falkensmaze is Falken's Maze: a maze under fog of war, walked with the arrow
 // keys. WOPR watches which way the player turns at junctions and, every few moves, moves a
 // wall the player has not seen yet: it closes the passage the player's habit would take

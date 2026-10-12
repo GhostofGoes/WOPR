@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package ginrummy is two-player gin rummy against WOPR: ten cards each, draw from the
 // stock or take the discard, then discard; knock with 10 or less deadwood, or go gin with
 // none. The defender lays off on the knocker's melds (not after gin); an undercut scores

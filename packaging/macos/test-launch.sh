@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Opens WOPR.app from wopr_<version>_macos.dmg as Finder does, and checks the hand-off: the app's
 # program, started by launchd with no terminal, opens Terminal running itself and exits, and
 # Terminal's run has a terminal. Then it stops both. The image comes from a CI artifact, which

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package cards
 
 // Card art, drawn for this project in plain ASCII. Every card shows its rank and its suit

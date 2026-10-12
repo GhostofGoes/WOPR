@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package movie is movie mode (docs/PLAN.md §7): wopr --movie replays the film's WOPR terminal
 // scenes (internal/movie/scenes) as a self-running show, through the same console, typewriter,
 // canvas and game code as interactive play. The Director is the root program in place of the

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 /*
   Picks the install tabs (the install-tabs shortcode) for the reader's system: Windows, macOS or
   Linux among the download tabs and, among the command-line tabs, Linux (apt) or Linux (RPM) when

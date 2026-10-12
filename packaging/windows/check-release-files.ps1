@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Checks the release files that the Windows installer and the MSIX packages are built from against
 # checksums.txt beside them: the two Windows programs and the notices. Those are the attested files
 # of the release, so the packages hold nothing that the build did not make.

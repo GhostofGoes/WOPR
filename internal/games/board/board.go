@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package board draws 8x8 boards for checkers and chess, and parses their squares.
 //
 // The board is framed, with file letters above and below and rank numbers on both sides,
