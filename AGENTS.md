@@ -58,7 +58,7 @@ system. There is no Makefile.
 `1.2.4-snapshot.abc1234` for a snapshot. The installers' scripts run only on their own systems. CI runs
 them (`windows.yml`, `macos.yml`, `snap.yml`).
 
-`go.mod` pins Go 1.27.1 (`toolchain go1.27.1`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
+`go.mod` pins Go 1.27.2 (`toolchain go1.27.2`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
 fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck),
 `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod` (GoReleaser, changie, go-winres) and
 `tools/docs/go.mod` (Hugo, the standard edition). Never use `go run …@latest`. The four modules are
@@ -91,11 +91,17 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
   `testdata/film_lines.golden`, through `script.FilmTexts`. A change to that file is a change to the film's
   text, which never happens without new evidence from the film and the owner's decision ([Film text and
   provenance](#film-text-and-provenance)).
-- **Dependency cooldown.** No module in any build list (wopr's, the four tool modules' and `site/go.mod`'s)
-  may be less than 14 days old at the commit being checked. A module's age counts from the time the
-  module proxy gives for its version. `go run ./internal/tools/cooldown` checks it (CI's `lint` job, and
-  a prek hook on `go.mod` and `go.sum`). A fix that cannot wait goes in `tools/cooldown-exceptions.txt`
-  with its reason, until it is old enough.
+- **Dependency cooldown.** Regular updates wait 14 days. No module in any build list (wopr's, the four
+  tool modules' and `site/go.mod`'s) may be less than 14 days old at the commit being checked. A module's
+  age counts from the time the module proxy gives for its version. `go run ./internal/tools/cooldown`
+  checks it (CI's `lint` job, and a prek hook on `go.mod` and `go.sum`). The Go toolchain follows the same
+  rule, from its release date.
+  - **Security fixes do not wait.** An update that fixes a published vulnerability (a `GO-`, `GHSA-` or
+    `CVE-` ID) may be newer than 14 days. Use the oldest version that has the fix. Put each such module
+    in `tools/cooldown-exceptions.txt`, with the advisory IDs as its reason. Remove the line when the
+    version is 14 days old. A toolchain fix needs no line: name the advisories in the commit message.
+  - Any other update waits, even one that a security fix brings. Update only the modules that carry
+    the fix.
 - **Notices.** `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright` (the `.deb`'s machine-readable
   copyright file) must match `go run ./internal/tools/notices`. The copyright file lists the files that
   quote the film. The tool finds them from their provenance tags, so regenerate the file when film text
@@ -549,6 +555,7 @@ These live in GitHub settings, not in files. Check them at each milestone:
 At every milestone boundary:
 
 1. Update dependencies to versions at least 14 days old ([Dependency cooldown](#rules-that-tests-enforce)).
+   Security fixes are the exception, at any time.
    `go list -m -u -json all` shows each update and its `Time`. Update direct dependencies one by one with
    `go get <module>@<version>`. Never use `go get -u ./...`, which also lifts indirect modules to their
    newest untagged commits. Then run `go mod tidy`. Update the tool modules the same way, with

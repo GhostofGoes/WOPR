@@ -68,7 +68,7 @@ Comment: The big board's world map in Global Thermonuclear War is Matthew
 Files: std/*
 Copyright: 2009 The Go Authors.
 License: BSD-3-clause
-Comment: The Go standard library and runtime, go1.27.1.
+Comment: The Go standard library and runtime, go1.27.2.
 
 Files: charm.land/bubbletea/v2/*
 Copyright: 2020-2026 Charmbracelet, Inc.
