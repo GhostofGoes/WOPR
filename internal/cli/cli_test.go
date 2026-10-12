@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
 	"github.com/GhostofGoes/WOPR/internal/golden"
 )
@@ -216,5 +217,58 @@ func TestRenderGolden(t *testing.T) {
 		if strings.ContainsRune(line, '\x1b') {
 			t.Errorf("print-and-exit output must be plain text: %q", line)
 		}
+	}
+}
+
+func TestTruthy(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		v    string
+		want bool
+	}{
+		{"", false},
+		{"0", false},
+		{"false", false},
+		{"FALSE", false},
+		{" no ", false},
+		{"Off", false},
+		{"1", true},
+		{"true", true},
+		{"yes", true},
+		{"on", true},
+		{"anything", true},
+	} {
+		if v, want := tc.v, tc.want; Truthy(v) != want {
+			t.Errorf("Truthy(%q) = %v, want %v", v, !want, want)
+		}
+	}
+}
+
+// --games marks the games that are not playable yet, explains the mark once, and lists every
+// unlisted game under one heading.
+func TestRenderGamesMarksPlanned(t *testing.T) {
+	t.Parallel()
+	stub := func() games.Game { return nil }
+	reg, err := games.NewRegistry(
+		games.Entry{Info: games.Info{Number: 1, Listed: true, Name: "CHESS", Slug: "chess", Status: games.Playable}, New: stub},
+		games.Entry{Info: games.Info{Number: 2, Listed: true, Name: "POKER", Slug: "poker", Status: games.Planned}},
+		games.Entry{Info: games.Info{Name: "BRIDGE", Slug: "bridge", Status: games.Playable}, New: stub},
+		games.Entry{Info: games.Info{Name: "HEARTS", Slug: "hearts", Status: games.Planned}},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var b strings.Builder
+	if err := RenderGames(&b, reg); err != nil {
+		t.Fatal(err)
+	}
+	got := b.String()
+	for _, want := range []string{"1.   CHESS", "2. * POKER", "\nALSO AVAILABLE:\n", "   BRIDGE", " * HEARTS", "* not playable yet."} {
+		if !strings.Contains(got, want) {
+			t.Errorf("--games lacks %q:\n%s", want, got)
+		}
+	}
+	if n := strings.Count(got, "ALSO AVAILABLE"); n != 1 {
+		t.Errorf("ALSO AVAILABLE appears %d times, want once:\n%s", n, got)
 	}
 }
