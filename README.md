@@ -1,6 +1,7 @@
 # wopr
 
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15394/badge)](https://www.bestpractices.dev/projects/15394)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/GhostofGoes/WOPR/badge)](https://scorecard.dev/viewer/?uri=github.com/GhostofGoes/WOPR)
 
 > SHALL WE PLAY A GAME?
 
