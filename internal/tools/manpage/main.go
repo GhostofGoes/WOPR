@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command manpage writes docs/man/wopr.6, wopr's manual page (section 6, games). It reads
 // the options from internal/cli's flag table, the games from the catalog and their pages in
 // site/data/games, and the scenes from internal/movie, so the page cannot drift from the

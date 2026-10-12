@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command cooldown enforces the dependency cooldown: no module in any build list (wopr's, the
 // four tool modules' and the docs site's) may be newer than 14 days at the commit being checked.
 //

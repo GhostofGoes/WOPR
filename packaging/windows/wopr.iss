@@ -1,3 +1,6 @@
+; SPDX-FileCopyrightText: 2026 Christopher Goes
+; SPDX-License-Identifier: MIT
+;
 ; Inno Setup 7 script for wopr_<version>_windows_setup.exe: one per-user installer that holds both
 ; Windows builds and installs the one that fits the computer as wopr.exe. build-installer.ps1 compiles
 ; it, as .github/workflows/windows.yml does, with the version, the folder of the release files

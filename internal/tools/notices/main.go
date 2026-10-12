@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command notices generates the licence files that ship with wopr:
 //
 //   - THIRD_PARTY_NOTICES.txt: the licence of every module linked into wopr on any release

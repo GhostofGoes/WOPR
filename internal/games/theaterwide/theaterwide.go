@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package theaterwide is Theaterwide Tactical Warfare on the sim engine: corps and air
 // wings on a European front, with an escalation ladder. Each rung adds to every attack;
 // WOPR answers an escalation with one of its own, and the top rung is a strategic exchange

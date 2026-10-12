@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package cli parses wopr's command line and renders the print-and-exit outputs.
 //
 // It uses the standard library flag package. Every long flag has a one-letter shorthand

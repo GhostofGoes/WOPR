@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package hearts is four-handed Hearts: the player sits South and WOPR plays West, North
 // and East. Three cards are passed left, right, across, then held; the two of clubs leads;
 // no points on the first trick; hearts cannot be led until broken. Each heart is a point,

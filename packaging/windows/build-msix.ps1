@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Builds the MSIX packages for a later Microsoft Store submission from the release files: one
 # package per architecture, wopr_<version>_windows_amd64.msix and wopr_<version>_windows_arm64.msix,
 # and the bundle that holds both, wopr_<version>_windows.msixbundle, which is what Partner Center

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Builds wopr_<version>_macos.dmg from the release files: the two darwin programs, joined into one
 # universal program with lipo, in WOPR.app (internal/tools/macapp), ad-hoc signed, beside a link to
 # /Applications for the user to drag it onto. It never compiles wopr: the programs and the notices

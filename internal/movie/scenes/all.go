@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package scenes
 
 // All returns the film's scenes in order (docs/PLAN.md §7).

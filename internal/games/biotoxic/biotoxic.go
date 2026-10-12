@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package biotoxic is Theaterwide Biotoxic and Chemical Warfare on the sim engine.
 // Agents released on the front spread with the wind from region to region; units and
 // civilians in contaminated ground suffer, decontamination slows it but never stops it,

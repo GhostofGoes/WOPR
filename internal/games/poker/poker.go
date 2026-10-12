@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package poker is heads-up five-card draw against WOPR: an ante of 1, fixed-limit betting
 // of 5 before the draw and 10 after (a bet and three raises a round), and up to three cards
 // drawn. Each side starts with 100 chips; the game ends when the player leaves between

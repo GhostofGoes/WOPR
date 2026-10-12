@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package ginrummy
 
 import "github.com/GhostofGoes/WOPR/internal/script"

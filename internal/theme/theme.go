@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package theme maps the semantic styles of proto.Canvas and the console to colours.
 //
 // Every style is defined three ways: a truecolor hex value, an explicit ANSI 16-colour

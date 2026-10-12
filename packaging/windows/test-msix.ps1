@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Installs the MSIX package for this computer's CPU from build-msix.ps1's output, runs
 # "wopr --version" through its execution alias, and removes it again. Windows installs only signed
 # packages, so this signs a copy with a throwaway certificate whose subject is the manifest's

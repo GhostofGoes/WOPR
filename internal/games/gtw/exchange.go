@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package gtw
 
 // The exchange model (docs/PLAN.md §6.2): three strikes and WOPR's DEFCON 1 attack, in

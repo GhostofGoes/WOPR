@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package debuglog is wopr's opt-in debug log (docs/PLAN.md §8): with WOPR_DEBUG set, it
 // writes to os.UserCacheDir()/wopr/debug.log, a 0600 file in a 0700 directory. It records
 // the session seed, the terminal and slow work; it never records what the player types.

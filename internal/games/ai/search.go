@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package ai is the game-tree search WOPR plays board games with: negamax with alpha-beta
 // pruning, iterative deepening, and an optional quiescence search. It runs inside a
 // Think (docs/PLAN.md §4.4): with Env.Deterministic the search stops at its Limits, so a
