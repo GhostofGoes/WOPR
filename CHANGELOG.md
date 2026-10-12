@@ -7,6 +7,13 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.6.1 - 2026-10-12
+
+### Added
+
+- WOPR now has the OpenSSF Best Practices silver badge.
+- Each release has a file that proves where its downloads were built.
+
 ## v0.6.0 - 2026-10-11
 
 ### Changed
