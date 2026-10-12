@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package proto
 
 // Key is a key a program can receive in key mode. Esc belongs to the host: only a root program

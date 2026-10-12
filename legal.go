@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package wopr embeds the licence and notice texts that ship with the binary, so
 // `wopr --licenses` works for every install method, including `go install`.
 package wopr

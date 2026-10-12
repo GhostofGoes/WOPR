@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package proto is the protocol between the host (internal/ui and internal/proto/host) and
 // every "program" it runs: the persona, each game, the ending and the movie director.
 //

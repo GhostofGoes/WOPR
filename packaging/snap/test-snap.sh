@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Installs a wopr snap as App Center would (but from a file, so unsigned: --dangerous), checks the
 # menu entry and icon that snapd exports, runs wopr in a terminal under its confinement, and removes
 # the snap. Given an e2e.test (internal/e2e, built for this machine), it also runs the end-to-end

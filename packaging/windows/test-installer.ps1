@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Christopher Goes
+# SPDX-License-Identifier: MIT
+#
 # Installs wopr_<version>_windows_setup.exe silently for the current user, checks what it installed,
 # uninstalls it and checks that it left nothing behind, not even a debug log. Then it does the same over a copy that the
 # PowerShell install line put in %LOCALAPPDATA%\Programs\wopr, the same folder, and installs twice.

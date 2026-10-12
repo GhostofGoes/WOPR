@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Command snapdir prepares the directory that `snap pack` turns into wopr's snap, for one
 // architecture (.github/workflows/snap.yml):
 //

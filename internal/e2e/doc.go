@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package e2e drives the real wopr binary: as a plain process for the print-and-exit
 // commands, and in a pseudo-terminal (a Unix pty, or ConPTY on Windows) for the TUI.
 //

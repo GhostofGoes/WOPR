@@ -29,6 +29,12 @@ The day-to-day rules are in [AGENTS.md](AGENTS.md). The plans for the next year 
 AI agents that change the repository are contributors. They follow the same rules and
 [AGENTS.md](AGENTS.md), and the maintainer reviews their changes before they merge.
 
+## Access
+
+Everyone with write access to the repository, or access to private vulnerability reports, must turn on
+two-factor authentication in GitHub. Use a passkey, a security key or an authenticator app. Do not use
+SMS (text messages) as the only second factor. The maintainer checks this before giving a person access.
+
 ## Continuity
 
 The project must be able to continue within a week if the maintainer cannot continue.

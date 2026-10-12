@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package script holds screen text with its provenance (docs/PLAN.md §2.1): every line WOPR
 // or a game prints carries a tag saying where it comes from. The persona, the games, the
 // assets and the movie scenes all use it, and each package's tests run Validate over its

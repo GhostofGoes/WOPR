@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package prompt parses what the user types: normalisation, clauses, menu choices,
 // numbers and yes/no answers. It is pure and shared by the persona and every game.
 package prompt

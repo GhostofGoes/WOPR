@@ -15,6 +15,9 @@ follow the [Code of Conduct](/contributing/code-of-conduct).
   [open an issue](https://github.com/GhostofGoes/WOPR/issues/new/choose) first. Use the bug report or
   feature request form. This lets us agree on the approach before you spend time on it. Ask questions in
   [Discussions](https://github.com/GhostofGoes/WOPR/discussions).
+- **A first task.** Issues with the
+  [good first issue](https://github.com/GhostofGoes/WOPR/labels/good%20first%20issue) label are small
+  tasks for new contributors.
 - **Security problems.** Do not open a public issue. Follow the
   [security policy](https://github.com/GhostofGoes/WOPR/blob/main/SECURITY.md).
 - **Design and conventions.** The architecture, scope and milestones are in
@@ -117,15 +120,16 @@ go run ./cmd/wopr
 
 1. Branch from `main`. Keep each change focused. New functionality must come with automated tests. A
    bug fix must come with a regression test.
-2. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
+2. Start each new source file with the two SPDX lines that the other files have. A test checks them.
+3. Go code must follow [Effective Go](https://go.dev/doc/effective_go) and the
    [Go Code Review Comments](https://go.dev/wiki/CodeReviewComments), and AI agents must follow the
    rules in AGENTS.md. The formatters and linters in the hooks and in CI enforce them.
-3. When a screen changes on purpose, regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`.
+4. When a screen changes on purpose, regenerate golden files with `WOPR_UPDATE_GOLDEN=1 go test ./...`.
    Then read the diff.
-4. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
+5. Run `prek run --all-files` and `go test ./...` before you push. On Linux and macOS, also run
    `go test -race ./...`.
-5. If players will notice the change, add a change note (see below).
-6. Open a pull request. Write the title and description to say what changed and why. We squash-merge
+6. If players will notice the change, add a change note (see below).
+7. Open a pull request. Write the title and description to say what changed and why. We squash-merge
    pull requests, so the title and description become the commit on `main`.
 
 {{% repo-file "AGENTS.md" "section:Pull requests" %}}

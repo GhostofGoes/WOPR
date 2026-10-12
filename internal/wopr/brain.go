@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package wopr is the persona: the dial-up, the LOGON gate, the film's scenes, the shell
 // and WOPR's voice. It is a proto.Program and never touches the terminal.
 package wopr

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package bridge is minimal contract bridge (docs/PLAN.md §3, decision 14): WOPR bids all
 // four hands by point count, the player's side always declares (the table turns when East
 // and West hold the cards), and the player plays both declarer's hand and dummy's while

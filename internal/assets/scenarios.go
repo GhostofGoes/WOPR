@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package assets
 
 // The montage names come from abs0/wargames@010ed92:wargames.sh, lines 589-793, name by name

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 package cards
 
 // Trick-taking for Hearts and Bridge: four seats play in turn, clockwise.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package games defines what a game is and how games are found. It holds types only: the
 // concrete games live in sub-packages, and internal/games/catalog wires them into a
 // Registry (a game package imports this one, so this one cannot import them).

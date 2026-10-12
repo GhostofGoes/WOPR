@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package tictactoe is the game that ends the film: perfect minimax, so nobody can win
 // against WOPR. In the "climax" launch mode it is the closed state machine of
 // docs/PLAN.md §6.2; zero players hands off to the ending, which reuses Best and Draw for

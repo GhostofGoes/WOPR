@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package checkers is 8x8 checkers (English draughts) against WOPR: compulsory captures,
 // multiple jumps, kings that move both ways, and a draw after 40 moves each without
 // progress. The player is Black and moves first.

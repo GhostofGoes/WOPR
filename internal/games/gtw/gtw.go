@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Christopher Goes
+// SPDX-License-Identifier: MIT
+
 // Package gtw is Global Thermonuclear War, the film's set piece (docs/PLAN.md §6.2): choose
 // a side and list targets; the first strike flies on the big board at once, then you order
 // two more as DEFCON falls, and WOPR takes the last rung alone. The kill ratios follow, then
