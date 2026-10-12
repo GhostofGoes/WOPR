@@ -395,18 +395,30 @@ jobs:
       - name: Check the files against checksums.txt
         run: (cd assets && sha256sum --strict -c checksums.txt)
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        id: attest-files
         with:
           subject-checksums: assets/checksums.txt
       # checksums.txt and its signature are published too, so they are attested as well, and every
       # release file has an attestation.
       - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        id: attest-checksums
         with:
           subject-path: |
             assets/checksums.txt
             assets/checksums.txt.asc
+      # Both attestations' Sigstore bundles, one per line, as a release file. `gh attestation verify
+      # --bundle` checks a file offline with it, and OpenSSF Scorecard's Signed-Releases check finds
+      # provenance only in a release file named *.intoto.jsonl. It is not in checksums.txt, which it
+      # attests.
+      - name: Add the attestations to the release files
+        env:
+          TAG: ${{ github.ref_name }}
+          FILES_BUNDLE: ${{ steps.attest-files.outputs.bundle-path }}
+          CHECKSUMS_BUNDLE: ${{ steps.attest-checksums.outputs.bundle-path }}
+        run: jq -c . "${FILES_BUNDLE}" "${CHECKSUMS_BUNDLE}" > "assets/wopr_${TAG#v}.intoto.jsonl"
       # Archives, bare binaries, .deb and .rpm packages and the .deb's .asc signatures, the Windows
       # installer, the macOS disk image, LICENSE, README.md, NOTICE.md, THIRD_PARTY_NOTICES.txt,
-      # checksums.txt and checksums.txt.asc.
+      # checksums.txt, checksums.txt.asc and the attestations (wopr_<V>.intoto.jsonl).
       # The body is relnotes's notes.md; GitHub's generated notes stand in only if it is empty.
       # Publishing also starts a discussion of the release in the Announcements category, which
       # GitHub creates with Discussions; if that fails (the category was renamed, say), the release is

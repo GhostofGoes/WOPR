@@ -1950,7 +1950,11 @@ and the snaps.
    1. `sha256sum -c` on `release-signed`. Then `actions/attest@v4` with
       `subject-checksums: assets/checksums.txt`, so it attests every published file, the installers and
       the `.deb.asc` files included. Then `actions/attest@v4` again with `subject-path` for `checksums.txt`
-      itself and `checksums.txt.asc`, so no release file lacks an attestation.
+      itself and `checksums.txt.asc`, so no release file lacks an attestation. Both attestations' Sigstore
+      bundles, one per line, become the release file `wopr_<V>.intoto.jsonl`. `gh attestation verify
+      --bundle` checks a file with it offline, and OpenSSF Scorecard's Signed-Releases check finds
+      provenance only in a release file with that suffix (§11.6). It is the one release file outside
+      `checksums.txt`, since it attests that file.
    2. `gh release create vX.Y.Z --draft --verify-tag --notes-file notes.md` with every file from
       `release-signed`. The release uses GitHub's generated notes instead, with a warning, only if
       `notes.md` is empty. `.goreleaser.yaml` disables GoReleaser's own changelog (CR-8): the notes are the
@@ -2025,7 +2029,7 @@ which the `ubuntu-24.04-arm` partner image may lack, so `test-snap.sh` installs 
 
 ---
 
-### 11.6 `scorecard.yml` (OpenSSF Scorecard)
+### 11.6 `scorecard.yml` and `codeql.yml` (OpenSSF Scorecard)
 
 [OpenSSF Scorecard](https://scorecard.dev/) scores the repository's supply-chain practices: pinned
 dependencies, token permissions, branch protection, dangerous workflow patterns, signed releases and more.
@@ -2037,6 +2041,13 @@ Scorecard API refuses results from a workflow that breaks its restrictions: top-
 workflow-level write permissions, `run` steps, or actions other than checkout, upload-artifact,
 upload-sarif and Scorecard's own. It uses `GITHUB_TOKEN` only, so the Branch-Protection check sees only
 what that token can read.
+
+`codeql.yml` runs CodeQL on the Go code, on every branch push, on pull requests from forks and weekly, and
+uploads its findings to code scanning. It is the SAST tool that Scorecard's SAST check looks for. It is not
+part of `ci-ok`. Known vulnerabilities in the tool modules that have no fix, and that wopr does not link,
+are listed with a reason and an expiry in `osv-scanner.toml` beside each tool module's `go.mod`.
+Scorecard's Vulnerabilities check runs osv-scanner, which reads those files. govulncheck still checks
+wopr itself.
 
 ## 12. Security and public-repository hygiene
 
@@ -2079,7 +2090,8 @@ what that token can read.
     there.
   - **Actions**:
     - allow only listed actions (`actions/*`, `j178/prek-action`, and for `scorecard.yml` (§11.6)
-      `ossf/scorecard-action` and `github/codeql-action/upload-sarif`).
+      `ossf/scorecard-action` and `github/codeql-action/upload-sarif`, and for `codeql.yml`
+      `github/codeql-action/init` and `github/codeql-action/analyze`).
     - require actions pinned to a full-length commit SHA.
     - default `GITHUB_TOKEN` read-only.
     - workflows may not create or approve PRs.
