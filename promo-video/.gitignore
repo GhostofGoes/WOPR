@@ -1,0 +1,6 @@
+node_modules/
+out/
+audio-src/
+voice-tests/
+*.mp4
+public/

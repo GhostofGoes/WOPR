@@ -54,6 +54,7 @@ system. There is no Makefile.
 | Test a snap (Ubuntu, sudo. The script installs and removes the snap) | `packaging/snap/test-snap.sh build/snaps/wopr_<V>_amd64.snap <V> [stage/linux_amd64/e2e.test]` |
 | Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
 | Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
+| Promo video (Node.js and an ElevenLabs API key) | See `promo-video/README.md`. It renders the 30-second promo with Remotion |
 
 `<V>` is the build's version as GoReleaser writes it in `dist/metadata.json`: `1.2.3`, or
 `1.2.4-snapshot.abc1234` for a snapshot. The installers' scripts run only on their own systems. CI runs
@@ -483,6 +484,8 @@ If a rights holder asks you to remove material:
      (`docs/man/wopr.6`) repeats.
    - The packages' AppStream metadata (`packaging/linux/io.github.ghostofgoes.wopr.metainfo.xml.in`)
      links some of the site's screenshots.
+   - The promo video's scenes (`promo-video/src/`) quote some, and the promo shows some of the
+     screenshots. Remove any published copy of the video too.
    - The `.deb`'s copyright file (`packaging/debian/copyright`) names the files. Regenerate it
      afterwards.
 2. Remove or replace it in one pull request. Release a patch version. Merging the pull request
