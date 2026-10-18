@@ -40,7 +40,7 @@ Run these from the repository root, on a Mac with Xcode 26 or later. CI runs the
 | Lint | `xcrun swift-format lint --strict --recursive --parallel ios` |
 | Format | `xcrun swift-format format --in-place --recursive --parallel ios` |
 | Test on a simulator | `xcodebuild test -project ios/WOPR.xcodeproj -scheme WOPR -destination "id=$(ios/scripts/simulator.sh)" CODE_SIGNING_ALLOWED=NO` |
-| Build for devices | `xcodebuild build -project ios/WOPR.xcodeproj -scheme WOPR -configuration Release -destination generic/platform=iOS -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO` |
+| Build for devices | `xcodebuild build -project ios/WOPR.xcodeproj -scheme WOPR -configuration Release -destination generic/platform=iOS -derivedDataPath build/ios -enableCodeCoverage NO CODE_SIGNING_ALLOWED=NO` |
 | Security checks of that build | `ios/scripts/check-app.sh build/ios/Build/Products/Release-iphoneos/WOPR.app` |
 
 `ios/scripts/simulator.sh 26` picks a simulator on iOS 26, for a test on the oldest supported version.

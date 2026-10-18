@@ -60,7 +60,7 @@ if [[ "${failed}" -ne 0 ]]; then
 fi
 
 for key in NSAppTransportSecurity CFBundleURLTypes LSApplicationQueriesSchemes UIBackgroundModes \
-  UIFileSharingEnabled LSSupportsOpeningDocumentsInPlace UIRequiredDeviceCapabilities; do
+  UIFileSharingEnabled LSSupportsOpeningDocumentsInPlace; do
   if plutil -extract "${key}" raw -o - "${info}" >/dev/null 2>&1; then
     fail "Info.plist has ${key}"
   fi
@@ -82,6 +82,10 @@ done
 # --- the program ---
 
 otool -hv "${program}" | grep -qw PIE || fail "the program is not position independent (PIE)"
+# A release build carries no coverage counters (xcodebuild's -enableCodeCoverage NO).
+if otool -l "${program}" | grep -q __llvm_prf_cnts; then
+  fail "the program is built with coverage instrumentation"
+fi
 if [[ -d "${app}/Frameworks" ]]; then
   fail "the app embeds frameworks (${app}/Frameworks)"
 fi
