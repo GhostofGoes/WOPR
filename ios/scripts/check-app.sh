@@ -82,7 +82,7 @@ done
 # --- the program ---
 
 otool -hv "${program}" | grep -qw PIE || fail "the program is not position independent (PIE)"
-# A release build carries no coverage counters (xcodebuild's -enableCodeCoverage NO).
+# A release build carries no coverage counters (only the tests collect coverage).
 if otool -l "${program}" | grep -q __llvm_prf_cnts; then
   fail "the program is built with coverage instrumentation"
 fi
