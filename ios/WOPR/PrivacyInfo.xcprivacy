@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+SPDX-FileCopyrightText: 2026 Christopher Goes
+SPDX-License-Identifier: MIT
+
+The app's privacy manifest (Apple, "Privacy manifest files"). WOPR does not track the player,
+collects no data and uses none of the APIs that need a reason. SecurityTests.swift and
+ios/scripts/check-app.sh check that this stays true.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array/>
+</dict>
+</plist>

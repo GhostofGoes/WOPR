@@ -52,6 +52,7 @@ system. There is no Makefile.
 | macOS disk image (macOS, after a release build and `stage -archives -assets dist/release`) | `packaging/macos/build-dmg.sh dist/release <V> build/dmg`, then `packaging/macos/test-dmg.sh build/dmg/wopr_<V>_macos.dmg <V> [stage/darwin_<arch>/e2e.test]`. `packaging/macos/test-launch.sh build/dmg/wopr_<V>_macos.dmg` opens the app as Finder does, and it stops Terminal afterwards. Run it on a CI runner, or on a Mac where that does not matter |
 | Snaps (Linux with snapd, after a release build and `stage -archives -assets dist/release`) | `go run ./internal/tools/snapdir -dist dist/release -version <V> -arch amd64 -out build/snap/amd64`, then `snap pack build/snap/amd64 build/snaps` (without snapd, `mksquashfs build/snap/amd64 build/snaps/wopr_<V>_amd64.snap -noappend -comp xz -no-fragments -all-root -no-xattrs` packs it as snapd does). The Store's checks: `sudo snap install review-tools`, then `review-tools.snap-review <snap>` |
 | Test a snap (Ubuntu, sudo. The script installs and removes the snap) | `packaging/snap/test-snap.sh build/snaps/wopr_<V>_amd64.snap <V> [stage/linux_amd64/e2e.test]` |
+| iOS demo app (macOS, Xcode 26 or later): lint, test, build and check | `xcrun swift-format lint --strict --recursive --parallel ios`, then the commands in `ios/README.md` |
 | Docs site: preview (localhost:1313/WOPR/) | `go tool -modfile=tools/docs/go.mod hugo server --source site` |
 | Docs site: build as CI does | `go tool -modfile=tools/docs/go.mod hugo --source site --panicOnWarning --printPathWarnings --minify` (into `site/public/`) |
 
@@ -156,6 +157,12 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
   the Linux menu entry to the snap's. `snap pack` packs the snap. The Store's `review-tools` must pass
   it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. Publishing is
   off until the owner enables it (Repository settings).
+- **iOS demo app.** `ios/` is a native SwiftUI demo of WOPR for iOS 26 and later (`ios/README.md`,
+  `docs/IOS.md`). It is never a release file. `ios.yml` lints it with swift-format, runs its unit and
+  security tests on a simulator, builds it for devices and runs `ios/scripts/check-app.sh` on the build.
+  Its film lines (`ios/WOPR/Script.swift`) must be in a `film_lines.golden` (`internal/archtest/ios_test.go`).
+  Its icon is drawn by `internal/tools/icons`. It must keep no data, use no network API, have no
+  entitlements and ask for no permission. A change to that moves a trust boundary.
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, and at least three tips. It also has screenshots
   in `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing

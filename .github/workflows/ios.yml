@@ -1,0 +1,58 @@
+# The iOS demo app (ios/README.md): swift-format's lint, the unit and security tests on an iPhone
+# simulator, and a release build for devices that ios/scripts/check-app.sh checks. Nothing here
+# is signed or published. Called by ci.yml; it uses Xcode's own tools only, so it needs no action
+# beyond actions/*.
+name: iOS
+
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  ios:
+    name: ios (lint, test, build)
+    runs-on: macos-26
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      # A fixed folder for xcodebuild's output, under build/, which git ignores.
+      DERIVED_DATA: build/ios
+      # Keep the build from reaching the network: the project has no packages to resolve.
+      XCODEBUILD_FLAGS: -project ios/WOPR.xcodeproj -scheme WOPR -derivedDataPath build/ios -skipPackageUpdates -disableAutomaticPackageResolution
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The image's default Xcode. Its version, SDKs and simulator runtimes go in the log.
+      - name: Show Xcode
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks
+          xcrun simctl list runtimes available
+      - name: Lint (swift-format)
+        run: xcrun swift-format lint --strict --recursive --parallel ios
+      - name: Test on a simulator
+        run: |
+          udid="$(ios/scripts/simulator.sh)"
+          echo "Testing on simulator ${udid}"
+          # shellcheck disable=SC2086 # the flags are words
+          xcodebuild test ${XCODEBUILD_FLAGS} -destination "id=${udid}" \
+            -resultBundlePath "${RUNNER_TEMP}/WOPRTests.xcresult" -enableCodeCoverage YES CODE_SIGNING_ALLOWED=NO
+      - name: Build for devices (release)
+        run: |
+          # Only the tests collect coverage; a release build must not carry its counters.
+          # shellcheck disable=SC2086 # the flags are words
+          xcodebuild build ${XCODEBUILD_FLAGS} -configuration Release -destination generic/platform=iOS \
+            CLANG_ENABLE_CODE_COVERAGE=NO CODE_SIGNING_ALLOWED=NO
+      - name: Check the app's security properties
+        run: ios/scripts/check-app.sh "${DERIVED_DATA}/Build/Products/Release-iphoneos/WOPR.app"
+      - name: Upload the test results
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ios-test-results
+          path: ${{ runner.temp }}/WOPRTests.xcresult
+          retention-days: 7
+          if-no-files-found: ignore

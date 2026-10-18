@@ -74,6 +74,11 @@ id_rsa*
 id_ecdsa*
 id_ed25519*
 
+# Xcode: per-user state and test results (the iOS demo app, ios/)
+xcuserdata/
+*.xcresult
+DerivedData/
+
 # Tool caches
 .rumdl_cache/
 

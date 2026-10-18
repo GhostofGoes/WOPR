@@ -23,7 +23,7 @@ const (
 // sourcePatterns are the files git tracks that need the header. Vendored files keep the
 // headers their projects publish.
 var sourcePatterns = []string{
-	"*.go", "*.sh", "*.ps1", "*.psm1", "*.iss", "*.js", "*.css", "site/layouts/*.html",
+	"*.go", "*.sh", "*.ps1", "*.psm1", "*.iss", "*.js", "*.css", "site/layouts/*.html", "*.swift", "*.xcprivacy",
 }
 
 func TestSourceFilesHaveLicenseHeaders(t *testing.T) {

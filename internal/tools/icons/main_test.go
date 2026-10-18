@@ -128,6 +128,7 @@ func TestOutputs(t *testing.T) {
 		"site/static/favicon.svg",
 		"site/static/favicon.ico",
 		"site/static/apple-touch-icon.png",
+		iosAppIcon,
 	}
 	for _, w := range want {
 		if !slices.Contains(paths, w) {
@@ -155,6 +156,7 @@ func TestOutputs(t *testing.T) {
 		"packaging/icons/msix/Square150x150Logo.scale-125.png": 188,
 		"packaging/icons/msix/Square150x150Logo.scale-400.png": 600,
 		"site/static/apple-touch-icon.png":                     180,
+		iosAppIcon:                                             1024,
 	}
 	for _, o := range outputs() {
 		if o.format != fmtPNG {
@@ -187,6 +189,12 @@ func TestOutputs(t *testing.T) {
 	}
 	if _, _, a := pixel(apple, 0, 0); a != 255 {
 		t.Error("apple-touch-icon.png is not opaque at its corner")
+	}
+	// App Store Connect refuses an app icon with an alpha channel. Go's encoder leaves it out
+	// when every pixel is opaque, so the PNG's colour type is 2 (truecolour), not 6.
+	ios := fileData(t, files, iosAppIcon)
+	if len(ios) < 26 || ios[25] != 2 {
+		t.Error("the iOS app icon has an alpha channel, or it is not truecolour")
 	}
 	hi, err := png.Decode(bytes.NewReader(fileData(t, files, "packaging/icons/hicolor/256x256/apps/io.github.ghostofgoes.wopr.png")))
 	if err != nil {
