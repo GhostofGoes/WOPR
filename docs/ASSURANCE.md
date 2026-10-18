@@ -12,7 +12,9 @@ reads a new file or environment variable, or starts a different program.
 
 The case covers the `wopr` program, the release files (archives, binaries, Linux packages, the Windows
 installer, the Mac app) and the process that builds them. It does not cover the docs site, which is
-static pages with no scripts from other sites, and no forms or accounts.
+static pages with no scripts from other sites, and no forms or accounts. It also does not cover the iOS
+demo app in `ios/`, which is not a release file. `ios/README.md` states its security properties, and
+its tests and `ios/scripts/check-app.sh` check them.
 
 ## Threat model
 

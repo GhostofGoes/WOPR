@@ -9,6 +9,7 @@
 //   - packaging/icons/hicolor/: Linux (the .deb, the .rpm and the snap), PNGs and the SVG
 //   - packaging/icons/msix/: the MSIX package's visual assets
 //   - site/static/favicon.svg, favicon.ico and apple-touch-icon.png: the docs site
+//   - ios/WOPR/Assets.xcassets/AppIcon.appiconset/AppIcon.png: the iOS demo app, full bleed
 //
 // Run it from the repository root:
 //
@@ -97,6 +98,9 @@ type output struct {
 	sizes  []int // a PNG's size, or an ICO's entries
 }
 
+// iosAppIcon is the iOS demo app's icon (ios/README.md).
+const iosAppIcon = "ios/WOPR/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+
 // generatedDirs hold only this tool's files: any other file there is stale.
 var generatedDirs = []string{"packaging/icons/hicolor", "packaging/icons/msix"}
 
@@ -132,6 +136,8 @@ func outputs() []output {
 		output{path: "site/static/favicon.svg", format: fmtSVG, art: artFavicon},
 		output{path: "site/static/favicon.ico", format: fmtICO, sizes: []int{16, 32, 48}},
 		output{path: "site/static/apple-touch-icon.png", art: artFull, sizes: []int{180}},
+		// iOS takes one opaque 1024 px icon and draws every other size from it; it rounds the corners.
+		output{path: iosAppIcon, art: artFull, sizes: []int{1024}},
 	)
 }
 

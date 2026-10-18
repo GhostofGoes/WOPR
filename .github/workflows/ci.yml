@@ -393,6 +393,14 @@ jobs:
       stage-artifact: smoke-bundle
       publish: false
 
+  # The iOS demo app (ios/README.md). It is built and tested here only, never released.
+  ios:
+    name: ios
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    permissions:
+      contents: read
+    uses: $/.github/workflows/ios.yml
+
   # release.yml's collect and sign jobs on this commit's installers: they must fit the size budget
   # and join the release files and checksums.txt, which are then signed as release.yml signs them,
   # with a key made for this run, so a tag never meets the problem first.
@@ -459,7 +467,7 @@ jobs:
     # the name must stay an expression and never become plain "ci-ok".
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
-    needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]
+    needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs, ios]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}

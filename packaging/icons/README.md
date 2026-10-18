@@ -23,7 +23,7 @@ All of them are original work. The comment at the top of each says so (its prove
 | `src/wopr.svg` | The icon, on a 1024 by 1024 viewBox, with a transparent margin around the art, as Windows and Linux icons have. |
 | `src/wopr-small.svg` | Optional. Simpler art for 32 px and below, where fine detail becomes a blur. Without it, those sizes come from `wopr.svg`. |
 | `src/wopr-<N>.svg` | Optional, as many as needed. Art drawn for exactly N by N pixels, used for that size only, in place of `wopr-small.svg` or `wopr.svg`. It is for a size where their edges fall between pixels and blur. A viewBox of `0 0 N N` makes each unit one pixel. `src/wopr-24.svg` is `wopr-small.svg` redrawn for 24 px, the Windows taskbar's size at 100% scale. |
-| `src/wopr-full.svg` | The art on an opaque square with no margin and square corners, for macOS (`wopr.icns`) and the docs site's `apple-touch-icon.png`. macOS rounds icons itself. The tool uses it at every size, whatever `wopr-<N>.svg` files there are. |
+| `src/wopr-full.svg` | The art on an opaque square with no margin and square corners, for macOS (`wopr.icns`), the docs site's `apple-touch-icon.png` and the iOS demo app's icon. macOS and iOS round icons themselves. The tool uses it at every size, whatever `wopr-<N>.svg` files there are. |
 
 The tool refuses any other SVG file in `src/`. It also refuses a `wopr-<N>.svg` for a size it never
 draws. The reason is that nothing would use either. To see a size's pixels before you commit, run the
@@ -45,3 +45,4 @@ and line. So convert text to paths, and save as plain SVG. The full list is in
 | `hicolor/` | Linux: the `.deb`, the `.rpm` and the snap, named `io.github.ghostofgoes.wopr` (16 to 512 px, and the SVG) |
 | `msix/` | The MSIX package for the Microsoft Store: the Store logo, the tiles and the app list icons |
 | `site/static/favicon.svg`, `favicon.ico`, `apple-touch-icon.png` | The docs site |
+| `ios/WOPR/Assets.xcassets/AppIcon.appiconset/AppIcon.png` | The iOS demo app (`ios/README.md`): 1024 px and opaque, with no alpha channel |

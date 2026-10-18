@@ -26,6 +26,8 @@ WOPR has the [OpenSSF Best Practices](https://www.bestpractices.dev/projects/153
 
 - **Play in a web browser**, on desktop and mobile
   ([#15](https://github.com/GhostofGoes/WOPR/issues/15)).
+- **An iOS app.** A demo is in `ios/`. A full app would show every game through the Go core
+  (`docs/IOS.md`).
 - **Translations** of the parts that are not film text: the docs, the help output, the manual page,
   the package metadata, the installers, the error messages and the games that do not come from the film
   ([#31](https://github.com/GhostofGoes/WOPR/issues/31)). The film's text stays in English.
