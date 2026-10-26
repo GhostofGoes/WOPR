@@ -254,15 +254,16 @@ PR (AR-1, IM-4).
   come before the subtrees that contain them.
 - Every package may import the standard library, except for three fenced packages. `net/http` is for `llm`
   only. `os/exec` is for `cmd/wopr` (whose macOS build reopens the app in Terminal), `tools/...`, `archtest`
-  and `e2e` only. No package may import `unsafe`.
+  and `e2e` only. Only `sandbox` may import `unsafe` (§8, "Process hardening").
 - **Test-only imports.** Any package's tests may also import `golden`, `games/catalog`, `games/gamestest`,
   `games/testkit` and `proto/host` (to configure testkit's runner). No non-test file may import `gamestest` or
   `testkit` (G-5).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
+cmd/wopr             → ., cli, ui, version, debuglog, sandbox, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
+internal/sandbox     → golang.org/x/sys/unix          Linux process hardening (§8); plus unsafe
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
@@ -1638,6 +1639,24 @@ classified address it leads to.
   - wopr's debug log never holds typed input.
   - Bubble Tea's own `TEA_TRACE` and `TEA_DEBUG`, if the user sets them, record raw input and output or write a
     panic log into the CWD. wopr never sets them. They are the user's own developer switches (SL-7).
+- **Process hardening** (Linux, `internal/sandbox`): once Bubble Tea has opened the terminal, read terminfo and
+  started the input reader (the model's `Init`), `ui.Options.Lockdown` calls `sandbox.Restrict`. In order:
+  - It loads the local time zone, which Go reads from `/etc/localtime` on first use.
+  - It clears every capability set if the process has any (wopr run as root, say).
+  - It sets `no_new_privs`.
+  - It enters a Landlock domain that handles every right the kernel's ABI knows and has no rules: no file
+    may be opened, created, removed or run, and (ABI 4) no TCP socket bound or connected. Abstract UNIX
+    sockets outside the domain are out of reach (ABI 6). Signal scoping is left off: each thread gets its own
+    domain, and kernels without the fix that allows signals inside a process would block the runtime's own.
+  - Files opened before (the terminal, the debug log, the runtime's cgroup files) keep working.
+
+  Every thread must be restricted, so the calls go through `syscall.AllThreadsSyscall6`, which works only
+  without cgo. A cgo build, or a kernel without Landlock (before 5.13, or not enabled), runs with what it can
+  get, and the debug log's `sandbox:` line says what that was. It never stops wopr. `internal/sandbox` is the
+  only package allowed `unsafe` (§4.1): Landlock and `capset` take pointers that `golang.org/x/sys/unix` does
+  not wrap. Not done yet: a seccomp filter (would also cover UDP, pathname UNIX sockets and the kernel's
+  attack surface), and the M7 LLM brain, which will need one Landlock rule for TCP port 443 and its files
+  loaded before the lockdown.
 
 ---
 

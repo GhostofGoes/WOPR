@@ -33,6 +33,10 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
   does not hold your environment or what you type.
 - It removes escape sequences and control characters from what you type or paste, so the text cannot
   control your terminal.
+- On Linux, once the game screen opens, `wopr` gives up these rights for the rest of the session: it
+  cannot open, make or run a file, or make a network connection. It also cannot get more privileges, and
+  it drops any administrator capabilities that it has. This needs Linux 5.13 or later with Landlock on.
+  The release files and packages have this protection. A copy built with cgo does not.
 - It starts no other program, with one exception. On macOS, when you open the app from Finder, `wopr`
   opens itself again in Terminal.
 - Each release file is attested and checksummed, and the Linux packages and `checksums.txt` are signed.
@@ -45,7 +49,8 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
   `go install`, or that you did not verify.
 - Problems in your terminal program itself.
 
-`wopr` is not a sandbox. It has the same permissions as your user account. The
+`wopr` is not a sandbox for other programs. Until its game screen opens, and on other systems, it has the
+same permissions as your user account. The
 [assurance case](docs/ASSURANCE.md) explains why these properties hold.
 
 ## Supported versions

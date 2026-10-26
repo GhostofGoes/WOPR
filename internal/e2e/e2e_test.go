@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 			binary += ".exe"
 		}
 		build := exec.Command("go", "build", "-o", binary, "github.com/GhostofGoes/WOPR/cmd/wopr")
+		build.Env = append(os.Environ(), "CGO_ENABLED=0") // as the release builds: the Linux sandbox needs it
 		build.Stdout, build.Stderr = os.Stdout, os.Stderr
 		if err := build.Run(); err != nil {
 			panic("building wopr: " + err.Error())
@@ -445,6 +447,33 @@ func TestDebugLog(t *testing.T) {
 			if strings.Contains(string(data), "Joshua") {
 				t.Errorf("the log must hold no typed input:\n%s", data)
 			}
+			if !strings.Contains(string(data), "sandbox: ") {
+				t.Errorf("the log must say what the sandbox did:\n%s", data)
+			}
 		})
+	}
+}
+
+// On Linux the running TUI has given up gaining privileges (internal/sandbox). Landlock
+// itself does not show in /proc; internal/sandbox's tests check what it denies.
+func TestLinuxSandbox(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("the sandbox is Linux only")
+	}
+	s := start(t, 80, 24, "--instant")
+	s.waitFor("LOGON:", 10*time.Second)
+	status, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(s.cmd.Process.Pid), "status"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !regexp.MustCompile(`(?m)^NoNewPrivs:\s+1$`).Match(status) {
+		t.Errorf("no_new_privs is not set:\n%s", status)
+	}
+	s.send("Joshua\r") // the session still works inside the sandbox
+	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
+	s.resize(100, 30)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
 }
