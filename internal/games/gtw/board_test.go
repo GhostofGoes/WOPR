@@ -195,8 +195,8 @@ func TestTablesDoNotOverlap(t *testing.T) {
 
 // The forces table and the cost line fit whatever is ordered: every figure keeps a blank
 // column before it, a loss mark fits between its figure and the next, and the cost line fits
-// 80 columns with either side first. Strike orders run as in TestNoAllocationWins, every
-// percent of ICBMs with SLBMs and bombers at the ends and the middle.
+// 80 columns with either side first. Strike orders run over a grid like TestNoAllocationWins's:
+// every percent of ICBMs at strikes 2 and 3, with SLBMs and bombers at the ends and the middle.
 func TestStrikeCostFits(t *testing.T) {
 	t.Parallel()
 	g := &Game{side: assets.USSR} // the longer name first

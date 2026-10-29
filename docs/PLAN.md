@@ -1061,9 +1061,9 @@ no verdict of their own.
       - **Each strike prints exactly three strip lines**: your launch, WOPR's launch on warning with the new
         DEFCON, and the cost, each side's two figures together and yours first
         (`USSR: 350 LOST ON THE GROUND, 188 ON CITIES.  US: 200 LOST, 150 ON CITIES.`). The worst case fits
-        80 columns (`TestStrikeCostFits`). DEFCON falls one rung at
-        WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
-        DEFCON line shows within about half a second of the rung moving.
+        80 columns (`TestStrikeCostFits`). DEFCON falls one rung at WOPR's launch, 5 → 4 → 3 → 2, whatever
+        you ordered. The strip lines print at table pace, so the DEFCON line shows within about half a
+        second of the rung moving.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
@@ -2627,8 +2627,8 @@ ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 ```
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the forces table (`ICBM`, `SLBM`,
-`BMB`, `AIR`, `CITIES`, the nations `US` and `USSR`, and loss marks such as `-250`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
-`ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
+`BMB`, `AIR`, `CITIES`, the nations `US` and `USSR`, and loss marks such as `-250`), the designators `MM3`,
+`C4`, `SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
 figures.
