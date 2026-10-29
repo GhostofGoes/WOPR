@@ -494,8 +494,9 @@ site/                        the docs site (§13): Hugo config, pages, layouts, 
     5. Expand tabs to 8-column stops.
     6. Drop the remaining controls.
 
-    It is not in the code yet: the scripted brain's lines are compiled into the binary, and the dead code
-    check (`internal/tools/deadcheck`) refuses a function that nothing calls.
+    The scripted brain's lines are compiled into the binary, so nothing calls it before M7. It is not in
+    the code until then. The dead code check (`internal/tools/deadcheck`) refuses a function that nothing
+    calls.
   - Fuzz properties: no control rune survives, the result is at most 256 clusters, and every
     wrapped row fits its width.
 - **Width** (U-6). The line editor and the wrapper measure with the same method as the renderer. That is
@@ -1790,11 +1791,11 @@ classified address it leads to.
   `TestToolModulesFitTheToolchain` enforces it. Tools pinned twice (golangci-lint and gitleaks, in `prek.toml`
   and in a tool module) must agree. `TestToolPinsAgree` checks that (TO-8).
 - **Dead code.** `internal/tools/deadcheck` builds deadcode (`golang.org/x/tools/cmd/deadcode`) and runs it on
-  `./...` for linux, darwin and windows. A function counts as dead only when it is dead on all three, because
-  some files build for one system only. It fails on a function that no program and no test reaches (deadcode
-  `-test`, with the e2e tag). It also fails on a function outside the test-only packages that only tests
-  reach. Such a function moves into a `_test.go` file. A helper that several packages' tests share, and that
-  needs its own package's unexported names, may stay where it is if `tools/deadcheck-allow.txt` lists it with
+  `./...` for linux, darwin and windows. Some files build for one system only. So a function counts as dead
+  only when each system that builds its file reports it. It fails on a function that no program and no test
+  reaches (deadcode `-test`, with the e2e tag). It also fails on a function outside the test-only packages
+  that only tests reach. Such a function moves into a `_test.go` file. Some helpers are shared by the tests
+  of several packages. Such a helper may stay in its package when `tools/deadcheck-allow.txt` lists it with
   the reason. A line for a function that is no longer test-only also fails. It runs in CI's `lint` job and as
   a pre-push hook. golangci-lint's `unused` covers unused unexported names, constants, types and fields.
 - **golangci-lint** (`.golangci.yml`, v2.14.0):

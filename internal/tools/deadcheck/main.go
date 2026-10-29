@@ -8,9 +8,10 @@
 //
 // Run it from the repository root. It builds deadcode (golang.org/x/tools/cmd/deadcode, pinned in
 // tools/go.mod) once, then runs it on ./... for linux, darwin and windows, since some files build
-// for one system only (cmd/wopr's macOS relaunch). A function is dead only when it is dead on all
-// three. deadcode starts from every main package, so each tool in internal/tools counts as a
-// program too.
+// for one system only (cmd/wopr's macOS relaunch). A function is dead only when it is dead on every
+// system whose build includes its file: a function in launch.go that only darwin calls is live, and
+// one in a _windows.go file that nothing calls is dead. deadcode starts from every main package, so
+// each tool in internal/tools counts as a program too.
 //
 // It runs two analyses on each system:
 //
@@ -32,6 +33,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -46,8 +48,8 @@ const allowFile = "tools/deadcheck-allow.txt"
 // systems are the GOOS values that wopr ships for.
 var systems = []string{"linux", "darwin", "windows"}
 
-// testOnly are the packages that only tests import (archtest's testOnly, G-5). Their code exists
-// for tests, so only the -test analysis covers it.
+// testOnly are the packages that only tests use (G-5). Their code exists for tests, so only the
+// -test analysis covers it. The internal/tools programs are not here: their code must serve them.
 var testOnly = []string{"internal/golden", "internal/games/gamestest", "internal/games/testkit"}
 
 // fn is one function that deadcode reports.
@@ -71,6 +73,10 @@ type report struct {
 func main() { os.Exit(realMain()) }
 
 func realMain() int {
+	if _, err := os.Stat("go.mod"); err != nil {
+		fmt.Fprintln(os.Stderr, "deadcheck: run it from the repository root")
+		return 2
+	}
 	allowed, err := readAllowed(allowFile)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "deadcheck:", err)
@@ -83,6 +89,9 @@ func realMain() int {
 	}
 	defer func() { _ = os.RemoveAll(tmp) }()
 	bin := filepath.Join(tmp, "deadcode")
+	if runtime.GOOS == "windows" {
+		bin += ".exe"
+	}
 	if out, err := exec.Command("go", "build", "-modfile=tools/go.mod", "-o", bin, "golang.org/x/tools/cmd/deadcode").CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "deadcheck: building deadcode: %v\n%s", err, out)
 		return 2
@@ -103,36 +112,84 @@ func realMain() int {
 	return 1
 }
 
+// run is one analysis on one system: what deadcode reports, and the files that system builds.
+type run struct {
+	goos  string
+	test  bool
+	out   []fn
+	files map[string]bool
+	err   error
+}
+
 // analyse runs both analyses on every system, at once, and returns the functions that each finds
-// dead on all of them.
+// dead on every system that builds their file.
 func analyse(bin string) (unused, testsOnly []fn, err error) {
-	type run struct {
-		goos string
-		test bool
-		out  []fn
-		err  error
-	}
 	var runs []*run
 	for _, goos := range systems {
 		runs = append(runs, &run{goos: goos, test: true}, &run{goos: goos})
 	}
 	var wg sync.WaitGroup
 	for _, r := range runs {
-		wg.Go(func() { r.out, r.err = deadcode(bin, r.goos, r.test) })
+		wg.Go(func() {
+			if r.files, r.err = sourceFiles(r.goos); r.err == nil {
+				r.out, r.err = deadcode(bin, r.goos, r.test)
+			}
+		})
 	}
 	wg.Wait()
-	var withTests, withoutTests [][]fn
+	var withTests, withoutTests []*run
 	for _, r := range runs {
 		if r.err != nil {
 			return nil, nil, fmt.Errorf("deadcode on %s: %w", r.goos, r.err)
 		}
 		if r.test {
-			withTests = append(withTests, r.out)
+			withTests = append(withTests, r)
 		} else {
-			withoutTests = append(withoutTests, r.out)
+			withoutTests = append(withoutTests, r)
 		}
 	}
 	return everywhere(withTests), everywhere(withoutTests), nil
+}
+
+// goEnv is the environment for a go command or deadcode on goos: the module stays read-only.
+func goEnv(goos string) []string {
+	return append(os.Environ(), "GOOS="+goos, "GOFLAGS="+strings.TrimSpace(os.Getenv("GOFLAGS")+" -mod=readonly"))
+}
+
+// sourceFiles lists the .go files that goos's build of ./... includes, tests and the e2e tag
+// included, relative to the repository root with slashes, as deadcode names them.
+func sourceFiles(goos string) (map[string]bool, error) {
+	cmd := exec.Command("go", "list", "-e", "-tags", "e2e", "-json=Dir,GoFiles,CgoFiles,TestGoFiles,XTestGoFiles", "./...")
+	cmd.Env = goEnv(goos)
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("go list: %w: %s", err, stderr.String())
+	}
+	root, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	files := map[string]bool{}
+	dec := json.NewDecoder(bytes.NewReader(out))
+	for dec.More() {
+		var p struct {
+			Dir                                          string
+			GoFiles, CgoFiles, TestGoFiles, XTestGoFiles []string
+		}
+		if err := dec.Decode(&p); err != nil {
+			return nil, err
+		}
+		for _, f := range slices.Concat(p.GoFiles, p.CgoFiles, p.TestGoFiles, p.XTestGoFiles) {
+			rel, err := filepath.Rel(root, filepath.Join(p.Dir, f))
+			if err != nil {
+				return nil, err
+			}
+			files[filepath.ToSlash(rel)] = true
+		}
+	}
+	return files, nil
 }
 
 // deadcode runs deadcode on ./... for goos and returns what it reports.
@@ -142,7 +199,7 @@ func deadcode(bin, goos string, test bool) ([]fn, error) {
 		args = append(args, "-test", "-tags", "e2e")
 	}
 	cmd := exec.Command(bin, append(args, "./...")...)
-	cmd.Env = append(os.Environ(), "GOOS="+goos, "GOFLAGS=-mod=readonly")
+	cmd.Env = goEnv(goos)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
@@ -171,26 +228,36 @@ func parse(out []byte) ([]fn, error) {
 	return fns, nil
 }
 
-// everywhere returns the functions that every list holds, sorted by key.
-func everywhere(lists [][]fn) []fn {
-	if len(lists) == 0 {
-		return nil
-	}
-	count := map[string]int{}
-	for _, l := range lists {
+// file is the file part of a function's position.
+func (f fn) file() string { return f.pos[:strings.LastIndexByte(f.pos, ':')] }
+
+// everywhere returns, sorted by key, the functions that every run reports whose system builds
+// their file. A function in a file that one system alone builds needs only that system's report.
+func everywhere(runs []*run) []fn {
+	reported := map[string]int{}
+	first := map[string]fn{}
+	for _, r := range runs {
 		seen := map[string]bool{}
-		for _, f := range l {
+		for _, f := range r.out {
 			if !seen[f.key] {
 				seen[f.key] = true
-				count[f.key]++
+				reported[f.key]++
+				if _, ok := first[f.key]; !ok {
+					first[f.key] = f
+				}
 			}
 		}
 	}
 	var out []fn
-	for _, f := range lists[0] {
-		if count[f.key] == len(lists) {
+	for key, f := range first {
+		builds := 0
+		for _, r := range runs {
+			if r.files[f.file()] {
+				builds++
+			}
+		}
+		if reported[key] >= builds {
 			out = append(out, f)
-			count[f.key] = 0 // once
 		}
 	}
 	slices.SortFunc(out, func(a, b fn) int { return strings.Compare(a.key, b.key) })
@@ -203,7 +270,11 @@ func everywhere(lists [][]fn) []fn {
 func check(unused, testsOnly []fn, allowed map[string]string) []string {
 	var out []string
 	for _, f := range unused {
-		out = append(out, fmt.Sprintf("%s: %s is never called, not even by a test: remove it", f.pos, f.key))
+		also := ""
+		if _, ok := allowed[f.key]; ok {
+			also = ", and its line in " + allowFile
+		}
+		out = append(out, fmt.Sprintf("%s: %s is never called, not even by a test: remove it%s", f.pos, f.key, also))
 	}
 	dead := map[string]bool{}
 	for _, f := range unused {

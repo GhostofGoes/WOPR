@@ -97,7 +97,7 @@ its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stab
   function that no program and no test calls. It also fails on a function in shipped code that only tests
   call. Remove such a function, or move it into a `_test.go` file. A helper that tests in other packages
   share may stay only when `tools/deadcheck-allow.txt` lists it with the reason. Remove its line when the
-  helper changes. golangci-lint's `unused` catches unused unexported names on each commit.
+  helper moves or goes. golangci-lint's `unused` catches unused unexported names on each commit.
 - **Dependency cooldown.** Regular updates wait 14 days. No module in any build list (wopr's, the four
   tool modules' and `site/go.mod`'s) may be less than 14 days old at the commit being checked. A module's
   age counts from the time the module proxy gives for its version. `go run ./internal/tools/cooldown`

@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	cg "github.com/corentings/chess/v2"
 
@@ -161,16 +163,18 @@ func selfPlay(t *testing.T, seed uint64) {
 }
 
 // BenchmarkDeterministicSearch times the deterministic search over a game's opening and
-// middlegame: the first 30 plies of a game it plays against itself. The plan quotes a median of
-// 27 ms a search. It is a benchmark, not a test, because machines differ:
+// middlegame: the first 30 plies of a game it plays against itself. It reports the median and
+// the slowest search, which docs/PLAN.md §6.1 quotes (median 26 ms, max 204 ms). It is a
+// benchmark, not a test, because machines differ:
 // go test -run '^$' -bench DeterministicSearch ./internal/games/chess
 func BenchmarkDeterministicSearch(b *testing.B) {
-	searches := 0
+	var times []time.Duration
 	for b.Loop() {
 		g := cg.NewGame()
 		for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
+			start := time.Now()
 			m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
-			searches++
+			times = append(times, time.Since(start))
 			for _, l := range g.Position().ValidMoves() {
 				if moveOf(l) == m {
 					_ = g.Move(&l, nil)
@@ -179,7 +183,10 @@ func BenchmarkDeterministicSearch(b *testing.B) {
 			}
 		}
 	}
-	b.ReportMetric(float64(b.Elapsed().Milliseconds())/float64(searches), "ms/search")
+	slices.Sort(times)
+	ms := func(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
+	b.ReportMetric(ms(times[len(times)/2]), "median-ms/search")
+	b.ReportMetric(ms(times[len(times)-1]), "max-ms/search")
 }
 
 // A deterministic transcript that follows WOPR's replies: the test replays them on its own

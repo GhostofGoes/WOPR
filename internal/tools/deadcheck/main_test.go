@@ -42,13 +42,25 @@ func TestParse(t *testing.T) {
 	}
 }
 
-// A function is dead only when every system's analysis reports it.
+// A function is dead only when every system that builds its file reports it.
 func TestEverywhere(t *testing.T) {
 	t.Parallel()
-	linux := []fn{{"a.relaunch", "a.go:1"}, {"b.Z", "b.go:1"}, {"b.A", "b.go:2"}}
-	darwin := []fn{{"b.A", "b.go:2"}, {"b.Z", "b.go:1"}, {"b.A", "b.go:2"}}
-	if got := keys(everywhere([][]fn{linux, darwin})); !slices.Equal(got, []string{"b.A", "b.Z"}) {
+	both := map[string]bool{"a.go": true, "b.go": true}
+	linux := &run{files: map[string]bool{"a.go": true, "b.go": true, "x_linux.go": true}, out: []fn{
+		{"a.relaunch", "a.go:1"}, // live on darwin
+		{"b.Z", "b.go:1"},
+		{"b.A", "b.go:2"},
+		{"x.LinuxDead", "x_linux.go:3"}, // only linux builds it
+	}}
+	darwin := &run{files: map[string]bool{"a.go": true, "b.go": true, "x_darwin.go": true}, out: []fn{
+		{"b.A", "b.go:2"}, {"b.Z", "b.go:1"}, {"b.A", "b.go:2"},
+	}}
+	windows := &run{files: both}
+	if got := keys(everywhere([]*run{linux, darwin})); !slices.Equal(got, []string{"b.A", "b.Z", "x.LinuxDead"}) {
 		t.Errorf("everywhere = %v", got)
+	}
+	if got := keys(everywhere([]*run{linux, darwin, windows})); !slices.Equal(got, []string{"x.LinuxDead"}) {
+		t.Errorf("everywhere with windows calling b's functions = %v", got)
 	}
 	if got := everywhere(nil); got != nil {
 		t.Errorf("everywhere(nil) = %v", got)
@@ -111,8 +123,14 @@ func TestAllowFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	for key := range allowed {
-		dot := strings.LastIndex(key, ".")
-		src, err := os.ReadDir(filepath.Join(root, filepath.FromSlash(key[:dot])))
+		slash := strings.LastIndex(key, "/")
+		dot := slash + strings.Index(key[slash:], ".")
+		dir, name := filepath.Join(root, filepath.FromSlash(key[:dot])), key[dot+1:]
+		want := "func " + name + "("
+		if recv, method, ok := strings.Cut(name, "."); ok { // a method: Type.Method
+			want = recv + ") " + method + "("
+		}
+		src, err := os.ReadDir(dir)
 		if err != nil {
 			t.Errorf("%s: %v", key, err)
 			continue
@@ -120,11 +138,11 @@ func TestAllowFile(t *testing.T) {
 		found := false
 		for _, e := range src {
 			if strings.HasSuffix(e.Name(), ".go") && !strings.HasSuffix(e.Name(), "_test.go") {
-				b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(key[:dot]), e.Name()))
+				b, err := os.ReadFile(filepath.Join(dir, e.Name()))
 				if err != nil {
 					t.Fatal(err)
 				}
-				found = found || strings.Contains(string(b), "func "+key[dot+1:]+"(")
+				found = found || strings.Contains(string(b), want)
 			}
 		}
 		if !found {
