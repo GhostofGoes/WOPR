@@ -66,8 +66,8 @@ fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (
 separate because their dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module that
 `site/go.mod` pins. No tool module's `go` line, nor `site/go.mod`'s, may be newer than the root `toolchain`
 line (a test checks). Bump the toolchain first, then the tool. Inno Setup is not a Go tool.
-`build-installer.ps1` pins it by URL, SHA-256 and Authenticode signer. `snap.yml` installs snapcraft from
-its `9.x/stable` channel, and review-tools from `latest/stable`.
+`build-installer.ps1` pins it by URL, SHA-256 and Authenticode signer. `release.yml` installs snapcraft from
+its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stable`.
 
 ## Rules that tests enforce
 
@@ -154,9 +154,10 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
 - **Snap.** `snap.yml` prepares each architecture's snap with `internal/tools/snapdir`. The tool checks
   the program and notices against `checksums.txt`, and the metadata against snapd's limits. It converts
   the Linux menu entry to the snap's. `snap pack` packs the snap. The Store's `review-tools` must pass
-  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. Before a
-  publish, the `attest` job attests both snaps, so a snap from the Store can be checked with
-  `gh attestation verify`. Publishing is off until the owner enables it (Repository settings).
+  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. `snap.yml`
+  never publishes. `release.yml`'s `snap-attest` job attests both snaps, so a snap from the Store can be
+  checked with `gh attestation verify`. Then its `snap-publish` job uploads them. Publishing is off until
+  the owner enables it (Repository settings).
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, and at least three tips. It also has screenshots
   in `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing
@@ -550,8 +551,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
     file that
     `snapcraft export-login --snaps=wopr --channels=stable --acls=package_access,package_push,package_update,package_release --expires=<date under a year away> creds.txt`
     writes (`gh secret set SNAPCRAFT_STORE_CREDENTIALS --env snap-store < creds.txt`, then remove the
-    file). Then set the repository variable `SNAP_PUBLISH` to `true`. Any other value keeps `snap.yml`'s
-    publish job skipped. The next `v*` tag uploads both snaps to the stable channel once the owner
+    file). Then set the repository variable `SNAP_PUBLISH` to `true`. Any other value keeps `release.yml`'s
+    `snap-attest` and `snap-publish` jobs skipped. The next `v*` tag uploads both snaps to the stable channel once the owner
     approves the deployment. Export a new login before the old one expires.
   - **Microsoft Store**, when the name is reserved as a game in Partner Center: set the repository
     variables `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` (`CN=…`) and `MSIX_PUBLISHER_DISPLAY_NAME`, copied
@@ -592,7 +593,7 @@ At every milestone boundary:
    - **The Windows SDK**: check that the `windows-2025` and `windows-11-arm` images still have one
      (`WindowsSdk.psm1` takes the newest). Set `MaxVersionTested` in
      `packaging/windows/AppxManifest.xml` to the newest Windows build.
-   - **snapcraft**: if `snap info snapcraft` shows a newer major track than `snap.yml`'s `9.x/stable`, move
+   - **snapcraft**: if `snap info snapcraft` shows a newer major track than `release.yml`'s `9.x/stable`, move
      to it. Check that core24 is still a supported base.
    - If `LICENSE`'s year changed, change the copyright in `packaging/windows/wopr.iss`,
      `packaging/windows/winres.json`, `internal/tools/macapp` and the docs site's footer

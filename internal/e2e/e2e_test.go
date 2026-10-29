@@ -450,13 +450,21 @@ func TestDebugLog(t *testing.T) {
 }
 
 // The libraries' own switches stay off (SECURITY.md): inside tmux, colour detection would
-// run `tmux info` from the PATH; TEA_TRACE would append raw input and output to any path; and
-// TEA_DEBUG and UV_DEBUG would write files. A fake tmux first on the PATH records any run.
-// COLORTERM and NO_COLOR are emptied, since either one ends colour detection before it asks
-// tmux. The fake is a shell script, so the test is Unix-only.
+// run `tmux info` from the PATH, and TEA_TRACE would append raw input and output to any path.
+// A fake tmux first on the PATH records any run. TEA_DEBUG writes only on a panic, and this
+// Bubble Tea never reads UV_DEBUG, so for those two the test checks only that nothing appears;
+// scrubenv's own test checks that all four are removed. Each variable that ends colour
+// detection before it asks tmux is unset. The fake is a shell script, so the test is Unix-only.
+// test-snap.sh skips it: a snap has its own /tmp.
 func TestLibrarySwitchesStayOff(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the fake tmux is a shell script")
+	}
+	for _, k := range []string{"COLORTERM", "NO_COLOR", "CLICOLOR_FORCE", "TTY_FORCE", "WT_SESSION", "GOOGLE_CLOUD_SHELL"} {
+		t.Setenv(k, "") // restored after the test
+		if err := os.Unsetenv(k); err != nil {
+			t.Fatal(err)
+		}
 	}
 	dir := t.TempDir()
 	ran := filepath.Join(dir, "tmux-ran")
@@ -467,7 +475,7 @@ func TestLibrarySwitchesStayOff(t *testing.T) {
 	trace, uvDebug := filepath.Join(dir, "tea-trace.log"), filepath.Join(dir, "uv-debug.log")
 	env := []string{
 		"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"),
-		"TMUX=/tmp/tmux-1000/default,1,0", "COLORTERM=", "NO_COLOR=",
+		"TMUX=/tmp/tmux-1000/default,1,0",
 		"TEA_TRACE=" + trace, "TEA_DEBUG=1", "UV_DEBUG=" + uvDebug,
 	}
 	s := startEnv(t, 80, 24, env, "--instant")
@@ -477,6 +485,26 @@ func TestLibrarySwitchesStayOff(t *testing.T) {
 	for _, f := range []string{ran, trace, uvDebug} {
 		if data, err := os.ReadFile(f); err == nil {
 			t.Errorf("%s exists:\n%s", filepath.Base(f), data)
+		}
+	}
+}
+
+// scrubenv must clear the environment before Lip Gloss reads it in a package-level variable
+// (internal/scrubenv). Go's own init trace shows the order the binary really runs inits in.
+// test-snap.sh skips it, as snapd may not pass GODEBUG through.
+func TestScrubenvInitsBeforeLipGloss(t *testing.T) {
+	_, stderr, code := runEnv(t, []string{"GODEBUG=inittrace=1"}, "--version")
+	if code != 0 {
+		t.Fatalf("exit %d:\n%s", code, stderr)
+	}
+	scrub := strings.Index(stderr, "init github.com/GhostofGoes/WOPR/internal/scrubenv ")
+	for _, pkg := range []string{"github.com/charmbracelet/colorprofile", "charm.land/lipgloss/v2"} {
+		i := strings.Index(stderr, "init "+pkg+" ")
+		switch {
+		case scrub < 0 || i < 0:
+			t.Fatalf("the init trace lacks scrubenv or %s:\n%s", pkg, stderr)
+		case scrub > i:
+			t.Errorf("%s initialises before scrubenv", pkg)
 		}
 	}
 }

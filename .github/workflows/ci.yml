@@ -384,18 +384,13 @@ jobs:
   snap:
     name: snap
     needs: build
-    # snap.yml's attest job asks for id-token and attestations: write. It never runs here
-    # (publish: false), but a called workflow may not ask for more than its caller grants.
     permissions:
       contents: read
-      id-token: write
-      attestations: write
     uses: $/.github/workflows/snap.yml
     with:
       artifact: release-dist
       version: ${{ needs.build.outputs.version }}
       stage-artifact: smoke-bundle
-      publish: false
 
   # release.yml's collect and sign jobs on this commit's installers: they must fit the size budget
   # and join the release files and checksums.txt, which are then signed as release.yml signs them,

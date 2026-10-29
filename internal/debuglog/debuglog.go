@@ -17,7 +17,8 @@ import (
 )
 
 // MaxSize is the largest log that Open appends to: 5 MiB (5,242,880 bytes, about 5.2 MB). A
-// larger one is emptied first, so that a log left on for months cannot fill the disk.
+// larger one is emptied first, so that old sessions cannot fill the disk. One session writes
+// only a few lines.
 const MaxSize = 5 << 20
 
 // Log is an open debug log. A nil *Log is valid and discards everything, so callers need
