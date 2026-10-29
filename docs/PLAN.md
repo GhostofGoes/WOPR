@@ -1057,7 +1057,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, and WOPR's remarks (one kind for each order, seeded, none in movie mode). |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1097,6 +1097,23 @@ no verdict of their own.
         DEFCON, and the cost (`LOST ON THE GROUND: … WARHEADS ON CITIES: …`). DEFCON falls one rung at
         WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
         DEFCON line shows within about half a second of the rung moving.
+      - **WOPR remarks on your orders** (`gtw/react.go`), on the board's row 18 and not in the strip, so the
+        strip keeps its three report lines and nothing delays them. As each stage starts, an `original`
+        line in WOPR's voice types in at speech pace (three characters a frame) in place of the legend. It
+        stays for 30 frames (3 s), and then the legend returns.
+        - The remark follows what started the stage: the first strike (some variants name the first
+          listed target, which is where the first track lands), the war plan, the plan at both prompts,
+          `ALL`, `HOLD`, `HOLD` in a strike where WOPR launches no missiles either (it has none left above
+          its reserve), an order that keeps every ICBM in its silo while you still hold some, any other
+          order, `AUTO`, the strike WOPR orders under `AUTO`, a strike with nothing left to order, and
+          WOPR's DEFCON 1 attack. The plan wins over `ALL`, since strike 3's plan is everything.
+        - Each kind has two to four variants. GTW draws one from the game's seed on its own stream
+          (stream 1; stream 0's draws stay fixed whatever the orders), never the variant that kind gave
+          last. The same seed and orders give the same remarks.
+        - The remarks say only what the doctrine makes true: holding ICBMs draws WOPR's ICBMs to your
+          silos, and empty silos leave it your cities.
+        - Under `Instant` a stage plays out at once, so its remark is never on screen. The film's board
+          (movie mode) makes none.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
@@ -1141,6 +1158,7 @@ no verdict of their own.
           - the orders hint, at a strike prompt
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
+          - WOPR's remark, for the first 3 s of a stage
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
         - The map draws the United States' land in `LandUS`, the Soviet Union's in `LandUSSR` and every
           other country's in `Land`: blue, red and green on the war room's screens (§2.4). The names under
@@ -2686,7 +2704,9 @@ The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The after-action re
 `# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES`
 table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`,
 `SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
-`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
+`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`.
+WOPR's remarks as each stage flies are in `gtw/lines.go` (`lineReact…`), such as
+`HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.` and `TARGETS CONFIRMED, PROFESSOR. # IS FIRST.` The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
 figures.
 
