@@ -7,10 +7,12 @@
 # nothing else. Then it does the same over a copy that the PowerShell install line put in
 # %LOCALAPPDATA%\Programs\wopr, the same folder, and installs twice. Then it checks whose PATH entry
 # Uninstall removes: one that Setup added, also after upgrades, but not one that was already there
-# for a folder that /DIR= named. Last, it checks that Setup leaves a Path that is not text alone, and
-# adds no folder whose name has a semicolon.
-# Run it on a machine without WOPR installed (a CI runner): it changes the user's PATH while it
-# runs, and puts it back at the end.
+# for a folder that /DIR= named. It checks that Setup leaves a Path that is not text alone, and adds
+# no folder whose name has a semicolon or a percent sign, and that Uninstall notices a wopr.exe in
+# use. With -AllUsers, as an administrator, it last installs for all users (/ALLUSERS) and checks
+# the system PATH.
+# Run it on a machine without WOPR installed (a CI runner): it changes the user's PATH (and with
+# -AllUsers the system's) while it runs, and puts it back at the end.
 #
 #   pwsh -File packaging/windows/test-installer.ps1 -Installer build/installer/wopr_1.2.3_windows_setup.exe -Version 1.2.3 -BinDir dist/release
 [CmdletBinding()]
@@ -20,7 +22,9 @@ param(
     # The release files that the installer was built from, with their checksums.txt.
     [Parameter(Mandatory)] [string] $BinDir,
     # Where Setup's and Uninstall's logs go; printed when a check fails.
-    [string] $LogDir = (Join-Path ([IO.Path]::GetTempPath()) 'wopr-installer-logs')
+    [string] $LogDir = (Join-Path ([IO.Path]::GetTempPath()) 'wopr-installer-logs'),
+    # Also test an install for all users. It needs an administrator.
+    [switch] $AllUsers
 )
 
 $ErrorActionPreference = 'Stop'
@@ -36,6 +40,12 @@ $oneLinerDir = Join-Path $env:LOCALAPPDATA 'Programs\wopr' # the PowerShell inst
 $sharedDir = Join-Path $env:LOCALAPPDATA 'wopr-test-shared'
 $ownDir = Join-Path $env:LOCALAPPDATA 'wopr-test-own'
 $semicolonDir = Join-Path $env:LOCALAPPDATA 'wopr-test;semicolon'
+$percentDir = Join-Path $env:LOCALAPPDATA 'wopr-test%percent'
+# An install for all users: Program Files, the machine's uninstall key, Start menu and PATH.
+$commonApp = Join-Path $env:ProgramFiles 'WOPR'
+$machineUninstallKey = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{A7D86110-58E9-404E-9164-FBDDBDC6AC22}_is1'
+$commonShortcut = Join-Path ([Environment]::GetFolderPath('CommonPrograms')) 'WOPR.lnk'
+$machineEnvironment = 'SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
 $programs = [Environment]::GetFolderPath('Programs') # the user's Start menu, All apps
 $shortcut = Join-Path $programs 'WOPR.lnk'
 $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'WOPR.lnk'
@@ -114,13 +124,36 @@ function Get-PathCount([string] $Dir = $app) {
     return @(Get-PathEntries (Get-UserPath) | Where-Object { $_.Trim().TrimEnd('\') -eq $Dir }).Count
 }
 
-# The folder that wopr.iss recorded as put on PATH by Setup, or $null.
-function Get-AddedToPath {
-    if (-not (Test-Path -LiteralPath $uninstallKey)) { return $null }
-    $entry = Get-ItemProperty -LiteralPath $uninstallKey
-    $value = $entry.PSObject.Properties[$addedToPathValue]
+# A value of the uninstall entry ($Key: the user's, or the machine's), or $null.
+function Get-UninstallValue([string] $Name, [string] $Key = $uninstallKey) {
+    if (-not (Test-Path -LiteralPath $Key)) { return $null }
+    $value = (Get-ItemProperty -LiteralPath $Key).PSObject.Properties[$Name]
     if ($null -eq $value) { return $null }
     return $value.Value
+}
+
+# The folder that wopr.iss recorded as put on PATH by Setup, or $null.
+function Get-AddedToPath([string] $Key = $uninstallKey) {
+    return Get-UninstallValue $addedToPathValue $Key
+}
+
+# The machine's PATH as stored, unexpanded, or $null.
+function Get-SystemPath {
+    $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($machineEnvironment)
+    try {
+        return $key.GetValue('Path', $null, [Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+    } finally {
+        $key.Dispose()
+    }
+}
+
+function Set-SystemPath([string] $Value) {
+    $key = [Microsoft.Win32.Registry]::LocalMachine.OpenSubKey($machineEnvironment, $true)
+    try {
+        $key.SetValue('Path', $Value, [Microsoft.Win32.RegistryValueKind]::ExpandString)
+    } finally {
+        $key.Dispose()
+    }
 }
 
 function Assert([bool] $Condition, [string] $Message) {
@@ -128,10 +161,12 @@ function Assert([bool] $Condition, [string] $Message) {
     Write-Host "ok: $Message"
 }
 
-function Invoke-Setup([string] $Name, [string[]] $Extra = @()) {
+# For the current user, or with -ForAll for all users (/ALLUSERS).
+function Invoke-Setup([string] $Name, [string[]] $Extra = @(), [switch] $ForAll) {
     $log = Join-Path $LogDir "$Name.log"
+    $mode = if ($ForAll) { '/ALLUSERS' } else { '/CURRENTUSER' }
     $p = Start-Process -FilePath $Installer -Wait -PassThru -ArgumentList (@(
-            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', '/CURRENTUSER', "/LOG=`"$log`"") + $Extra)
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/SP-', $mode, "/LOG=`"$log`"") + $Extra)
     Assert ($p.ExitCode -eq 0) "Setup ($Name) exits with 0, not $($p.ExitCode)"
 }
 
@@ -242,9 +277,10 @@ $originalPath = Get-UserPath
 $originalKind = Get-UserPathKind
 Assert ($null -eq $originalPath -or $originalPath -is [string]) "the user's PATH is a string or absent: $originalKind"
 Assert (-not (Test-Path -LiteralPath $app) -and -not (Test-Path -LiteralPath $uninstallKey) -and (Get-PathCount) -eq 0) 'WOPR is not installed yet'
-foreach ($dir in $sharedDir, $ownDir, $semicolonDir) {
+foreach ($dir in $sharedDir, $ownDir, $semicolonDir, $percentDir) {
     Assert (-not (Test-Path -LiteralPath $dir)) "$dir does not exist yet"
 }
+$script:systemPathToRestore = $null
 try {
     Write-Host "== A first install, with the default tasks"
     Invoke-Setup 'install'
@@ -296,6 +332,8 @@ try {
     Test-Installed $ownDir -Only
     Assert ((Get-AddedToPath) -eq $ownDir) "the upgrade kept the record: $(Get-AddedToPath)"
     Invoke-Setup 'own-upgrade-no-path' @('/MERGETASKS="!path"')
+    $deselected = @("$(Get-UninstallValue 'Inno Setup: Deselected Tasks')" -split ',')
+    Assert ($deselected -contains 'path') "the upgrade ran with the PATH task off: deselected $($deselected -join ',')"
     Assert ((Get-PathCount $ownDir) -eq 1) "PATH still has $ownDir once"
     Assert ((Get-AddedToPath) -eq $ownDir) "an upgrade with the PATH task off kept the record too: $(Get-AddedToPath)"
     New-DebugLog
@@ -315,14 +353,58 @@ try {
     Test-Removed
     Set-UserPath $originalPath $(if ($null -ne $originalKind) { $originalKind } else { 'ExpandString' })
 
-    Write-Host "== A folder whose name has a semicolon (/DIR=)"
-    Invoke-Setup 'semicolon' @("/DIR=`"$semicolonDir`"")
-    Assert ((Test-Path -LiteralPath (Join-Path $semicolonDir 'wopr.exe') -PathType Leaf)) "Setup installed into $semicolonDir"
-    Assert (((Get-PathEntries (Get-UserPath)) -join ';') -ceq ((Get-PathEntries $originalPath) -join ';')) 'Setup left PATH as it was'
-    Assert ($null -eq (Get-AddedToPath)) 'Setup recorded no PATH entry'
-    Assert (Select-String -LiteralPath (Join-Path $LogDir 'semicolon.log') -SimpleMatch -Quiet 'has a semicolon') 'Setup said why it did not add WOPR to PATH'
-    Invoke-Uninstall 'uninstall-semicolon' $semicolonDir
-    Test-Removed $semicolonDir
+    foreach ($badDir in $semicolonDir, $percentDir) {
+        Write-Host "== A folder whose name PATH cannot hold (/DIR=$badDir)"
+        $name = Split-Path -Leaf $badDir
+        Invoke-Setup $name @("/DIR=`"$badDir`"")
+        Assert ((Test-Path -LiteralPath (Join-Path $badDir 'wopr.exe') -PathType Leaf)) "Setup installed into $badDir"
+        Assert (((Get-PathEntries (Get-UserPath)) -join ';') -ceq ((Get-PathEntries $originalPath) -join ';')) 'Setup left PATH as it was'
+        Assert ($null -eq (Get-AddedToPath)) 'Setup recorded no PATH entry'
+        Assert (Select-String -LiteralPath (Join-Path $LogDir "$name.log") -SimpleMatch -Quiet 'semicolon or a percent sign') 'Setup said why it did not add WOPR to PATH'
+        Invoke-Uninstall "uninstall-$name" $badDir
+        Test-Removed $badDir
+    }
+
+    Write-Host "== Uninstall while wopr.exe is in use"
+    Invoke-Setup 'in-use'
+    $exe = Join-Path $app 'wopr.exe'
+    # Opened with no sharing, as Windows holds a running program: Uninstall cannot open it to write.
+    $held = [IO.File]::Open($exe, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::None)
+    try {
+        Invoke-Uninstall 'uninstall-in-use' -Kept
+        Assert (Select-String -LiteralPath (Join-Path $LogDir 'uninstall-in-use.log') -SimpleMatch -Quiet 'wopr.exe is in use') 'a silent Uninstall noticed that wopr.exe is in use, and said so'
+        Assert (Test-Path -LiteralPath $exe -PathType Leaf) 'and could not remove it'
+    } finally {
+        $held.Dispose()
+    }
+    Remove-Item -LiteralPath $app -Recurse -Force
+    Assert (-not (Test-Path -LiteralPath $uninstallKey)) 'Uninstall removed the rest'
+
+    if ($AllUsers) {
+        Write-Host "== For all users (/ALLUSERS)"
+        $admin = [Security.Principal.WindowsPrincipal]::new([Security.Principal.WindowsIdentity]::GetCurrent())
+        Assert ($admin.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) 'this test runs as an administrator'
+        Assert (-not (Test-Path -LiteralPath $commonApp) -and -not (Test-Path -LiteralPath $machineUninstallKey)) 'WOPR is not installed for all users yet'
+        $originalSystemPath = Get-SystemPath
+        Assert ($originalSystemPath -is [string]) 'the system PATH is a string'
+        $script:systemPathToRestore = $originalSystemPath
+        $userPathBefore = Get-UserPath
+        Invoke-Setup 'all-users' -ForAll
+        foreach ($installed in $releaseNames.Keys) {
+            $hash = (Get-FileHash -LiteralPath (Join-Path $commonApp $installed) -Algorithm SHA256).Hash.ToLowerInvariant()
+            Assert ($hash -ceq $sums[$releaseNames[$installed]]) "$installed in $commonApp is $($releaseNames[$installed])"
+        }
+        Assert (Test-Path -LiteralPath $commonShortcut -PathType Leaf) "the Start menu shortcut for all users is $commonShortcut"
+        Assert (Test-Path -LiteralPath $machineUninstallKey) "Settings > Apps lists WOPR for all users ($machineUninstallKey)"
+        Assert ((Get-SystemPath) -ceq ($originalSystemPath.TrimEnd(';') + ';' + $commonApp)) "the system PATH gained $commonApp, every other entry as it was"
+        Assert ((Get-AddedToPath $machineUninstallKey) -eq $commonApp) "Setup recorded that it added ${commonApp}: $(Get-AddedToPath $machineUninstallKey)"
+        Assert ((Get-UserPath) -ceq $userPathBefore) "the user's PATH is unchanged"
+        Invoke-Uninstall 'uninstall-all-users' $commonApp
+        Assert (-not (Test-Path -LiteralPath $commonApp)) "$commonApp is gone"
+        Assert (-not (Test-Path -LiteralPath $machineUninstallKey)) 'Settings > Apps no longer lists WOPR for all users'
+        Assert (-not (Test-Path -LiteralPath $commonShortcut)) 'the Start menu shortcut for all users is gone'
+        Assert ((Get-SystemPath) -ceq $originalSystemPath) 'Uninstall put the system PATH back as it was'
+    }
 } catch {
     foreach ($log in Get-ChildItem -LiteralPath $LogDir -Filter '*.log' -ErrorAction SilentlyContinue) {
         Write-Host "---- $($log.Name)"
@@ -330,8 +412,16 @@ try {
     }
     throw
 } finally {
+    # Uninstall whatever a failed check left installed, so that later steps start clean.
+    foreach ($dir in $app, $sharedDir, $ownDir, $semicolonDir, $percentDir, $commonApp) {
+        $uninstaller = Join-Path $dir 'unins000.exe'
+        if (Test-Path -LiteralPath $uninstaller) {
+            Start-Process -FilePath $uninstaller -Wait -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -ErrorAction SilentlyContinue
+        }
+    }
     Set-UserPath $originalPath $(if ($null -ne $originalKind) { $originalKind } else { 'ExpandString' })
-    foreach ($dir in $sharedDir, $ownDir, $semicolonDir) {
+    if ($null -ne $script:systemPathToRestore) { Set-SystemPath $script:systemPathToRestore }
+    foreach ($dir in $sharedDir, $ownDir, $semicolonDir, $percentDir) {
         Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
     }
 }

@@ -115,6 +115,8 @@ try {
     }
     Write-Host "ISCC $((Get-Item -LiteralPath $iscc).VersionInfo.ProductVersion) at $iscc; $($binaries.Count) programs and DLLs signed by $InnoSigner"
 
+    # An installer left from an earlier run must not pass for this build's.
+    Remove-Item -LiteralPath $installer -Force -ErrorAction SilentlyContinue
     & $iscc '/Qp' "/DVersion=$Version" "/DBinDir=$BinDir" "/O$OutputDir" $issFile
     if ($LASTEXITCODE -ne 0) {
         throw "ISCC failed with exit code $LASTEXITCODE"
@@ -133,7 +135,13 @@ Write-Host "Built $($item.FullName): $($item.Length) bytes, SHA-256 $sum"
 if ($ExpectSame) {
     $want = (Get-FileHash -LiteralPath $ExpectSame -Algorithm SHA256).Hash
     if ($sum -ne $want) {
-        throw "the installer built here (SHA-256 $sum) is not $ExpectSame (SHA-256 $want)"
+        # Where they first differ, to tell a changed payload from, say, a changed header.
+        $a = [IO.File]::ReadAllBytes($installer)
+        $b = [IO.File]::ReadAllBytes($ExpectSame)
+        $at = 0
+        while ($at -lt $a.Length -and $at -lt $b.Length -and $a[$at] -eq $b[$at]) { $at++ }
+        throw ("the installer built here ({0} bytes, SHA-256 {1}) is not {2} ({3} bytes, SHA-256 {4}); they first differ at byte 0x{5:X}" -f
+            $a.Length, $sum, $ExpectSame, $b.Length, $want, $at)
     }
     Write-Host "Same as ${ExpectSame}: SHA-256 $want"
 }

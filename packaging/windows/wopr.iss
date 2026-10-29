@@ -110,7 +110,7 @@ PathGroup=Terminal:
 AddToPath=&Add WOPR to PATH, so typing wopr in a terminal starts it
 ; %1 is the folder, %2 one of the reasons below.
 PathNotAdded=Setup did not add %1 to PATH. %2%n%nWOPR is installed. Start it from the Start menu.
-PathHasSemicolon=The folder's name has a semicolon, which would split it into two PATH entries.
+PathBadName=The folder's name has a semicolon or a percent sign, which PATH cannot hold safely.
 PathNotText=PATH is not a text value in the registry, so Setup does not change it.
 PathWriteFailed=Windows did not let Setup change PATH.
 
@@ -225,15 +225,24 @@ begin
     Log('PATH is not a string value, so it stays as it is');
 end;
 
-// A folder whose name has a semicolon would become two PATH entries, the second one relative.
+// A folder whose name has a semicolon would become two PATH entries, the second one relative. A
+// percent sign would pair with one in a later entry of the REG_EXPAND_SZ value and spoil its
+// expansion.
 function CanBeOnPath(Dir: String): Boolean;
 begin
-  Result := Pos(';', Dir) = 0;
+  Result := (Pos(';', Dir) = 0) and (Pos('%', Dir) = 0);
 end;
 
+// Logged, and shown only when Setup has a window: a silent Setup never waits for a click, also
+// without /SUPPRESSMSGBOXES.
 procedure PathNotAdded(Dir, Reason: String);
+var
+  Msg: String;
 begin
-  SuppressibleMsgBox(FmtMessage(CustomMessage('PathNotAdded'), [Dir, CustomMessage(Reason)]), mbError, MB_OK, IDOK);
+  Msg := FmtMessage(CustomMessage('PathNotAdded'), [Dir, CustomMessage(Reason)]);
+  Log(Msg);
+  if not WizardSilent then
+    MsgBox(Msg, mbError, MB_OK);
 end;
 
 procedure AddToPath(Dir: String);
@@ -241,7 +250,7 @@ var
   Path: String;
 begin
   if not CanBeOnPath(Dir) then begin
-    PathNotAdded(Dir, 'PathHasSemicolon');
+    PathNotAdded(Dir, 'PathBadName');
     Exit;
   end;
   if not ReadPath(Path) then begin
@@ -306,6 +315,43 @@ begin
   else
     RegWriteExpandStringValue(HKEY_AUTO, EnvironmentKey, 'Path', NewPath);
   Log('Removed ' + Dir + ' from PATH');
+end;
+
+// Uninstall cannot delete a running wopr.exe: it would leave the program and its folder behind
+// ("Some elements could not be removed"). Inno Setup's uninstaller has no Restart Manager, and an
+// AppMutex would also make Setup ask rather than close wopr (CloseApplications=force). So Uninstall
+// itself checks: Windows refuses to open a running program for writing. With a window, it asks to
+// close WOPR first, with Setup's own message for this; a silent Uninstall logs it and goes on.
+function WoprRunning: Boolean;
+var
+  Exe: String;
+  Stream: TFileStream;
+begin
+  Result := False;
+  Exe := ExpandConstant('{app}\wopr.exe');
+  if not FileExists(Exe) then
+    Exit;
+  try
+    Stream := TFileStream.Create(Exe, fmOpenWrite or fmShareExclusive);
+    Stream.Free;
+  except
+    Result := True;
+  end;
+end;
+
+function InitializeUninstall: Boolean;
+begin
+  Result := True;
+  while WoprRunning do begin
+    if UninstallSilent then begin
+      Log('wopr.exe is in use, so Uninstall cannot remove it');
+      Exit;
+    end;
+    if MsgBox(FmtMessage(SetupMessage(msgUninstallAppRunningError), ['WOPR']), mbError, MB_OKCANCEL) <> IDOK then begin
+      Result := False;
+      Exit;
+    end;
+  end;
 end;
 
 // Windows may still have the Start menu shortcut open when Uninstall deletes it: the shell and the
