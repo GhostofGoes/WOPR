@@ -1068,7 +1068,8 @@ no verdict of their own.
         stays for 30 frames (3 s), and then the legend returns.
         - The remark follows what started the stage: the first strike (some variants name the first
           listed target, which is where the first track lands), the war plan, the plan at both prompts,
-          `ALL`, `HOLD`, an order that keeps every ICBM in its silo while you still hold some, any other
+          `ALL`, `HOLD`, `HOLD` in a strike where WOPR launches no missiles either (it has none left above
+          its reserve), an order that keeps every ICBM in its silo while you still hold some, any other
           order, `AUTO`, the strike WOPR orders under `AUTO`, a strike with nothing left to order, and
           WOPR's DEFCON 1 attack. The plan wins over `ALL`, since strike 3's plan is everything.
         - Each kind has two to four variants. GTW draws one from the game's seed on its own stream

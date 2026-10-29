@@ -117,6 +117,7 @@ func TestRemarksFollowOrders(t *testing.T) {
 		{[]string{"auto"}, []reaction{reactFirst, reactAuto, reactAutoStrike, reactFinal}},
 		{[]string{"subs", "icbm 50"}, []reaction{reactFirst, reactSilosFull, reactPartial, reactFinal}},
 		{[]string{"40", ""}, []reaction{reactFirst, reactPartial, reactPlan, reactFinal}},
+		{[]string{"100 100 0", "hold"}, []reaction{reactFirst, reactPartial, reactQuiet, reactFinal}}, // WOPR has nothing left to answer with
 	} {
 		label := strings.Join(tc.orders, "|")
 		for seed := range uint64(8) {

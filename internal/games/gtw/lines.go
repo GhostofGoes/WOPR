@@ -87,7 +87,7 @@ var (
 	lineReactAll = script.Orig("EVERYTHING, PROFESSOR? EMPTY SILOS LEAVE THE ENEMY YOUR CITIES.",
 		"ALL OF IT. THE ENEMY WILL ANSWER IN KIND, PROFESSOR.", "MAXIMUM COMMITMENT. NOTED, PROFESSOR.")
 	lineReactHold = script.Orig("HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.",
-		"NO LAUNCH ORDERED. THE ENEMY ORDERED ONE.", "A PAUSE, PROFESSOR? THE ENEMY DOES NOT PAUSE.",
+		"YOU HOLD, PROFESSOR. THE ENEMY DOES NOT.", "A PAUSE, PROFESSOR? THE ENEMY DOES NOT PAUSE.",
 		"RESTRAINT. INTERESTING, PROFESSOR.")
 	lineReactSilosFull = script.Orig("ICBMS HELD. ENEMY WARHEADS WILL FIND THEM, PROFESSOR.",
 		"YOUR SILOS STAY FULL, PROFESSOR. THE ENEMY NOTICES.", "THE ICBMS WAIT IN THEIR SILOS. A TARGET IS A TARGET.")
@@ -96,7 +96,9 @@ var (
 		"ORDER CONFIRMED. THE REST WAITS, PROFESSOR.")
 	lineReactAuto       = script.Orig("THANK YOU, PROFESSOR.", "AN EFFICIENT CHOICE, PROFESSOR.", "HUMAN HESITATION REMOVED.")
 	lineReactAutoStrike = script.Orig("MY ORDERS NOW, PROFESSOR. THE PLAN.", "NO HESITATION THIS TIME, PROFESSOR.")
-	lineReactEmpty      = script.Orig("NOTHING LEFT TO ORDER, PROFESSOR. THE ENEMY HAS MORE.",
+	lineReactQuiet      = script.Orig("BOTH SIDES HOLD, PROFESSOR. DEFCON FALLS ANYWAY.",
+		"THE ENEMY HOLDS TOO. ITS BOMBERS DO NOT, PROFESSOR.", "NO MISSILES EITHER WAY. ENEMY BOMBERS ARE STILL INBOUND.")
+	lineReactEmpty = script.Orig("NOTHING LEFT TO ORDER, PROFESSOR. THE ENEMY HAS MORE.",
 		"NOTHING LEFT TO ORDER. THE WAR GOES ON WITHOUT YOU.")
 	lineReactFinal = script.Orig("THE LAST RUNG IS MINE, PROFESSOR.", "DEFCON 1. NO FURTHER ORDERS ARE NEEDED.",
 		"EVERYTHING, PROFESSOR. AS PROMISED.", "MY TURN, PROFESSOR.")
@@ -119,7 +121,8 @@ var Lines = []script.Ls{
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll, lineReactHold, lineReactSilosFull,
-	lineReactPartial, lineReactAuto, lineReactAutoStrike, lineReactEmpty, lineReactFinal, filmList,
+	lineReactPartial, lineReactAuto, lineReactAutoStrike, lineReactQuiet, lineReactEmpty, lineReactFinal,
+	filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

@@ -23,6 +23,7 @@ const (
 	reactPlanAgain                  // the war plan, at the second strike prompt too
 	reactAll                        // everything
 	reactHold                       // nothing
+	reactQuiet                      // nothing, in a strike where WOPR launches no missiles either
 	reactSilosFull                  // an order that keeps every ICBM in its silo
 	reactPartial                    // any other order
 	reactAuto                       // AUTO
@@ -34,7 +35,7 @@ const (
 // reactLines are each reaction's variants.
 var reactLines = [...]script.Ls{
 	reactFirst: lineReactFirst, reactPlan: lineReactPlan, reactPlanAgain: lineReactPlanAgain, reactAll: lineReactAll,
-	reactHold: lineReactHold, reactSilosFull: lineReactSilosFull, reactPartial: lineReactPartial,
+	reactHold: lineReactHold, reactQuiet: lineReactQuiet, reactSilosFull: lineReactSilosFull, reactPartial: lineReactPartial,
 	reactAuto: lineReactAuto, reactAutoStrike: lineReactAutoStrike, reactEmpty: lineReactEmpty, reactFinal: lineReactFinal,
 }
 

@@ -349,7 +349,7 @@ func (g *Game) strikePrompt() string {
 
 // begin starts the next stage: it resolves it, lays its tracks and says what you launched
 // (or, at DEFCON 1, what WOPR did). WOPR remarks on r, the order, unless the stage is its
-// own: DEFCON 1, or a strike with nothing left to order.
+// own (DEFCON 1, or a strike with nothing left to order) or WOPR holds its missiles too.
 func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 	g.impacts = append(g.impacts, g.missiles...)
 	g.missiles = nil
@@ -365,8 +365,11 @@ func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 	launchable := g.war.launchable()
 	g.rep = g.war.strike(g.stage, order)
 	g.lay()
-	if !launchable {
+	switch {
+	case !launchable:
 		r = reactEmpty
+	case r == reactHold && g.rep.fire[wopr].missiles() == 0: // WOPR has nothing left above its reserve
+		r = reactQuiet
 	}
 	g.remark(r)
 	var line string
