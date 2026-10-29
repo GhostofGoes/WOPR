@@ -106,3 +106,49 @@ func TestOpenTightensModes(t *testing.T) {
 		}
 	}
 }
+
+// A log over MaxSize is emptied before the new session writes; one at MaxSize is kept.
+func TestOpenTruncatesLargeLog(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name      string
+		size      int64
+		wantSmall bool
+	}{
+		{"at the limit", MaxSize, false},
+		{"over the limit", MaxSize + 1, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			if err := os.Mkdir(filepath.Join(dir, "wopr"), 0o700); err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(dir, "wopr", "debug.log")
+			if err := os.WriteFile(path, nil, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Truncate(path, tc.size); err != nil {
+				t.Fatal(err)
+			}
+			l, err := Open(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			l.Printf("new session")
+			if err := l.Close(); err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if small := int64(len(data)) < 100; small != tc.wantSmall {
+				t.Errorf("log is %d bytes after Open, want emptied: %v", len(data), tc.wantSmall)
+			}
+			if !strings.HasSuffix(string(data), "new session\n") {
+				t.Errorf("the new line is not at the end: %q", data[max(0, len(data)-40):])
+			}
+		})
+	}
+}

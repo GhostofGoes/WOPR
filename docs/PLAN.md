@@ -261,8 +261,9 @@ PR (AR-1, IM-4).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
+cmd/wopr             → ., cli, ui, version, debuglog, scrubenv, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
+internal/scrubenv    → os only                        clears the libraries' TMUX, TEA_TRACE, TEA_DEBUG, UV_DEBUG in init (§8)
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
@@ -1633,11 +1634,18 @@ classified address it leads to.
     hand). It never follows a symbolic link at the log's directory or file (`O_NOFOLLOW` on Unix). On Unix
     it also refuses a directory another user owns. So a cache directory in a shared place
     (`XDG_CACHE_HOME=/tmp`, say) cannot make wopr append to some other file.
+  - A log larger than 5 MB (`debuglog.MaxSize`) is emptied when wopr opens it, so a log left on cannot
+    fill the disk.
   - If there is no cache dir, wopr disables logging and writes a note to stderr.
   - wopr prints the path on exit.
   - wopr's debug log never holds typed input.
-  - Bubble Tea's own `TEA_TRACE` and `TEA_DEBUG`, if the user sets them, record raw input and output or write a
-    panic log into the CWD. wopr never sets them. They are the user's own developer switches (SL-7).
+  - The libraries' own switches are off (`internal/scrubenv`, review of 2026-10-26). Bubble Tea's `TEA_TRACE`
+    records raw input and output to any path, `TEA_DEBUG` writes a panic log into the CWD, Ultraviolet's
+    `UV_DEBUG` appends a log to any path, and `TMUX` makes colorprofile run `tmux info` from the PATH. Lip
+    Gloss detects the colour profile in a package-level variable, so `scrubenv` unsets all four in `init`:
+    its path sorts before every `github.com/charmbracelet` package, and it imports only `os`, so Go
+    initialises it first. The e2e test `TestLibrarySwitchesStayOff` puts a fake `tmux` first on the PATH
+    and checks that nothing runs or is written.
 
 ---
 

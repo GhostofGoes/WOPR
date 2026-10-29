@@ -384,8 +384,12 @@ jobs:
   snap:
     name: snap
     needs: build
+    # snap.yml's attest job asks for id-token and attestations: write. It never runs here
+    # (publish: false), but a called workflow may not ask for more than its caller grants.
     permissions:
       contents: read
+      id-token: write
+      attestations: write
     uses: $/.github/workflows/snap.yml
     with:
       artifact: release-dist

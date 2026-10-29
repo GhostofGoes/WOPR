@@ -154,8 +154,9 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
 - **Snap.** `snap.yml` prepares each architecture's snap with `internal/tools/snapdir`. The tool checks
   the program and notices against `checksums.txt`, and the metadata against snapd's limits. It converts
   the Linux menu entry to the snap's. `snap pack` packs the snap. The Store's `review-tools` must pass
-  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. Publishing is
-  off until the owner enables it (Repository settings).
+  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. Before a
+  publish, the `attest` job attests both snaps, so a snap from the Store can be checked with
+  `gh attestation verify`. Publishing is off until the owner enables it (Repository settings).
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, and at least three tips. It also has screenshots
   in `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing

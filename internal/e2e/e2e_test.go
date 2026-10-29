@@ -448,3 +448,35 @@ func TestDebugLog(t *testing.T) {
 		})
 	}
 }
+
+// The libraries' own switches stay off (SECURITY.md): inside tmux, colour detection would
+// run `tmux info` from the PATH; TEA_TRACE would append raw input and output to any path; and
+// TEA_DEBUG and UV_DEBUG would write files. A fake tmux first on the PATH records any run.
+// COLORTERM and NO_COLOR are emptied, since either one ends colour detection before it asks
+// tmux. The fake is a shell script, so the test is Unix-only.
+func TestLibrarySwitchesStayOff(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake tmux is a shell script")
+	}
+	dir := t.TempDir()
+	ran := filepath.Join(dir, "tmux-ran")
+	fake := "#!/bin/sh\necho \"$@\" >> '" + ran + "'\n"
+	if err := os.WriteFile(filepath.Join(dir, "tmux"), []byte(fake), 0o755); err != nil { //nolint:gosec // the fake must be executable
+		t.Fatal(err)
+	}
+	trace, uvDebug := filepath.Join(dir, "tea-trace.log"), filepath.Join(dir, "uv-debug.log")
+	env := []string{
+		"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"),
+		"TMUX=/tmp/tmux-1000/default,1,0", "COLORTERM=", "NO_COLOR=",
+		"TEA_TRACE=" + trace, "TEA_DEBUG=1", "UV_DEBUG=" + uvDebug,
+	}
+	s := startEnv(t, 80, 24, env, "--instant")
+	s.waitFor("LOGON:", 10*time.Second)
+	s.send("\x03")
+	s.wait(10 * time.Second)
+	for _, f := range []string{ran, trace, uvDebug} {
+		if data, err := os.ReadFile(f); err == nil {
+			t.Errorf("%s exists:\n%s", filepath.Base(f), data)
+		}
+	}
+}

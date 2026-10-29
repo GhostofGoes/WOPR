@@ -16,6 +16,10 @@ import (
 	"path/filepath"
 )
 
+// MaxSize is the largest log that Open appends to. A larger one is emptied first, so that a
+// log left on for months cannot fill the disk.
+const MaxSize = 5 << 20
+
 // Log is an open debug log. A nil *Log is valid and discards everything, so callers need
 // no checks.
 type Log struct {
@@ -27,7 +31,7 @@ type Log struct {
 // Open opens the log in dir (normally os.UserCacheDir()), appending. It never follows a
 // symbolic link at the log's directory or file, and refuses a directory another user owns,
 // so a cache directory in a shared place ($XDG_CACHE_HOME=/tmp, say) cannot be used to
-// make wopr append to some other file.
+// make wopr append to some other file. A log over MaxSize is emptied before it is used.
 func Open(dir string) (*Log, error) {
 	d := filepath.Join(dir, "wopr")
 	if err := os.MkdirAll(d, 0o700); err != nil {
@@ -50,7 +54,21 @@ func Open(dir string) (*Log, error) {
 		_ = f.Close()
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
+	if err := truncateIfLarge(f); err != nil {
+		_ = f.Close()
+		return nil, fmt.Errorf("debug log: %w", err)
+	}
 	return &Log{l: log.New(f, "", log.LstdFlags|log.Lmicroseconds), c: f, path: path}, nil
+}
+
+// truncateIfLarge empties f when it holds more than MaxSize bytes. f is in append mode, so the
+// next write goes to the start.
+func truncateIfLarge(f *os.File) error {
+	info, err := f.Stat()
+	if err != nil || info.Size() <= MaxSize {
+		return err
+	}
+	return f.Truncate(0)
 }
 
 // Printf writes one line. It is safe to call from any goroutine.

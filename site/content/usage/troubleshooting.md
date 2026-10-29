@@ -120,7 +120,8 @@ user cache folder:
 | Windows | `%LOCALAPPDATA%\wopr\debug.log` |
 
 Each session adds to the end of the log, starting with a line that names the version and the seed. So the
-newest session is at the end. If `wopr` stops with a message before its screen appears, it writes no log.
+newest session is at the end. When the log is larger than 5 MB, `wopr` empties it first, so it cannot
+fill your disk. If `wopr` stops with a message before its screen appears, it writes no log.
 The message is what to report.
 
 ## Getting help

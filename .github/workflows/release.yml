@@ -480,6 +480,8 @@ jobs:
       && (needs.publish.result == 'success' || github.event_name == 'workflow_dispatch') }}
     permissions:
       contents: read
+      id-token: write # snap.yml's attest job only
+      attestations: write # snap.yml's attest job only
     uses: $/.github/workflows/snap.yml
     with:
       artifact: release-dist

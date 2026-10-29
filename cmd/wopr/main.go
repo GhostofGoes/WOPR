@@ -16,6 +16,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/cli"
 	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
+	_ "github.com/GhostofGoes/WOPR/internal/scrubenv" // clears TMUX, TEA_TRACE and the like before the libraries read them
 	"github.com/GhostofGoes/WOPR/internal/ui"
 	"github.com/GhostofGoes/WOPR/internal/version"
 )

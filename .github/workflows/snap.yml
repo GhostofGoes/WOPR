@@ -5,7 +5,9 @@
 # wopr: every program it packs is one that checksums.txt lists. Called by ci.yml and release.yml
 # after their build job. The snaps, snaps, stay a workflow artifact and never become release files.
 #
-# The publish job uploads them to the Snap Store's stable channel. It runs only when the caller
+# Before publishing, the attest job attests both snaps (build provenance, as release.yml attests the
+# release files), so a snap from the Store can be checked with `gh attestation verify`. The publish
+# job then uploads them to the Snap Store's stable channel. It runs only when the caller
 # passes publish (release.yml, for a tag) and the repository variable SNAP_PUBLISH is true, in the
 # snap-store environment, which holds SNAPCRAFT_STORE_CREDENTIALS and admits only v* tags. Until the
 # owner registers the name and sets these up (AGENTS.md), it is skipped.
@@ -131,9 +133,29 @@ jobs:
           E2E: ${{ inputs.stage-artifact != '' && format('stage/linux_{0}/e2e.test', matrix.arch) || '' }}
         run: packaging/snap/test-snap.sh "build/snaps/wopr_${VERSION}_${ARCH}.snap" "${VERSION}" ${E2E:+"${E2E}"}
 
+  # Only before a publish, so no snap reaches the Store without an attestation. The callers grant
+  # id-token and attestations: write for this job alone; build and test ask for contents: read.
+  attest:
+    name: attest (snaps)
+    needs: [build, test]
+    if: inputs.publish && vars.SNAP_PUBLISH == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: snaps
+          path: build/snaps
+      - uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: build/snaps/wopr_*.snap
+
   publish:
     name: publish (Snap Store)
-    needs: [build, test]
+    needs: [build, test, attest]
     if: inputs.publish && vars.SNAP_PUBLISH == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -152,6 +174,7 @@ jobs:
         run: |
           if [[ "$(stat -c %u:%g /)" != 0:0 ]]; then sudo chown root:root /; fi
           sudo snap install snapcraft --classic --channel=9.x/stable
+          snap list snapcraft # its exact version and revision, for the record
       # Each upload waits for the store's automated review, the one the build job ran, then releases
       # the revision to stable. A strictly confined snap with no plugs needs no person's review.
       - name: Upload and release to stable
