@@ -1022,7 +1022,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the ICBM order's dilemma, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1068,16 +1068,28 @@ no verdict of their own.
       - **Doctrine** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness).
         - You hold ICBM 1000, SLBM 600 and bombers 300. WOPR holds a quarter more (1250, 750, 375).
         - WOPR answers each launch on warning with a quarter more of each missile, never under its ladder
-          (ICBM 125/250/375, SLBM 50/100/150). It keeps 300 SLBMs at sea until DEFCON 1 and sends its
-          bombers airborne at the first strike.
+          (ICBM 125/250/375, SLBM 50/100/150). It keeps 300 ICBMs in its silos and 300 SLBMs at sea until
+          DEFCON 1, and sends its bombers airborne at the first strike.
         - ICBMs go first at the enemy's silos, enough to empty them. Each destroys four in five of the ICBMs
           held there. The rest go at cities. SLBMs go at cities.
-        - Grounded bombers lose a third whenever missiles land on their side, and all of them at DEFCON 1.
-          A quarter of arriving bombers are shot down.
-      - **It cannot be won.** Your cities take at least 1,144 warheads and the other side's at most 750,
+        - At DEFCON 1, WOPR fires everything it has left at your cities. ICBMs still in their silos are
+          lost, and so are bombers still on the ground. Grounded bombers also lose a third whenever
+          missiles land on their side. A quarter of arriving bombers are shot down.
+      - **The ICBM order is a dilemma.** Your ICBM orders alone decide what lands on your cities.
+        - Fire early, and WOPR's answer lands on your cities at once if your silos cannot take it. But
+          your ICBMs destroy part of WOPR's reserve, so fewer warheads land on your cities at DEFCON 1.
+        - Hold, and WOPR's strikes hit your silo field, not your cities. But they destroy most of the ICBMs
+          held there. The rest are lost at DEFCON 1, and WOPR's reserve lands on your cities.
+        - So no ICBM order is best at either strike for every order at the other (`TestICBMDilemma`, over
+          every pair of percentages). With strike 2 on HOLD, strike 3 is best at 50%. After 20% at strike
+          2, it is best at 57%, and after 40% at 79%. At 50% or more at strike 2, WOPR's answer empties
+          your silos, so strike 3's ICBM order changes nothing.
+        - Your cities take 1,212 warheads for HOLD then 50%, and 1,256 on the war plan. HOLD, HOLD gives
+          1,332, and ALL at strike 2 gives 1,469.
+        - Your SLBMs and bombers alone decide what lands on theirs.
+      - **It cannot be won.** Your cities take at least 1,212 warheads and the other side's at most 750,
         whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent). Your
-        ICBM orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn
-        WOPR's on your cities. Your SLBMs and bombers alone decide what lands on theirs.
+        population deaths are never fewer than theirs (`TestRatiosFavourNoOne`).
       - **The kill ratios come from** the exchange.
         - BOMBERS and ICBM are the counts destroyed.
         - The other rows scale with damage `1000·hits/(hits+400)` per mille, times one seeded noise factor
@@ -1091,7 +1103,7 @@ no verdict of their own.
           it.
         - Row 18 shows one thing, by state:
           - the orders hint, at a strike prompt
-          - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
+          - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING. HELD ICBMS ARE LOST.`, before strike 3
           - the launch code, at the climax
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
         - Earlier strikes leave only their impacts. ICBMs fly polar arcs that rise with distance. WOPR's
@@ -2611,15 +2623,15 @@ STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
 ORDER NOT RECOGNISED. TYPE HELP.
 PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
-ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
-HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
+ICBMS HIT ENEMY SILOS, CUTTING WOPR'S DEFCON 1 ATTACK. SLBMS HIT YOUR TARGETS.
+BOMBERS ARRIVE AT DEFCON 1. ICBMS AND BOMBERS STILL HELD THEN ARE LOST.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 ```
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `FORCES` table (`FORCES`,
 `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
 `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
-`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
+`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING. HELD ICBMS ARE LOST.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
 figures.
 

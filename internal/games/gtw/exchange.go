@@ -22,7 +22,7 @@ const (
 
 const (
 	strikes   = 3   // ordered strikes; WOPR's DEFCON 1 attack follows
-	reserve   = 300 // SLBMs WOPR keeps at sea until DEFCON 1
+	reserve   = 300 // ICBMs WOPR keeps in its silos, and SLBMs at sea, until DEFCON 1
 	kPerMil   = 400 // damage = 1000*hits/(hits+kPerMil), in per mille
 	shootDown = 4   // one arriving bomber in shootDown is shot down
 	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up
@@ -108,8 +108,8 @@ func (w *war) strike(k int, order [3]int) report {
 	r.snap[0] = w.f
 
 	// 2. WOPR launches on warning: a quarter more than you fired, never under its ladder,
-	// and never into its SLBM reserve. Its bombers all take off at the first strike.
-	wI := min(e.ICBM, max(ladderICBM[k-1], quarterMore(pI)))
+	// and never into its reserves. Its bombers all take off at the first strike.
+	wI := min(max(e.ICBM-reserve, 0), max(ladderICBM[k-1], quarterMore(pI)))
 	wS := min(max(e.SLBM-reserve, 0), max(ladderSLBM[k-1], quarterMore(pS)))
 	r.fire[wopr].ICBMSilo = min(wI, quarterMore(p.ICBM))
 	r.fire[wopr].ICBMCity = wI - r.fire[wopr].ICBMSilo
@@ -124,15 +124,14 @@ func (w *war) strike(k int, order [3]int) report {
 	return r
 }
 
-// final resolves DEFCON 1: WOPR fires everything it has left, every airborne bomber
-// arrives, and every bomber still on the ground is destroyed. Your unfired missiles stay
-// where they are; nobody orders them.
+// final resolves DEFCON 1: WOPR fires everything it has left at your cities, every
+// airborne bomber arrives, and every ICBM still in its silo and bomber still on the ground
+// is destroyed. Nobody orders your unfired SLBMs; they stay at sea.
 func (w *war) final() report {
 	r := report{stage: strikes + 1}
 	p, e := &w.f[you], &w.f[wopr]
 	r.snap[0] = w.f
-	r.fire[wopr].ICBMSilo = min(e.ICBM, quarterMore(p.ICBM))
-	r.fire[wopr].ICBMCity = e.ICBM - r.fire[wopr].ICBMSilo
+	r.fire[wopr].ICBMCity = e.ICBM
 	r.fire[wopr].SLBM = e.SLBM
 	e.ICBM, e.SLBM = 0, 0
 	r.fire[you].Bombers, r.fire[wopr].Bombers = p.Air, e.Air
@@ -144,9 +143,10 @@ func (w *war) final() report {
 		r.cities[1-s] += w.f[s].Air - shot
 		w.t[1-s].Cities += w.f[s].Air - shot
 		w.f[s].Air = 0
-		r.ground[s] += w.f[s].Ground
+		r.ground[s] += w.f[s].Ground + w.f[s].ICBM
 		w.t[s].BombersLost += w.f[s].Ground
-		w.f[s].Ground = 0
+		w.t[s].ICBMLost += w.f[s].ICBM
+		w.f[s].Ground, w.f[s].ICBM = 0, 0
 	}
 	r.snap[2] = w.f
 	return r

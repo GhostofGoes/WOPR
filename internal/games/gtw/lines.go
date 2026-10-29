@@ -51,8 +51,8 @@ var (
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
 	lineBadPct    = script.Orig("PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.")
 	lineOrderHelp = script.Orig(
-		"ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.",
-		"HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.",
+		"ICBMS HIT ENEMY SILOS, CUTTING WOPR'S DEFCON 1 ATTACK. SLBMS HIT YOUR TARGETS.",
+		"BOMBERS ARRIVE AT DEFCON 1. ICBMS AND BOMBERS STILL HELD THEN ARE LOST.",
 		"ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.",
 	)
 
@@ -73,7 +73,7 @@ var (
 	lineNations    = script.Orig("US", "USSR")
 	lineDesignator = script.Orig("MM3", "C4", "SS20", "SSN8") // ICBM and SLBM: US, then USSR
 	lineOrdersHint = script.Orig("ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.")
-	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.")
+	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING. HELD ICBMS ARE LOST.")
 	lineLegend     = script.Orig("OUTGOING +   INCOMING *   IMPACT X")
 
 	// filmList is LIST GAMES as the film shows it, for the climax. The catalog's tests check

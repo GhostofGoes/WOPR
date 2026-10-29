@@ -204,7 +204,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 		{"strike 2 orders", "", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
 			"A-MM3-A", "C-C4-A", "US        500   450   200     0", "USSR      737   562     0   375",
 		}, 4},
-		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
+		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING. HELD ICBMS ARE LOST.", []string{
 			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
 		}, 3},
 		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
@@ -215,7 +215,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	}
 	oneTrack := []stage{ // strike 2 fires 1% of the ICBMs: one track
 		{"strike 2 orders", "1 0 0", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", nil, 4},
-		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{"A-MM3-A", "C-MM3-A"}, 3},
+		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING. HELD ICBMS ARE LOST.", []string{"A-MM3-A", "C-MM3-A"}, 3},
 		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{"A-MM3-A", "C-MM3-A"}, 1},
 	}
 	for _, path := range [][]stage{enter, oneTrack} {
@@ -522,7 +522,7 @@ func TestRefusalsKeepTheStrike(t *testing.T) {
 		"icbm 150":    "PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.",
 		"tic-tac-toe": "** ROUTINE MUST COMPLETE BEFORE RESET **",
 		"gtw":         "** GAME ROUTINE RUNNING **",
-		"?":           "ICBMS HIT ENEMY SILOS.",
+		"?":           "ICBMS HIT ENEMY SILOS,",
 	} {
 		before := len(g.Transcript())
 		g.Type(in)
