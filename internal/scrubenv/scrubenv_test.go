@@ -29,6 +29,38 @@ func TestScrub(t *testing.T) {
 	}
 }
 
+func TestScrubInvalidTerm(t *testing.T) {
+	t.Setenv("TERM", "../../../dev/zero")
+	Scrub()
+	if v, ok := os.LookupEnv("TERM"); ok {
+		t.Errorf("TERM is still set, to %q", v)
+	}
+}
+
+func TestValidTerm(t *testing.T) {
+	for term, want := range map[string]bool{
+		"":                      true,
+		"xterm-256color":        true,
+		"screen.xterm-256color": true,
+		"foot+base":             true,
+		"tmux_direct":           true,
+		"dumb":                  true,
+		"../../../dev/zero":     false,
+		"./x":                   false,
+		".hidden":               false,
+		"..":                    false,
+		`..\..\x`:               false,
+		"xterm/../../x":         false,
+		"xterm 256":             false,
+		"xterm\x1b":             false,
+		"xterm\u00e9":           false,
+	} {
+		if got := ValidTerm(term); got != want {
+			t.Errorf("ValidTerm(%q) = %v, want %v", term, got, want)
+		}
+	}
+}
+
 // The package must initialise before colorprofile, which needs os too. Another import could
 // make it wait (see the package comment).
 func TestImportsOnlyOS(t *testing.T) {

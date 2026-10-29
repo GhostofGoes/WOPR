@@ -31,7 +31,8 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
 - It removes `TMUX`, `TEA_TRACE`, `TEA_DEBUG` and `UV_DEBUG` from its environment when it starts, before
   its libraries can read them. With them, the libraries would run `tmux info`, or write a trace of what
   you type or a log file. Inside tmux, `wopr` does not ask tmux which colours it can show. It uses 24-bit
-  colour, and tmux changes the colours for a terminal that cannot show them.
+  colour, and tmux changes the colours for a terminal that cannot show them. It also removes `TERM` when it
+  is not a terminal's name, such as a file path, which would make a library read any file.
 - It writes only one file: the debug log, and only when `WOPR_DEBUG` is set. The log is
   `wopr/debug.log` in your user cache folder. The folder is readable only by you (0700) and the file too
   (0600). `wopr` does not follow a symbolic link at that path, and it does not use a folder that belongs

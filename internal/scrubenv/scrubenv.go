@@ -12,6 +12,10 @@
 //   - TEA_DEBUG: Bubble Tea writes a panic log into the current folder.
 //   - UV_DEBUG: Ultraviolet appends its renderer's log to the file it names.
 //
+// It also removes TERM when TERM is not a terminal's name (ValidTerm). The terminfo loader
+// that colorprofile uses joins TERM to a folder's path and reads the whole file it names, so
+// TERM=../../../dev/zero would make wopr read forever, before main runs.
+//
 // The work is done in init, because Lip Gloss detects the colour profile in a package-level
 // variable, before main runs. Go initialises packages in the order of their import paths,
 // each after its own imports. This package imports only os, and its path sorts before every
@@ -33,9 +37,29 @@ func init() {
 	Scrub()
 }
 
-// Scrub removes Names from the process's environment.
+// Scrub removes Names from the process's environment, and TERM if it is not ValidTerm.
 func Scrub() {
 	for _, n := range Names {
 		_ = os.Unsetenv(n) // fails only on a name with '=' or NUL
 	}
+	if !ValidTerm(os.Getenv("TERM")) {
+		_ = os.Unsetenv("TERM")
+	}
+}
+
+// ValidTerm says whether term can be a terminfo name: letters, digits and "+-._", not
+// starting with a dot. Such a name stays inside the terminfo folder. Empty is valid.
+func ValidTerm(term string) bool {
+	if term != "" && term[0] == '.' {
+		return false
+	}
+	for _, c := range []byte(term) {
+		switch {
+		case 'a' <= c && c <= 'z', 'A' <= c && c <= 'Z', '0' <= c && c <= '9',
+			c == '+', c == '-', c == '.', c == '_':
+		default:
+			return false
+		}
+	}
+	return true
 }

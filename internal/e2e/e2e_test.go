@@ -509,6 +509,21 @@ func TestLibrarySwitchesStayOff(t *testing.T) {
 	}
 }
 
+// A TERM that is a path does not make the terminfo loader read outside its folder
+// (internal/scrubenv): /dev/zero would never end. --version still prints and exits.
+func TestTermPathIgnored(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no /dev/zero")
+	}
+	s := startEnv(t, 80, 24, []string{"TERM=../../../../../../../../../dev/zero"}, "--version")
+	if code := s.wait(10 * time.Second); code != 0 {
+		t.Errorf("exit %d, want 0; screen:\n%s", code, s.screen())
+	}
+	if !strings.Contains(s.screen(), "wopr") {
+		t.Errorf("no version line:\n%s", s.screen())
+	}
+}
+
 // scrubenv must clear the environment before Lip Gloss reads it in a package-level variable
 // (internal/scrubenv). Go's own init trace shows the order the binary really runs inits in.
 // test-snap.sh skips it, as snapd may not pass GODEBUG through.

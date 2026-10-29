@@ -1657,6 +1657,13 @@ classified address it leads to.
     24-bit colour from `capture-pane -e` (tmux's own `TERM` gives only 256), and none with `NO_COLOR`.
     `TestTmuxConvertsForOuterTerminal` attaches a client with `TERM=xterm-256color` and checks that tmux
     sends it 256-colour codes only.
+  - `TERM` must be a terminfo name: letters, digits and `+-._`, not starting with a dot
+    (`scrubenv.ValidTerm`). Otherwise `scrubenv` removes it. The terminfo loader that colorprofile uses
+    reads the whole file at `<dir>/<first letter>/<TERM>`, so a path in `TERM` made it read any file, and
+    `/dev/zero` without end, before `main` ran (review of 2026-10-29). `TestTermPathIgnored` checks it.
+    The review found nothing else to remove: the other variables the libraries read (`COLORTERM`,
+    `TERM_PROGRAM`, `TERMINFO`, `LANG` and the like) only choose colours, widths and keys, and the Go
+    runtime's own (`GODEBUG`, `GOTRACEBACK`) are read before any package's `init`.
 
 ---
 
