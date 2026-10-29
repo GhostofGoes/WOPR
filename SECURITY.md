@@ -56,10 +56,6 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
   packages have all of these protections. A copy built with cgo has no file limits, and it keeps any
   administrator capabilities. `go install` makes such a copy when a C compiler is installed. To prevent
   this, use `CGO_ENABLED=0 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest`.
-- On Linux, the program that the `.deb` and `.rpm` packages install loads at a new random address each
-  time it starts. Its relocations are read-only once it starts. Before `wopr` starts, the system's
-  loader runs it. The loader reads `LD_PRELOAD`, `LD_AUDIT` and `/etc/ld.so.preload`, which only you or
-  an administrator can set. The archives' program is static and has no loader.
 - It starts no other program, with one exception. On macOS, when you open the app from Finder, `wopr`
   opens itself again in Terminal.
 - Each release file is attested and checksummed, and the Linux packages and `checksums.txt` are signed.

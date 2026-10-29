@@ -116,12 +116,9 @@ func TestAssemble(t *testing.T) {
 	sums := write("checksums.txt", lines.String())
 	bare := artifact{Name: "wopr_1.0.0_linux_amd64", Path: bin, Type: "Binary"}
 	bare.Extra.Format = "binary"
-	pie := artifact{Name: "wopr", Path: bin, Type: "Binary"} // the packages' program: no bare binary
-	pie.Extra.ID = pieBuild
 	arts := []artifact{
 		{Name: "wopr", Path: bin, Type: "Binary"},
 		bare,
-		pie,
 		{Name: "wopr_1.0.0_linux_amd64.tar.gz", Path: arc, Type: "Archive"},
 		{Name: "checksums.txt", Path: sums, Type: "Checksum"},
 		{Name: "wopr_1.0.0-1_amd64.deb", Path: deb, Type: linuxPackage},

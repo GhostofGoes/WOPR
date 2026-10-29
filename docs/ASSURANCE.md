@@ -54,7 +54,7 @@ defects, and a copy of `wopr` that the user did not get from this project.
 
 The principles of Saltzer and Schroeder, as `wopr` applies them:
 
-- **Economy of mechanism.** One Go binary with no network code, no plug-ins and no configuration
+- **Economy of mechanism.** One static Go binary with no network code, no plug-ins and no configuration
   files. The import rules in `internal/archtest` keep the terminal code in `internal/ui` only, and keep
   `os/exec` out of every package except `cmd/wopr` and the build-time tools.
 - **Fail-safe defaults.** An environment variable with a value that is not valid is rejected, not
@@ -92,7 +92,6 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 | Symbolic link following, insecure permissions (CWE-59, CWE-732) | The debug log | `O_NOFOLLOW`, `Lstat`, owner check, 0700 and 0600 | `internal/debuglog` tests |
 | OS command injection (CWE-78) | The macOS relaunch | Fixed arguments, no shell | Table tests in `cmd/wopr` |
 | A defect that reaches the file system, the network or other programs (CWE-250, CWE-269) | Any code that runs after the terminal is set up, on Linux | `no_new_privs`, dropped capabilities, a Landlock domain with no rules, and a seccomp filter | `internal/sandbox` tests: each refusal on one thread, the filter in an interpreter for amd64 and arm64, and the real `Restrict` on every thread of a child process. The `TestLinuxSandbox`, `TestDebugLog`, `TestSuspendResume`, `TestTmuxColours` and `TestColours` e2e tests. CI's `sandbox` job runs them on amd64 and arm64, as a user and as root |
-| Exploit of a memory-safety defect (CWE-119, CWE-787) | Code that uses `unsafe` (`internal/sandbox`), or a bug in the runtime | Go's bounds checks and garbage collection. The Linux packages' program is a PIE with full RELRO, so its code is at a new address each run | `internal/tools/stage` checks every Linux program's ELF headers. `TestLinuxPIE` checks the addresses of the installed `.deb`'s program |
 | Use of a weak random generator for security (CWE-338) | None: the seeded generator is for games and replays only | No security decision uses randomness | `proto.NewRand`; gosec's finding is annotated |
 | Download of code without an integrity check (CWE-494) | Installs | HTTPS only (`--proto '=https'`, `--https-only`), attestations, signatures | `SECURITY.md`; the install pages |
 | Vulnerable or malicious dependency (CWE-1395) | Go modules, CI actions | `govulncheck` on every push and weekly; a 14-day dependency cooldown for regular updates (security fixes skip it); actions pinned by commit SHA; zizmor | `ci.yml`, `scheduled.yml`, `internal/tools/cooldown` |

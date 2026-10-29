@@ -6,10 +6,10 @@
 # rpmlint reports is a problem to fix. docs/PLAN.md section 8 records what rpmlint reports without
 # these filters.
 
-# The program is a position-independent executable that needs no shared library, only the C
-# library's loader (.goreleaser.yaml, wopr-pie). rpmlint takes a program without a DT_NEEDED entry
-# for a static one.
+# Go links the program statically on purpose (CGO_ENABLED=0), so one binary runs on every
+# distribution. That is also why it is not a position-independent executable.
 addFilter("statically-linked-binary")
+addFilter("position-independent-executable-suggested")
 
 # The description names the film's Falken's Maze and tic-tac-toe, which the en_US dictionary splits
 # into words it does not know.

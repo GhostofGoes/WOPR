@@ -9,15 +9,14 @@
 //
 //	go run ./internal/tools/stage [-archives] [-assets dir] [-dist dist] [-out stage]
 //
-// It checks every Linux program (programs.go): the archives' must be static, and the packages'
-// (the wopr-pie build, which it does not stage) a position-independent executable. Go must have
-// built both without cgo.
+// It checks every Linux program (programs.go): it must be static, and Go must have built it
+// without cgo, which turns off most of the sandbox.
 //
 // With -archives it also checks that every release archive contains the files the
 // licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md, and that
 // the Linux and macOS archives (tar.gz) carry the manual page, wopr.6, which the Windows
 // ones (zip) leave out; and that every Linux build has one .deb and one .rpm, named and
-// laid out as their formats expect, that install the wopr-pie program (packages.go).
+// laid out as their formats expect (packages.go).
 //
 // With -assets it also collects every file a release publishes into one flat directory:
 // the archives, the bare binaries under their release names, the Linux packages, those
@@ -58,7 +57,6 @@ type artifact struct {
 	Type   string `json:"type"`
 	Extra  struct {
 		Format string `json:"Format"`
-		ID     string `json:"ID"` // the build's or the archive's id in .goreleaser.yaml
 	} `json:"extra"`
 }
 
@@ -111,17 +109,12 @@ func run(dist, out string, checkArchives bool, assets string) error {
 	for _, a := range arts {
 		switch {
 		case a.bare(): // the same binary again; assemble copies it
-		case a.Type == "Binary" && a.Extra.ID == pieBuild: // only inside the packages
-			if err := checkLinuxProgram(a.Path, a.Goarch, true); err != nil {
-				return fmt.Errorf("%s/%s: the packages' program %s: %w", a.Goos, a.Goarch, a.Path, err)
-			}
-			fmt.Println("program ok (PIE):", a.Path)
 		case a.Type == "Binary":
 			if a.Goos == "linux" {
-				if err := checkLinuxProgram(a.Path, a.Goarch, false); err != nil {
+				if err := checkLinuxProgram(a.Path, a.Goarch); err != nil {
 					return fmt.Errorf("%s/%s: %s: %w", a.Goos, a.Goarch, a.Path, err)
 				}
-				fmt.Println("program ok (static):", a.Path)
+				fmt.Println("program ok (static, no cgo):", a.Path)
 			}
 			if err := stageTarget(a, out); err != nil {
 				return fmt.Errorf("%s/%s: %w", a.Goos, a.Goarch, err)
@@ -173,7 +166,7 @@ func assemble(arts []artifact, dir, root string) error {
 		case a.bare():
 			bare++
 			err = copyFile(a.Path, filepath.Join(dir, a.Name), 0o755)
-		case a.Type == "Binary" && a.Extra.ID != pieBuild:
+		case a.Type == "Binary":
 			built++
 		case a.Type == "Archive", a.Type == "Checksum", a.pkg():
 			err = copyFile(a.Path, filepath.Join(dir, a.Name), 0o644)

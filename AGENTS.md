@@ -7,7 +7,7 @@ disagree on day-to-day practice, this file wins. Update both in the same PR when
 ## What this is
 
 `wopr` is a Go terminal-UI recreation of the WOPR computer from *WarGames* (1983). It is a single static
-binary (the Linux packages hold a position-independent build of it). Bubble Tea v2 renders it, and Lip Gloss v2 styles it. There is no network code. It is built in
+binary. Bubble Tea v2 renders it, and Lip Gloss v2 styles it. There is no network code. It is built in
 the milestones of `docs/PLAN.md` §15.
 
 `SECURITY.md` states what users can expect from `wopr`'s security, and `docs/ASSURANCE.md` explains why it
@@ -41,7 +41,7 @@ system. There is no Makefile.
 | Check the change notes and `CHANGELOG.md` | `go run ./internal/tools/relnotes -check` (a prek hook) |
 | A release's notes | `go run ./internal/tools/relnotes -version X.Y.Z -out build/notes` (or `-snapshot`) |
 | Release build (local dry run) | `go run ./internal/tools/relnotes -snapshot -out build/notes`, then, with `WOPR_NOTES_DIR=build/notes` in the environment, `go tool -modfile=tools/release/go.mod goreleaser release --snapshot --clean` |
-| Size gate | `go run ./internal/tools/sizegate -expect 8 -packages 4`. `-files <file>...` gates the installers (the `collect` jobs) |
+| Size gate | `go run ./internal/tools/sizegate -expect 6 -packages 4`. `-files <file>...` gates the installers (the `collect` jobs) |
 | Stage binaries and e2e tests | `go run ./internal/tools/stage`. With `-archives -assets dist/release`, it also checks the archives and the Linux packages, and it collects every release file into `dist/release`. With `-merge -assets dist/release <file>...`, it adds the installers to them and to `checksums.txt`, sorted as GoReleaser sorts it |
 | Lint the Linux packages (Linux, after a release build. The tools are not pinned) | `lintian --pedantic dist/*.deb` and, with Fedora's rpmlint configuration, `rpmlint -r packaging/rpmlintrc dist/*.rpm`. See `docs/PLAN.md` §8 for what they report. List an `.rpm`'s files with `rpm -qlvp`, or unpack it with `bsdtar -xf X.rpm -C dir`. Never pipe `rpm2cpio` into a plain `cpio -idm`, which writes into `/` (the payload's paths are absolute) |
 | Check the menu entries and the AppStream metadata (Linux, after a release build. The tools are not pinned) | `desktop-file-validate build/pkg/deb/*.desktop build/pkg/rpm/*.desktop` (prints nothing when they pass), `appstreamcli validate --no-net --pedantic build/pkg/*.metainfo.xml` and `appstream-util validate-relax --nonet build/pkg/*.metainfo.xml`. The `desktop-files` hook runs them on what `pkgdocs` writes (its `TestValidators`, which skips a validator that is not installed unless `WOPR_DESKTOP_VALIDATORS=1`). The smoke jobs run them on the installed `.deb` |
@@ -111,9 +111,8 @@ its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stab
 - **Linux packages.** `.goreleaser.yaml`'s `nfpms` build a `.deb` and an `.rpm` for each Linux build
   (`docs/PLAN.md` §8). The `.deb` follows Debian Policy: the program in `/usr/games`, the manual page in
   section 6, the documents in `/usr/share/doc/wopr`. The `.rpm` follows Fedora: `/usr/bin`, `%license`,
-  `%doc`. Both install the `wopr-pie` build, a position-independent executable with full RELRO. The
-  archives keep the static program. `stage` checks both programs' ELF headers and that neither uses cgo.
-  `stage -archives` checks what each package installs, its program included. `relnotes`'s tests check that the packages'
+  `%doc`. `stage` checks that every Linux program is static and built without cgo, which the sandbox
+  needs. `stage -archives` checks what each installs. `relnotes`'s tests check that the packages'
   maintainer and release match the changelogs it writes. Change both together. `pkgdocs` writes the
   packages' documents and their `changelog.yml` into `build/pkg`. Its tests check
   `packaging/description.txt`, both packages' description, against both formats' rules. Both packages

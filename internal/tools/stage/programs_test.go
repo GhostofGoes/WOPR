@@ -33,36 +33,31 @@ func buildTiny(t *testing.T, goarch string, flags ...string) string {
 	return out
 }
 
-// The checks pass the flags .goreleaser.yaml uses, and fail each flag that is missing or wrong.
+// The check passes the flags .goreleaser.yaml uses, and fails a PIE, cgo's dynamic linking and
+// the wrong machine.
 func TestCheckLinuxProgram(t *testing.T) {
 	if testing.Short() {
 		t.Skip("links programs")
 	}
-	for goarch, want := range linuxPrograms {
-		pie := []string{"-buildmode=pie", "-ldflags=-s -w -bindnow -I " + want.interp}
+	for goarch := range linuxMachines {
 		static := []string{"-ldflags=-s -w"}
 		otherArch := map[string]string{"amd64": "arm64", "arm64": "amd64"}[goarch]
 		for _, tc := range []struct {
 			name    string
 			flags   []string
-			pie     bool
 			arch    string // checked as; goarch when empty
 			wantErr string
 		}{
-			{"PIE", pie, true, "", ""},
-			{"static", static, false, "", ""},
-			{"PIE wanted, static", static, true, "", "ET_EXEC"},
-			{"static wanted, PIE", pie, false, "", "a static program"},
-			{"no BIND_NOW", []string{"-buildmode=pie", "-ldflags=-s -w -I " + want.interp}, true, "", "DF_BIND_NOW"},
-			{"other loader", []string{"-buildmode=pie", "-ldflags=-s -w -bindnow -I /lib/ld-musl.so.1"}, true, "", "loader"},
-			{"other machine", pie, true, otherArch, "an ELF program for"},
+			{"static", static, "", ""},
+			{"PIE", []string{"-buildmode=pie", "-ldflags=-s -w"}, "", "ET_DYN"},
+			{"other machine", static, otherArch, "an ELF program for"},
 		} {
 			t.Run(goarch+"/"+tc.name, func(t *testing.T) {
 				arch := tc.arch
 				if arch == "" {
 					arch = goarch
 				}
-				err := checkLinuxProgram(buildTiny(t, goarch, tc.flags...), arch, tc.pie)
+				err := checkLinuxProgram(buildTiny(t, goarch, tc.flags...), arch)
 				switch {
 				case tc.wantErr == "" && err != nil:
 					t.Fatalf("got %v, want no error", err)
@@ -72,10 +67,10 @@ func TestCheckLinuxProgram(t *testing.T) {
 			})
 		}
 	}
-	if err := checkLinuxProgram("no-such-file", "amd64", true); err == nil {
+	if err := checkLinuxProgram("no-such-file", "amd64"); err == nil {
 		t.Error("a missing program accepted")
 	}
-	if err := checkLinuxProgram("no-such-file", "riscv64", true); err == nil || !strings.Contains(err.Error(), "no rule") {
+	if err := checkLinuxProgram("no-such-file", "riscv64"); err == nil || !strings.Contains(err.Error(), "no rule") {
 		t.Errorf("an architecture with no rule accepted: %v", err)
 	}
 }
@@ -84,16 +79,14 @@ func TestCheckBuildSettings(t *testing.T) {
 	for _, tc := range []struct {
 		name     string
 		settings []debug.BuildSetting
-		mode     string
 		ok       bool
 	}{
-		{"pie, no cgo", []debug.BuildSetting{{Key: "-buildmode", Value: "pie"}, {Key: "CGO_ENABLED", Value: "0"}}, "pie", true},
-		{"exe, no cgo", []debug.BuildSetting{{Key: "-buildmode", Value: "exe"}, {Key: "CGO_ENABLED", Value: "0"}}, "exe", true},
-		{"cgo", []debug.BuildSetting{{Key: "-buildmode", Value: "pie"}, {Key: "CGO_ENABLED", Value: "1"}}, "pie", false},
-		{"exe for pie", []debug.BuildSetting{{Key: "-buildmode", Value: "exe"}, {Key: "CGO_ENABLED", Value: "0"}}, "pie", false},
-		{"none", nil, "exe", false},
+		{"exe, no cgo", []debug.BuildSetting{{Key: "-buildmode", Value: "exe"}, {Key: "CGO_ENABLED", Value: "0"}}, true},
+		{"cgo", []debug.BuildSetting{{Key: "-buildmode", Value: "exe"}, {Key: "CGO_ENABLED", Value: "1"}}, false},
+		{"pie", []debug.BuildSetting{{Key: "-buildmode", Value: "pie"}, {Key: "CGO_ENABLED", Value: "0"}}, false},
+		{"none", nil, false},
 	} {
-		if err := checkBuildSettings(tc.settings, tc.mode); (err == nil) != tc.ok {
+		if err := checkBuildSettings(tc.settings); (err == nil) != tc.ok {
 			t.Errorf("%s: got %v, want ok=%v", tc.name, err, tc.ok)
 		}
 	}

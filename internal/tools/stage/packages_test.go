@@ -187,11 +187,7 @@ func makeRPM(t *testing.T, pkgs, dir, name string, files map[string]uint32, chan
 		bases = append(bases, path.Base(f))
 		idx = append(idx, uint32(i))
 		flags = append(flags, files[f])
-		sum := pkgDigest(t, pkgs, "rpm", f, sha256Hex)
-		if sum == "" {
-			sum = sha256Hex(nil)
-		}
-		digests = append(digests, sum)
+		digests = append(digests, pkgDigest(t, pkgs, "rpm", f, sha256Hex))
 		algo = append(algo, rpmSHA256)
 	}
 	tags := []rpmTag{
@@ -233,7 +229,7 @@ func TestCheckDeb(t *testing.T) {
 	t.Parallel()
 	dir, pkgs := t.TempDir(), makePkgs(t, goodBindirs)
 	const name = "wopr_1.0.0-1_amd64.deb"
-	if _, err := checkDeb(makeDeb(t, pkgs, dir, name, goodControl, debFiles, ""), pkgs); err != nil {
+	if err := checkDeb(makeDeb(t, pkgs, dir, name, goodControl, debFiles, ""), pkgs); err != nil {
 		t.Fatalf("good .deb rejected: %v", err)
 	}
 	without := func(sub string) []string {
@@ -259,20 +255,20 @@ func TestCheckDeb(t *testing.T) {
 		{"without data", name, goodControl, debFiles, "data.tar.xz", "data.tar"},
 	} {
 		sub := t.TempDir()
-		if _, err := checkDeb(makeDeb(t, pkgs, sub, c.name, c.control, c.files, c.omit), pkgs); err == nil || !strings.Contains(err.Error(), c.want) {
+		if err := checkDeb(makeDeb(t, pkgs, sub, c.name, c.control, c.files, c.omit), pkgs); err == nil || !strings.Contains(err.Error(), c.want) {
 			t.Errorf("a .deb %s: got %v, want an error about %s", c.why, err, c.want)
 		}
 	}
 
 	// The menu entry must be the one pkgdocs wrote for the .deb, and start /usr/games/wopr.
-	if _, err := checkDeb(makeDeb(t, pkgs, t.TempDir(), name, goodControl, debFiles, ""), makePkgs(t, map[string]string{"deb": "/usr/local/bin"})); err == nil || !strings.Contains(err.Error(), "digest") {
+	if err := checkDeb(makeDeb(t, pkgs, t.TempDir(), name, goodControl, debFiles, ""), makePkgs(t, map[string]string{"deb": "/usr/local/bin"})); err == nil || !strings.Contains(err.Error(), "digest") {
 		t.Errorf("a .deb with another menu entry than pkgdocs's: got %v, want an error about its digest", err)
 	}
 	rpmEntry := makePkgs(t, map[string]string{"deb": "/usr/bin"})
-	if _, err := checkDeb(makeDeb(t, rpmEntry, t.TempDir(), name, goodControl, debFiles, ""), rpmEntry); err == nil || !strings.Contains(err.Error(), "does not start /usr/games/wopr") {
+	if err := checkDeb(makeDeb(t, rpmEntry, t.TempDir(), name, goodControl, debFiles, ""), rpmEntry); err == nil || !strings.Contains(err.Error(), "does not start /usr/games/wopr") {
 		t.Errorf("a .deb whose menu entry starts /usr/bin/wopr: got %v", err)
 	}
-	if _, err := checkDeb(makeDeb(t, pkgs, t.TempDir(), name, goodControl, debFiles, ""), t.TempDir()); err == nil {
+	if err := checkDeb(makeDeb(t, pkgs, t.TempDir(), name, goodControl, debFiles, ""), t.TempDir()); err == nil {
 		t.Error("a .deb checked without pkgdocs's files accepted")
 	}
 
@@ -280,7 +276,7 @@ func TestCheckDeb(t *testing.T) {
 	if err := os.WriteFile(bad, []byte("!<arch>\ndebian-binary   0           0     0     644     99        `\n2.0\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := checkDeb(artifact{Name: "not.deb", Path: bad, Goarch: "amd64"}, pkgs); err == nil {
+	if err := checkDeb(artifact{Name: "not.deb", Path: bad, Goarch: "amd64"}, pkgs); err == nil {
 		t.Error("a truncated ar archive accepted")
 	}
 }
@@ -290,7 +286,7 @@ func TestCheckRPM(t *testing.T) {
 	dir, pkgs := t.TempDir(), makePkgs(t, goodBindirs)
 	const name = "wopr-1.0.0-1.x86_64.rpm"
 	const current = "Someone <someone@example.invalid> - 1.0.0-1"
-	if _, err := checkRPM(makeRPM(t, pkgs, dir, name, rpmFiles, current, nil), pkgs); err != nil {
+	if err := checkRPM(makeRPM(t, pkgs, dir, name, rpmFiles, current, nil), pkgs); err != nil {
 		t.Fatalf("good .rpm rejected: %v", err)
 	}
 	without := func(f string) map[string]uint32 {
@@ -335,7 +331,7 @@ func TestCheckRPM(t *testing.T) {
 		}, "License"},
 	} {
 		sub := t.TempDir()
-		_, err := checkRPM(makeRPM(t, pkgs, sub, c.name, c.files, c.changelog, c.edit), pkgs)
+		err := checkRPM(makeRPM(t, pkgs, sub, c.name, c.files, c.changelog, c.edit), pkgs)
 		if c.want == "" {
 			if err != nil {
 				t.Errorf("an .rpm %s: %v", c.why, err)
@@ -351,7 +347,7 @@ func TestCheckRPM(t *testing.T) {
 		if err := os.WriteFile(p, junk, 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := checkRPM(artifact{Name: "junk.rpm", Path: p, Goarch: "amd64"}, pkgs); err == nil {
+		if err := checkRPM(artifact{Name: "junk.rpm", Path: p, Goarch: "amd64"}, pkgs); err == nil {
 			t.Errorf("junk accepted: % x", junk)
 		}
 	}
@@ -365,37 +361,18 @@ func TestCheckPackages(t *testing.T) {
 	rpm := makeRPM(t, pkgs, dir, "wopr-1.0.0-1.x86_64.rpm", rpmFiles, "Someone - 1.0.0-1", nil)
 	linux := artifact{Name: "wopr", Goos: "linux", Goarch: "amd64", Type: "Binary"}
 	darwin := artifact{Name: "wopr", Goos: "darwin", Goarch: "arm64", Type: "Binary"}
-	// The packages' program: the fake packages install an empty file as it.
-	pie := artifact{Name: "wopr", Path: filepath.Join(dir, "pie"), Goos: "linux", Goarch: "amd64", Type: "Binary"}
-	pie.Extra.ID = pieBuild
-	if err := os.WriteFile(pie.Path, nil, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := checkPackagesFrom([]artifact{linux, pie, darwin, deb, rpm}, pkgs); err != nil {
+	if err := checkPackagesFrom([]artifact{linux, darwin, deb, rpm}, pkgs); err != nil {
 		t.Fatalf("a complete set rejected: %v", err)
 	}
-	if err := checkPackagesFrom([]artifact{linux, darwin, deb, rpm}, pkgs); err == nil || !strings.Contains(err.Error(), "no wopr-pie program") {
-		t.Errorf("packages without the PIE build accepted: %v", err)
-	}
-	other := pie
-	other.Path = filepath.Join(dir, "other")
-	if err := os.WriteFile(other.Path, []byte("not the packaged program"), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	for _, p := range [][]artifact{{linux, other, deb}, {linux, other, rpm}} {
-		if err := checkPackagesFrom(p, pkgs); err == nil || !strings.Contains(err.Error(), "program's digest") {
-			t.Errorf("a package with another program accepted: %v", err)
-		}
-	}
-	if err := checkPackagesFrom([]artifact{linux, pie, darwin, deb}, pkgs); err == nil || !strings.Contains(err.Error(), ".rpm") {
+	if err := checkPackagesFrom([]artifact{linux, darwin, deb}, pkgs); err == nil || !strings.Contains(err.Error(), ".rpm") {
 		t.Errorf("a missing .rpm accepted: %v", err)
 	}
-	if err := checkPackagesFrom([]artifact{linux, pie, deb, deb, rpm}, pkgs); err == nil || !strings.Contains(err.Error(), "2 .deb") {
+	if err := checkPackagesFrom([]artifact{linux, deb, deb, rpm}, pkgs); err == nil || !strings.Contains(err.Error(), "2 .deb") {
 		t.Errorf("two .debs for one build accepted: %v", err)
 	}
 	apk := deb
 	apk.Extra.Format = "apk"
-	if err := checkPackagesFrom([]artifact{linux, pie, deb, rpm, apk}, pkgs); err == nil || !strings.Contains(err.Error(), "apk") {
+	if err := checkPackagesFrom([]artifact{linux, deb, rpm, apk}, pkgs); err == nil || !strings.Contains(err.Error(), "apk") {
 		t.Errorf("an unexpected format accepted: %v", err)
 	}
 }

@@ -94,8 +94,8 @@ jobs:
             exit 1
           fi
           env PATH="${login_path}" sh -c 'command -v wopr && wopr --version'
-          # The packages' program is the PIE build: the whole e2e suite again, against it.
-          WOPR_E2E_PIE=1 WOPR_SANDBOX_REQUIRE=1 "stage/${TARGET}/e2e.test" -test.v -test.timeout=5m -binary /usr/games/wopr
+          # The whole e2e suite again, against the installed program, which must sandbox itself fully.
+          WOPR_SANDBOX_REQUIRE=1 "stage/${TARGET}/e2e.test" -test.v -test.timeout=5m -binary /usr/games/wopr
           man -w wopr
           version="$(dpkg-query -W -f='${Version}' wopr)"
           zcat /usr/share/doc/wopr/changelog.Debian.gz | sed -n 1p | grep -F "wopr (${version}) "
