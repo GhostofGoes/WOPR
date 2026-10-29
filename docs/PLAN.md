@@ -2192,7 +2192,9 @@ wopr itself.
   notice adds a note to `.changes/unreleased/` with changie (pinned in `tools/release/go.mod`, with its
   config in `.changie.yaml`). The style is the owner's: plain words at an 8th-grade reading level, and what
   changed for the player, not why. A note describes a deep fix only by what the player saw ("Fixed a crash in
-  some cases"). A note is one line of at most 76 characters, so that it fits a Debian changelog line. A
+  some cases"). A note is one line of at most 80 characters (owner decision 2026-10-29; it was 76).
+  A Debian changelog shows it after `  * `, so its longest lines are 84 columns, past Debian's 80, and
+  lintian may warn about them. A
   release pull request batches the notes into `.changes/vX.Y.Z.md` and merges `CHANGELOG.md`. Nobody edits
   it by hand. `release.yml` turns the same files into the GitHub Release notes and the package
   changelogs (§11.3). The notes for v0.1.0 and v0.2.0 were written afterwards from their pull requests, in

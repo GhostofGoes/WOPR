@@ -518,7 +518,7 @@ func TestCheck(t *testing.T) {
 		{"edited changelog", "CHANGELOG.md is not what changie merge writes", func() {
 			r.write(changelogFile, r.read(changelogFile)+"\n- An extra line.\n")
 		}},
-		{"long note", "more than 76", func() {
+		{"long note", "more than 80", func() {
 			r.note("Added-long", "Added", strings.Repeat("word ", 20), "2026-10-02T10:00:00Z")
 		}},
 		{"unknown kind", "the unreleased notes", func() {

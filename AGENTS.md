@@ -265,7 +265,7 @@ Every change a player could notice gets a change note: a small file in `.changes
   `--kind Fixed --body "..."` skips the questions. The kinds are Keep a Changelog's: Added, Changed,
   Deprecated, Removed, Fixed and Security. Write one note per change. To fix a note, edit the file.
 - **Write it for players**, at an 8th-grade reading level:
-  - Use short, plain words, on one line of at most 76 characters (changie and CI enforce the length).
+  - Use short, plain words, on one line of at most 80 characters (changie and CI enforce the length).
   - Say what changed. Do not explain why, or how the code does it.
   - For a deep technical fix, say only what the player saw that is now fixed: "Fixed a crash in some
     cases", "Fixed an issue with the Chess game".

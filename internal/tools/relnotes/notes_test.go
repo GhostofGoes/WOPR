@@ -80,7 +80,7 @@ func TestParseSection(t *testing.T) {
 		{"## v0.3.0 - 2026-10-08\n\n### Added\n\n- x\n  more of x\n", "only"},
 		{"## v0.3.0 - 2026-10-08\n\n### Added\n\n### Fixed\n\n- x\n", `"Added" has no notes`},
 		{"## v0.3.0 - 2026-10-08\n\n### Added\n", `"Added" has no notes`},
-		{"## v0.3.0 - 2026-10-08\n\n### Added\n\n- " + strings.Repeat("x", maxNote+1) + "\n", "more than 76"},
+		{"## v0.3.0 - 2026-10-08\n\n### Added\n\n- " + strings.Repeat("x", maxNote+1) + "\n", "more than 80"},
 	} {
 		if _, err := parseSection(tc.text, testKinds); err == nil || !strings.Contains(err.Error(), tc.want) {
 			t.Errorf("parseSection(%q) = %v, want an error with %q", tc.text, err, tc.want)

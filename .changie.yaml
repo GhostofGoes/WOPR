@@ -16,10 +16,11 @@ versionFileFormat: "v{{.VersionNoPrefix}}.md"
 versionFormat: '## v{{.VersionNoPrefix}} - {{if .Env.DATE}}{{.Env.DATE}}{{else}}{{.Time.UTC.Format "2006-01-02"}}{{end}}'
 kindFormat: "### {{.Kind}}"
 changeFormat: "- {{.Body}}"
-# One line each: the .deb changelog shows a note as "  * <note>", and Debian keeps lines to 80 columns.
+# One line each, at most 80 characters (owner decision 2026-10-29). The .deb changelog shows a note as
+# "  * <note>", so its longest lines are 84 columns, past Debian's 80; lintian may warn about them.
 body:
   minLength: 3
-  maxLength: 76
+  maxLength: 80
 kinds: # Keep a Changelog's six
   - label: Added
   - label: Changed
