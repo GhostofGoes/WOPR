@@ -41,12 +41,16 @@ func Open(dir string) (*Log, error) {
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
 	path := filepath.Join(d, "debug.log")
+	flags := os.O_CREATE | os.O_WRONLY | os.O_APPEND | oNoFollow
 	if info, err := os.Lstat(path); err == nil && !info.Mode().IsRegular() {
 		return nil, fmt.Errorf("debug log: %s is not a regular file", path)
 	} else if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return nil, fmt.Errorf("debug log: %w", err)
+	} else if err == nil && info.Size() > MaxSize {
+		// Emptied as it opens: Windows refuses to truncate a file opened for append only.
+		flags |= os.O_TRUNC
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND|oNoFollow, 0o600) //nolint:gosec // the path is the user's own cache directory, checked above
+	f, err := os.OpenFile(path, flags, 0o600) //nolint:gosec // the path is the user's own cache directory, checked above
 	if err != nil {
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
@@ -54,21 +58,7 @@ func Open(dir string) (*Log, error) {
 		_ = f.Close()
 		return nil, fmt.Errorf("debug log: %w", err)
 	}
-	if err := truncateIfLarge(f); err != nil {
-		_ = f.Close()
-		return nil, fmt.Errorf("debug log: %w", err)
-	}
 	return &Log{l: log.New(f, "", log.LstdFlags|log.Lmicroseconds), c: f, path: path}, nil
-}
-
-// truncateIfLarge empties f when it holds more than MaxSize bytes. f is in append mode, so the
-// next write goes to the start.
-func truncateIfLarge(f *os.File) error {
-	info, err := f.Stat()
-	if err != nil || info.Size() <= MaxSize {
-		return err
-	}
-	return f.Truncate(0)
 }
 
 // Printf writes one line. It is safe to call from any goroutine.
