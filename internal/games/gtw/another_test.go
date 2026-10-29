@@ -45,7 +45,8 @@ func wars(transcript string) []string {
 }
 
 // With --no-climax, Enter after the kill ratios asks for another war, over the table, and
-// never reaches the climax. Anything but yes or no asks again. No ends the game with no
+// never reaches the climax. The after-action report comes again above the question, since
+// that Enter scrolls it away. Anything but yes or no asks again. No ends the game with no
 // winner, and nothing is handed on: no tic-tac-toe, no ending.
 func TestNoClimaxOffersAnotherWar(t *testing.T) {
 	t.Parallel()
@@ -58,6 +59,12 @@ func TestNoClimaxOffersAnotherWar(t *testing.T) {
 	g.View(c)
 	if !strings.Contains(c.String(), "POPULATION DEATHS") {
 		t.Errorf("the kill ratios are not on the board under the question:\n%s", c.String())
+	}
+	transcript := s.Transcript()
+	_, report, _ := strings.Cut(transcript, "KILL RATIOS.\n\n\n")
+	report, _, _ = strings.Cut(report, "PRESS ENTER TO CONTINUE.\n")
+	if !strings.HasPrefix(report, "AGAINST HOLDING FIRE: ") || !strings.HasSuffix(transcript, "CONTINUE.\n\n\n"+report) {
+		t.Errorf("the question must follow the report again:\n%s", transcript)
 	}
 	s.Type("perhaps")
 	if asking, p := s.Asking(); !strings.HasSuffix(s.Transcript(), "YES FOR ANOTHER WAR. NO ENDS THE GAME.\n") || !asking || p != promptAnother {

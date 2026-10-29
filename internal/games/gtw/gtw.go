@@ -232,9 +232,9 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 			switch {
 			case g.scen != nil: // a playback ends at the kill ratios, not the climax
 				return g.endPlayback()
-			case g.env.NoClimax:
+			case g.env.NoClimax: // the report again, which this Enter scrolls away, then the question
 				g.phase = another
-				return []proto.Output{proto.Prompt{Text: promptAnother[0].Text}}
+				return []proto.Output{speak(g.afterAction()), proto.Prompt{Text: promptAnother[0].Text}}
 			}
 			return g.startClimax()
 		case another:
