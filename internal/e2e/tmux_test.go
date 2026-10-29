@@ -21,9 +21,10 @@ import (
 // tmux tests do. Without tmux, the tests skip, unless WOPR_E2E_TMUX is set (CI's Linux
 // smoke jobs), where a missing tmux fails them.
 type tmuxServer struct {
-	t    *testing.T
-	sock string
-	env  []string
+	t      *testing.T
+	sock   string
+	status string // the file the pane's shell writes wopr's exit status to
+	env    []string
 }
 
 func newTmux(t *testing.T) *tmuxServer {
@@ -49,7 +50,7 @@ func newTmux(t *testing.T) *tmuxServer {
 		}
 		env = append(env, kv)
 	}
-	s := &tmuxServer{t: t, sock: filepath.Join(dir, "s"), env: env}
+	s := &tmuxServer{t: t, sock: filepath.Join(dir, "s"), status: filepath.Join(dir, "status"), env: env}
 	t.Cleanup(func() {
 		_ = exec.Command("tmux", "-S", s.sock, "kill-server").Run() //nolint:gosec // the test's own socket
 		_ = os.RemoveAll(dir)
@@ -70,7 +71,7 @@ func (s *tmuxServer) run(args ...string) string {
 }
 
 // start starts wopr in an 80x24 pane of a new session named wopr. tmux's own TERM,
-// tmux-256color, gives 256 colours without help, and a dead pane stays to report its status.
+// tmux-256color, gives 256 colours without help, and the pane stays after wopr exits.
 func (s *tmuxServer) start(env []string, args ...string) {
 	s.t.Helper()
 	cmd := []string{
@@ -82,7 +83,9 @@ func (s *tmuxServer) start(env []string, args ...string) {
 	for _, kv := range env {
 		cmd = append(cmd, "-e", kv)
 	}
-	s.run(append(append(cmd, "--", binary), args...)...)
+	// A shell records the status: tmux's own pane_dead_status is not always set on CI runners.
+	script := `"$0" "$@"; echo $? > ` + "'" + s.status + "'"
+	s.run(append(append(cmd, "--", "/bin/sh", "-c", script, binary), args...)...)
 }
 
 // capture is the pane's screen. With escapes, it keeps the colours and attributes.
@@ -114,19 +117,12 @@ func (s *tmuxServer) typeLine(text string) {
 	s.run("send-keys", "-t", "wopr", "Enter")
 }
 
-// exitStatus waits for wopr to exit and returns its status, or "signal N". tmux marks the
-// pane dead when the pty closes, and learns the status a moment later, when it reaps wopr.
+// exitStatus waits for wopr to exit and returns its status.
 func (s *tmuxServer) exitStatus(timeout time.Duration) string {
 	s.t.Helper()
 	for deadline := time.Now().Add(timeout); ; time.Sleep(50 * time.Millisecond) {
-		out := s.run("display-message", "-p", "-t", "wopr", "#{pane_dead}|#{pane_dead_status}|#{pane_dead_signal}")
-		dead, rest, _ := strings.Cut(strings.TrimSpace(out), "|")
-		status, signal, _ := strings.Cut(rest, "|")
-		switch {
-		case dead == "1" && status != "":
-			return status
-		case dead == "1" && signal != "":
-			return "signal " + signal
+		if b, err := os.ReadFile(s.status); err == nil && strings.HasSuffix(string(b), "\n") {
+			return strings.TrimSpace(string(b))
 		}
 		if time.Now().After(deadline) {
 			s.t.Fatalf("wopr did not exit; pane:\n%s", s.capture(false))
