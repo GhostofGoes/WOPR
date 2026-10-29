@@ -1116,8 +1116,9 @@ no verdict of their own.
       The hints escalate, each an `original` line after the notices. The 3rd rejection hints at games that
       cannot be won, without a name. The 6th names tic-tac-toe. The 9th and every later one says what to
       type: `TYPE TIC-TAC-TOE, PROFESSOR.` A try to stop the war (`STOP`, `CEASE FIRE`, `ABORT`, `PEACE`
-      and the like) still gets the film's three notices. The first try gets them alone, as in the film.
-      Once, on a later try with no hint due, WOPR adds `WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM.`
+      and the like) still gets the film's three notices. The first try adds no answer of its own, as in
+      the film. Once, on a later try with no hint due, WOPR adds
+      `WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM.`
    5. `TIC-TAC-TOE` (or any intent naming it: `TTT`, `LET'S PLAY TIC TAC TOE`) gives
       `Done{NoWinner, Next: Launch{tictactoe, "climax:N"}}`, where N counts the launch code characters cracked
       so far. The host chains the hand-off (§4.4). GTW reads requests without apostrophes or spaces, so

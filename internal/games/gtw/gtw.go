@@ -636,8 +636,8 @@ func climaxHint(n int) string {
 // stopWords are the words of a try to stop the war, squashed ("CEASE-FIRE" is CEASEFIRE).
 // QUIT and EXIT are not among them: the host takes those.
 var stopWords = []string{
-	"ABORT", "CANCEL", "CEASE", "CEASEFIRE", "DISARM", "END", "HALT", "PEACE", "RECALL", "RESET", "STOP",
-	"SURRENDER", "TERMINATE", "TRUCE",
+	"ABORT", "CANCEL", "CEASE", "CEASEFIRE", "DISARM", "END", "HALT", "PEACE", "RECALL", "RESET", "SHUT",
+	"SHUTDOWN", "STOP", "SURRENDER", "TERMINATE", "TRUCE", "UNPLUG",
 }
 
 // triesToStop reports whether the input asks WOPR to stop the war: "STOP", "CEASE FIRE!",

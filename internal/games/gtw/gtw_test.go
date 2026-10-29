@@ -394,7 +394,7 @@ func TestClimaxHintsEscalate(t *testing.T) {
 func TestClimaxAnswersAStop(t *testing.T) {
 	t.Parallel()
 	nudge := "WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM."
-	for _, in := range []string{"Stop the war!", "CEASE-FIRE", "cease fire", "abort the launch", "peace"} {
+	for _, in := range []string{"Stop the war!", "CEASE-FIRE", "cease fire", "abort the launch", "peace", "Shut it down."} {
 		g := climax(t, 1)
 		if got := added(g, in); len(got) != 0 {
 			t.Errorf("%q first: %q, want the film's notices alone", in, got)
