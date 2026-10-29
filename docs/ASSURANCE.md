@@ -64,7 +64,8 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
   drops any capabilities, sets `no_new_privs`, enters a Landlock domain with no rules, and installs a
   seccomp filter (`internal/sandbox`, `docs/PLAN.md` §8). Landlock stops it from opening or changing files
   and from TCP connections. The filter stops it from running programs, starting processes, opening any
-  socket, and using kernel interfaces that it never needs. This limits what a defect found later in
+  socket, changing a file's permissions, owner, attributes or times, signalling or changing other
+  processes, and using kernel interfaces that it never needs. This limits what a defect found later in
   `wopr` or a dependency could do. The command-line installers for macOS and
   Linux install to `~/.local/bin` without `sudo`, and the Windows installer is per user. CI workflows
   have `permissions: {}` by default and give each job only what it needs. Only the release workflow's

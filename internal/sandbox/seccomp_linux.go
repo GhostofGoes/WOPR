@@ -19,7 +19,8 @@ import (
 // screen and the debug log, waits, signals itself and starts threads. Nothing else. The filter
 // refuses what it never does again: run a program (execve, execveat and memfd_create,
 // which Landlock alone does not stop), start a process, open any socket (Landlock covers
-// TCP only, and not MPTCP, UDP or UNIX sockets), signal another process, push input
+// TCP only, and not MPTCP, UDP or UNIX sockets), change a file's mode, owner, attributes or
+// times (Landlock does not cover them), signal or reschedule another process, push input
 // into the terminal (TIOCSTI, TIOCLINUX), and the kernel interfaces that exploits use and
 // wopr never needs (io_uring, bpf, userfaultfd, keyrings, namespaces, mounts, modules).
 // A denied call fails with EPERM, so the program carries on: a library that tries something
@@ -38,40 +39,52 @@ type seccompArch struct {
 // host. Their numbers are checked against golang.org/x/sys/unix on their own architecture.
 var seccompArches = map[string]seccompArch{
 	"amd64": {audit: unix.AUDIT_ARCH_X86_64, x32: true, nr: map[string]uint32{
-		"_sysctl": 156, "acct": 163, "add_key": 248, "adjtimex": 159, "bpf": 321, "chroot": 161,
-		"clock_adjtime": 305, "clock_settime": 227, "clone": 56, "clone3": 435, "delete_module": 176,
-		"execve": 59, "execveat": 322, "finit_module": 313, "fork": 57, "fsconfig": 431, "fsmount": 432,
-		"fsopen": 430, "fspick": 433, "init_module": 175, "io_uring_enter": 426, "io_uring_register": 427,
-		"io_uring_setup": 425, "ioctl": 16, "ioperm": 173, "iopl": 172, "kcmp": 312, "kexec_file_load": 320,
-		"kexec_load": 246, "keyctl": 250, "kill": 62, "landlock_add_rule": 445,
-		"landlock_create_ruleset": 444, "landlock_restrict_self": 446, "lookup_dcookie": 212,
-		"memfd_create": 319, "memfd_secret": 447, "modify_ldt": 154, "mount": 165, "mount_setattr": 442,
-		"move_mount": 429, "name_to_handle_at": 303, "nfsservctl": 180, "open_by_handle_at": 304,
+		"_sysctl": 156, "acct": 163, "add_key": 248, "adjtimex": 159, "bpf": 321, "chmod": 90, "chown": 92,
+		"chroot": 161, "clock_adjtime": 305, "clock_settime": 227, "clone": 56, "clone3": 435,
+		"delete_module": 176, "execve": 59, "execveat": 322, "fchmod": 91, "fchmodat": 268, "fchmodat2": 452,
+		"fchown": 93, "fchownat": 260, "fcntl": 72, "file_setattr": 469, "finit_module": 313, "fork": 57,
+		"fremovexattr": 199, "fsconfig": 431, "fsetxattr": 190, "fsmount": 432, "fsopen": 430, "fspick": 433,
+		"futimesat": 261, "init_module": 175, "io_uring_enter": 426, "io_uring_register": 427,
+		"io_uring_setup": 425, "ioctl": 16, "ioperm": 173, "iopl": 172, "ioprio_set": 251, "kcmp": 312,
+		"kexec_file_load": 320, "kexec_load": 246, "keyctl": 250, "kill": 62, "landlock_add_rule": 445,
+		"landlock_create_ruleset": 444, "landlock_restrict_self": 446, "lchown": 94, "lookup_dcookie": 212,
+		"lremovexattr": 198, "lsetxattr": 189, "memfd_create": 319, "memfd_secret": 447,
+		"migrate_pages": 256, "modify_ldt": 154, "mount": 165, "mount_setattr": 442, "move_mount": 429,
+		"move_pages": 279, "name_to_handle_at": 303, "nfsservctl": 180, "open_by_handle_at": 304,
 		"open_tree": 428, "open_tree_attr": 467, "perf_event_open": 298, "personality": 135,
-		"pidfd_getfd": 438, "pidfd_send_signal": 424, "pivot_root": 155, "process_vm_readv": 310,
-		"process_vm_writev": 311, "ptrace": 101, "quotactl": 179, "quotactl_fd": 443, "reboot": 169,
-		"request_key": 249, "rt_sigqueueinfo": 129, "rt_tgsigqueueinfo": 297, "seccomp": 317,
-		"setdomainname": 171, "sethostname": 170, "setns": 308, "settimeofday": 164, "socket": 41,
-		"socketpair": 53, "swapoff": 168, "swapon": 167, "syslog": 103, "tgkill": 234, "tkill": 200,
-		"umount2": 166, "unshare": 272, "userfaultfd": 323, "uselib": 134, "vfork": 58, "vhangup": 153,
+		"pidfd_getfd": 438, "pidfd_send_signal": 424, "pivot_root": 155, "prlimit64": 302,
+		"process_madvise": 440, "process_mrelease": 448, "process_vm_readv": 310, "process_vm_writev": 311,
+		"ptrace": 101, "quotactl": 179, "quotactl_fd": 443, "reboot": 169, "removexattr": 197,
+		"removexattrat": 466, "request_key": 249, "rt_sigqueueinfo": 129, "rt_tgsigqueueinfo": 297,
+		"sched_setaffinity": 203, "sched_setattr": 314, "sched_setparam": 142, "sched_setscheduler": 144,
+		"seccomp": 317, "setdomainname": 171, "sethostname": 170, "setns": 308, "setpriority": 141,
+		"settimeofday": 164, "setxattr": 188, "setxattrat": 463, "socket": 41, "socketpair": 53,
+		"swapoff": 168, "swapon": 167, "syslog": 103, "tgkill": 234, "tkill": 200, "truncate": 76,
+		"umount2": 166, "unshare": 272, "uselib": 134, "userfaultfd": 323, "utime": 132, "utimensat": 280,
+		"utimes": 235, "vfork": 58, "vhangup": 153,
 	}},
 	"arm64": {audit: unix.AUDIT_ARCH_AARCH64, nr: map[string]uint32{
 		"acct": 89, "add_key": 217, "adjtimex": 171, "bpf": 280, "chroot": 51, "clock_adjtime": 266,
 		"clock_settime": 112, "clone": 220, "clone3": 435, "delete_module": 106, "execve": 221,
-		"execveat": 281, "finit_module": 273, "fsconfig": 431, "fsmount": 432, "fsopen": 430,
-		"fspick": 433, "init_module": 105, "io_uring_enter": 426, "io_uring_register": 427,
-		"io_uring_setup": 425, "ioctl": 29, "kcmp": 272, "kexec_file_load": 294, "kexec_load": 104,
-		"keyctl": 219, "kill": 129, "landlock_add_rule": 445, "landlock_create_ruleset": 444,
-		"landlock_restrict_self": 446, "lookup_dcookie": 18, "memfd_create": 279, "memfd_secret": 447,
-		"mount": 40, "mount_setattr": 442, "move_mount": 429, "name_to_handle_at": 264,
-		"nfsservctl": 42, "open_by_handle_at": 265, "open_tree": 428, "open_tree_attr": 467,
-		"perf_event_open": 241, "personality": 92, "pidfd_getfd": 438, "pidfd_send_signal": 424,
-		"pivot_root": 41, "process_vm_readv": 270, "process_vm_writev": 271, "ptrace": 117,
-		"quotactl": 60, "quotactl_fd": 443, "reboot": 142, "request_key": 218, "rt_sigqueueinfo": 138,
-		"rt_tgsigqueueinfo": 240, "seccomp": 277, "setdomainname": 162, "sethostname": 161,
-		"setns": 268, "settimeofday": 170, "socket": 198, "socketpair": 199, "swapoff": 225,
-		"swapon": 224, "syslog": 116, "tgkill": 131, "tkill": 130, "umount2": 39, "unshare": 97,
-		"userfaultfd": 282, "vhangup": 58,
+		"execveat": 281, "fchmod": 52, "fchmodat": 53, "fchmodat2": 452, "fchown": 55, "fchownat": 54,
+		"fcntl": 25, "file_setattr": 469, "finit_module": 273, "fremovexattr": 16, "fsconfig": 431,
+		"fsetxattr": 7, "fsmount": 432, "fsopen": 430, "fspick": 433, "init_module": 105,
+		"io_uring_enter": 426, "io_uring_register": 427, "io_uring_setup": 425, "ioctl": 29,
+		"ioprio_set": 30, "kcmp": 272, "kexec_file_load": 294, "kexec_load": 104, "keyctl": 219, "kill": 129,
+		"landlock_add_rule": 445, "landlock_create_ruleset": 444, "landlock_restrict_self": 446,
+		"lookup_dcookie": 18, "lremovexattr": 15, "lsetxattr": 6, "memfd_create": 279, "memfd_secret": 447,
+		"migrate_pages": 238, "mount": 40, "mount_setattr": 442, "move_mount": 429, "move_pages": 239,
+		"name_to_handle_at": 264, "nfsservctl": 42, "open_by_handle_at": 265, "open_tree": 428,
+		"open_tree_attr": 467, "perf_event_open": 241, "personality": 92, "pidfd_getfd": 438,
+		"pidfd_send_signal": 424, "pivot_root": 41, "prlimit64": 261, "process_madvise": 440,
+		"process_mrelease": 448, "process_vm_readv": 270, "process_vm_writev": 271, "ptrace": 117,
+		"quotactl": 60, "quotactl_fd": 443, "reboot": 142, "removexattr": 14, "removexattrat": 466,
+		"request_key": 218, "rt_sigqueueinfo": 138, "rt_tgsigqueueinfo": 240, "sched_setaffinity": 122,
+		"sched_setattr": 274, "sched_setparam": 118, "sched_setscheduler": 119, "seccomp": 277,
+		"setdomainname": 162, "sethostname": 161, "setns": 268, "setpriority": 140, "settimeofday": 170,
+		"setxattr": 5, "setxattrat": 463, "socket": 198, "socketpair": 199, "swapoff": 225, "swapon": 224,
+		"syslog": 116, "tgkill": 131, "tkill": 130, "truncate": 45, "umount2": 39, "unshare": 97,
+		"userfaultfd": 282, "utimensat": 88, "vhangup": 58,
 	}},
 }
 
@@ -82,8 +95,19 @@ var denied = []string{
 	"execve", "execveat", "memfd_create", "memfd_secret", "fork", "vfork",
 	// sockets of every family
 	"socket", "socketpair",
+	// file metadata, which Landlock does not cover: a mode, an owner, extended attributes, times.
+	// Run as root, wopr owns every root-owned file, and setting a mode needs only ownership.
+	"chmod", "fchmod", "fchmodat", "fchmodat2", "chown", "fchown", "lchown", "fchownat",
+	"setxattr", "lsetxattr", "fsetxattr", "setxattrat", "removexattr", "lremovexattr", "fremovexattr",
+	"removexattrat", "file_setattr", "utime", "utimes", "futimesat", "utimensat",
+	"truncate", // Landlock covers it from ABI 3 only
 	// other processes: their memory, their files and their signals (kill and tgkill below)
 	"ptrace", "process_vm_readv", "process_vm_writev", "pidfd_getfd", "pidfd_send_signal", "kcmp", "tkill",
+	"process_madvise", "process_mrelease",
+	// other processes' scheduling and memory placement, which the kernel allows for the same user
+	// (prlimit64 below)
+	"sched_setaffinity", "sched_setscheduler", "sched_setparam", "sched_setattr", "setpriority",
+	"ioprio_set", "migrate_pages", "move_pages",
 	// kernel interfaces that wopr never uses
 	"bpf", "perf_event_open", "userfaultfd", "io_uring_setup", "io_uring_enter", "io_uring_register",
 	"keyctl", "add_key", "request_key", "personality", "uselib", "iopl", "ioperm", "modify_ldt", "_sysctl",
@@ -112,6 +136,8 @@ const (
 
 	cloneNewAny = unix.CLONE_NEWNS | unix.CLONE_NEWUTS | unix.CLONE_NEWIPC | unix.CLONE_NEWUSER |
 		unix.CLONE_NEWPID | unix.CLONE_NEWNET | unix.CLONE_NEWCGROUP | unix.CLONE_NEWTIME
+
+	fioSetOwn = 0x8901 // FIOSETOWN (asm-generic/sockios.h), which golang.org/x/sys/unix lacks
 
 	retAllow = unix.SECCOMP_RET_ALLOW
 	retKill  = unix.SECCOMP_RET_KILL_PROCESS
@@ -158,7 +184,9 @@ func seccompProgram(arch seccompArch, pid uint32, deny syscall.Errno) ([]unix.So
 		jump(jeq, nr["ioctl"], "ioctl", ""),
 		jump(jeq, nr["clone"], "clone", ""),
 		jump(jeq, nr["clone3"], "nosys", ""),
+		jump(jeq, nr["fcntl"], "fcntl", ""),
 		jump(jeq, nr["kill"], "kill-pid", ""),
+		jump(jeq, nr["prlimit64"], "pid-or-self", ""),
 		jump(jeq, nr["tgkill"], "own-pid", ""),
 		jump(jeq, nr["rt_sigqueueinfo"], "own-pid", ""),
 		jump(jeq, nr["rt_tgsigqueueinfo"], "own-pid", ""),
@@ -170,17 +198,32 @@ func seccompProgram(arch seccompArch, pid uint32, deny syscall.Errno) ([]unix.So
 	}
 	p = append(p,
 		stmt(ret, retAllow),
-		// ioctl: everything but pushing input into a terminal.
+		// ioctl: everything but pushing input into a terminal, and naming a process for SIGIO.
 		labelled("ioctl", stmt(ldAbs, offArg1)),
 		jump(jeq, unix.TIOCSTI, "deny", ""),
-		jump(jeq, unix.TIOCLINUX, "deny", "allow"),
+		jump(jeq, unix.TIOCLINUX, "deny", ""),
+		jump(jeq, fioSetOwn, "deny", ""),
+		jump(jeq, unix.SIOCSPGRP, "deny", "allow"),
+		// fcntl: everything but naming a process, and a signal, for SIGIO. The kernel would send
+		// that signal to any process of the same user whenever the file became ready.
+		labelled("fcntl", stmt(ldAbs, offArg1)),
+		jump(jeq, unix.F_SETOWN, "deny", ""),
+		jump(jeq, unix.F_SETOWN_EX, "deny", ""),
+		jump(jeq, unix.F_SETSIG, "deny", "allow"),
 		// clone: new threads only (the runtime's flags always include CLONE_THREAD), and no
 		// namespaces. A process (fork) fails with deny.
 		labelled("clone", stmt(ldAbs, offArg0)),
 		jump(jset, unix.CLONE_THREAD, "", "deny"),
 		jump(jset, cloneNewAny, "deny", "allow"),
-		// kill: only the process itself (0 is its process group, for Ctrl+Z's SIGTSTP).
+		// kill: any signal to the process itself. Its process group (pid 0) gets only Ctrl+Z's
+		// SIGTSTP, or signal 0, which sends nothing.
 		labelled("kill-pid", stmt(ldAbs, offArg0)),
+		jump(jeq, 0, "", "own-pid"),
+		stmt(ldAbs, offArg1),
+		jump(jeq, uint32(unix.SIGTSTP), "allow", ""),
+		jump(jeq, 0, "allow", "deny"),
+		// prlimit64: the process itself, as 0 or by its pid.
+		labelled("pid-or-self", stmt(ldAbs, offArg0)),
 		jump(jeq, 0, "allow", ""),
 		// tgkill and the sigqueue calls: only threads of this process.
 		labelled("own-pid", stmt(ldAbs, offArg0)),

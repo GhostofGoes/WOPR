@@ -30,6 +30,8 @@ func checkThreads(t *testing.T, pid int, when string) int {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// wopr inherits the test's own filters (a container's, say), and adds one.
+	base := filterCount(t, "/proc/self/status")
 	n := 0
 	for _, e := range entries {
 		data, err := os.ReadFile(filepath.Join(dir, e.Name(), "status"))
@@ -43,9 +45,9 @@ func checkThreads(t *testing.T, pid int, when string) int {
 		}
 		// snapd puts its own filters on a snap before wopr starts, and wopr's goes on top of them.
 		filters, _ := strconv.Atoi(st["Seccomp_filters"])
-		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || filters != 1 && !snapped() || filters < 2 && snapped() {
-			t.Errorf("%s, thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2 and 1 (2 or more in a snap)",
-				when, e.Name(), st["NoNewPrivs"], st["Seccomp"], st["Seccomp_filters"])
+		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || filters != base+1 && !snapped() || filters < base+2 && snapped() {
+			t.Errorf("%s, thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2 and %d (%d or more in a snap)",
+				when, e.Name(), st["NoNewPrivs"], st["Seccomp"], st["Seccomp_filters"], base+1, base+2)
 		}
 		for _, c := range []string{"CapEff", "CapPrm", "CapInh", "CapAmb"} {
 			if strings.Trim(st[c], "0") != "" {
@@ -54,6 +56,22 @@ func checkThreads(t *testing.T, pid int, when string) int {
 		}
 	}
 	return n
+}
+
+// filterCount reads the number of seccomp filters from a status file.
+func filterCount(t *testing.T, status string) int {
+	t.Helper()
+	data, err := os.ReadFile(status)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range statusField.FindAllStringSubmatch(string(data), -1) {
+		if m[1] == "Seccomp_filters" {
+			n, _ := strconv.Atoi(m[2])
+			return n
+		}
+	}
+	return 0
 }
 
 // The release build (no cgo) sandboxes every thread, those started after the lockdown too,

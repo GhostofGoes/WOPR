@@ -85,8 +85,9 @@ func TestColours(t *testing.T) {
 }
 
 // suspend presses Ctrl+Z, waits for wopr to give the terminal back, and continues it, as a
-// shell's fg does. wopr leads its own session here, so the kernel may discard the stop, but
-// wopr still waits for SIGCONT.
+// shell's fg does. wopr leads its own session here, so the kernel discards the stop, but
+// wopr still waits for SIGCONT. This tests the way back only: the sandbox package's process
+// test checks that the stop itself, kill(0, SIGTSTP), still reaches the process group.
 func suspend(t *testing.T, s *session) {
 	t.Helper()
 	left := strings.Count(s.output(), "\x1b[?1049l")

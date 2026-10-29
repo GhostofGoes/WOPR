@@ -166,6 +166,22 @@ func TestSeccompProgram(t *testing.T) {
 			check("ioctl TIOCSTI", call("ioctl", 0, unix.TIOCSTI), deny)
 			check("ioctl TIOCSTI, high bits set", call("ioctl", 0, 1<<32|unix.TIOCSTI), deny)
 			check("ioctl TIOCLINUX", call("ioctl", 0, unix.TIOCLINUX), deny)
+			check("ioctl TIOCGPGRP", call("ioctl", 0, unix.TIOCGPGRP), retAllow)
+			check("ioctl FIOSETOWN", call("ioctl", 3, fioSetOwn), deny)
+			check("ioctl SIOCSPGRP", call("ioctl", 3, unix.SIOCSPGRP), deny)
+
+			check("fcntl F_GETFL", call("fcntl", 0, unix.F_GETFL), retAllow)
+			check("fcntl F_SETFL", call("fcntl", 0, unix.F_SETFL, unix.O_NONBLOCK), retAllow)
+			check("fcntl F_DUPFD_CLOEXEC", call("fcntl", 0, unix.F_DUPFD_CLOEXEC), retAllow)
+			check("fcntl F_GETOWN", call("fcntl", 0, unix.F_GETOWN), retAllow)
+			check("fcntl F_SETOWN", call("fcntl", 0, unix.F_SETOWN, 1), deny)
+			check("fcntl F_SETOWN_EX", call("fcntl", 0, unix.F_SETOWN_EX), deny)
+			check("fcntl F_SETSIG", call("fcntl", 0, unix.F_SETSIG, uint64(unix.SIGKILL)), deny)
+			check("fcntl F_SETOWN, high bits set", call("fcntl", 0, 1<<32|unix.F_SETOWN, 1), deny)
+
+			check("prlimit64 self (0)", call("prlimit64", 0, unix.RLIMIT_NOFILE), retAllow)
+			check("prlimit64 self (pid)", call("prlimit64", testPid, unix.RLIMIT_NOFILE), retAllow)
+			check("prlimit64 another process", call("prlimit64", 1, unix.RLIMIT_NOFILE), deny)
 
 			check("clone a thread", call("clone", runtimeClone|unix.CLONE_SETTLS), retAllow)
 			check("clone a process (fork)", call("clone", uint64(unix.SIGCHLD)), deny)
@@ -177,7 +193,11 @@ func TestSeccompProgram(t *testing.T) {
 			check("clone3", call("clone3"), retNosys)
 
 			check("kill self", call("kill", testPid, 0), retAllow)
-			check("kill the process group", call("kill", 0, uint64(unix.SIGTSTP)), retAllow)
+			check("kill the process group (SIGTSTP)", call("kill", 0, uint64(unix.SIGTSTP)), retAllow)
+			check("kill the process group (signal 0)", call("kill", 0, 0), retAllow)
+			check("kill the process group (SIGKILL)", call("kill", 0, uint64(unix.SIGKILL)), deny)
+			check("kill the process group (SIGCONT)", call("kill", 0, uint64(unix.SIGCONT)), deny)
+			check("kill self (SIGKILL)", call("kill", testPid, uint64(unix.SIGKILL)), retAllow)
 			check("kill another process", call("kill", 1, uint64(unix.SIGKILL)), deny)
 			check("kill every process", call("kill", 0xffffffff, uint64(unix.SIGKILL)), deny)
 			check("kill another process group", call("kill", uint64(0xffffffff-testPid+1), uint64(unix.SIGKILL)), deny)
@@ -272,15 +292,13 @@ func TestSeccompOnOneThread(t *testing.T) {
 	if got.install != nil {
 		skipOrFail(t, fmt.Sprintf("seccomp is not available: %v", got.install))
 	}
-	if got.before != 0 || got.after != 2 {
-		t.Errorf("PR_GET_SECCOMP %d before, %d after; want 0 and 2", got.before, got.after)
+	// A container's runtime can have put a filter on the test before it started, so the
+	// mode before is 0 or 2.
+	if got.after != 2 {
+		t.Errorf("PR_GET_SECCOMP %d before, %d after; want 2 after", got.before, got.after)
 	}
 	for name, o := range got.refused {
-		want := "EHWPOISON"
-		if name == "clone3" {
-			want = "ENOSYS"
-		}
-		if o != want {
+		if want := filterErrno(name, "EHWPOISON"); o != want {
 			t.Errorf("%s: %s, want %s from the filter", name, o, want)
 		}
 	}
@@ -289,9 +307,17 @@ func TestSeccompOnOneThread(t *testing.T) {
 			t.Errorf("%s: %s, want it allowed", name, o)
 		}
 	}
-	if s, _ := unix.PrctlRetInt(unix.PR_GET_SECCOMP, 0, 0, 0, 0); s != 0 {
-		t.Errorf("the test's own thread has seccomp %d: the filter leaked", s)
+	if s, _ := unix.PrctlRetInt(unix.PR_GET_SECCOMP, 0, 0, 0, 0); s != got.before {
+		t.Errorf("the test's own thread has seccomp %d, %d before: the filter leaked", s, got.before)
 	}
+}
+
+// filterErrno is what the filter answers a filter probe with, when it refuses with deny.
+func filterErrno(probe, deny string) string {
+	if probe == "clone3" {
+		return "ENOSYS"
+	}
+	return deny
 }
 
 // TestSeccompNumbers checks the host architecture's table and the must-allow list against

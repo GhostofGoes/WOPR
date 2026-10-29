@@ -34,7 +34,7 @@ type fixture struct {
 }
 
 // files the fixture holds, one per probe that changes a file.
-var fixtureFiles = []string{"before", "remove", "rename", "truncate"}
+var fixtureFiles = []string{"before", "remove", "rename", "meta"}
 
 func (f fixture) path(name string) string { return filepath.Join(f.Dir, name) }
 
@@ -94,8 +94,8 @@ func inet4(hostport string) unix.Sockaddr {
 	return sa
 }
 
-// fileProbes are refused by Landlock (EACCES). abi gates the rights a kernel lacks.
-func fileProbes(f fixture, abi int) map[string]func() error {
+// fileProbes are refused by Landlock (EACCES).
+func fileProbes(f fixture) map[string]func() error {
 	p := map[string]func() error{
 		"read a file":     func() error { _, err := os.ReadFile(f.path("before")); return err },
 		"list a folder":   func() error { _, err := os.ReadDir(f.Dir); return err },
@@ -120,10 +120,7 @@ func fileProbes(f fixture, abi int) map[string]func() error {
 			return err
 		},
 	}
-	if abi >= 3 {
-		p["truncate a file"] = func() error { return os.Truncate(f.path("truncate"), 0) }
-	}
-	return p
+	return p // truncate is in metaProbes: the filter refuses it before Landlock sees it
 }
 
 // tcpProbes are refused by Landlock (ABI 4) and, earlier, by the seccomp filter's socket rule.
@@ -205,6 +202,20 @@ func keptProbes(f fixture) map[string]func() error {
 			return unix.Kill(0, 0) // Ctrl+Z's SIGTSTP goes to the group
 		},
 		"signal this thread": func() error { return unix.Tgkill(unix.Getpid(), unix.Gettid(), 0) },
+		"read its own limits": func() error {
+			var r unix.Rlimit
+			if err := unix.Prlimit(0, unix.RLIMIT_NOFILE, nil, &r); err != nil {
+				return err
+			}
+			return unix.Prlimit(unix.Getpid(), unix.RLIMIT_NOFILE, nil, &r)
+		},
+		"set a file's flags": func() error {
+			fl, err := unix.FcntlInt(f.kept.Fd(), unix.F_GETFL, 0)
+			if err == nil {
+				_, err = unix.FcntlInt(f.kept.Fd(), unix.F_SETFL, fl)
+			}
+			return err
+		},
 		"read no_new_privs": func() error {
 			if v, err := unix.PrctlRetInt(unix.PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0); err != nil || v != 1 {
 				return errors.Join(err, errors.New("no_new_privs is not set"))
@@ -263,8 +274,50 @@ func filterProbes(f fixture) map[string]func() error {
 			return ioctlProbe(f, 1<<32|unix.TIOCSTI) // the kernel ignores the high bits
 		},
 		"select on a console": func() error { return ioctlProbe(f, unix.TIOCLINUX) }, // ENOTTY on a pty
+		"name a process for SIGIO (ioctl)": func() error {
+			return raw(unix.SYS_IOCTL, ^uintptr(0), fioSetOwn, 0) // EBADF
+		},
+		"remove extended attributes": func() error { return raw(unix.SYS_FREMOVEXATTR, ^uintptr(0), 0) },             // EBADF
+		"set another's scheduler":    func() error { return raw(unix.SYS_SCHED_SETSCHEDULER, nobody, 0, 0) },         // ESRCH or EFAULT
+		"set another's priority":     func() error { return unix.Setpriority(unix.PRIO_PROCESS, nobody, 0) },         // ESRCH
+		"set another's I/O priority": func() error { return raw(unix.SYS_IOPRIO_SET, 1, nobody, 0) },                 // ESRCH
+		"move another's memory":      func() error { return raw(unix.SYS_MIGRATE_PAGES, nobody, 0, 0, 0) },           // ESRCH or EINVAL
+		"advise another's memory":    func() error { return raw(unix.SYS_PROCESS_MADVISE, ^uintptr(0), 0, 0, 0, 0) }, // EBADF
+		"set another's CPUs": func() error {
+			var set unix.CPUSet
+			set.Set(0)
+			return unix.SchedSetaffinity(nobody, &set) // ESRCH
+		},
+	}
+	for name, probe := range metaProbes(f) {
+		p[name] = probe
 	}
 	return p
+}
+
+// metaProbes are what the kernel allows the owner of a file or a process, and what the filter
+// refuses. Each one succeeds without the filter, and does no harm if it does: it sets the
+// fixture's own file to what it was, reads a limit, or wakes a process group that is running.
+// Landlock covers none of them, except truncate from ABI 3.
+func metaProbes(f fixture) map[string]func() error {
+	meta := f.path("meta")
+	fd := func() int { return int(f.kept.Fd()) }
+	return map[string]func() error{
+		"set a file's mode":           func() error { return unix.Fchmodat(unix.AT_FDCWD, meta, 0o600, 0) },
+		"set an open file's mode":     func() error { return unix.Fchmod(fd(), 0o600) },
+		"set a file's owner":          func() error { return unix.Fchownat(unix.AT_FDCWD, meta, -1, -1, 0) },
+		"set an open file's owner":    func() error { return unix.Fchown(fd(), -1, -1) },
+		"set an extended attribute":   func() error { return unix.Setxattr(meta, "user.wopr", []byte("x"), 0) },
+		"set a file's times":          func() error { return unix.UtimesNanoAt(unix.AT_FDCWD, meta, nil, 0) },
+		"truncate a file by name":     func() error { return unix.Truncate(meta, 1) },
+		"name a process for SIGIO":    func() error { _, err := unix.FcntlInt(uintptr(fd()), unix.F_SETOWN, unix.Getpid()); return err },
+		"choose the signal for SIGIO": func() error { _, err := unix.FcntlInt(uintptr(fd()), unix.F_SETSIG, 0); return err },
+		"read another's limits": func() error {
+			var r unix.Rlimit
+			return unix.Prlimit(os.Getppid(), unix.RLIMIT_NOFILE, nil, &r)
+		},
+		"signal the process group (SIGCONT)": func() error { return unix.Kill(0, unix.SIGCONT) },
+	}
 }
 
 func ioctlProbe(f fixture, req uint64) error {

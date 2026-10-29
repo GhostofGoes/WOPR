@@ -47,6 +47,7 @@ type childReport struct {
 	Zone       string
 	Threads    []threadReport
 	Signal     string // a SIGWINCH sent to the process itself, received through signal.Notify
+	GroupStop  string // Ctrl+Z's kill(0, SIGTSTP) to its own process group, caught the same way
 	Runtime    string // GC, freeing memory, timers and goroutines after the lockdown
 	Kept       map[string]string
 	TasksPre   []int // the threads that existed before Restrict
@@ -62,6 +63,7 @@ type threadReport struct {
 	TCP            map[string]string
 	Abstract, Proc string
 	Kept           map[string]string
+	Filter         map[string]string // filterProbes: refused with EPERM on every thread
 	RuntimeLocked  bool
 }
 
@@ -87,8 +89,9 @@ func TestRestrictProcessChild(t *testing.T) {
 	hdr := unix.CapUserHeader{Version: unix.LINUX_CAPABILITY_VERSION_3}
 	var caps [2]unix.CapUserData
 	rep.CapsBefore = unix.Capget(&hdr, &caps[0]) == nil && caps != noCaps
-	winch := make(chan os.Signal, 1)
+	winch, tstp := make(chan os.Signal, 1), make(chan os.Signal, 1)
 	signal.Notify(winch, syscall.SIGWINCH)
+	signal.Notify(tstp, syscall.SIGTSTP) // caught, so it does not stop the child
 
 	rep.Log = Restrict()
 
@@ -100,7 +103,7 @@ func TestRestrictProcessChild(t *testing.T) {
 	var mu sync.Mutex
 	hold := make(chan struct{})
 	probe := func(locked bool) {
-		r := probeThread(f, rep.ABI)
+		r := probeThread(f)
 		r.RuntimeLocked = locked
 		mu.Lock()
 		rep.Threads = append(rep.Threads, r)
@@ -119,16 +122,8 @@ func TestRestrictProcessChild(t *testing.T) {
 	}
 	wg.Wait()
 
-	if err := unix.Kill(unix.Getpid(), unix.SIGWINCH); err != nil {
-		rep.Signal = outcome(err)
-	} else {
-		select {
-		case <-winch:
-			rep.Signal = "ok"
-		case <-time.After(5 * time.Second):
-			rep.Signal = "not received"
-		}
-	}
+	rep.Signal = sendAndCatch(unix.Getpid(), unix.SIGWINCH, winch)
+	rep.GroupStop = sendAndCatch(0, unix.SIGTSTP, tstp) // the child has a process group of its own
 	rep.Runtime = exerciseRuntime()
 	rep.ExecProbe = "not tried"
 	if len(rep.Threads) > 0 && refused(rep.Threads[0].Sockets["open a UDP socket"]) {
@@ -144,19 +139,33 @@ func TestRestrictProcessChild(t *testing.T) {
 	syscall.Exit(0)
 }
 
-func probeThread(f fixture, abi int) threadReport {
+// sendAndCatch sends sig with kill(pid, sig) and waits for it on c.
+func sendAndCatch(pid int, sig syscall.Signal, c chan os.Signal) string {
+	if err := unix.Kill(pid, sig); err != nil {
+		return outcome(err)
+	}
+	select {
+	case <-c:
+		return "ok"
+	case <-time.After(5 * time.Second):
+		return "not received"
+	}
+}
+
+func probeThread(f fixture) threadReport {
 	r := threadReport{Tid: unix.Gettid()}
 	r.NoNewPrivs, _ = unix.PrctlRetInt(unix.PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0)
 	r.Seccomp, _ = unix.PrctlRetInt(unix.PR_GET_SECCOMP, 0, 0, 0, 0)
 	hdr := unix.CapUserHeader{Version: unix.LINUX_CAPABILITY_VERSION_3}
 	var caps [2]unix.CapUserData
 	r.CapsZero = unix.Capget(&hdr, &caps[0]) == nil && caps == noCaps
-	files := fileProbes(f, abi)
+	files := fileProbes(f)
 	r.Files = run(map[string]func() error{"read a file": files["read a file"], "create a file": files["create a file"], "list a folder": files["list a folder"]})
 	r.TCP = run(tcpProbes(f))
 	r.Sockets = run(socketProbes(f))
 	r.Abstract = outcome(abstractProbe(f))
 	r.Proc = outcome(func() error { _, err := os.ReadFile("/proc/self/status"); return err }())
+	r.Filter = run(filterProbes(f))
 	r.Kept = run(map[string]func() error{"write a file opened before": keptProbes(f)["write a file opened before"], "signal this thread": keptProbes(f)["signal this thread"]})
 	return r
 }
@@ -350,8 +359,8 @@ func checkReport(t *testing.T, rep childReport, abi int) {
 	if rep.Zone != "EDT" && rep.Zone != "EST" {
 		t.Errorf("time zone %q: /etc/localtime was not loaded before the lockdown", rep.Zone)
 	}
-	if rep.Signal != "ok" || rep.Runtime != "ok" {
-		t.Errorf("after the lockdown: signal %s, runtime %s", rep.Signal, rep.Runtime)
+	if rep.Signal != "ok" || rep.GroupStop != "ok" || rep.Runtime != "ok" {
+		t.Errorf("after the lockdown: signal %s, Ctrl+Z's stop %s, runtime %s", rep.Signal, rep.GroupStop, rep.Runtime)
 	}
 	if rep.ExecProbe != "EPERM" {
 		t.Errorf("exec after the lockdown: %s, want EPERM", rep.ExecProbe)
@@ -387,6 +396,14 @@ func checkReport(t *testing.T, rep childReport, abi int) {
 				t.Errorf("%s: %s: %s", where, name, o)
 			}
 		}
+		for name, o := range th.Filter {
+			if want := filterErrno(name, "EPERM"); o != want {
+				t.Errorf("%s: %s: %s, want %s", where, name, o, want)
+			}
+		}
+		if len(th.Filter) < 30 {
+			t.Errorf("%s: only %d filter probes ran", where, len(th.Filter))
+		}
 		if cgo {
 			continue
 		}
@@ -419,10 +436,12 @@ func checkStatuses(t *testing.T, statuses map[string]map[string]string, rep chil
 	if len(statuses) < newThreads+1 {
 		t.Errorf("the child has %d threads, want at least %d", len(statuses), newThreads+1)
 	}
+	// The child inherits this process's filters (a container's, say), and adds its own.
+	want := strconv.Itoa(ownFilters(t) + 1)
 	for tid, st := range statuses {
-		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || st["Seccomp_filters"] != "1" {
-			t.Errorf("thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2, 1",
-				tid, st["NoNewPrivs"], st["Seccomp"], st["Seccomp_filters"])
+		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || st["Seccomp_filters"] != want {
+			t.Errorf("thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2, %s",
+				tid, st["NoNewPrivs"], st["Seccomp"], st["Seccomp_filters"], want)
 		}
 		if cgo {
 			continue
@@ -433,4 +452,23 @@ func checkStatuses(t *testing.T, statuses map[string]map[string]string, rep chil
 			}
 		}
 	}
+}
+
+// ownFilters is the number of seccomp filters on this process.
+func ownFilters(t *testing.T) int {
+	t.Helper()
+	data, err := os.ReadFile("/proc/self/status")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, m := range statusField.FindAllStringSubmatch(string(data), -1) {
+		if m[1] == "Seccomp_filters" {
+			n, err := strconv.Atoi(m[2])
+			if err != nil {
+				t.Fatal(err)
+			}
+			return n
+		}
+	}
+	return 0 // a kernel before 5.9 does not show the count
 }

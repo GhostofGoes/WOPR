@@ -124,7 +124,7 @@ func TestRestrict(t *testing.T) {
 	f := newFixture(t)
 	r := oneThread(thread, func(log string) oneThreadResult {
 		r := oneThreadResult{log: log}
-		r.files = run(fileProbes(f, abi))
+		r.files = run(fileProbes(f))
 		r.tcp = run(tcpProbes(f))
 		r.sockets = run(socketProbes(f))
 		r.kept = run(keptProbes(f))
@@ -218,7 +218,7 @@ func TestRestrictCgoBuild(t *testing.T) {
 	}
 	r := oneThread(calls{all: notSupported, deny: syscall.EPERM}, func(log string) result {
 		r := result{log: log}
-		r.read = run(fileProbes(f, 1))["read a file"]
+		r.read = run(fileProbes(f))["read a file"]
 		r.socket = run(socketProbes(f))["open a UDP socket"]
 		r.nnp, _ = unix.PrctlRetInt(unix.PR_GET_NO_NEW_PRIVS, 0, 0, 0, 0)
 		r.seccomp, _ = unix.PrctlRetInt(unix.PR_GET_SECCOMP, 0, 0, 0, 0)
@@ -272,7 +272,7 @@ func TestRestrictNoLandlock(t *testing.T) {
 	}
 	type result struct{ log, read, socket string }
 	r := oneThread(calls{all: noLandlock, deny: syscall.EPERM}, func(log string) result {
-		return result{log, run(fileProbes(f, 1))["read a file"], run(socketProbes(f))["open a UDP socket"]}
+		return result{log, run(fileProbes(f))["read a file"], run(socketProbes(f))["open a UDP socket"]}
 	})
 	if !strings.Contains(r.log, ", no landlock (operation not supported), seccomp") {
 		t.Errorf("restrict = %q", r.log)

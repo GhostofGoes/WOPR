@@ -204,8 +204,8 @@ jobs:
           go test -c -o "$RUNNER_TEMP/sandbox.test" ./internal/sandbox
           go test -c -tags e2e -o "$RUNNER_TEMP/e2e.test" ./internal/e2e
           go build -o "$RUNNER_TEMP/wopr" ./cmd/wopr
-          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/sandbox.test" -test.count=1 -test.v
-          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/e2e.test" -test.count=1 -test.v -binary "$RUNNER_TEMP/wopr"
+          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/sandbox.test" -test.count=1 -test.v -test.timeout=5m
+          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/e2e.test" -test.count=1 -test.v -test.timeout=5m -binary "$RUNNER_TEMP/wopr"
 
   build:
     name: build

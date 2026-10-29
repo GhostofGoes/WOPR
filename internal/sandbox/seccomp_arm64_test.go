@@ -38,6 +38,18 @@ var hostNumbers = map[string]uintptr{
 	"socketpair": unix.SYS_SOCKETPAIR, "swapoff": unix.SYS_SWAPOFF, "swapon": unix.SYS_SWAPON,
 	"syslog": unix.SYS_SYSLOG, "tgkill": unix.SYS_TGKILL, "tkill": unix.SYS_TKILL, "umount2": unix.SYS_UMOUNT2,
 	"unshare": unix.SYS_UNSHARE, "userfaultfd": unix.SYS_USERFAULTFD, "vhangup": unix.SYS_VHANGUP,
+	"fchmod": unix.SYS_FCHMOD, "fchmodat": unix.SYS_FCHMODAT, "fchmodat2": unix.SYS_FCHMODAT2,
+	"fchown": unix.SYS_FCHOWN, "fchownat": unix.SYS_FCHOWNAT, "fcntl": unix.SYS_FCNTL,
+	"file_setattr": unix.SYS_FILE_SETATTR, "fremovexattr": unix.SYS_FREMOVEXATTR,
+	"fsetxattr": unix.SYS_FSETXATTR, "ioprio_set": unix.SYS_IOPRIO_SET, "lremovexattr": unix.SYS_LREMOVEXATTR,
+	"lsetxattr": unix.SYS_LSETXATTR, "migrate_pages": unix.SYS_MIGRATE_PAGES, "move_pages": unix.SYS_MOVE_PAGES,
+	"prlimit64": unix.SYS_PRLIMIT64, "process_madvise": unix.SYS_PROCESS_MADVISE,
+	"process_mrelease": unix.SYS_PROCESS_MRELEASE, "removexattr": unix.SYS_REMOVEXATTR,
+	"removexattrat": unix.SYS_REMOVEXATTRAT, "sched_setaffinity": unix.SYS_SCHED_SETAFFINITY,
+	"sched_setattr": unix.SYS_SCHED_SETATTR, "sched_setparam": unix.SYS_SCHED_SETPARAM,
+	"sched_setscheduler": unix.SYS_SCHED_SETSCHEDULER, "setpriority": unix.SYS_SETPRIORITY,
+	"setxattr": unix.SYS_SETXATTR, "setxattrat": unix.SYS_SETXATTRAT, "truncate": unix.SYS_TRUNCATE,
+	"utimensat": unix.SYS_UTIMENSAT,
 }
 
 var hostAllowNumbers = map[string]uintptr{
