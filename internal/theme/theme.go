@@ -77,7 +77,7 @@ func mono(name string, text, bright, dim, accent, bg Color) *Theme {
 	set(strong, proto.StyleBright, proto.StyleLabel, proto.StyleIncoming, proto.StyleAlert, proto.StyleSuitRed,
 		proto.StyleDefcon3)
 	t.Styles[proto.StyleDefcon2] = Spec{FG: bright, Attr: proto.AttrBold | proto.AttrUnderline}
-	set(faint, proto.StyleDim, proto.StyleLand)
+	set(faint, proto.StyleDim, proto.StyleLand, proto.StyleLandUS, proto.StyleLandUSSR)
 	t.Styles[proto.StyleAccent] = Spec{FG: accent, Attr: proto.AttrBold}
 	t.Styles[proto.StyleTarget] = Spec{FG: bright, Attr: proto.AttrBold | proto.AttrUnderline}
 	t.Styles[proto.StyleDefcon1] = Spec{FG: bright, Attr: proto.AttrBold | proto.AttrReverse}
@@ -85,17 +85,24 @@ func mono(name string, text, bright, dim, accent, bg Color) *Theme {
 	return t
 }
 
-// norad is the war-room big-board theme.
+// norad is the war-room big-board theme, in the colours of the film's NORAD screens
+// (docs/PLAN.md §2.4): the United States' land blue, the Soviet Union's red and every other
+// country's green, on a near-black field, and both sides' missile tracks pale, as the film
+// draws them, ice blue outgoing and white incoming.
 func norad() *Theme {
 	var (
-		text   = Color{"#5AC8FA", 14}
-		bright = Color{"#FFFFFF", 15}
-		dim    = Color{"#4A86D6", 6} // index 4 (blue) is under 2.3:1 on black in xterm and VGA palettes
-		yellow = Color{"#FFD60A", 11}
-		red    = Color{"#FF3B30", 9}
-		blue   = Color{"#3A7BFF", 12}
-		green  = Color{"#34C759", 10}
-		redBG  = Color{"#C0001A", 1}
+		text    = Color{"#5AC8FA", 14}
+		bright  = Color{"#FFFFFF", 15}
+		dim     = Color{"#4A86D6", 6} // index 4 (blue) is under 2.3:1 on black in xterm and VGA palettes
+		yellow  = Color{"#FFD60A", 11}
+		red     = Color{"#FF3B30", 9}
+		blue    = Color{"#3A7BFF", 12}
+		green   = Color{"#34C759", 10}
+		redBG   = Color{"#C0001A", 1}
+		landUS  = Color{"#5B8BE6", 12}
+		landSU  = Color{"#D9503F", 9} // index 1 (red) is under 3:1 on black in the VGA palette
+		land    = Color{"#5DBB5A", 2}
+		iceBlue = Color{"#A8C8FF", 14}
 	)
 	return &Theme{
 		Name:       "norad",
@@ -105,10 +112,12 @@ func norad() *Theme {
 			proto.StyleBright:    {FG: bright, Attr: proto.AttrBold},
 			proto.StyleDim:       {FG: dim},
 			proto.StyleAccent:    {FG: yellow, Attr: proto.AttrBold},
-			proto.StyleLand:      {FG: dim},
+			proto.StyleLand:      {FG: land},
+			proto.StyleLandUS:    {FG: landUS},
+			proto.StyleLandUSSR:  {FG: landSU},
 			proto.StyleLabel:     {FG: bright},
-			proto.StyleIncoming:  {FG: red, NoColAttr: proto.AttrBold},
-			proto.StyleOutgoing:  {FG: yellow},
+			proto.StyleIncoming:  {FG: bright, NoColAttr: proto.AttrBold},
+			proto.StyleOutgoing:  {FG: iceBlue},
 			proto.StyleTarget:    {FG: red, Attr: proto.AttrUnderline},
 			proto.StyleDefcon5:   {FG: blue},
 			proto.StyleDefcon4:   {FG: green},
@@ -139,13 +148,33 @@ func (t *Theme) Lip(s proto.Style, a proto.Attr, p colorprofile.Profile) lipglos
 		st = st.Foreground(ansi.BasicColor(spec.FG.ANSI)).Background(ansi.BasicColor(t.bg(spec).ANSI)) //nolint:gosec // ANSI colours are 0..15 (theme tests check)
 	default: // ASCII and NoTTY: no colour at all
 		attr |= spec.NoColAttr
-		if s == proto.StyleDim || s == proto.StyleLand {
+		if Faint(s) {
 			st = st.Faint(true)
 		}
 	}
 	return st.Bold(attr&proto.AttrBold != 0).
 		Reverse(attr&proto.AttrReverse != 0).
 		Underline(attr&proto.AttrUnderline != 0)
+}
+
+// Faint reports whether a style is deliberately faint: Dim, and the land of every nation.
+// Without colour it is drawn faint, and its contrast need only be 3:1.
+func Faint(s proto.Style) bool {
+	switch s {
+	case proto.StyleDim, proto.StyleLand, proto.StyleLandUS, proto.StyleLandUSSR:
+		return true
+	}
+	return false
+}
+
+// Board returns the theme the big board draws in when the player chose none: norad, the war
+// room's colours, on the console's background bg, so the screen keeps one background. In the
+// film the NORAD screens are in colour and WOPR's terminal is not, so the console keeps its
+// own theme (docs/PLAN.md §2.4).
+func Board(bg Color) *Theme {
+	t := *themes["norad"]
+	t.Background = bg
+	return &t
 }
 
 func (t *Theme) bg(s Spec) Color {

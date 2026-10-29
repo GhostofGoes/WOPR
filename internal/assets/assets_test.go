@@ -448,3 +448,63 @@ func TestCitiesAgainstTheArt(t *testing.T) {
 		}
 	}
 }
+
+// The nation mask covers exactly the land, puts every place in its own side's land, and gives
+// the art's landmarks their nations: the sides' coasts and islands, and the neighbours across
+// their borders.
+func TestNations(t *testing.T) {
+	t.Parallel()
+	for y := range MapH {
+		if len(nations[y]) != MapW {
+			t.Fatalf("nations row %d is %d wide, want %d", y, len(nations[y]), MapW)
+		}
+		for x := range MapW {
+			if n := nations[y][x]; (n == ' ') != Sea(x, y) || !strings.ContainsRune(" URO", rune(n)) {
+				t.Errorf("nations %d,%d is %q, but Sea is %v", x, y, n, Sea(x, y))
+			}
+		}
+	}
+	for _, p := range everyPlace() {
+		if side, ok := Nation(p.X, p.Y); !ok || side != p.Side {
+			t.Errorf("%s at %d,%d is in nation %v (%v), want %v", p.Name, p.X, p.Y, side, ok, p.Side)
+		}
+	}
+	const other = 0
+	for _, c := range []struct {
+		name     string
+		lat, lon float64
+		want     Side
+	}{
+		{"Alaska's north coast", 71, -156, US},
+		{"the Aleutians", 52, -175, US},
+		{"Chukotka, across the Bering Strait", 65, -177, USSR},
+		{"Kamchatka", 56, 160, USSR},
+		{"Sakhalin", 50, 143, USSR},
+		{"the Baltic shore", 57, 22, USSR},
+		{"Karelia", 64, 33, USSR},
+		{"Lake Baikal", 50, 107, USSR},
+		{"Florida's Atlantic coast", 26, -73, US},
+		{"British Columbia", 50, -128, other},
+		{"Ontario", 50, -85, other},
+		{"Nova Scotia", 44, -63, other},
+		{"Baja California", 28, -123, other},
+		{"Finland", 63, 23, other},
+		{"Britain", 55, -2, other},
+		{"Mongolia", 47, 97, other},
+		{"China", 40, 115, other},
+		{"Japan", 36, 140, other},
+		{"Turkey", 39, 33, other},
+	} {
+		x, y := At(c.lat, c.lon)
+		side, ok := Nation(x, y)
+		if !ok {
+			side = other
+		}
+		if side != c.want || Sea(x, y) {
+			t.Errorf("%s (%d,%d): nation %v, want %v (sea %v)", c.name, x, y, side, c.want, Sea(x, y))
+		}
+	}
+	if _, ok := Nation(-1, 0); ok {
+		t.Error("a cell off the map is no nation's")
+	}
+}

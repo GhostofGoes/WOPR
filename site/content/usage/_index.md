@@ -108,10 +108,16 @@ Falken's Maze reads single keys instead of lines, and it says which keys it uses
 
 The theme sets the colours. Choose one with `--theme` or `WOPR_THEME`:
 
-- `imsai`, the default: white phosphor, as on David's IMSAI terminal in the film.
+- `imsai`, the default: white phosphor, as on David's IMSAI terminal in the film. The big board in Global
+  Thermonuclear War keeps the colours of `norad`, because in the film NORAD's screens are in colour.
 - `green`: green phosphor.
 - `amber`: amber phosphor.
-- `norad`: the blue of NORAD's big board, with the front panel along the bottom.
+- `norad`: the colours of NORAD's big board, with the front panel along the bottom. On the big board, the
+  United States is blue, the Soviet Union is red, and the other countries are green. Missile tracks are
+  white and ice blue.
+
+When you choose a theme, the whole screen uses it, the big board too. So `--theme imsai` makes the big board
+white.
 
 ```sh
 wopr --theme amber

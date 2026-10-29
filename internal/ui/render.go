@@ -13,6 +13,7 @@ import (
 
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
+	"github.com/GhostofGoes/WOPR/internal/theme"
 	"github.com/GhostofGoes/WOPR/internal/ui/console"
 )
 
@@ -87,8 +88,9 @@ func (m *model) View() tea.View {
 		if prog != nil {
 			canvas := proto.NewCanvas(g.width, g.viewRows)
 			prog.View(canvas)
+			th := m.viewTheme()
 			for y := range g.viewRows {
-				lines = append(lines, m.pad(m.canvasRow(canvas, y), g, bg))
+				lines = append(lines, m.pad(m.canvasRow(th, canvas, y), g, bg))
 			}
 		}
 	}
@@ -170,8 +172,18 @@ func (m *model) cursor(g geometry, rows []console.Row, at int) *tea.Cursor {
 	return c
 }
 
-// canvasRow renders one canvas row as styled runs.
-func (m *model) canvasRow(c *proto.Canvas, y int) string {
+// viewTheme is the theme the running program's view draws in: the big board's for a program
+// that fills the screen (GTW's board, the ending, movie mode's board), the console's for one in
+// a panel.
+func (m *model) viewTheme() *theme.Theme {
+	if m.place.Layout == proto.LayoutFull {
+		return m.board
+	}
+	return m.th
+}
+
+// canvasRow renders one canvas row as styled runs, in th.
+func (m *model) canvasRow(th *theme.Theme, c *proto.Canvas, y int) string {
 	var b strings.Builder
 	blinkOff := !m.opts.ReduceMotion && int(m.phase/blinkPeriod)%2 == 1
 	x := 0
@@ -190,7 +202,7 @@ func (m *model) canvasRow(c *proto.Canvas, y int) string {
 			run = append(run, r)
 			x++
 		}
-		b.WriteString(m.th.Lip(cell.S, cell.A&^proto.AttrBlink, m.profile).Render(string(run)))
+		b.WriteString(th.Lip(cell.S, cell.A&^proto.AttrBlink, m.profile).Render(string(run)))
 	}
 	return b.String()
 }

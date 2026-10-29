@@ -63,7 +63,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	for y, row := range assets.Map {
 		c.Put(mapLeft-1, mapTop+y, "|", proto.StyleDim, 0)
 		c.Put(boxRight, mapTop+y, "|", proto.StyleDim, 0)
-		c.Put(mapLeft, mapTop+y, row.Text, proto.StyleLand, 0)
+		for x, r := range row.Text {
+			c.Set(mapLeft+x, mapTop+y, proto.Cell{R: r, S: landStyle(x, y)})
+		}
 	}
 	for _, m := range g.missiles {
 		g.drawTrack(c, m)
@@ -116,6 +118,19 @@ func (g *Game) drawLegend(c *proto.Canvas) {
 	c.Put(strings.Index(legend, "+"), footRow, "+", proto.StyleOutgoing, 0)
 	c.Put(strings.Index(legend, "*"), footRow, "*", proto.StyleIncoming, 0)
 	c.Put(strings.LastIndex(legend, "X"), footRow, "X", proto.StyleText, proto.AttrReverse)
+}
+
+// landStyle is the style of a map cell: each side's land in its own, as on the film's NORAD
+// screens, and every other country's in Land. The names under the map say whose land is
+// whose, so nothing rests on the colours.
+func landStyle(x, y int) proto.Style {
+	switch side, ok := assets.Nation(x, y); {
+	case !ok:
+		return proto.StyleLand
+	case side == assets.US:
+		return proto.StyleLandUS
+	}
+	return proto.StyleLandUSSR
 }
 
 func trackStyle(m missile) proto.Style {

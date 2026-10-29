@@ -267,7 +267,8 @@ func writeOptions(p *page) error {
 }
 
 func themeDetail() string {
-	return fmt.Sprintf("Use the colour theme <name>: %s. The default is `%s`. The `norad` theme also shows the front panel.",
+	return fmt.Sprintf("Use the colour theme <name>: %s. The default is `%s`. If you give no theme, the big board "+
+		"of Global Thermonuclear War uses the colours of `norad`. The `norad` theme also shows the front panel.",
 		joinAnd(bold(theme.Names()), "or"), theme.Default)
 }
 

@@ -105,17 +105,21 @@ func TestParseSeedAndEnv(t *testing.T) {
 	t.Parallel()
 	reg := catalog.Registry()
 	cfg, _, err := Parse([]string{"-s", "42"}, reg, noEnv)
-	if err != nil || !cfg.SeedSet || cfg.Seed != 42 {
+	if err != nil || !cfg.SeedSet || cfg.Seed != 42 || cfg.Theme != "imsai" || cfg.ThemeSet {
 		t.Fatalf("seed: %+v %v", cfg, err)
 	}
 	env := map[string]string{"WOPR_THEME": "norad", "WOPR_INSTANT": "1", "WOPR_REDUCE_MOTION": "yes", "WOPR_SEED": "1983"}
 	cfg, _, err = Parse(nil, reg, func(k string) string { return env[k] })
-	if err != nil || cfg.Theme != "norad" || !cfg.Instant || !cfg.ReduceMotion || !cfg.SeedSet || cfg.Seed != 1983 {
+	if err != nil || cfg.Theme != "norad" || !cfg.ThemeSet || !cfg.Instant || !cfg.ReduceMotion || !cfg.SeedSet || cfg.Seed != 1983 {
 		t.Fatalf("env fallbacks: %+v %v", cfg, err)
 	}
 	cfg, _, err = Parse([]string{"-t", "green", "-i=false", "-s", "7"}, reg, func(k string) string { return env[k] })
 	if err != nil || cfg.Theme != "green" || cfg.Instant || cfg.Seed != 7 {
 		t.Fatalf("flags must override env: %+v %v", cfg, err)
+	}
+	// The default theme, chosen on the command line, is a choice too: the big board keeps it.
+	if cfg, _, err = Parse([]string{"--theme", "imsai"}, reg, noEnv); err != nil || !cfg.ThemeSet {
+		t.Fatalf("--theme imsai: %+v %v", cfg, err)
 	}
 	if _, _, err := Parse(nil, reg, func(k string) string { return map[string]string{"WOPR_THEME": "pink"}[k] }); err == nil {
 		t.Error("an unknown theme from the environment must be a usage error")

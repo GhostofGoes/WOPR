@@ -54,9 +54,9 @@ func TestMeaningfulPairsStayDistinctIn16Colours(t *testing.T) {
 }
 
 // Without colour (NO_COLOR, TERM=xterm-mono: the ASCII profile) a style is only its
-// attributes, and Dim and Land are faint. The pairs whose difference carries meaning must
-// still look different there, and a style that paints its own background (norad's DEFCON 1,
-// white on red) must keep a visible block: Reverse.
+// attributes, and Dim and the land styles are faint. The pairs whose difference carries
+// meaning must still look different there, and a style that paints its own background
+// (norad's DEFCON 1, white on red) must keep a visible block: Reverse.
 func TestMeaningSurvivesWithoutColour(t *testing.T) {
 	t.Parallel()
 	look := func(th *Theme, s proto.Style) string {
@@ -135,17 +135,45 @@ func sgrParams(s string) []string {
 func TestLipByProfile(t *testing.T) {
 	t.Parallel()
 	th, _ := Get("norad")
-	tc := th.Lip(proto.StyleIncoming, 0, colorprofile.TrueColor).Render("*")
-	if !strings.Contains(tc, "38;2;255;59;48") {
-		t.Errorf("truecolor incoming = %q", tc)
+	tc := th.Lip(proto.StyleLandUSSR, 0, colorprofile.TrueColor).Render("_")
+	if !strings.Contains(tc, "38;2;217;80;63") {
+		t.Errorf("truecolor Soviet land = %q", tc)
 	}
-	ansi16 := th.Lip(proto.StyleIncoming, 0, colorprofile.ANSI).Render("*")
+	ansi16 := th.Lip(proto.StyleLandUSSR, 0, colorprofile.ANSI).Render("_")
 	if !strings.Contains(ansi16, "91") { // bright red, index 9
-		t.Errorf("16-colour incoming = %q", ansi16)
+		t.Errorf("16-colour Soviet land = %q", ansi16)
 	}
 	mono := th.Lip(proto.StyleDefcon1, 0, colorprofile.ASCII).Render("1")
 	if strings.Contains(mono, "38;") || !strings.Contains(mono, "7") {
 		t.Errorf("no-colour DEFCON 1 should be reverse without colour, got %q", mono)
+	}
+}
+
+// The big board's theme, when the player chose none, is norad's styles on the console's
+// background, and its three nations' land differs in 16 colours. Without colour every land is
+// faint alike: the sides' names under the map say whose land is whose.
+func TestBoard(t *testing.T) {
+	t.Parallel()
+	console, _ := Get(Default)
+	norad, _ := Get("norad")
+	b := Board(console.Background)
+	if b.Background != console.Background || norad.Background == console.Background {
+		t.Errorf("the board's background is %v, want the console's %v", b.Background, console.Background)
+	}
+	for _, s := range proto.Styles() {
+		if b.Styles[s] != norad.Styles[s] {
+			t.Errorf("board style %c is %+v, want norad's %+v", s.Letter(), b.Styles[s], norad.Styles[s])
+		}
+	}
+	land := map[int]bool{}
+	for _, s := range []proto.Style{proto.StyleLand, proto.StyleLandUS, proto.StyleLandUSSR} {
+		land[b.Styles[s].FG.ANSI] = true
+		if !Faint(s) {
+			t.Errorf("land style %c is not faint", s.Letter())
+		}
+	}
+	if len(land) != 3 {
+		t.Errorf("the nations' land shares a 16-colour index: %v", land)
 	}
 }
 
@@ -162,17 +190,22 @@ var (
 	}
 )
 
-// Every style must stay readable on its background. Truecolor meets WCAG AA (4.5:1), or
-// 3:1 for the deliberately faint Dim and Land. The 16-colour palettes only promise 3:1,
-// and VGA's bright black (imsai Dim, 2.8:1) is the one accepted exception.
+// Every style must stay readable on its background, in every theme and in the big board's.
+// Truecolor meets WCAG AA (4.5:1), or 3:1 for the deliberately faint Dim and land styles. The
+// 16-colour palettes only promise 3:1, and VGA's bright black (imsai Dim, 2.8:1) is the one
+// accepted exception.
 func TestTextContrast(t *testing.T) {
 	t.Parallel()
+	console, _ := Get(Default)
+	checked := map[string]*Theme{"board": Board(console.Background)}
 	for _, name := range Names() {
-		th, _ := Get(name)
+		checked[name], _ = Get(name)
+	}
+	for name, th := range checked {
 		for _, s := range proto.Styles() {
 			spec := th.Styles[s]
 			bg := th.bg(spec)
-			faint := s == proto.StyleDim || s == proto.StyleLand
+			faint := Faint(s)
 			want := 4.5
 			if faint {
 				want = 3

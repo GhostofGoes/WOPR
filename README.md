@@ -169,7 +169,8 @@ film's lines are its own screen text, checked against frame-by-frame transcripti
 | `-s`, `--seed <n>` | a repeatable run. Also `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations). Also `WOPR_REDUCE_MOTION=1` |
 
-`NO_COLOR` (any value but an empty one) turns colour off.
+`NO_COLOR` (any value but an empty one) turns colour off. If you do not choose a theme, the big board in
+Global Thermonuclear War shows the film's colours: the United States in blue, the Soviet Union in red.
 
 ## Accessibility
 

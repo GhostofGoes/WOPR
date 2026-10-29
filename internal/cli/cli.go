@@ -13,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -41,6 +42,7 @@ type Config struct {
 	Scene        string // with Movie: the slug of the scene to play from, "" for the scene menu
 	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
 	Theme        string
+	ThemeSet     bool // the theme came from --theme or WOPR_THEME, not the default
 	Instant      bool
 	Seed         uint64
 	SeedSet      bool
@@ -154,6 +156,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		return cfg, PrintLicenses, nil
 	}
 
+	cfg.ThemeSet = getenv("WOPR_THEME") != "" || given(fs, "theme", "t")
 	if !theme.ValidName(cfg.Theme) {
 		return cfg, RunTUI, usagef("unknown theme %q (choose from %s)", cfg.Theme, strings.Join(theme.Names(), ", "))
 	}
@@ -219,13 +222,19 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 // seedSource names where the seed came from, for its error: the flag if the command line gave
 // one (it wins), otherwise WOPR_SEED.
 func seedSource(fs *flag.FlagSet) string {
-	src := "WOPR_SEED"
+	if given(fs, "seed", "s") {
+		return "--seed"
+	}
+	return "WOPR_SEED"
+}
+
+// given reports whether the command line gave any of the named flags.
+func given(fs *flag.FlagSet, names ...string) bool {
+	found := false
 	fs.Visit(func(f *flag.Flag) {
-		if f.Name == "seed" || f.Name == "s" {
-			src = "--seed"
-		}
+		found = found || slices.Contains(names, f.Name)
 	})
-	return src
+	return found
 }
 
 // parseInterspersed lets flags follow positionals ("wopr gtw -i"). The standard flag

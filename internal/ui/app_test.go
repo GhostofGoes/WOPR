@@ -15,6 +15,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/gamestest"
 	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/proto"
+	"github.com/GhostofGoes/WOPR/internal/theme"
 )
 
 func instant() Options {
@@ -260,6 +261,52 @@ func TestGTWScreens(t *testing.T) {
 	d.line("Chess")
 	s.add("climax: the board again", d)
 	golden.AssertString(t, "gtw_screens", s.String())
+}
+
+// The big board is in the war room's colours unless the player chose a theme, while the
+// console and the games in a panel stay white phosphor: in the film the NORAD screens are in colour and WOPR's
+// terminal is not. A theme the player chose, the default's name included, and NO_COLOR keep
+// the board in the console's theme.
+func TestBigBoardColours(t *testing.T) {
+	t.Parallel()
+	const (
+		sovietLand = "38;2;217;80;63"   // norad's Soviet land
+		noradText  = "38;2;90;200;250"  // norad's text
+		imsaiText  = "38;2;220;230;240" // imsai's text
+	)
+	board := func(opts Options) (side, big string) {
+		opts.Play = "global-thermonuclear-war"
+		d := newDriver(t, opts, 80, 24).settle()
+		side = d.m.View().Content
+		d.line("2").line("Las Vegas").line("")
+		return side, d.m.View().Content
+	}
+	side, big := board(instant())
+	rows := strings.Split(big, "\n")
+	view, console := strings.Join(rows[:20], "\n"), strings.Join(rows[20:], "\n") // the view is 24 - 4 rows
+	switch {
+	case strings.Contains(side, sovietLand) || strings.Contains(side, noradText):
+		t.Error("the side choice, in the console, is in norad's colours")
+	case !strings.Contains(view, sovietLand) || !strings.Contains(view, noradText):
+		t.Error("the big board is not in norad's colours by default")
+	case strings.Contains(console, noradText) || !strings.Contains(console, imsaiText):
+		t.Error("the console under the big board is not in imsai's colours")
+	}
+	panel := instant()
+	panel.Play = "chess"
+	if chess := newDriver(t, panel, 80, 24).settle().m.View().Content; strings.Contains(chess, noradText) {
+		t.Error("the chess panel is in norad's colours: only the big board is")
+	}
+	chosen := instant()
+	chosen.Theme, chosen.ThemeSet = theme.Default, true
+	if _, big := board(chosen); strings.Contains(big, sovietLand) || strings.Contains(big, noradText) {
+		t.Error("--theme imsai: the big board is in norad's colours")
+	}
+	plain := instant()
+	plain.NoColor = true
+	if m := newModel(plain, nil); m.board != m.th {
+		t.Errorf("NO_COLOR: the big board is in %s, the console in %s", m.board.Name, m.th.Name)
+	}
 }
 
 // Every playable game starts and fits 80x24, with and without the front panel: 24 rows,

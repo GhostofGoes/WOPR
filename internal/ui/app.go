@@ -37,6 +37,7 @@ const (
 // Options configure a session.
 type Options struct {
 	Theme        string
+	ThemeSet     bool // the player chose the theme (--theme or WOPR_THEME): the big board keeps it too
 	Instant      bool
 	Seed         uint64
 	SeedSet      bool
@@ -121,6 +122,7 @@ type thinkDoneMsg struct {
 type model struct {
 	opts    Options
 	th      *theme.Theme
+	board   *theme.Theme // the big board's: a LayoutFull program's view
 	profile colorprofile.Profile
 	method  ansi.Method
 	w, h    int
@@ -162,8 +164,14 @@ func newModel(opts Options, sched Scheduler) *model {
 	if !ok {
 		th, _ = theme.Get(theme.Default)
 	}
+	// In the film the NORAD screens are in colour and WOPR's terminal is not: unless the player
+	// chose a theme, or no colour at all, the big board draws in the war room's.
+	board := th
+	if !opts.ThemeSet && !opts.NoColor {
+		board = theme.Board(th.Background)
+	}
 	m := &model{
-		opts: opts, th: th, profile: colorprofile.TrueColor, method: ansi.WcWidth,
+		opts: opts, th: th, board: board, profile: colorprofile.TrueColor, method: ansi.WcWidth,
 		thinks: map[uint64]context.CancelFunc{}, clk: clock{schedule: sched}, now: time.Now,
 	}
 	m.tw.SetInstant(opts.Instant)
@@ -194,7 +202,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.ColorProfileMsg:
 		m.profile = msg.Profile
-		m.opts.Log.Printf("colour profile %v, theme %s", msg.Profile, m.th.Name)
+		m.opts.Log.Printf("colour profile %v, theme %s, big board %s", msg.Profile, m.th.Name, m.board.Name)
 	case tea.KeyPressMsg:
 		cmds = append(cmds, m.key(msg))
 	case tea.PasteMsg:
