@@ -91,21 +91,21 @@ var (
 	noCaps  [2]unix.CapUserData
 )
 
-// dropCaps clears every capability set when the process has any (run as root, or with
-// file capabilities), and reports whether it did. An ordinary user has none to drop.
+// dropCaps clears every capability set, and reports whether capget showed any (run as root, or
+// with file capabilities). An ordinary user has none to drop.
 func dropCaps(all syscall6) (bool, error) {
 	if err := unix.Capget(&capHdr, &capData[0]); err != nil {
 		return false, err
 	}
-	if capData == noCaps {
-		return false, nil
-	}
+	// The drop runs even when capget reports none: an LSM can mask what it reports. AppArmor's
+	// profile for an unprivileged user namespace (Ubuntu 24.04) reports none of the capabilities
+	// that /proc shows the process holding. Clearing every set is always allowed.
 	_, _, e := all(unix.SYS_CAPSET, uintptr(unsafe.Pointer(&capHdr)), uintptr(unsafe.Pointer(&noCaps[0])), 0, 0, 0, 0) //nolint:gosec // capset reads both while the call runs; they are package variables, so they never move
 	runtime.KeepAlive(&capHdr)
 	if e != 0 {
 		return false, e
 	}
-	return true, nil
+	return capData != noCaps, nil
 }
 
 // fsV1 is every file system right of Landlock ABI 1. Later ABIs add rights below.

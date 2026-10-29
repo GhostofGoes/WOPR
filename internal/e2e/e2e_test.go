@@ -405,9 +405,17 @@ func TestTooSmallThenResize(t *testing.T) {
 	}
 }
 
+// snapped reports whether the binary under test is the installed snap (packaging/snap/test-snap.sh).
+// A snap has its own /tmp and runs under snapd's confinement.
+func snapped() bool { return strings.HasPrefix(binary, "/snap/") }
+
 // debugEnv is the environment that turns the debug log on, in a cache folder of the test's own.
+// It skips the test for the snap, which cannot write there: test-snap.sh checks its log.
 func debugEnv(t *testing.T) (env []string, cache string) {
 	t.Helper()
+	if snapped() {
+		t.Skip("the snap has its own /tmp, so the test cannot read its debug log")
+	}
 	cache = t.TempDir()
 	return []string{"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}, cache
 }

@@ -41,8 +41,10 @@ func checkThreads(t *testing.T, pid int, when string) int {
 		for _, m := range statusField.FindAllStringSubmatch(string(data), -1) {
 			st[m[1]] = m[2]
 		}
-		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || st["Seccomp_filters"] != "1" {
-			t.Errorf("%s, thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2 and 1",
+		// snapd puts its own filters on a snap before wopr starts, and wopr's goes on top of them.
+		filters, _ := strconv.Atoi(st["Seccomp_filters"])
+		if st["NoNewPrivs"] != "1" || st["Seccomp"] != "2" || filters != 1 && !snapped() || filters < 2 && snapped() {
+			t.Errorf("%s, thread %s: NoNewPrivs %s, Seccomp %s, Seccomp_filters %s; want 1, 2 and 1 (2 or more in a snap)",
 				when, e.Name(), st["NoNewPrivs"], st["Seccomp"], st["Seccomp_filters"])
 		}
 		for _, c := range []string{"CapEff", "CapPrm", "CapInh", "CapAmb"} {
@@ -59,7 +61,11 @@ func checkThreads(t *testing.T, pid int, when string) int {
 // and the debug log keeps its lines. Landlock does not show in /proc. The sandbox package's
 // tests check what it refuses, with the same Restrict this binary calls.
 func TestLinuxSandbox(t *testing.T) {
-	env, cache := debugEnv(t)
+	var env []string
+	cache := ""
+	if !snapped() { // the snap cannot write the log where the test reads it
+		env, cache = debugEnv(t)
+	}
 	s := startEnv(t, 80, 24, env, "chess", "--instant", "--seed", "1")
 	s.waitFor("YOUR MOVE:", 10*time.Second)
 	before := checkThreads(t, s.cmd.Process.Pid, "at the start")
@@ -72,6 +78,9 @@ func TestLinuxSandbox(t *testing.T) {
 	s.send("\x03")
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+	if cache == "" {
+		return
 	}
 	log := debugLog(t, cache)
 	sandbox := regexp.MustCompile(`(?m) sandbox: no_new_privs, (capabilities dropped, )?landlock ABI [1-9][0-9]*, seccomp$`)
@@ -88,6 +97,9 @@ func TestLinuxSandbox(t *testing.T) {
 // true colour must raise the profile, and must run only then. A suspend and a resume do not
 // run it again.
 func TestTmuxColours(t *testing.T) {
+	if snapped() {
+		t.Skip("the snap cannot run a program from the test's /tmp")
+	}
 	bin := t.TempDir()
 	runs := filepath.Join(bin, "runs")
 	script := "#!/bin/sh\necho run >> '" + runs + "'\necho 'Tc: (flag) true'\n"

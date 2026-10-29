@@ -71,11 +71,11 @@ grep -q 'LOGON:' "${typescript}" || fail "wopr drew no LOGON: prompt"
 log="${HOME}/snap/wopr/current/.cache/wopr/debug.log"
 grep -F "wopr v${version} " "${log}" || fail "no debug log in ${log}"
 
-# TestDebugLog is skipped: it points HOME and XDG_CACHE_HOME at a directory in /tmp, and a snap has
-# its own /tmp. The run above checks the log where the snap writes it.
+# The tests that read the debug log skip the snap: they point HOME and XDG_CACHE_HOME at a directory
+# in /tmp, and a snap has its own /tmp. The run above checks the log where the snap writes it.
 if [[ -n "${e2e}" ]]; then
   chmod +x "${e2e}"
-  "${e2e}" -test.v -test.timeout=5m -test.skip '^TestDebugLog$' -binary /snap/bin/wopr
+  "${e2e}" -test.v -test.timeout=5m -binary /snap/bin/wopr
 fi
 
 sudo snap remove --purge wopr

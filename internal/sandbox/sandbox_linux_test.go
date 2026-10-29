@@ -247,9 +247,6 @@ func TestRestrictOff(t *testing.T) {
 
 // A capability drop that fails is reported, and the other layers still go in.
 func TestRestrictCapsKept(t *testing.T) {
-	if os.Geteuid() != 0 {
-		t.Skip("needs capabilities to drop")
-	}
 	landlockABI(t)
 	capsetFails := func(trap, a1, a2, a3, a4, a5, a6 uintptr) (uintptr, uintptr, syscall.Errno) {
 		if trap == unix.SYS_CAPSET {
