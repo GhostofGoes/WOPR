@@ -235,12 +235,13 @@ func TestLayoutsAt80x24(t *testing.T) {
 	golden.AssertString(t, "layouts_80x24", s.String())
 }
 
-// The real GTW board in the norad theme, front panel shown: the Appendix C screens.
+// The real GTW board in the norad theme, front panel shown: the Appendix C screens. The
+// film's seed, 1983, draws WOPR's measured response, the film's war.
 func TestGTWScreens(t *testing.T) {
 	t.Parallel()
 	var s snapshots
 	opts := instant()
-	opts.Theme, opts.Play = "norad", "global-thermonuclear-war" // cli resolves aliases to slugs
+	opts.Theme, opts.Play, opts.Seed = "norad", "global-thermonuclear-war", 1983 // cli resolves aliases to slugs
 	d := newDriver(t, opts, 80, 24).settle()
 	s.add("side choice", d)
 	d.line("2").line("Las Vegas").line("Seattle").line("")

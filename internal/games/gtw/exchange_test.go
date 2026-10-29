@@ -189,8 +189,8 @@ func TestChoicesMatter(t *testing.T) {
 	}
 }
 
-// Each doctrine shows in what WOPR does, and each asks for its own answer: the same orders
-// fare differently, and the order that spares your cities best differs.
+// Each doctrine shows in what WOPR does, and the same orders fare differently against
+// each. Holding your ICBMs is the best answer to some and the worst to another.
 func TestDoctrinesDiffer(t *testing.T) {
 	t.Parallel()
 	hold, fire := [3]int{}, [3]int{100, 0, 0} // strike 2: hold everything, or fire every ICBM
