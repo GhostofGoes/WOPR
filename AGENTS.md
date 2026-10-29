@@ -375,11 +375,11 @@ screenshot fails the build.
   `sudo`, over HTTPS only. They add that folder to the shell's `PATH` when it is missing. Only the package
   lines need root. In these files, `@VERSION@` becomes the latest release's version (shortcodes do not run
   there). `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a
-  paragraph, becomes two download buttons, side by side, drawn by the shortcode (styled in
-  `site/assets/css/custom.css`). The buttons are "Intel/AMD" and "ARM" on Windows and Linux, and "Apple
-  Silicon" and "Intel" on macOS. Each is a plain link to its release file, with no file name under it. The
-  Windows installer and the Mac app are one file for both kinds of computer, so both of their buttons link
-  to it. Until the latest release has the installers (the `has-installers` partial: every release after
+  paragraph, becomes download buttons, side by side, drawn by the shortcode (styled in
+  `site/assets/css/custom.css`). Linux has two buttons, "Intel/AMD" and "ARM". Windows has one,
+  "Download Windows installer", because the installer is one file for both kinds of computer. macOS has
+  "Download macOS app (Apple Silicon)" and "Download macOS app (Intel)", which both link to the one app.
+  Each is a plain link to its release file, with no file name under it. Until the latest release has the installers (the `has-installers` partial: every release after
   v0.4.0), the Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry
   first ships in the same release (v0.4.0's packages have none). So `@APP-MENU@` in `linux-packages.md`,
   `linux-apt.md` and both RPM files becomes the sentence in `app-menu.md` only when `has-installers` is

@@ -55,7 +55,7 @@
   opacity: 1 !important;
 }
 
-/* Download buttons (the install-tabs shortcode): two links to release files, side by side, drawn as
+/* Download buttons (the install-tabs shortcode): links to release files, side by side, drawn as
    buttons in the theme's primary colour. White on primary 600 (light) or 700 (dark) is at least 4.5:1,
    and the focus ring, outside the button, stands out from both it and the page. */
 .wopr-download {

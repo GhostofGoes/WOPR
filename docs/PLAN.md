@@ -2215,9 +2215,10 @@ wopr itself.
     - For Linux: the `.deb` and the `.rpm`, opened in the desktop's software app. The tab points to the
       command lines for other distributions and the atomic desktops.
 
-    Each tab has two buttons, side by side, with no file name under them (owner decision 2026-10-10). They
-    are "Intel/AMD" and "ARM" on Windows and Linux, and "Apple Silicon" and "Intel" on macOS. The Windows
-    installer and the Mac app are one file for both, so their two buttons link to the same file. A button is
+    The buttons have no file name under them (owner decision 2026-10-10). Linux has two, "Intel/AMD" and
+    "ARM". Windows has one, "Download Windows installer", since the installer is one file for both (owner
+    decision 2026-10-29). macOS has "Download macOS app (Apple Silicon)" and "Download macOS app (Intel)",
+    which link to the same file. The script below shows only the one for the reader's Mac when it can tell. A button is
     a plain link, at least 44 px tall, in Hextra's primary colour. The `install-tabs` shortcode draws it from
     a placeholder in the tab's text. Until the latest release has the installer and the Mac app, the Windows
     and macOS tabs say they come with the next release and point to the command lines. Every release after

@@ -11,8 +11,8 @@
 
   Each tab's text is Markdown in assets/install/<file>.md, where @VERSION@ becomes the latest
   release's version (the version shortcode's), so that every download names a file that exists.
-  @DOWNLOAD-<KIND>@, a paragraph of its own, becomes two download buttons for that kind of file, one
-  for each kind of computer, drawn here (install-download below; assets/css/custom.css styles them).
+  @DOWNLOAD-<KIND>@, a paragraph of its own, becomes the download buttons for that kind of file, drawn
+  here (install-download below; assets/css/custom.css styles them).
   Until the latest release has the Windows installer and the Mac app (the has-installers partial: every release after v0.4.0), their
   tabs show assets/install/download-later.md instead, with @LATER@ as what is to come. The same
   release is the first whose packages put WOPR in the app menu, so only then does @APP-MENU@ in the
@@ -55,18 +55,20 @@
   {{- errorf "%s: install-tabs: hugo.yaml has no params.repo" .Position -}}
 {{- end -}}
 
-{{- /* The download buttons: two for each kind of file, each with its words and its release file. The
-  Windows installer and the Mac app are one file for both kinds of computer, so their two buttons
-  name the same file. The release files are named in .goreleaser.yaml, windows.yml and macos.yml. */ -}}
+{{- /* The download buttons for each kind of file, each with its words and its release file. The
+  packages have one file for each kind of computer, so two buttons. The Windows installer is one file
+  for both kinds of computer, so one button, with no kind of computer. The Mac app is one file too,
+  but its two buttons name the reader's kind of Mac, and js/install-platform.js shows only the one
+  that fits when it can tell. The release files are named in .goreleaser.yaml, windows.yml and
+  macos.yml. */ -}}
 {{- $installer := printf "wopr_%s_windows_setup.exe" $version -}}
 {{- $app := printf "wopr_%s_macos.dmg" $version -}}
 {{- $downloads := dict
   "INSTALLER" (slice
-    (dict "arch" "x86-64" "label" "Download installer (Intel/AMD)" "file" $installer)
-    (dict "arch" "arm64" "label" "Download installer (ARM)" "file" $installer))
+    (dict "label" "Download Windows installer" "file" $installer))
   "APP" (slice
-    (dict "arch" "arm64" "label" "Download app (Apple Silicon)" "file" $app)
-    (dict "arch" "x86-64" "label" "Download app (Intel)" "file" $app))
+    (dict "arch" "arm64" "label" "Download macOS app (Apple Silicon)" "file" $app)
+    (dict "arch" "x86-64" "label" "Download macOS app (Intel)" "file" $app))
   "DEB" (slice
     (dict "arch" "x86-64" "label" "Download .deb (Intel/AMD)" "file" (printf "wopr_%s-1_amd64.deb" $version))
     (dict "arch" "arm64" "label" "Download .deb (ARM)" "file" (printf "wopr_%s-1_arm64.deb" $version)))
@@ -204,15 +206,15 @@
   {{- return $text -}}
 {{- end -}}
 
-{{- /* A pair of download buttons: plain links to the release files, side by side, each marked with
-  its kind of computer. Both show, and js/install-platform.js hides the one that does not fit when
-  it is sure of the reader's processor. */ -}}
+{{- /* The download buttons: plain links to the release files, side by side. A button for one kind of
+  computer is marked with it. All show, and js/install-platform.js hides the one that does not fit
+  when it is sure of the reader's processor. */ -}}
 {{- define "_partials/inline/install-download.html" -}}
   {{- $url := printf "%s/releases/download/v%s/" .repo .version -}}
   {{- $icon := partial "utils/icon.html" (dict "name" "download" "attributes" `class="wopr-download-icon"`) -}}
   <div class="wopr-download">
   {{- range .download -}}
-    <a class="wopr-download-button not-prose" data-wopr-arch="{{ .arch }}" href="{{ $url }}{{ .file }}">{{ $icon }}<span>{{ .label }}</span></a>
+    <a class="wopr-download-button not-prose"{{ with .arch }} data-wopr-arch="{{ . }}"{{ end }} href="{{ $url }}{{ .file }}">{{ $icon }}<span>{{ .label }}</span></a>
   {{- end -}}
   </div>
 {{- end -}}
