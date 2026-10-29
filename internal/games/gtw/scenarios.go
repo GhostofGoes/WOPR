@@ -61,29 +61,30 @@ type conduct struct {
 	d      doctrineID
 }
 
+// The two orders the kinds of war give most: nothing, and everything.
 var (
-	hold = [3]int{}
-	all  = [3]int{100, 100, 100}
+	holdFire = [3]int{}
+	allOut   = [3]int{100, 100, 100}
 )
 
 // The kinds of war. Every one is lost (TestEveryScenarioIsLost).
 var (
-	planned    = conduct{warPlan, measured}                                              // the film's war
-	assault    = conduct{[strikes][3]int{{50, 50, 100}, {50, 50, 100}, all}, measured}   // you strike first, hard
-	preempt    = conduct{[strikes][3]int{{100, 0, 0}, {0, 50, 100}, all}, measured}      // every ICBM at the enemy's silos first
-	surprise   = conduct{[strikes][3]int{hold, all, all}, hairTrigger}                   // the enemy strikes first, on a hair trigger
-	provoked   = conduct{[strikes][3]int{hold, {25, 25, 0}, all}, measured}              // the enemy strikes first, small; you answer
-	decapitate = conduct{[strikes][3]int{{0, 50, 0}, {50, 50, 100}, all}, counterforce}  // your submarines first, at command
-	defend     = conduct{[strikes][3]int{hold, {100, 50, 100}, all}, counterforce}       // the enemy goes for your forces first
-	escalate   = conduct{[strikes][3]int{{5, 5, 0}, {25, 25, 50}, all}, measured}        // a small first strike, then the climb
-	optional   = conduct{warPlan, secondStrike}                                          // the war plan, against an enemy that rides it out
-	alert      = conduct{[strikes][3]int{{0, 0, 100}, {50, 50, 0}, all}, hairTrigger}    // bombers up first, against an enemy on alert
-	minimal    = conduct{[strikes][3]int{{5, 5, 0}, {50, 50, 100}, all}, measured}       // the war plan, from a smaller first strike
-	limited    = conduct{[strikes][3]int{{10, 10, 0}, {50, 50, 100}, all}, measured}     // and a little larger
-	heavy      = conduct{[strikes][3]int{{50, 50, 50}, {50, 50, 100}, all}, hairTrigger} // a larger first strike, answered in kind
-	maximum    = conduct{[strikes][3]int{all, all, all}, hairTrigger}                    // everything at once
-	farEast    = conduct{[strikes][3]int{{10, 25, 50}, {50, 50, 100}, all}, measured}    // half your bombers go with the first strike
-	ussrFirst  = conduct{[strikes][3]int{hold, {100, 50, 100}, all}, hairTrigger}        // the Soviet Union strikes first, on a hair trigger
+	planned    = conduct{warPlan, measured}                                                 // the film's war
+	assault    = conduct{[strikes][3]int{{50, 50, 100}, {50, 50, 100}, allOut}, measured}   // you strike first, hard
+	preempt    = conduct{[strikes][3]int{{100, 0, 0}, {0, 50, 100}, allOut}, measured}      // every ICBM at the enemy's silos first
+	surprise   = conduct{[strikes][3]int{holdFire, allOut, allOut}, hairTrigger}            // the enemy strikes first, on a hair trigger
+	provoked   = conduct{[strikes][3]int{holdFire, {25, 25, 0}, allOut}, measured}          // the enemy strikes first, small; you answer
+	decapitate = conduct{[strikes][3]int{{0, 50, 0}, {50, 50, 100}, allOut}, counterforce}  // your submarines first, at command
+	defend     = conduct{[strikes][3]int{holdFire, {100, 50, 100}, allOut}, counterforce}   // the enemy goes for your forces first
+	escalate   = conduct{[strikes][3]int{{5, 5, 0}, {25, 25, 50}, allOut}, measured}        // a small first strike, then the climb
+	optional   = conduct{warPlan, secondStrike}                                             // the war plan, against an enemy that rides it out
+	alert      = conduct{[strikes][3]int{{0, 0, 100}, {50, 50, 0}, allOut}, hairTrigger}    // bombers up first, against an enemy on alert
+	minimal    = conduct{[strikes][3]int{{5, 5, 0}, {50, 50, 100}, allOut}, measured}       // the war plan, from a smaller first strike
+	limited    = conduct{[strikes][3]int{{10, 10, 0}, {50, 50, 100}, allOut}, measured}     // and a little larger
+	heavy      = conduct{[strikes][3]int{{50, 50, 50}, {50, 50, 100}, allOut}, hairTrigger} // a larger first strike, answered in kind
+	maximum    = conduct{[strikes][3]int{allOut, allOut, allOut}, hairTrigger}              // everything at once
+	farEast    = conduct{[strikes][3]int{{10, 25, 50}, {50, 50, 100}, allOut}, measured}    // half your bombers go with the first strike
+	ussrFirst  = conduct{[strikes][3]int{holdFire, {100, 50, 100}, allOut}, hairTrigger}    // the Soviet Union strikes first, on a hair trigger
 )
 
 // kinds are the kinds of war by the last word of a name: what it says the war is, or how
@@ -247,15 +248,21 @@ func cities(side assets.Side) []assets.Place {
 	return out
 }
 
-// nearest is side's places on the board, nearest the theatre first, and a city before
-// another place as near.
-func (t theatre) nearest(side assets.Side) []assets.Place {
+// placesOf is every place on side the board knows: its cities, then its other targets.
+func placesOf(side assets.Side) []assets.Place {
 	var out []assets.Place
 	for _, p := range append(slices.Clone(assets.Cities), assets.Targets...) {
 		if p.Side == side {
 			out = append(out, p)
 		}
 	}
+	return out
+}
+
+// nearest is side's places on the board, nearest the theatre first, and a city before
+// another place as near.
+func (t theatre) nearest(side assets.Side) []assets.Place {
+	out := placesOf(side)
 	slices.SortStableFunc(out, func(a, b assets.Place) int { return cmp.Compare(t.cells(a), t.cells(b)) })
 	return out
 }
@@ -380,7 +387,7 @@ func (g *Game) onMenu(input string) []proto.Output {
 func (g *Game) brief(s *scenario) []proto.Output {
 	g.scen, g.side, g.targets, g.phase, g.auto = s, s.side, slices.Clone(s.targets), briefing, true
 	first, o := s.side, s.c.orders
-	if o[0] == hold {
+	if o[0] == holdFire {
 		first = enemyOf(s.side)
 	}
 	names := make([]string, len(s.targets))
@@ -404,7 +411,7 @@ func (g *Game) brief(s *scenario) []proto.Output {
 
 // order is an order as the briefing gives it: "50 50 100", or HOLD.
 func order(o [3]int) string {
-	if o == hold {
+	if o == holdFire {
 		return lineHold[0].Text
 	}
 	return fmt.Sprintf("%d %d %d", o[0], o[1], o[2])

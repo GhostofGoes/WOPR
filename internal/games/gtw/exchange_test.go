@@ -58,7 +58,7 @@ func TestNoAllocationWins(t *testing.T) {
 	ends := []int{0, 50, 100}
 	for d := range doctrineID(len(doctrines)) {
 		least, most := 1<<30, 0
-		wage := func(o2, o3 [3]int, label string) {
+		try := func(o2, o3 [3]int, label string) {
 			w, rs := fight(d, o2, o3)
 			check(t, d, w, rs, label)
 			least, most = min(least, w.t[you].Cities), max(most, w.t[wopr].Cities)
@@ -68,7 +68,7 @@ func TestNoAllocationWins(t *testing.T) {
 				for _, s2 := range ends {
 					for _, s3 := range ends {
 						for _, b := range []int{0, 100} {
-							wage([3]int{i2, s2, b}, [3]int{i3, s3, 100 - b}, "grid")
+							try([3]int{i2, s2, b}, [3]int{i3, s3, 100 - b}, "grid")
 						}
 					}
 				}
@@ -77,7 +77,7 @@ func TestNoAllocationWins(t *testing.T) {
 		r := proto.NewRand(1, 2)
 		for range 2000 {
 			o := func() [3]int { return [3]int{r.IntN(101), r.IntN(101), r.IntN(101)} }
-			wage(o(), o(), "random")
+			try(o(), o(), "random")
 		}
 		if least != cityFloor[d] || most != cityCeiling[d] {
 			t.Errorf("doctrine %d: your cities take at least %d, theirs at most %d; want %d and %d",

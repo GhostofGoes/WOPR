@@ -28,7 +28,7 @@ func GameStream(slug string, playIndex uint16) uint64 {
 }
 
 // LaunchSeed is the Env.Seed the host gives the playIndex-th launch of slug in a session
-// seeded session (docs/PLAN.md §4.6): every game and every replay draws its own sequence.
+// seeded with session (docs/PLAN.md §4.6): every game and every replay draws its own sequence.
 func LaunchSeed(session uint64, slug string, playIndex uint16) uint64 {
 	return NewRand(session, GameStream(slug, playIndex)).Uint64()
 }

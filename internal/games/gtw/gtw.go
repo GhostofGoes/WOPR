@@ -402,10 +402,8 @@ const (
 // in alphabetical order down four columns.
 func (g *Game) targetList() []string {
 	var names []string
-	for _, p := range append(slices.Clone(assets.Cities), assets.Targets...) {
-		if p.Side == enemyOf(g.side) {
-			names = append(names, p.Name)
-		}
+	for _, p := range placesOf(enemyOf(g.side)) {
+		names = append(names, p.Name)
 	}
 	slices.Sort(names)
 	rows := ceilDiv(len(names), listCols)
@@ -440,11 +438,7 @@ func (g *Game) openBoard() []proto.Output {
 		// A playback draws from its own seed, the same in every session, and aims in order.
 		rng, g.cities = proto.NewRand(g.seed(), 0), slices.Clone(g.scen.aims)
 	} else {
-		for _, c := range assets.Cities {
-			if c.Side == g.side {
-				g.cities = append(g.cities, c)
-			}
-		}
+		g.cities = cities(g.side)
 		// Stream 0 draws a fixed amount whatever the orders: the shuffle, then the noise.
 		g.rng.Shuffle(len(g.cities), func(i, j int) { g.cities[i], g.cities[j] = g.cities[j], g.cities[i] })
 	}
@@ -830,21 +824,21 @@ func (g *Game) showRatios() []proto.Output {
 // whatever else is ordered (TestHoldingFireKillsFewest); against the other doctrines it may
 // not, and the line for it says only that you held.
 func (g *Game) afterAction() []string {
-	hold, _ := fight(g.war.id, [3]int{}, [3]int{})
-	plan, _ := fight(g.war.id, warPlan[1], warPlan[2])
+	held, _ := fight(g.war.id, holdFire, holdFire)
+	planWar, _ := fight(g.war.id, warPlan[1], warPlan[2])
 	dead := g.war.dead(g.noise)
 	against := func(l script.L, w *war) string {
 		base := w.dead(g.noise)
 		return fill(l, change(lineEnemyDead, dead[wopr]-base[wopr]), change(lineOwnDead, dead[you]-base[you]))
 	}
-	lines := []string{against(lineAfter[0], hold), against(lineAfter[1], plan)}
+	lines := []string{against(lineAfter[0], held), against(lineAfter[1], planWar)}
 	switch g.war.t { // the same tallies are the same war, whatever was typed
-	case hold.t:
+	case held.t:
 		lines[0] = lineAfter[3].Text
 		if g.war.d.heldFewest {
 			lines[0] = lineAfter[2].Text
 		}
-	case plan.t:
+	case planWar.t:
 		lines[1] = lineAfter[4].Text
 	}
 	return lines

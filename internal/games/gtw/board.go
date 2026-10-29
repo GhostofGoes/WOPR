@@ -139,7 +139,7 @@ func (g *Game) drawWindow(c *proto.Canvas) {
 	if secs <= 10 {
 		style = proto.StyleAlert
 	}
-	c.Put(80-len(text), footRow, text, style, 0)
+	c.Put(consoleW-len(text), footRow, text, style, 0)
 }
 
 func (g *Game) drawLegend(c *proto.Canvas) {
