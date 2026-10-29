@@ -36,8 +36,16 @@ var (
 	lineDenied   = script.FromFilm("** ACCESS DENIED **")
 	lineImproper = script.FromFilm("** IMPROPER REQUEST **")
 	lineMustRun  = script.FromFilm("** ROUTINE MUST COMPLETE BEFORE RESET **")
-	lineHint     = script.Orig("A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.")
 	lineCode     = script.FromFilm("CPE1704TKS") // the launch code, cracked on the board
+
+	// The climax's hints, in the order they escalate (climaxHint), and WOPR's answer to a
+	// player who tries to stop the war.
+	lineHints = script.Orig(
+		"SOME GAMES CANNOT BE WON, PROFESSOR. EVERY CHILD KNOWS ONE.",
+		"A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.",
+		"TYPE TIC-TAC-TOE, PROFESSOR.",
+	)
+	lineNudge = script.Orig("WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM.")
 
 	// The exchange (original): a stage's three report lines, the strike prompt and its
 	// replies. # is filled in order.
@@ -89,7 +97,7 @@ var (
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
-	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
+	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,

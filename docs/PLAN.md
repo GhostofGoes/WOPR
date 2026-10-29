@@ -1113,7 +1113,11 @@ no verdict of their own.
       | `GLOBAL THERMONUCLEAR WAR` | `** GAME ROUTINE RUNNING **` |
       | Anything else | `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE BEFORE RESET **`, `** ACCESS DENIED **`, the film's three lines together |
 
-      Each third rejection adds an `original` hint naming tic-tac-toe.
+      The hints escalate, each an `original` line after the notices. The 3rd rejection hints at games that
+      cannot be won, without a name. The 6th names tic-tac-toe. The 9th and every later one says what to
+      type: `TYPE TIC-TAC-TOE, PROFESSOR.` A try to stop the war (`STOP`, `CEASE FIRE`, `ABORT`, `PEACE`
+      and the like) still gets the film's three notices. The first try gets them alone, as in the film.
+      Once, on a later try with no hint due, WOPR adds `WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM.`
    5. `TIC-TAC-TOE` (or any intent naming it: `TTT`, `LET'S PLAY TIC TAC TOE`) gives
       `Done{NoWinner, Next: Launch{tictactoe, "climax:N"}}`, where N counts the launch code characters cracked
       so far. The host chains the hand-off (§4.4). GTW reads requests without apostrophes or spaces, so
@@ -2593,9 +2597,10 @@ Thirteen are spelt as filmjournals' and the Reddit list's readings have them, wh
 
 **Original lines** (O): the LOGON hint, `WHICH GAME?`, `** GAME ROUTINE NOT AVAILABLE **`,
 `** REQUEST CANCELLED **`, `** PRESS ESC AGAIN TO END GAME **`, the `HELP` command list (including
-`<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints, the climax tic-tac-toe's WOPR-win line, the
-remark after an abandoned war, `PROCESSING`, `SHALL WE PLAY A GAME?` and `WINNER: NONE` on their own, and
-the fallback `PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's exchange, with `#` filled in order:
+`<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints and its answer to a try to stop the war,
+the climax tic-tac-toe's WOPR-win line, the remark after an abandoned war, `PROCESSING`,
+`SHALL WE PLAY A GAME?` and `WINNER: NONE` on their own, and the fallback
+`PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's exchange, with `#` filled in order:
 
 ```text
 STRIKE # OF # [# # #]:
