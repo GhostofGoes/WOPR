@@ -6,6 +6,7 @@ package gtw
 import (
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
@@ -35,6 +36,7 @@ const (
 	arcSteps   = 80                    // points plotted along a track
 	usLon      = -98.0                 // the longitude each side's name is centred on
 	ussrLon    = 95.0
+	aimGlyph   = "@" // a listed target not yet struck; the map's art has none
 )
 
 // View implements proto.Program.
@@ -68,6 +70,13 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	for _, m := range g.missiles {
 		g.drawTrack(c, m)
 	}
+	// Your targets are marked over the tracks, until an impact covers the mark. The film's
+	// board marks nothing.
+	if !g.film {
+		for _, t := range g.targets {
+			c.Put(mapLeft+t.X, mapTop+t.Y, aimGlyph, proto.StyleTarget, 0)
+		}
+	}
 	// Impacts go over every track, so no launch hides where a strike landed: a city beside
 	// a silo field (Novosibirsk) would otherwise lose its X under the field's launches.
 	// Earlier stages leave only their impacts.
@@ -78,6 +87,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 		if g.progress(m) >= 1 {
 			c.Put(mapLeft+m.to.X, mapTop+m.to.Y, "X", trackStyle(m), proto.AttrReverse)
 		}
+	}
+	if !g.film {
+		g.drawNames(c)
 	}
 
 	c.Put(defconX, 0, lineDefcon[0].Text, proto.StyleLabel, 0)
@@ -116,6 +128,106 @@ func (g *Game) drawLegend(c *proto.Canvas) {
 	c.Put(strings.Index(legend, "+"), footRow, "+", proto.StyleOutgoing, 0)
 	c.Put(strings.Index(legend, "*"), footRow, "*", proto.StyleIncoming, 0)
 	c.Put(strings.LastIndex(legend, "X"), footRow, "X", proto.StyleText, proto.AttrReverse)
+	if g.film {
+		return
+	}
+	aim, x := lineLegendAim[0].Text, len(legend)+3
+	c.Put(x, footRow, aim, proto.StyleDim, 0)
+	c.Put(x+strings.Index(aim, aimGlyph), footRow, aimGlyph, proto.StyleTarget, 0)
+}
+
+// drawNames names struck cities beside their impacts: each of your targets once one of your
+// warheads has landed on it, in your list's order, then the city of yours that WOPR hit last
+// in this stage. A name goes beside its X, to the right or the left, or else on the row above
+// or below. It stays inside the map box, over the map's art and tracks only: it never covers
+// an impact, a target mark or another name, nor touches one at either end, so that no name
+// seems to belong to another X. A name with no room is left out; its X still shows. Every
+// impact this stage will make is kept clear from its start, so a name does not move when a
+// warhead lands beside it.
+func (g *Game) drawNames(c *proto.Canvas) {
+	n := names{taken: map[[2]int]bool{}, marks: map[[2]int]bool{}}
+	for _, t := range g.targets {
+		n.marks[[2]int{mapLeft + t.X, mapTop + t.Y}] = true
+	}
+	for _, m := range append(slices.Clone(g.impacts), g.missiles...) {
+		n.marks[[2]int{mapLeft + m.to.X, mapTop + m.to.Y}] = true
+	}
+	for _, t := range g.targets {
+		if g.struck(t) {
+			n.draw(c, t, proto.StyleTarget)
+		}
+	}
+	var last missile
+	landed := -1 // the frame the last of WOPR's warheads on your cities landed, in this stage
+	for _, m := range g.missiles {
+		if !m.ours && g.progress(m) >= 1 && slices.Contains(g.cities, m.to) && m.launch+flightFrames[m.kind] >= landed {
+			last, landed = m, m.launch+flightFrames[m.kind]
+		}
+	}
+	if landed >= 0 {
+		n.draw(c, last.to, proto.StyleIncoming)
+	}
+}
+
+// struck reports whether one of your warheads has landed on t.
+func (g *Game) struck(t assets.Place) bool {
+	for _, m := range g.impacts {
+		if m.ours && m.to == t {
+			return true
+		}
+	}
+	for _, m := range g.missiles {
+		if m.ours && m.to == t && g.progress(m) >= 1 {
+			return true
+		}
+	}
+	return false
+}
+
+// names is the room drawNames leaves: the cells names take, and the cells of every impact and
+// target mark, on the screen.
+type names struct{ taken, marks map[[2]int]bool }
+
+// draw puts p's name in the first place beside its X that has room, and takes its cells.
+func (n names) draw(c *proto.Canvas, p assets.Place, style proto.Style) {
+	x, y, name := mapLeft+p.X, mapTop+p.Y, p.Name
+	w := len(name)
+	for _, s := range []struct {
+		x, y int
+		text string
+	}{ // right and left of the X, a gap between; then above and below, from its column or to it
+		{x + 1, y, " " + name},
+		{x - w - 1, y, name + " "},
+		{x, y - 1, name},
+		{x - w + 1, y - 1, name},
+		{x, y + 1, name},
+		{x - w + 1, y + 1, name},
+	} {
+		if !n.room(s.x, s.y, len(s.text), [2]int{x, y}) {
+			continue
+		}
+		c.Put(s.x, s.y, s.text, proto.StyleLand, 0) // the gap beside the X is the map's blank
+		c.Put(s.x+strings.Index(s.text, name), s.y, name, style, 0)
+		for i := range len(s.text) {
+			n.taken[[2]int{s.x + i, s.y}] = true
+		}
+		return
+	}
+}
+
+// room reports whether w cells from x, y are inside the map box, free, and with nothing but
+// the map's art, a track or own (the name's own X) on either side.
+func (n names) room(x, y, w int, own [2]int) bool {
+	if y < mapTop || y >= boxBottom || x < mapLeft || x+w > boxRight {
+		return false
+	}
+	for i := -1; i <= w; i++ {
+		cell := [2]int{x + i, y}
+		if n.taken[cell] || (n.marks[cell] && (cell != own || i >= 0 && i < w)) {
+			return false
+		}
+	}
+	return true
 }
 
 func trackStyle(m missile) proto.Style {

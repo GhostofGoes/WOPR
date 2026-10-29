@@ -29,6 +29,10 @@ var (
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
+	// A line's targets, named back: one, or several with commas between them; then where they
+	// stand in the list, and its limit.
+	lineAccepted = script.Orig("#. TARGET # OF #.", "#. TARGETS #-# OF #.")
+	lineListed   = script.Orig("# IS ALREADY LISTED.")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
 	// underlines the first line; the board's three-row strip has no room for that.
 	lineRunning  = script.FromFilm("** GAME ROUTINE RUNNING **")
@@ -75,6 +79,7 @@ var (
 	lineOrdersHint = script.Orig("ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.")
 	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.")
 	lineLegend     = script.Orig("OUTGOING +   INCOMING *   IMPACT X")
+	lineLegendAim  = script.Orig("TARGET @") // the game's board adds it to the legend; the film's has no marks
 
 	// filmList is LIST GAMES as the film shows it, for the climax. The catalog's tests check
 	// it against the registry's listed names, so the two cannot drift.
@@ -88,12 +93,12 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
+	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineAccepted, lineListed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
-	lineLegend, filmList,
+	lineLegend, lineLegendAim, filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

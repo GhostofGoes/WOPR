@@ -99,6 +99,51 @@ func TestTargets(t *testing.T) {
 	}
 }
 
+// WOPR names back the targets each line adds, counted toward the eight: one alone, several
+// in one line. A target an earlier line listed gets a note; one named twice in a line, such
+// as WASHINGTON, D.C., is one target and gets none. A line that adds nothing says nothing.
+func TestTargetsAreConfirmed(t *testing.T) {
+	t.Parallel()
+	g := testkit.Game(t, gtw.New(), info, "", 1)
+	g.Type("2")
+	for _, tc := range []struct {
+		in   string
+		want []string // what WOPR says back, line by line
+	}{
+		{"Seattle", []string{"SEATTLE. TARGET 1 OF 8."}},
+		{"Las Vegas, Portland", []string{"LAS VEGAS, PORTLAND. TARGETS 2-3 OF 8."}},
+		{"Washington, D.C.", []string{"WASHINGTON. TARGET 4 OF 8."}},
+		{"vegas, Denver, Seattle", []string{
+			"DENVER. TARGET 5 OF 8.", "LAS VEGAS IS ALREADY LISTED.", "SEATTLE IS ALREADY LISTED.",
+		}},
+		{"Seattle", []string{"SEATTLE IS ALREADY LISTED."}},
+		{"Smallville, Omaha", []string{
+			"OMAHA. TARGET 6 OF 8.", "SMALLVILLE IS NOT IN THE TARGET DATABASE.", "TYPE LIST FOR THE ENEMY TARGETS ON FILE.",
+		}},
+		{"Moscow", []string{"MOSCOW IS NOT AN ENEMY TARGET.", "TYPE LIST FOR THE ENEMY TARGETS ON FILE."}},
+		{"Boston, Miami, Atlanta", []string{"BOSTON, MIAMI. TARGETS 7-8 OF 8.", "TARGET LIST FULL."}},
+		{"Chicago", []string{"TARGET LIST FULL."}},
+		{"?", nil}, // LIST: checked by TestTargetsOnFile
+	} {
+		before := len(g.Transcript())
+		g.Type(tc.in)
+		got := strings.Split(strings.TrimSpace(g.Transcript()[before:]), "\n")[1:] // after the line typed
+		var said []string
+		for _, l := range got {
+			if l = strings.TrimSpace(l); l != "" {
+				said = append(said, l)
+			}
+		}
+		if tc.want != nil && strings.Join(said, "\n") != strings.Join(tc.want, "\n") {
+			t.Errorf("%q: WOPR says %q, want %q", tc.in, said, tc.want)
+		}
+	}
+	g.Type("")
+	if !g.Contains("FIRST STRIKE LAUNCHED.") {
+		t.Errorf("eight targets open the board:\n%s", g.Transcript())
+	}
+}
+
 // A name the board does not know, or one of your own cities, is refused with the way to see
 // what is on file; LIST prints the enemy's targets, and they fit the console.
 func TestTargetsOnFile(t *testing.T) {
@@ -207,7 +252,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
 			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
 		}, 3},
-		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
+		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X   TARGET @", []string{
 			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
 		}, 1},
 		{"kill ratios", "", "", nil, 0},
@@ -216,7 +261,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	oneTrack := []stage{ // strike 2 fires 1% of the ICBMs: one track
 		{"strike 2 orders", "1 0 0", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", nil, 4},
 		{"strike 3 orders", "0 0 0", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{"A-MM3-A", "C-MM3-A"}, 3},
-		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{"A-MM3-A", "C-MM3-A"}, 1},
+		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X   TARGET @", []string{"A-MM3-A", "C-MM3-A"}, 1},
 	}
 	for _, path := range [][]stage{enter, oneTrack} {
 		g := gtw.New()

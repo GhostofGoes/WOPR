@@ -4,6 +4,7 @@
 package gtw
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -227,6 +228,157 @@ func TestBombersStayDotted(t *testing.T) {
 					}
 				}
 			}
+		}
+	}
+}
+
+// A line of many targets is named back on lines that fit the console, broken after a comma,
+// so every name stays whole and the lines read back as the one line.
+func TestLongConfirmationsWrap(t *testing.T) {
+	t.Parallel()
+	var added []assets.Place
+	for _, name := range []string{
+		"COLORADO SPRINGS", "SALT LAKE CITY", "SAN FRANCISCO", "OKLAHOMA CITY", "INDIANAPOLIS",
+		"PHILADELPHIA", "JACKSONVILLE", "MINNEAPOLIS",
+	} {
+		p, ok := assets.Find(name)
+		if !ok {
+			t.Fatalf("the board does not know %s", name)
+		}
+		added = append(added, p)
+	}
+	lines := confirmed(added, maxTargets)
+	if len(lines) < 2 {
+		t.Fatalf("%q: eight long names fit one line?", lines)
+	}
+	for _, l := range lines {
+		if len(l) > consoleW || strings.HasSuffix(l, " ") {
+			t.Errorf("%d columns, or a trailing space: %q", len(l), l)
+		}
+	}
+	for _, l := range lines[:len(lines)-1] {
+		if !strings.HasSuffix(l, ",") {
+			t.Errorf("a line breaks inside a name: %q", l)
+		}
+	}
+	want := "COLORADO SPRINGS, SALT LAKE CITY, SAN FRANCISCO, OKLAHOMA CITY, INDIANAPOLIS, PHILADELPHIA, " +
+		"JACKSONVILLE, MINNEAPOLIS. TARGETS 1-8 OF 8."
+	if got := strings.Join(lines, " "); got != want {
+		t.Errorf("reads %q, want %q", got, want)
+	}
+}
+
+// screenNames is every name drawNames put on the board: the runs of StyleTarget or
+// StyleIncoming letters inside the map box, not reversed (impacts are), with where each
+// starts. A name's own spaces are in its style; the gap beside its X is the map's.
+func screenNames(c *proto.Canvas) map[string][2]int {
+	in := func(x, y int, s proto.Style) bool {
+		cell := c.At(x, y)
+		return x < boxRight && cell.S == s && cell.A&proto.AttrReverse == 0 &&
+			(cell.R >= 'A' && cell.R <= 'Z' || cell.R == '-' || cell.R == ' ')
+	}
+	out := map[string][2]int{}
+	for y := mapTop; y < boxBottom; y++ {
+		for x := mapLeft; x < boxRight; x++ {
+			s := c.At(x, y).S
+			if (s != proto.StyleTarget && s != proto.StyleIncoming) || !in(x, y, s) || c.At(x, y).R == ' ' {
+				continue
+			}
+			var b strings.Builder
+			end := x
+			for ; in(end, y, s); end++ {
+				b.WriteRune(c.At(end, y).R)
+			}
+			out[strings.TrimRight(b.String(), " ")] = [2]int{x, y}
+			x = end
+		}
+	}
+	return out
+}
+
+// Your targets are findable on the board: each is marked @ until one of your warheads lands
+// on it, and then named beside its X, as the city of yours WOPR hit last is. A name never
+// covers an impact or a mark, nor touches one at either end unless it is its own X, and it
+// stays inside the map box; whatever the side, the targets and the orders.
+func TestTargetsAreNamedOnTheBoard(t *testing.T) {
+	t.Parallel()
+	lists := map[assets.Side]string{
+		assets.US:   "Moscow, Leningrad, Kiev, Minsk, Odessa, Gorky, Kharkov, Murmansk",
+		assets.USSR: "New York, Chicago, Houston, Denver, Miami, Seattle, Boston, Atlanta",
+	}
+	named := 0
+	r := proto.NewRand(11, 3)
+	for seed := range uint64(24) {
+		side := []assets.Side{assets.US, assets.USSR}[seed%2]
+		g := New().(*Game)
+		g.Start(proto.Env{Seed: seed, Width: 80, Height: 19})
+		for _, in := range []string{fmt.Sprint(side), lists[side], ""} {
+			g.Handle(proto.LineEvent{Text: in})
+		}
+		for range 400 {
+			if g.phase == orders {
+				g.Handle(proto.LineEvent{Text: []string{"", "hold", "all", "0 100 0"}[r.IntN(4)]})
+			}
+			if g.phase != flight && g.phase != orders && g.phase != assessed {
+				break
+			}
+			c := proto.NewCanvas(80, 19)
+			g.View(c)
+			marks := map[[2]int]bool{}
+			for _, m := range append(slices.Clone(g.impacts), g.missiles...) {
+				x, y := mapLeft+m.to.X, mapTop+m.to.Y
+				if g.progress(m) >= 1 {
+					if cell := c.At(x, y); cell.R != 'X' || cell.A&proto.AttrReverse == 0 {
+						t.Fatalf("seed %d: the impact at %d,%d is %q:\n%s", seed, x, y, cell.R, c.String())
+					}
+				}
+				marks[[2]int{x, y}] = true
+			}
+			for _, p := range g.targets {
+				x, y := mapLeft+p.X, mapTop+p.Y
+				marks[[2]int{x, y}] = true
+				if cell := c.At(x, y); !g.struck(p) && cell.R != rune(aimGlyph[0]) && cell.R != 'X' {
+					t.Fatalf("seed %d: %s is not marked: %q at %d,%d:\n%s", seed, p.Name, cell.R, x, y, c.String())
+				}
+			}
+			for name, at := range screenNames(c) {
+				p, ok := assets.Find(name)
+				if !ok {
+					t.Fatalf("seed %d: %q is not a place:\n%s", seed, name, c.String())
+				}
+				named++
+				own := [2]int{mapLeft + p.X, mapTop + p.Y}
+				if d := at[1] - own[1]; d < -1 || d > 1 {
+					t.Errorf("seed %d: %s is named %d rows from its X:\n%s", seed, name, d, c.String())
+				}
+				for x := at[0] - 1; x <= at[0]+len(name); x++ {
+					cell := [2]int{x, at[1]}
+					if marks[cell] && cell != own {
+						t.Fatalf("seed %d: %s at %v covers or touches another X:\n%s", seed, name, at, c.String())
+					}
+				}
+				if want := g.struck(p) || p.Side == g.side; !want {
+					t.Errorf("seed %d: %s is named before it is struck:\n%s", seed, name, c.String())
+				}
+			}
+			g.Handle(proto.TickEvent{Dt: frame})
+		}
+	}
+	if named == 0 {
+		t.Error("no target was ever named")
+	}
+}
+
+// The film's board, in movie mode, is the film's: no marks, no names, the film's legend.
+func TestFilmBoardNamesNothing(t *testing.T) {
+	t.Parallel()
+	f := NewFilm(1, false)
+	for _, stage := range []FilmStage{FilmStrike1, FilmStrike2, FilmClimax} {
+		f.Run(stage)
+		c := proto.NewCanvas(80, 19)
+		f.View(c)
+		if strings.Contains(c.String(), aimGlyph) || len(screenNames(c)) > 0 || strings.Contains(c.String(), "TARGET") {
+			t.Errorf("stage %d marks or names targets:\n%s", stage, c.String())
 		}
 	}
 }
