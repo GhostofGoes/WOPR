@@ -576,6 +576,9 @@ type Env struct {
 	Deterministic bool   // --seed or WOPR_SEED, or under test, or movie mode: AI search obeys Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking (§4.5)
 	Mode          string // optional launch mode, e.g. "climax" (§6.2)
+	// --launch-window: how long GTW's strike prompts wait for an order (§6.2). 0 (the default,
+	// and always in movie mode) waits for ever.
+	LaunchWindow time.Duration
 }
 
 type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
@@ -678,6 +681,7 @@ Rules:
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
   between them as it needs (the movie director: keys while a scene plays, a line at the scene menu). While a
   `Prompt` is active, the host delivers an empty Enter as `LineEvent{""}`. GTW ends its target list that way.
+  `AwaitKeys` withdraws an active prompt: the UI drops the line typed or held for it (GTW's launch window).
 - **Launch and hand-off** (AR-5, IM-6).
   - The host resolves `Launch{Slug}` through the injected `Resolver`. `ui` builds it from the registry: a
     `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. The ending is a registry
@@ -783,6 +787,9 @@ its background colour, which no theme can work around.
   montage still play. `--instant` is what skips them: it draws each strike at once and skips the self-play
   and the montage. Movie mode's game clock keeps ticking, as the film shows it. Space pauses it with the
   rest (WCAG 2.2.2).
+- **Time limits.** No prompt times out by default. `-w/--launch-window` is the one time limit, on GTW's
+  strike orders, and only the player turns it on and sets its length, 5 to 999 seconds (WCAG 2.2.1). The
+  board states the seconds left as a number, and `--instant` and `--reduce-motion` leave it running.
 - **Text is real characters.** Every screen and every view is printable ASCII. Boards, maps and tables
   carry words (labels, legends, seat and side names). The console says each of WOPR's moves (in Hearts and
   Bridge, the trick so far). Every prompt with text ends in `:` or `?`. The film's open prompts (WOPR's
@@ -964,6 +971,9 @@ wopr -i | --instant           no pacing                              (env WOPR_I
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
 wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
                               typing or the animations, which -i skips
+wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
+                              a switch, so a value needs "=" ("-w 45" is refused). No variable. --movie
+                              refuses it
 wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
@@ -1057,7 +1067,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, and WOPR's remarks (one kind for each order, seeded, none in movie mode). |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1088,6 +1098,18 @@ no verdict of their own.
         - Enter (or `FIRE`, `YES`) executes the bracketed plan. Strike 3's plan is `100 100 100`.
         - `AUTO` hands WOPR every remaining strike: `WOPR HAS LAUNCH AUTHORITY.`
         - `HELP` or `?` prints three lines.
+        - **The launch window** (`-w/--launch-window`, `Env.LaunchWindow`; off by default). Each strike
+          prompt gives the order that long, counted on the protocol's ticks (`Animate` every second), so it
+          stands still behind the TOO SMALL card. Row 18 ends at column 79 with `WINDOW 27 SECONDS` (an
+          alert in the last ten), beside the orders hint or the last-orders warning. HELP and refusals do
+          not stop it, and any order does. At zero, WOPR takes launch authority as `AUTO` gives it:
+          `LAUNCH WINDOW CLOSED, PROFESSOR.`, `WOPR HAS LAUNCH AUTHORITY.`, and the war plan for every
+          strike left. The prompt cannot be taken back, so `AwaitKeys` replaces it, with the hint
+          `NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.`, until the assessment's prompt. An order still
+          being typed is dropped. The strike that the closed window starts gets its own remark (below).
+          The window runs under `Instant` (its flights are drawn at once, but the window is real time),
+          `ReduceMotion` and `--seed`. Tests move the clock with ticks. Movie mode has none: `--movie`
+          refuses the flag, the UI passes 0 there, and `Film` never sets it.
         - A refusal asks the same strike again. The refusals are `ORDER NOT RECOGNISED. TYPE HELP.`,
           `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.` (also for a signed or decimal number, including a
           typographic minus or dash such as `–50`), `** ROUTINE MUST COMPLETE BEFORE RESET **` for a
@@ -1105,8 +1127,9 @@ no verdict of their own.
           listed target, which is where the first track lands), the war plan, the plan at both prompts,
           `ALL`, `HOLD`, `HOLD` in a strike where WOPR launches no missiles either (it has none left above
           its reserve), an order that keeps every ICBM in its silo while you still hold some, any other
-          order, `AUTO`, the strike WOPR orders under `AUTO`, a strike with nothing left to order, and
-          WOPR's DEFCON 1 attack. The plan wins over `ALL`, since strike 3's plan is everything.
+          order, `AUTO`, a launch window that shut with no order, the strike WOPR orders under `AUTO` or
+          after the window shut, a strike with nothing left to order, and WOPR's DEFCON 1 attack. The
+          plan wins over `ALL`, since strike 3's plan is everything.
         - Each kind has two to four variants. GTW draws one from the game's seed on its own stream
           (stream 1; stream 0's draws stay fixed whatever the orders), never the variant that kind gave
           last. The same seed and orders give the same remarks.
@@ -1154,12 +1177,18 @@ no verdict of their own.
           column 79, a `FORCES` table: ICBMs in silos, SLBMs at sea, bombers grounded (`BMB`) and airborne
           (`AIR`), your side first. The nations' names say whose figures are whose. The colours only repeat
           it.
-        - Row 18 shows one thing, by state:
+        - Row 18 shows one thing, by state, and with the launch window its seconds at the right end:
           - the orders hint, at a strike prompt
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
           - WOPR's remark, for the first 3 s of a stage
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
+
+          The remark and the launch window never share the row. The remark belongs to a stage's flight
+          and the window to its prompt. A remark is gone at frame 30 and the prompt opens at frame 44, so
+          every remark is typed in full and gone before a window starts. The closed window's remark comes
+          with the strike that it starts, after the window's seconds are gone
+          (`TestRemarksAndWindowTakeTurns`).
         - The map draws the United States' land in `LandUS`, the Soviet Union's in `LandUSSR` and every
           other country's in `Land`: blue, red and green on the war room's screens (§2.4). The names under
           the map say whose land is whose, so the colours only repeat it.
@@ -1172,7 +1201,7 @@ no verdict of their own.
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
-        everything up to the next prompt. Nothing waits for a tick.
+        everything up to the next prompt. Nothing waits for a tick, unless a launch window runs.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
@@ -2694,6 +2723,8 @@ FULL-SCALE ENEMY ATTACK. #. DEFCON 1.
 LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.
 STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
+LAUNCH WINDOW CLOSED, PROFESSOR.
+NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.
 ORDER NOT RECOGNISED. TYPE HELP.
 PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
 ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
@@ -2710,7 +2741,8 @@ The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The after-action re
 `# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES`
 table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`,
 `SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
-`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`.
+`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, the launch window's `WINDOW # SECONDS` and
+`WINDOW 1 SECOND`, and the legend `OUTGOING +   INCOMING *   IMPACT X`.
 WOPR's remarks as each stage flies are in `gtw/lines.go` (`lineReact…`), such as
 `HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.` and `TARGETS CONFIRMED, PROFESSOR. # IS FIRST.` The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical

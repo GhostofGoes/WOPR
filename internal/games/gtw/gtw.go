@@ -42,6 +42,7 @@ const (
 	blinkFrame   = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
 	codeEvery    = 16                     // climax frames per cracked character
 	codeHeldBack = 3                      // characters the climax never cracks: the ending does
+	windowTick   = time.Second            // the launch window's countdown cadence
 )
 
 type phase uint8
@@ -85,9 +86,10 @@ type Game struct {
 	side     assets.Side    // the player's
 	targets  []assets.Place // the enemy's, as listed
 	war      *war
-	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
-	rep      report // the current stage, resolved when it starts
-	auto     bool   // AUTO: WOPR orders every remaining strike
+	stage    int           // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
+	rep      report        // the current stage, resolved when it starts
+	auto     bool          // AUTO, or the launch window shut: WOPR orders every remaining strike
+	window   time.Duration // what is left of the launch window at a strike prompt; 0: none runs
 	missiles []missile
 	impacts  []missile // every earlier stage's tracks, drawn as impacts only
 	traj     []missile // your latest missiles, newest first, for the trajectory table
@@ -356,7 +358,7 @@ func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 	g.impacts = append(g.impacts, g.missiles...)
 	g.missiles = nil
 	g.stage++
-	g.phase, g.frame = flight, 0
+	g.phase, g.frame, g.window = flight, 0, 0
 	if g.stage > strikes {
 		g.rep = g.war.final()
 		g.defcon = 1
@@ -507,13 +509,46 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 		return g.run(max(int(dt/frame), 1))
 	case assessed:
 		return []proto.Output{proto.Redraw{}} // only the blink moves
+	case orders:
+		return g.countDown(dt)
 	case climax:
 		g.climaxT += max(int(dt/codeFrame), 1)
 		g.cracked = min(g.climaxT/codeEvery, len(lineCode[0].Text)-codeHeldBack)
 		return []proto.Output{proto.Redraw{}}
-	case chooseSide, listTargets, orders, ratios:
+	case chooseSide, listTargets, ratios:
 	}
 	return nil
+}
+
+// openWindow is the clock at a strike prompt: stopped, since nothing moves while it waits,
+// unless --launch-window gave the orders a time limit (Env.LaunchWindow). The countdown runs
+// on the protocol's ticks, so it stands still behind the TERMINAL TOO SMALL card. HELP and a
+// refused order do not stop it.
+func (g *Game) openWindow() proto.Output {
+	g.window = g.env.LaunchWindow
+	if g.window <= 0 {
+		return proto.Animate{}
+	}
+	return proto.Animate{Every: windowTick}
+}
+
+// countDown runs the launch window down by dt. When it reaches zero, WOPR takes launch
+// authority, as AUTO hands it over: this strike and the rest fly on the war plan, and WOPR
+// remarks on the closed window as the strike flies.
+func (g *Game) countDown(dt time.Duration) []proto.Output {
+	if g.window <= 0 {
+		return nil
+	}
+	g.window -= dt
+	if g.window > 0 {
+		return []proto.Output{proto.Redraw{}}
+	}
+	g.window, g.auto = 0, true
+	// The strike prompt cannot be taken back, so key mode replaces it: what is typed now
+	// reaches nobody, and the hint says so.
+	outs := []proto.Output{proto.AwaitKeys{Hint: lineNoOrders[0].Text}, say(lineShut, lineAuto)}
+	outs = append(outs, g.begin(warPlan[g.stage], reactShut)...)
+	return append(outs, g.play()...)
 }
 
 // run advances the war n frames (n < 0: as far as it goes), stopping early at a prompt.
@@ -555,7 +590,7 @@ func (g *Game) step() []proto.Output {
 		outs := []proto.Output{strip(g.cost())}
 		if g.stage < strikes && !g.auto && g.war.launchable() {
 			g.phase = orders
-			return append(outs, proto.Animate{}, proto.Prompt{Text: g.strikePrompt()})
+			return append(outs, g.openWindow(), proto.Prompt{Text: g.strikePrompt()})
 		}
 		return outs
 	case strikeEnd + holdFrames: // the next stage needs no order: AUTO's, unless begin finds it is WOPR's own

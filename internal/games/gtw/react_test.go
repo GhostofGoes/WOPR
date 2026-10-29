@@ -8,9 +8,11 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
 	"github.com/GhostofGoes/WOPR/internal/proto"
+	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
 // What WOPR reacts to, for each kind of order at a strike prompt.
@@ -172,6 +174,65 @@ func TestFilmMakesNoRemarks(t *testing.T) {
 		f.Advance(frame, FilmRatios)
 		if f.g.remarked != "" {
 			t.Fatalf("stage %d: the film's board says %q", f.g.stage, f.g.remarked)
+		}
+	}
+}
+
+// With --launch-window, the remark and the window take turns on the board's last row: the
+// remark owns a stage's flight and the window its prompt, so a frame never shows both, every
+// remark is typed in full before the prompt opens, and every prompt frame shows the window.
+// A window that shuts starts a strike with a remark on the closed window.
+func TestRemarksAndWindowTakeTurns(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name  string
+		after int // frames at each prompt before the plan is ordered; -1: let the window shut
+		want  []reaction
+	}{
+		{"ordered in time", 20, []reaction{reactFirst, reactPlan, reactPlanAgain, reactFinal}},
+		{"window shut", -1, []reaction{reactFirst, reactShut, reactAutoStrike, reactFinal}},
+	} {
+		for seed := range uint64(8) {
+			g := New().(*Game)
+			g.Start(proto.Env{Seed: seed, Width: 80, Height: 19, LaunchWindow: 5 * time.Second})
+			g.Handle(proto.LineEvent{Text: "2"})
+			g.Handle(proto.LineEvent{Text: "Las Vegas"})
+			g.Handle(proto.LineEvent{Text: ""})
+			var said []string
+			stage, typed, waited := 0, false, 0
+			for g.phase != assessed {
+				c := proto.NewCanvas(80, 19)
+				g.View(c)
+				foot := strings.Split(c.String(), "\n")[footRow]
+				shown := strings.Contains(foot, "WINDOW ")
+				switch {
+				case g.stage != stage:
+					stage, typed, waited = g.stage, false, 0
+					said = append(said, g.remarked)
+				case g.phase == orders && (!shown || !typed || strings.Contains(foot, g.remarked)):
+					t.Fatalf("%s, seed %d: strike %d's prompt shows %q (remark %q typed in full: %v)",
+						tc.name, seed, g.stage+1, foot, g.remarked, typed)
+				case g.phase == flight && shown:
+					t.Fatalf("%s, seed %d: stage %d flies with %q", tc.name, seed, g.stage, foot)
+				}
+				typed = typed || strings.TrimSpace(foot) == g.remarked
+				if g.phase == orders {
+					if waited == tc.after {
+						g.Handle(proto.LineEvent{Text: ""})
+						continue
+					}
+					waited++
+				}
+				g.Handle(proto.TickEvent{Dt: frame})
+			}
+			if len(said) != len(tc.want) {
+				t.Fatalf("%s, seed %d: remarks %q, want %d", tc.name, seed, said, len(tc.want))
+			}
+			for i, r := range tc.want {
+				if !slices.ContainsFunc(reactLines[r], func(l script.L) bool { return fill(l, "LAS VEGAS") == said[i] }) {
+					t.Errorf("%s, seed %d: stage %d says %q, want a reaction %d", tc.name, seed, i+1, said[i], r)
+				}
+			}
 		}
 	}
 }

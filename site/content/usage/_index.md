@@ -40,6 +40,7 @@ Options can come before or after the game.
 | `-i`, `--instant` | Show text at once, instead of one character at a time. |
 | `-s`, `--seed <n>` | Play a repeatable session. See [Seeds](#seeds). |
 | `-r`, `--reduce-motion` | Nothing blinks, the front panel's lights stand still, and the ending keeps a steady pace. |
+| `-w`, `--launch-window[=secs]` | Give each strike order in [Global Thermonuclear War](/games/gtw) a time limit, 30 seconds unless you give a number from 5 to 999 (`-w=60`). The board shows the seconds that are left. At zero, WOPR takes launch authority, as `AUTO` gives it. Movie mode cannot use it. |
 
 ## Environment variables
 

@@ -31,6 +31,9 @@ type Env struct {
 	Deterministic bool   // --seed or WOPR_SEED, tests, movie mode: searches obey Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking
 	Mode          string // optional launch mode, e.g. "climax"
+	// LaunchWindow is --launch-window: how long GTW's strike prompts wait for an order before
+	// WOPR takes launch authority. 0 waits for ever (the default, and always in movie mode).
+	LaunchWindow time.Duration
 }
 
 // Layout says where a program's View goes.

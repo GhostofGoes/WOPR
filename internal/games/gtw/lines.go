@@ -62,6 +62,8 @@ var (
 	lineSystems   = script.Orig("ICBM", "SLBM", "BOMBERS")
 	promptStrike  = script.Orig("STRIKE # OF # [# # #]: ")
 	lineAuto      = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	lineShut      = script.Orig("LAUNCH WINDOW CLOSED, PROFESSOR.")
+	lineNoOrders  = script.Orig("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.") // the key hint once the window shuts
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
 	lineBadPct    = script.Orig("PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.")
 	lineOrderHelp = script.Orig(
@@ -89,6 +91,7 @@ var (
 	lineOrdersHint = script.Orig("ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.")
 	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.")
 	lineLegend     = script.Orig("OUTGOING +   INCOMING *   IMPACT X")
+	lineWindow     = script.Orig("WINDOW # SECONDS", "WINDOW 1 SECOND") // at the strike prompt's foot, with --launch-window
 
 	// WOPR's remarks on the board's last row as a stage flies (react.go): the variants of
 	// each kind, one drawn from the seed. # in the first strike's is your first target.
@@ -114,6 +117,8 @@ var (
 		"THE ENEMY HOLDS TOO. ITS BOMBERS DO NOT, PROFESSOR.", "NO MISSILES EITHER WAY. ENEMY BOMBERS ARE STILL INBOUND.")
 	lineReactEmpty = script.Orig("NOTHING LEFT TO ORDER, PROFESSOR. THE ENEMY HAS MORE.",
 		"NOTHING LEFT TO ORDER. THE WAR GOES ON WITHOUT YOU.")
+	lineReactShut = script.Orig("TOO SLOW, PROFESSOR. THE WAR PLAN DOES NOT WAIT.",
+		"NO ORDER GIVEN. I GAVE ONE, PROFESSOR.", "HESITATION NOTED, PROFESSOR. EXECUTING THE PLAN.")
 	lineReactFinal = script.Orig("THE LAST RUNG IS MINE, PROFESSOR.", "DEFCON 1. NO FURTHER ORDERS ARE NEEDED.",
 		"EVERYTHING, PROFESSOR. AS PROMISED.", "MY TURN, PROFESSOR.")
 
@@ -131,12 +136,12 @@ var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
-	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
-	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
+	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineShut, lineNoOrders, lineBadOrder,
+	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll, lineReactHold, lineReactSilosFull,
-	lineReactPartial, lineReactAuto, lineReactAutoStrike, lineReactQuiet, lineReactEmpty, lineReactFinal,
-	filmList,
+	lineReactPartial, lineReactAuto, lineReactShut, lineReactAutoStrike, lineReactQuiet, lineReactEmpty,
+	lineReactFinal, lineWindow, filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

@@ -78,7 +78,8 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	outcome, err := ui.Run(ui.Options{
 		Log: lg, Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
 		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene, Only: cfg.Only,
-		NoColor: getenv("NO_COLOR") != "", Tmux: scrubenv.InTmux, Panel: panelSetting(getenv), Registry: reg,
+		LaunchWindow: cfg.LaunchWindow, NoColor: getenv("NO_COLOR") != "", Tmux: scrubenv.InTmux, Panel: panelSetting(getenv),
+		Registry: reg,
 	})
 	lg.Printf("session ended: outcome %d, err %v", outcome, err)
 	switch outcome {

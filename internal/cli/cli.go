@@ -15,6 +15,7 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/movie"
@@ -45,6 +46,7 @@ type Config struct {
 	Seed         uint64
 	SeedSet      bool
 	ReduceMotion bool
+	LaunchWindow time.Duration // GTW's strike prompts wait this long for an order; 0 for ever
 }
 
 // UsageError is a command-line mistake; main prints it with the usage hint and exits 2.
@@ -54,7 +56,9 @@ func (e *UsageError) Error() string { return e.Msg }
 
 func usagef(format string, a ...any) error { return &UsageError{Msg: fmt.Sprintf(format, a...)} }
 
-// flagPair is one option: its long name, its shorthand, and its help text.
+// flagPair is one option: its long name, its shorthand, and its help text. arg names its
+// value, if it takes one. An arg that starts with = is a value that may be left out, and that
+// only follows an equals sign (--launch-window=45).
 type flagPair struct {
 	long, short, arg, help, env string
 }
@@ -72,12 +76,68 @@ var flagPairs = []flagPair{
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
 	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
+	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
+}
+
+// The launch window's length: --launch-window alone gives defaultWindow, and a value must be
+// 0 (off) or from minWindow to maxWindow seconds, which the board's three digits show.
+const (
+	defaultWindow = 30 * time.Second
+	minWindow     = 5 * time.Second
+	maxWindow     = 999 * time.Second
+)
+
+// optionalValue is a flag whose value may be left out, as a switch's is: alone it reads
+// "true". Like a switch, it takes a value only after an equals sign (-w=45): in "-w 45", 45 is
+// the game.
+type optionalValue struct{ v *string }
+
+func (o optionalValue) IsBoolFlag() bool { return true }
+
+func (o optionalValue) String() string {
+	if o.v == nil {
+		return ""
+	}
+	return *o.v
+}
+
+func (o optionalValue) Set(v string) error {
+	*o.v = v
+	return nil
+}
+
+// windowApart refuses seconds given after a space ("-w 45"). The flag is a switch, so 45 would
+// be read as the game (game 45, or too many arguments), which is never what was meant.
+func windowApart(args []string) error {
+	for i := 0; i+1 < len(args) && args[i] != "--"; i++ {
+		name, next := strings.TrimPrefix(strings.TrimPrefix(args[i], "-"), "-"), args[i+1]
+		isWindow := strings.HasPrefix(args[i], "-") && (name == "w" || name == "launch-window")
+		if isWindow && next != "" && strings.Trim(next, "0123456789") == "" {
+			return usagef("%s %s: give the seconds after an equals sign (%s=%s), or the game before %s", args[i], next, args[i], next, args[i])
+		}
+	}
+	return nil
+}
+
+// launchWindow reads --launch-window's value ("" when it is not given).
+func launchWindow(v string) (time.Duration, error) {
+	switch v {
+	case "", "false", "0":
+		return 0, nil
+	case "true":
+		return defaultWindow, nil
+	}
+	n, err := strconv.Atoi(v)
+	if d := time.Duration(n) * time.Second; err == nil && d >= minWindow && d <= maxWindow {
+		return d, nil
+	}
+	return 0, usagef("--launch-window takes 0 or %d to %d seconds, got %q", minWindow/time.Second, maxWindow/time.Second, v)
 }
 
 // Flag is one option as the help shows it, for the manual page (internal/tools/manpage).
 type Flag struct {
 	Long, Short string
-	Arg         string // the value's name, "" for a switch
+	Arg         string // the value's name, "" for a switch, and with a leading = if it may be left out
 	Help        string
 	Env         string // the environment variable that sets it too, or ""
 }
@@ -96,7 +156,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	var (
 		cfg                                              Config
 		version, help, list, scenes, licences, mov, only bool
-		play                                             string
+		play, window                                     string
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -133,7 +193,13 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&cfg.Instant, byName["instant"])
 	strVar(&seed, byName["seed"])
 	boolVar(&cfg.ReduceMotion, byName["reduce-motion"])
+	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
+		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
+	}
 
+	if err := windowApart(args); err != nil {
+		return cfg, RunTUI, err
+	}
 	positionals, err := parseInterspersed(fs, args)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -169,6 +235,12 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	}
 	if only && !mov {
 		return cfg, RunTUI, usagef("--only needs --movie")
+	}
+	if cfg.LaunchWindow, err = launchWindow(window); err != nil {
+		return cfg, RunTUI, err
+	}
+	if mov && cfg.LaunchWindow > 0 {
+		return cfg, RunTUI, usagef("--movie and --launch-window cannot be combined: nobody gives the film's orders")
 	}
 	cfg.Movie, cfg.Only = mov, only
 	if mov {

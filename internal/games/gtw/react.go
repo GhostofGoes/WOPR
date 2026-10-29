@@ -27,7 +27,8 @@ const (
 	reactSilosFull                  // an order that keeps every ICBM in its silo
 	reactPartial                    // any other order
 	reactAuto                       // AUTO
-	reactAutoStrike                 // a strike WOPR orders under AUTO
+	reactShut                       // the launch window shut with no order given
+	reactAutoStrike                 // a strike WOPR orders under AUTO, or after the window shut
 	reactEmpty                      // a strike with nothing left to order
 	reactFinal                      // WOPR's DEFCON 1 attack
 )
@@ -36,7 +37,8 @@ const (
 var reactLines = [...]script.Ls{
 	reactFirst: lineReactFirst, reactPlan: lineReactPlan, reactPlanAgain: lineReactPlanAgain, reactAll: lineReactAll,
 	reactHold: lineReactHold, reactQuiet: lineReactQuiet, reactSilosFull: lineReactSilosFull, reactPartial: lineReactPartial,
-	reactAuto: lineReactAuto, reactAutoStrike: lineReactAutoStrike, reactEmpty: lineReactEmpty, reactFinal: lineReactFinal,
+	reactAuto: lineReactAuto, reactShut: lineReactShut, reactAutoStrike: lineReactAutoStrike, reactEmpty: lineReactEmpty,
+	reactFinal: lineReactFinal,
 }
 
 // reactionTo is WOPR's reaction to an order fired at a strike prompt. plan is the strike's

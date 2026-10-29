@@ -234,6 +234,10 @@ var optionDetails = map[string]string{
 		"The games' searches then stop at a fixed depth. Movie mode ignores the seed.",
 	"reduce-motion": "Stop the blinking, hold the front panel's lights still, and keep the ending at a steady pace. " +
 		"The typing and the animations still play. `--instant` skips them.",
+	"launch-window": "Give each strike order in Global Thermonuclear War a time limit. The board shows the seconds that are left. " +
+		"At zero, WOPR takes launch authority, as `AUTO` gives it. Alone, `--launch-window` gives 30 seconds. " +
+		"`--launch-window=`<secs> gives 5 to 999 seconds, and 0 turns the limit off. " +
+		"`--instant` does not stop the clock. Movie mode gives no orders, so `--movie` refuses this option.",
 }
 
 func writeOptions(p *page) error {
@@ -251,7 +255,10 @@ func writeOptions(p *page) error {
 		}
 		p.macro("TP")
 		short, long := "`-"+f.Short+"`", "`--"+f.Long+"`"
-		if f.Arg != "" {
+		switch {
+		case strings.HasPrefix(f.Arg, "="): // a value that may be left out, shown once as the help does
+			long += "[=<" + strings.TrimPrefix(f.Arg, "=") + ">]"
+		case f.Arg != "":
 			short, long = short+" <"+f.Arg+">", long+" <"+f.Arg+">"
 		}
 		p.line(p.phrase(short + ", " + long))
