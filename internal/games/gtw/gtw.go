@@ -551,9 +551,48 @@ func (g *Game) cost() string {
 		g.nation(you), r.cities[you], g.nation(wopr), r.cities[wopr])
 }
 
+// showRatios puts up the kill ratios, with the after-action report under them. The film's
+// board (movie mode) shows the film's figures, and its viewer gave no orders, so it has none.
 func (g *Game) showRatios() []proto.Output {
 	g.phase = ratios
-	return []proto.Output{proto.Redraw{}, say(lineContinue), proto.Prompt{}}
+	lines := lineContinue.Texts()
+	if !g.film {
+		lines = append(g.afterAction(), lines...)
+	}
+	return []proto.Output{proto.Redraw{}, speak(lines), proto.Prompt{}}
+}
+
+// afterAction is what your orders changed, in the POPULATION DEATHS row: two lines, against
+// the same war fought again with HOLD at both prompts and with the war plan at both. The
+// replays take the table's noise, so their figures agree with it. Holding fire leaves the
+// fewest dead on both sides, whatever else is ordered (TestHoldingFireKillsFewest).
+func (g *Game) afterAction() []string {
+	hold, _ := fight([3]int{}, [3]int{})
+	plan, _ := fight(warPlan[1], warPlan[2])
+	dead := g.war.dead(g.noise)
+	against := func(l script.L, w *war) string {
+		base := w.dead(g.noise)
+		return fill(l, change(lineEnemyDead, dead[wopr]-base[wopr]), change(lineOwnDead, dead[you]-base[you]))
+	}
+	lines := []string{against(lineAfter[0], hold), against(lineAfter[1], plan)}
+	switch g.war.t { // the same tallies are the same war, whatever was typed
+	case hold.t:
+		lines[0] = lineAfter[2].Text
+	case plan.t:
+		lines[1] = lineAfter[3].Text
+	}
+	return lines
+}
+
+// change says how d million dead compare, in l's wordings: more, fewer or as many.
+func change(l script.Ls, d int) string {
+	switch {
+	case d > 0:
+		return fill(l[0], d)
+	case d < 0:
+		return fill(l[1], -d)
+	}
+	return l[2].Text
 }
 
 // startClimax returns to the board at DEFCON 1, with WOPR searching for the launch code.

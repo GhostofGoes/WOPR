@@ -79,6 +79,15 @@ type war struct {
 
 func newWar() *war { return &war{f: startForces} }
 
+// fight wages a whole war: the first strike on the war plan, then o2 and o3, then WOPR's
+// DEFCON 1 attack. The exchange has no dice, so the same orders always fight the same war,
+// and the after-action report can fight it again with other orders.
+func fight(o2, o3 [3]int) (*war, []report) {
+	w := newWar()
+	rs := []report{w.strike(1, warPlan[0]), w.strike(2, o2), w.strike(3, o3)}
+	return w, append(rs, w.final())
+}
+
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
 
 // quarterMore is n and a quarter, rounded up: WOPR's answer to n.
@@ -173,6 +182,12 @@ func (w *war) land(r *report) {
 			r.ground[s] += lost
 		}
 	}
+}
+
+// dead is each side's POPULATION DEATHS row, in millions, as the kill ratios show it.
+func (w *war) dead(noise [10]int) [2]int {
+	r := w.ratios(noise)
+	return [2]int{r[you][11], r[wopr][11]}
 }
 
 // damage is a side's damage in per mille: rising with hits, never reaching 1000.

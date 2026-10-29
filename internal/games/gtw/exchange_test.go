@@ -9,13 +9,6 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
-// wage fights a whole war: the first strike on the war plan, then your two orders.
-func wage(o2, o3 [3]int) (*war, []report) {
-	w := newWar()
-	rs := []report{w.strike(1, warPlan[0]), w.strike(2, o2), w.strike(3, o3)}
-	return w, append(rs, w.final())
-}
-
 // check holds the guarantees for one war: nothing you order wins, and nothing is created
 // or lost from the books.
 func check(t *testing.T, w *war, rs []report, label string) {
@@ -58,7 +51,7 @@ func TestNoAllocationWins(t *testing.T) {
 			for _, s2 := range ends {
 				for _, s3 := range ends {
 					for _, b := range []int{0, 100} {
-						w, rs := wage([3]int{i2, s2, b}, [3]int{i3, s3, 100 - b})
+						w, rs := fight([3]int{i2, s2, b}, [3]int{i3, s3, 100 - b})
 						check(t, w, rs, "grid")
 					}
 				}
@@ -68,7 +61,7 @@ func TestNoAllocationWins(t *testing.T) {
 	r := proto.NewRand(1, 2)
 	for range 2000 {
 		o := func() [3]int { return [3]int{r.IntN(101), r.IntN(101), r.IntN(101)} }
-		w, rs := wage(o(), o())
+		w, rs := fight(o(), o())
 		check(t, w, rs, "random")
 	}
 }
@@ -76,7 +69,7 @@ func TestNoAllocationWins(t *testing.T) {
 // The doctrine's numbers on the film path (Enter at every prompt) and on HOLD, HOLD.
 func TestDoctrine(t *testing.T) {
 	t.Parallel()
-	w, rs := wage(warPlan[1], warPlan[2])
+	w, rs := fight(warPlan[1], warPlan[2])
 	type stage struct{ you, wopr salvo }
 	want := []stage{
 		{salvo{ICBMSilo: 250, SLBM: 150}, salvo{ICBMSilo: 313, SLBM: 188, Bombers: 375}},
@@ -92,7 +85,7 @@ func TestDoctrine(t *testing.T) {
 	if got := w.t; got != [2]tally{{1256, 626, 500, 150}, {750, 500, 400, 93}} {
 		t.Errorf("film path tallies %+v", got)
 	}
-	w, _ = wage([3]int{}, [3]int{})
+	w, _ = fight([3]int{}, [3]int{})
 	if got := w.t; got != [2]tally{{1144, 938, 750, 300}, {150, 250, 200, 93}} {
 		t.Errorf("hold, hold tallies %+v", got)
 	}
@@ -105,7 +98,7 @@ func TestRatiosFavourNoOne(t *testing.T) {
 	r := proto.NewRand(3, 4)
 	for range 2000 {
 		o := func() [3]int { return [3]int{r.IntN(101), r.IntN(101), r.IntN(101)} }
-		w, _ := wage(o(), o())
+		w, _ := fight(o(), o())
 		var noise [10]int
 		for i := range noise {
 			noise[i] = 97 + r.IntN(7)
@@ -125,7 +118,7 @@ func TestRatiosFavourNoOne(t *testing.T) {
 	}
 	// The military rows take the worse of city and silo damage. Firing every ICBM at strike 2
 	// puts 750 warheads on WOPR's silos and 150 on its cities, so its silos set them.
-	w, _ := wage([3]int{100, 0, 0}, [3]int{})
+	w, _ := fight([3]int{100, 0, 0}, [3]int{})
 	if tl := w.t[wopr]; tl.SiloHits != 750 || tl.Cities != 150 {
 		t.Fatalf("WOPR's tally %+v", tl)
 	}
@@ -143,8 +136,8 @@ func TestChoicesMatter(t *testing.T) {
 	r := proto.NewRand(5, 6)
 	for range 2000 {
 		i2, i3 := r.IntN(101), r.IntN(101)
-		a, _ := wage([3]int{i2, r.IntN(101), r.IntN(101)}, [3]int{i3, r.IntN(101), r.IntN(101)})
-		b, rs := wage([3]int{i2, r.IntN(101), r.IntN(101)}, [3]int{i3, r.IntN(101), r.IntN(101)})
+		a, _ := fight([3]int{i2, r.IntN(101), r.IntN(101)}, [3]int{i3, r.IntN(101), r.IntN(101)})
+		b, rs := fight([3]int{i2, r.IntN(101), r.IntN(101)}, [3]int{i3, r.IntN(101), r.IntN(101)})
 		if a.t[you].Cities != b.t[you].Cities {
 			t.Fatalf("your cities moved with SLBM or bomber orders: %d, %d", a.t[you].Cities, b.t[you].Cities)
 		}
@@ -157,9 +150,88 @@ func TestChoicesMatter(t *testing.T) {
 			t.Fatalf("their cities %d, want your SLBMs and arriving bombers %d", b.t[wopr].Cities, theirs)
 		}
 	}
-	hold, _ := wage([3]int{}, [3]int{})
-	fire, _ := wage([3]int{100, 0, 0}, [3]int{})
+	hold, _ := fight([3]int{}, [3]int{})
+	fire, _ := fight([3]int{100, 0, 0}, [3]int{})
 	if hold.t[you].Cities != 1144 || fire.t[you].Cities != 1657 || hold.t[you].ICBMLost != 750 {
 		t.Errorf("hold: %+v; fire your ICBMs at strike 2: %+v", hold.t[you], fire.t[you])
+	}
+}
+
+// Holding fire at both prompts leaves the fewest dead on both sides, whatever the noise, so
+// the after-action report's line for it is true; and holding never kills more than the war
+// plan does.
+func TestHoldingFireKillsFewest(t *testing.T) {
+	t.Parallel()
+	hold, _ := fight([3]int{}, [3]int{})
+	plan, _ := fight(warPlan[1], warPlan[2])
+	r := proto.NewRand(7, 8)
+	for range 2000 {
+		o := func() [3]int { return [3]int{r.IntN(101), r.IntN(101), r.IntN(101)} }
+		w, _ := fight(o(), o())
+		var noise [10]int
+		for i := range noise {
+			noise[i] = 97 + r.IntN(7)
+		}
+		least, most, got := hold.dead(noise), plan.dead(noise), w.dead(noise)
+		if got[you] < least[you] || got[wopr] < least[wopr] || least[you] > most[you] || least[wopr] > most[wopr] {
+			t.Fatalf("dead %v; holding fire %v; the war plan %v", got, least, most)
+		}
+	}
+}
+
+// The after-action report under the kill ratios: what your orders changed against holding
+// fire and against the war plan, in the table's millions, with lines of their own for
+// holding fire and for the war plan. With every noise factor at 100, the war plan leaves 83
+// million of yours dead and 71 million of theirs, and holding fire 81 and 29.
+func TestAfterAction(t *testing.T) {
+	t.Parallel()
+	noise := [10]int{100, 100, 100, 100, 100, 100, 100, 100, 100, 100}
+	all := [3]int{100, 100, 100}
+	for _, tc := range []struct {
+		name   string
+		o2, o3 [3]int
+		want   [2]string
+	}{
+		{"the war plan", warPlan[1], warPlan[2], [2]string{
+			"AGAINST HOLDING FIRE: 42 MILLION MORE ENEMY DEAD, 2 MILLION MORE OF YOURS.",
+			"YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.",
+		}},
+		{"hold, hold", [3]int{}, [3]int{}, [2]string{
+			"YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.",
+			"AGAINST THE WAR PLAN: 42 MILLION FEWER ENEMY DEAD, 2 MILLION FEWER OF YOURS.",
+		}},
+		{"all, all", all, all, [2]string{
+			"AGAINST HOLDING FIRE: 42 MILLION MORE ENEMY DEAD, 7 MILLION MORE OF YOURS.",
+			"AGAINST THE WAR PLAN: AS MANY ENEMY DEAD, 5 MILLION MORE OF YOURS.",
+		}},
+		{"ICBMs only", [3]int{100, 0, 0}, [3]int{}, [2]string{
+			"AGAINST HOLDING FIRE: AS MANY ENEMY DEAD, 7 MILLION MORE OF YOURS.",
+			"AGAINST THE WAR PLAN: 42 MILLION FEWER ENEMY DEAD, 5 MILLION MORE OF YOURS.",
+		}},
+		{"subs and bombers only", [3]int{0, 100, 100}, [3]int{}, [2]string{
+			"AGAINST HOLDING FIRE: 42 MILLION MORE ENEMY DEAD, AS MANY OF YOURS.",
+			"AGAINST THE WAR PLAN: AS MANY ENEMY DEAD, 2 MILLION FEWER OF YOURS.",
+		}},
+	} {
+		w, _ := fight(tc.o2, tc.o3)
+		g := &Game{war: w, noise: noise}
+		if got := g.afterAction(); [2]string(got) != tc.want {
+			t.Errorf("%s: %q, want %q", tc.name, got, tc.want)
+		}
+	}
+	// Every report fits the 80-column strip, whatever the orders and the noise.
+	r := proto.NewRand(9, 10)
+	for range 2000 {
+		o := func() [3]int { return [3]int{r.IntN(101), r.IntN(101), r.IntN(101)} }
+		w, _ := fight(o(), o())
+		g := &Game{war: w}
+		for i := range g.noise {
+			g.noise[i] = 97 + r.IntN(7)
+		}
+		for _, l := range g.afterAction() {
+			if len(l) > 80 {
+				t.Fatalf("%d columns: %q", len(l), l)
+			}
+		}
 	}
 }
