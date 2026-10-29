@@ -170,6 +170,43 @@ jobs:
         if: runner.os == 'Linux'
         run: go run ./internal/tools/branchcov -min 80
 
+  # The Linux sandbox (internal/sandbox) on both architectures, as the release builds it (no
+  # cgo). WOPR_SANDBOX_REQUIRE turns a missing kernel feature into a failure. The root runs
+  # check that the capabilities are dropped.
+  sandbox:
+    name: sandbox
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      CGO_ENABLED: "0"
+      WOPR_SANDBOX_REQUIRE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+      - name: Sandbox tests
+        run: go test -count=1 -v ./internal/sandbox
+      - name: End-to-end tests
+        run: go test -tags e2e -count=1 -v ./internal/e2e
+      - name: Sandbox and end-to-end tests as root
+        run: |
+          set -euo pipefail
+          go test -c -o "$RUNNER_TEMP/sandbox.test" ./internal/sandbox
+          go test -c -tags e2e -o "$RUNNER_TEMP/e2e.test" ./internal/e2e
+          go build -o "$RUNNER_TEMP/wopr" ./cmd/wopr
+          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/sandbox.test" -test.count=1 -test.v
+          sudo env WOPR_SANDBOX_REQUIRE=1 "$RUNNER_TEMP/e2e.test" -test.count=1 -test.v -binary "$RUNNER_TEMP/wopr"
+
   build:
     name: build
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -459,7 +496,7 @@ jobs:
     # the name must stay an expression and never become plain "ci-ok".
     name: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && 'ci-ok (checked by the push run)' || 'ci-ok' }}
     if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
-    needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]
+    needs: [lint, secrets, test, sandbox, build, smoke, windows, macos, snap, collect, docs]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions: {}

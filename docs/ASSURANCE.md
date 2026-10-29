@@ -61,9 +61,11 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
   guessed. The debug log is off unless `WOPR_DEBUG` is set. If the debug log cannot be opened safely,
   `wopr` runs without it.
 - **Least privilege.** `wopr` needs no administrator rights. On Linux, once the terminal is set up, it
-  drops any capabilities, sets `no_new_privs`, and enters a Landlock domain with no rules, so it cannot
-  open or run files or make TCP connections (`internal/sandbox`, `docs/PLAN.md` §8). This limits what a
-  defect found later in `wopr` or a dependency could do. The command-line installers for macOS and
+  drops any capabilities, sets `no_new_privs`, enters a Landlock domain with no rules, and installs a
+  seccomp filter (`internal/sandbox`, `docs/PLAN.md` §8). Landlock stops it from opening or changing files
+  and from TCP connections. The filter stops it from running programs, starting processes, opening any
+  socket, and using kernel interfaces that it never needs. This limits what a defect found later in
+  `wopr` or a dependency could do. The command-line installers for macOS and
   Linux install to `~/.local/bin` without `sudo`, and the Windows installer is per user. CI workflows
   have `permissions: {}` by default and give each job only what it needs. Only the release workflow's
   `sign` job can use the signing key, in an environment limited to release tags.
@@ -88,7 +90,7 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 | Infinite loop that blocks the UI (CWE-835) | A bug in a game | The watchdog (`internal/ui/watchdog.go`) restores the terminal and exits | Watchdog tests |
 | Symbolic link following, insecure permissions (CWE-59, CWE-732) | The debug log | `O_NOFOLLOW`, `Lstat`, owner check, 0700 and 0600 | `internal/debuglog` tests |
 | OS command injection (CWE-78) | The macOS relaunch | Fixed arguments, no shell | Table tests in `cmd/wopr` |
-| A defect that reaches the file system, the network or other programs (CWE-250, CWE-269) | Any code that runs after the terminal is set up, on Linux | `no_new_privs`, dropped capabilities, and a Landlock domain with no rules | `internal/sandbox` tests (on one thread), the `TestLinuxSandbox` and `TestDebugLog` e2e tests |
+| A defect that reaches the file system, the network or other programs (CWE-250, CWE-269) | Any code that runs after the terminal is set up, on Linux | `no_new_privs`, dropped capabilities, a Landlock domain with no rules, and a seccomp filter | `internal/sandbox` tests: each refusal on one thread, the filter in an interpreter for amd64 and arm64, and the real `Restrict` on every thread of a child process. The `TestLinuxSandbox`, `TestDebugLog`, `TestSuspendResume`, `TestTmuxColours` and `TestColours` e2e tests. CI's `sandbox` job runs them on amd64 and arm64, as a user and as root |
 | Use of a weak random generator for security (CWE-338) | None: the seeded generator is for games and replays only | No security decision uses randomness | `proto.NewRand`; gosec's finding is annotated |
 | Download of code without an integrity check (CWE-494) | Installs | HTTPS only (`--proto '=https'`, `--https-only`), attestations, signatures | `SECURITY.md`; the install pages |
 | Vulnerable or malicious dependency (CWE-1395) | Go modules, CI actions | `govulncheck` on every push and weekly; a 14-day dependency cooldown for regular updates (security fixes skip it); actions pinned by commit SHA; zizmor | `ci.yml`, `scheduled.yml`, `internal/tools/cooldown` |

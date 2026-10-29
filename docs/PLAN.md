@@ -1648,15 +1648,42 @@ classified address it leads to.
     may be opened, created, removed or run, and (ABI 4) no TCP socket bound or connected. Abstract UNIX
     sockets outside the domain are out of reach (ABI 6). Signal scoping is left off: each thread gets its own
     domain, and kernels without the fix that allows signals inside a process would block the runtime's own.
+  - It installs a seccomp filter on every thread (`SECCOMP_FILTER_FLAG_TSYNC`). The filter is a denylist.
+    After the lockdown, wopr only reads the terminal, writes the screen and the log, waits, signals itself
+    and starts threads. The filter refuses, with `EPERM`:
+    - Running a program: `execve`, `execveat`, `memfd_create` and `memfd_secret`. Landlock alone does not
+      stop a program that runs from a memfd.
+    - Starting a process: `fork`, `vfork`, and a `clone` without `CLONE_THREAD` or with a `CLONE_NEW*` flag.
+      `clone3` gets `ENOSYS`, so that a caller falls back to `clone`, which the filter can read.
+    - Every socket: `socket` and `socketpair`. Landlock covers TCP only, and not MPTCP, UDP or UNIX sockets.
+    - Other processes: `ptrace`, `process_vm_readv`, `process_vm_writev`, `pidfd_getfd`,
+      `pidfd_send_signal`, `kcmp` and `tkill`. `kill`, `tgkill`, `rt_sigqueueinfo` and
+      `rt_tgsigqueueinfo` may only name wopr itself. `kill(0, …)`, its own process group, stays for Ctrl+Z.
+    - The `TIOCSTI` and `TIOCLINUX` ioctls, which push input into the terminal.
+    - Kernel interfaces that exploits use and wopr never needs: io_uring, `bpf`, `perf_event_open`,
+      `userfaultfd`, the keyrings, `personality`, namespaces, mounts, file handles, modules, `kexec`,
+      `reboot`, the clocks and host names, and the Landlock and seccomp calls themselves.
+
+    A call from another ABI (i386 or x32) kills the process. Every other call is allowed. The tables of
+    numbers for amd64 and arm64 are data, so both filters are built and checked on any host.
   - Files opened before (the terminal, the debug log, the runtime's cgroup files) keep working.
 
-  Every thread must be restricted, so the calls go through `syscall.AllThreadsSyscall6`, which works only
-  without cgo. A cgo build, or a kernel without Landlock (before 5.13, or not enabled), runs with what it can
-  get, and the debug log's `sandbox:` line says what that was. It never stops wopr. `internal/sandbox` is the
-  only package allowed `unsafe` (§4.1): Landlock and `capset` take pointers that `golang.org/x/sys/unix` does
-  not wrap. Not done yet: a seccomp filter (would also cover UDP, pathname UNIX sockets and the kernel's
-  attack surface), and the M7 LLM brain, which will need one Landlock rule for TCP port 443 and its files
-  loaded before the lockdown.
+  The capability drop and Landlock must reach every thread, so those calls go through
+  `syscall.AllThreadsSyscall6`, which works only without cgo. A cgo build still sets `no_new_privs` and
+  installs the filter on every thread, because TSYNC applies both. It has no capability drop and no
+  Landlock. A kernel without Landlock (before 5.13, or not enabled) runs with what it can get. The debug
+  log's `sandbox:` line says what that was. It never stops wopr. `internal/sandbox` is the only package
+  allowed `unsafe` (§4.1): Landlock, `capset` and `seccomp` take pointers that `golang.org/x/sys/unix`
+  does not wrap.
+
+  The tests check each layer three ways. On one locked thread, each refusal must come from the layer
+  that should give it. An interpreter runs the filter's program for both architectures. A child process
+  runs the real `Restrict`, and the test reads `/proc` for every one of its threads, those made after the
+  lockdown too. The e2e tests check the real binary: every thread's status, a chess game, a resize, a
+  suspend, SIGTERM, the colours and the debug log's lines after the lockdown. CI's `sandbox` job runs them
+  on amd64 and arm64, as a user and as root, with `WOPR_SANDBOX_REQUIRE=1` so that a missing kernel
+  feature fails. Not done yet: the M7 LLM brain, which will need one Landlock rule for TCP port 443, a
+  socket that the filter allows, and its files loaded before the lockdown.
 
 ---
 

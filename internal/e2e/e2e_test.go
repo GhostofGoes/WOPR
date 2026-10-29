@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -406,22 +405,63 @@ func TestTooSmallThenResize(t *testing.T) {
 	}
 }
 
+// debugEnv is the environment that turns the debug log on, in a cache folder of the test's own.
+func debugEnv(t *testing.T) (env []string, cache string) {
+	t.Helper()
+	cache = t.TempDir()
+	return []string{"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}, cache
+}
+
+// debugLog reads the debug log that wopr wrote under cache.
+func debugLog(t *testing.T, cache string) string {
+	t.Helper()
+	var found string
+	_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
+		if err == nil && d.Name() == "debug.log" {
+			found = path
+		}
+		return nil
+	})
+	data, err := os.ReadFile(found)
+	if err != nil {
+		t.Fatalf("no debug log under %s: %v", cache, err)
+	}
+	return string(data)
+}
+
+// inOrder fails unless each pattern matches a line of log, each on a later line than the one before.
+func inOrder(t *testing.T, log string, patterns ...string) {
+	t.Helper()
+	lines := strings.Split(log, "\n")
+	at := 0
+	for _, p := range patterns {
+		re := regexp.MustCompile(p)
+		for at < len(lines) && !re.MatchString(lines[at]) {
+			at++
+		}
+		if at == len(lines) {
+			t.Errorf("the log has no line %q after the ones before it:\n%s", p, log)
+			return
+		}
+		at++
+	}
+}
+
 // The debug log records the session's seed, says where it is, and never holds typed input.
 // Without a pinned seed it records the random one, so a bug report can replay the session
 // (docs/PLAN.md §4.6); WOPR_SEED pins it. The unpinned run sets WOPR_SEED empty, which means
-// unset, so a value in the test's own environment cannot leak in.
+// unset, so a value in the test's own environment cannot leak in. The sandbox goes in after the
+// log is open, so the lines written after it prove that the log still works.
 func TestDebugLog(t *testing.T) {
 	for _, tc := range []struct {
-		name, seedEnv string
-		want          *regexp.Regexp
+		name, seedEnv, seed string
 	}{
-		{"random", "WOPR_SEED=", regexp.MustCompile(`seed [0-9]+ \(pinned: false\)`)},
-		{"WOPR_SEED", "WOPR_SEED=1983", regexp.MustCompile(`seed 1983 \(pinned: true\)`)},
+		{"random", "WOPR_SEED=", `seed [0-9]+ \(pinned: false\)`},
+		{"WOPR_SEED", "WOPR_SEED=1983", `seed 1983 \(pinned: true\)`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			cache := t.TempDir()
-			env := []string{"WOPR_DEBUG=1", tc.seedEnv, "XDG_CACHE_HOME=" + cache, "HOME=" + cache, "LocalAppData=" + cache}
-			s := startEnv(t, 80, 24, env, "--instant")
+			env, cache := debugEnv(t)
+			s := startEnv(t, 80, 24, append(env, tc.seedEnv), "--instant")
 			s.waitFor("LOGON:", 10*time.Second)
 			s.send("Joshua\r")
 			s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
@@ -430,50 +470,16 @@ func TestDebugLog(t *testing.T) {
 			if !strings.Contains(s.screen(), "debug log:") {
 				t.Errorf("the log's path is printed on exit:\n%s", s.screen())
 			}
-			var found string
-			_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
-				if err == nil && d.Name() == "debug.log" {
-					found = path
-				}
-				return nil
-			})
-			data, err := os.ReadFile(found)
-			if err != nil {
-				t.Fatalf("no debug log under %s: %v", cache, err)
-			}
-			if !tc.want.Match(data) {
-				t.Errorf("the log must hold %q:\n%s", tc.want, data)
-			}
-			if strings.Contains(string(data), "Joshua") {
+			data := debugLog(t, cache)
+			inOrder(t, data, ` wopr .*, `+tc.seed+`$`, ` sandbox: `, ` session ended: outcome 1, `) // 1: Ctrl+C
+			inOrder(t, data, ` sandbox: `, ` colour profile `)                                      // the two come in either order
+			inOrder(t, data, ` sandbox: `, ` terminal 80x24$`)
+			if strings.Contains(data, "Joshua") {
 				t.Errorf("the log must hold no typed input:\n%s", data)
 			}
-			if !strings.Contains(string(data), "sandbox: ") {
-				t.Errorf("the log must say what the sandbox did:\n%s", data)
+			if runtime.GOOS != "linux" && !strings.Contains(data, "sandbox: none on "+runtime.GOOS) {
+				t.Errorf("the log must say there is no sandbox on %s:\n%s", runtime.GOOS, data)
 			}
 		})
-	}
-}
-
-// On Linux the running TUI has given up gaining privileges (internal/sandbox). Landlock
-// itself does not show in /proc; internal/sandbox's tests check what it denies.
-func TestLinuxSandbox(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("the sandbox is Linux only")
-	}
-	s := start(t, 80, 24, "--instant")
-	s.waitFor("LOGON:", 10*time.Second)
-	status, err := os.ReadFile(filepath.Join("/proc", strconv.Itoa(s.cmd.Process.Pid), "status"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !regexp.MustCompile(`(?m)^NoNewPrivs:\s+1$`).Match(status) {
-		t.Errorf("no_new_privs is not set:\n%s", status)
-	}
-	s.send("Joshua\r") // the session still works inside the sandbox
-	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
-	s.resize(100, 30)
-	s.send("\x03")
-	if code := s.wait(10 * time.Second); code != 130 {
-		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
 }

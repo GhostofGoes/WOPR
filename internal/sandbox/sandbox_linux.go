@@ -19,36 +19,68 @@ import (
 // syscall6 runs one system call: on every thread in Restrict, on the calling thread in tests.
 type syscall6 func(trap, a1, a2, a3, a4, a5, a6 uintptr) (r1, r2 uintptr, err syscall.Errno)
 
+// calls is how restrict reaches the kernel. Restrict restricts every thread; the tests
+// restrict one locked thread, which the runtime throws away when its goroutine ends.
+type calls struct {
+	all   syscall6      // a call made on every thread (syscall.AllThreadsSyscall6)
+	tsync bool          // the seccomp filter covers every thread
+	deny  syscall.Errno // what a call that the filter refuses returns
+}
+
 // Restrict sandboxes the whole process and returns a line for the debug log. Call it once
 // the terminal is open and the color profile is known: after it, wopr opens no file.
 //
 // Every thread must be restricted, and the Go runtime starts threads before main, so the
-// calls go through syscall.AllThreadsSyscall6. That works only without cgo: a cgo build
-// (go install with a C compiler) gets ENOTSUP and runs unrestricted. The release builds
-// set CGO_ENABLED=0.
+// per-thread calls go through syscall.AllThreadsSyscall6. That works only without cgo. A cgo
+// build (go install with a C compiler) gets ENOTSUP, and keeps only no_new_privs and the
+// seccomp filter, which the kernel itself copies to every thread. The release builds set
+// CGO_ENABLED=0.
 func Restrict() string {
 	_, _ = time.Now().Zone() // Go reads /etc/localtime on first use; read it while it can
-	return restrict(syscall.AllThreadsSyscall6)
+	return restrict(calls{all: syscall.AllThreadsSyscall6, tsync: true, deny: syscall.EPERM})
 }
 
-func restrict(all syscall6) string {
-	var did []string
-	if dropped, err := dropCaps(all); err != nil {
-		return fmt.Sprintf("sandbox: off (capabilities: %v)", err)
+// restrict does each step it can, in order, and says what it did. no_new_privs comes first:
+// Landlock and seccomp need it. The seccomp filter comes last: it refuses the Landlock calls.
+func restrict(c calls) string {
+	if _, _, e := c.all(unix.SYS_PRCTL, unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0, 0); e == syscall.ENOTSUP {
+		return restrictCgo(c)
+	} else if e != 0 {
+		return fmt.Sprintf("sandbox: off (no_new_privs: %v)", e)
+	}
+	did := []string{"no_new_privs"}
+	if dropped, err := dropCaps(c.all); err != nil {
+		did = append(did, fmt.Sprintf("capabilities kept (%v)", err))
 	} else if dropped {
 		did = append(did, "capabilities dropped")
 	}
-	if _, _, e := all(unix.SYS_PRCTL, unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0, 0); e != 0 {
-		return fmt.Sprintf("sandbox: off (no_new_privs: %v)", e) // ENOTSUP in a cgo build
-	}
-	did = append(did, "no_new_privs")
-	abi, err := landlock(all)
-	if err != nil {
+	if abi, err := landlock(c.all); err != nil {
 		did = append(did, fmt.Sprintf("no landlock (%v)", err))
 	} else {
 		did = append(did, fmt.Sprintf("landlock ABI %d", abi))
 	}
+	did = append(did, seccompStatus(installSeccomp(c.tsync, c.deny)))
 	return "sandbox: " + strings.Join(did, ", ")
+}
+
+// restrictCgo is restrict for a cgo build, where no call reaches every thread. The seccomp
+// filter still does, through the kernel's TSYNC, and brings no_new_privs to every thread
+// with it. Capabilities and Landlock are per thread, so they stay as they are.
+func restrictCgo(c calls) string {
+	runtime.LockOSThread() // no_new_privs and the filter must be set from the same thread
+	defer runtime.UnlockOSThread()
+	if err := unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0); err != nil {
+		return fmt.Sprintf("sandbox: off (no_new_privs: %v)", err)
+	}
+	return "sandbox: cgo build: no_new_privs, " + seccompStatus(installSeccomp(c.tsync, c.deny)) +
+		", no capability drop or landlock"
+}
+
+func seccompStatus(err error) string {
+	if err != nil {
+		return fmt.Sprintf("no seccomp (%v)", err)
+	}
+	return "seccomp"
 }
 
 // The capability calls' arguments live in package variables, not on a goroutine stack that

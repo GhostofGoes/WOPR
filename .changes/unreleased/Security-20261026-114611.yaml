@@ -1,3 +1,3 @@
 kind: Security
-body: On Linux, `wopr` now gives up access to files and the network as it starts.
+body: On Linux, `wopr` now gives up files, the network and programs as it starts.
 time: 2026-10-26T11:46:11.922204015Z

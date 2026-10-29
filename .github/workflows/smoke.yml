@@ -40,6 +40,7 @@ jobs:
         if: runner.os != 'Windows'
         env:
           TARGET: ${{ matrix.target }}
+          WOPR_SANDBOX_REQUIRE: "1" # the release's Linux program must sandbox itself fully
         run: |
           chmod +x "stage/${TARGET}/wopr" "stage/${TARGET}/e2e.test"
           "stage/${TARGET}/e2e.test" -test.v -test.timeout=5m -binary "stage/${TARGET}/wopr"
