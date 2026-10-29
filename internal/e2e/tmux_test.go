@@ -114,13 +114,19 @@ func (s *tmuxServer) typeLine(text string) {
 	s.run("send-keys", "-t", "wopr", "Enter")
 }
 
-// exitStatus waits for wopr to exit and returns its status.
+// exitStatus waits for wopr to exit and returns its status, or "signal N". tmux marks the
+// pane dead when the pty closes, and learns the status a moment later, when it reaps wopr.
 func (s *tmuxServer) exitStatus(timeout time.Duration) string {
 	s.t.Helper()
 	for deadline := time.Now().Add(timeout); ; time.Sleep(50 * time.Millisecond) {
-		out := strings.TrimSpace(s.run("display-message", "-p", "-t", "wopr", "#{pane_dead} #{pane_dead_status}"))
-		if dead, status, _ := strings.Cut(out, " "); dead == "1" {
+		out := s.run("display-message", "-p", "-t", "wopr", "#{pane_dead}|#{pane_dead_status}|#{pane_dead_signal}")
+		dead, rest, _ := strings.Cut(strings.TrimSpace(out), "|")
+		status, signal, _ := strings.Cut(rest, "|")
+		switch {
+		case dead == "1" && status != "":
 			return status
+		case dead == "1" && signal != "":
+			return "signal " + signal
 		}
 		if time.Now().After(deadline) {
 			s.t.Fatalf("wopr did not exit; pane:\n%s", s.capture(false))
