@@ -67,11 +67,13 @@ var playbooks = map[string]playbook{
 	"air-to-ground-actions":        {inputs: []string{"target 1 strike 2 sead 2 escort 2", "go"}, cycle: true, steps: 16},
 	"theaterwide-tactical-warfare": {inputs: []string{"attack 4", "escalate", "hold", "end"}, cycle: true, steps: 30},
 	"theaterwide-biotoxic-and-chemical-warfare": {inputs: []string{"release 4", "decon", "hold", "end"}, cycle: true, steps: 30},
-	// The film's path: the big board to DEFCON 1, the kill ratios, the climax, tic-tac-toe
+	// The scenario menu's pages, a refusal and one scenario playing itself back to the menu.
+	// Then the film's path: the big board to DEFCON 1, the kill ratios, the climax, tic-tac-toe
 	// with zero players, and the ending.
 	"global-thermonuclear-war": {inputs: []string{
+		"3", "next", "prev", "nowhere", "12", "", "", "",
 		"2", "Las Vegas", "Seattle", "", "", "", "", "", "List Games", "Chess", "Tic-Tac-Toe", "0", "Hello.",
-	}, want: []string{">|", "HUMAN RESOURCES"}}, // the pointer at the current DEFCON level; the ratios
+	}, want: []string{"CUBAN PROVOCATION", ">|", "HUMAN RESOURCES"}}, // the playback's board; the DEFCON pointer; the ratios
 	"tic-tac-toe": {inputs: []string{"1", "5", "1", "3", "7", "9", "2", "8", "4", "6"}},
 }
 

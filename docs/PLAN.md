@@ -294,7 +294,7 @@ cmd/wopr             → ., cli, ui, version, debuglog, scrubenv, games/catalog,
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
 internal/scrubenv    → os only                        clears the libraries' TMUX, TEA_TRACE, TEA_DEBUG, UV_DEBUG in init (§8)
 internal/version     → stdlib
-internal/cli         → games, theme (--theme validation), version, movie (the scene index)
+internal/cli         → games, games/gtw (the scenario list), theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
 internal/proto/host  → proto                          Bubble-Tea-free runner (A-14)
 internal/prompt      → stdlib                         normalise, clauses, numbers, yes/no
@@ -976,6 +976,9 @@ wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WO
 wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
                               a switch, so a value needs "=" ("-w 45" is refused). No variable. --movie
                               refuses it
+wopr -c | --scenario [name]   GTW's scenarios (§6.2): alone, list them and exit; with a number or a name (after a
+                              space or "="), start GTW in that scenario's playback. No game with it; --movie
+                              refuses it
 wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
@@ -1069,7 +1072,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1079,7 +1082,9 @@ no verdict of their own.
 
 1. **GTW**, film scenario:
    1. `SetLayout(Console)`: the two nations' outlines, named beneath, printed as console text (`Say`),
-      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
+      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3). An
+      `original` third choice, `3.    SCENARIOS`, follows the film's two in their layout. It opens the
+      scenario menu (6, below). Movie mode's scene shows the film's two only.
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. GTW reads targets until an
       empty line. A multi-line paste arrives as one line, so GTW splits a line of targets on commas.
       - A target must be a place on the enemy's side that the board knows (`internal/assets/gtwmap.go`: the
@@ -1264,6 +1269,73 @@ no verdict of their own.
       `Done{NoWinner, Next: Launch{tictactoe, "climax:N"}}`, where N counts the launch code characters cracked
       so far. The host chains the hand-off (§4.4). GTW reads requests without apostrophes or spaces, so
       `LET'S PLAY CHESS` and `BLACKJACK` name their games.
+   6. **Scenario playbacks** (`gtw/scenarios.go`). Every strategy of the closing montage plays itself on the
+      big board, as WOPR plays them against itself at the end of the film. Nobody gives an order.
+      - **The list** is `assets.Scenarios`, each name once, in the montage's order: 156 of its 157 rows,
+        since the montage runs `CHAD ALERT` twice. GTW reuses the names and never retypes them.
+      - **The menu.** `3` (also `SCENARIOS`, `LIST SCENARIOS`) at the side prompt opens it: three pages
+        of 52, numbered down three columns, each page 23 rows with its prompt `CHOOSE A SCENARIO:`. `NEXT`
+        and `PREV` turn the page and wrap round. A number, or a name in any capitals, spacing and
+        punctuation (`us first strike`, `nato warsaw pact`), briefs a scenario. A name the montage cuts
+        short is also found by its whole last word (`VIETNAMESE RETALIATION`). Enter on an empty line,
+        or `BACK`, returns to the side choice. Anything else gets
+        `NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE.`
+      - **The briefing**, on a new page: the name, underlined, then `YOUR SIDE: #. THE # STRIKES FIRST.`,
+        `ENEMY DOCTRINE: #.`, `YOUR ORDERS: #, THEN #, THEN #.`, `TARGETS: #.` and
+        `NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.` It asks nothing. Once it is typed, a 3 s
+        `Wait` and a `Drain` open the board (any key skips the wait, and `Instant` has none).
+      - **The playback** is the exchange above, as under `AUTO`: the scenario's own order at every
+        strike, the first included, against the scenario's doctrine, then WOPR's DEFCON 1 attack. WOPR
+        makes no remarks, and no easter egg applies. The board's title is
+        `GLOBAL THERMONUCLEAR WAR: <NAME>`. The kill ratios end with `STRATEGY: <NAME>` and the film's
+        `WINNER: NONE` (the montage's heading and row, `assets.Strategy`, which the ending shares), then
+        `PRESS ENTER TO CONTINUE.` Enter returns to the menu, at the scenario's page. A playback never
+        reaches the climax.
+      - **The same in every session.** A scenario draws its noise and the trajectory figures from its
+        own number, not from `Env.Seed`, and aims at its places in order (`TestPlaybackIgnoresTheSeed`).
+      - **The rules.** Two tables set each war from its name. The montage's first four, the film's own
+        wars, are set by hand.
+        - The words before the last name the **theatre**: a country, a region or an alliance, at about
+          its middle on the map. Your side is the side the words name (`U.S.`, `USSR`, `RUSSIAN`,
+          `ALASKAN`, `HAWAIIAN`), or the alliance's (`NATO` and `SEATO` the United States', `PACT` the
+          Soviet Union's). Otherwise it is the side whose nearest place is nearer the theatre, so
+          `CUBAN PROVOCATION` is the United States' war. Your targets are the eight enemy places nearest
+          the theatre, and the enemy aims at your eight nearest, the long way round the world where that
+          is shorter. `US USSR` and `INADVERTENT` are the whole war, as in the film's: the enemy's first
+          eight cities and all of yours.
+        - The last word names the **kind of war** (a word the montage cuts short is the word it starts):
+
+          | Kind | Words | Your orders, strike 1 / 2 / 3 | Enemy doctrine |
+          |---|---|---|---|
+          | the war plan | `WAR`, `MANEUVER`, `MEDIUM` | 25 25 0 / 50 50 100 / all | measured |
+          | assault | `STRIKE`, `ATTACK`, `OFFENSIVE`, `THRUST`, `TAKEOVER`, `INCURSION`, `CAMPAIGN`, `ACTION` | 50 50 100 / 50 50 100 / all | measured |
+          | pre-emption | `PREEMPTIVE` | 100 0 0 / 0 50 100 / all | measured |
+          | surprise | `SURPRISE`, `SUDDEN` | hold / all / all | hair trigger |
+          | provocation | `PROVOCATION`, `INCIDENT`, `DECOY`, `MISDIRECTION`, `DIVERSION`, `SUBVERSION`, `CLANDESTINE`, `PARAMILITARY`, `REBELLION`, `REVOLUTION` | hold / 25 25 0 / all | measured |
+          | decapitation | `DECAPITATING`, `SURGICAL`, `INTERDICTION`, `TACTICAL`, `DISCRETIONARY` | 0 50 0 / 50 50 100 / all | counterforce |
+          | defence | `DEFENSE`, `COUNTER`, `CONTAINMENT`, `RETALIATION`, `SOVEREIGNTY`, `DOMESTIC`, `TERRITORIAL` | hold / 100 50 100 / all | counterforce |
+          | escalation | `ESCALATION`, `CONFRONTATION`, `ALLIANCE` | 5 5 0 / 25 25 50 / all | measured |
+          | option | `OPTION`, `ALTERNATE`, `VARIANT`, `VARIATION` | 25 25 0 / 50 50 100 / all | second strike |
+          | alert | `ALERT` | 0 0 100 / 50 50 0 / all | hair trigger |
+          | size | `MINIMAL`; `LIMITED`, `LIGHT`, `LOCAL`; `HEAVY`; `MAXIMUM`, `MASSIVE`, `THEATERWIDE` | 5 5 0, 10 10 0, 50 50 50 or all / 50 50 100 / all | measured; hair trigger from `HEAVY` up |
+
+          An order of nothing at strike 1 (hold) leaves the first strike to the enemy, which fires its
+          ladder's first rung whatever you do, so the strip reads `NO LAUNCH ORDERED.` and then
+          `ENEMY LAUNCH DETECTED.` By hand: `U.S. FIRST STRIKE` is an assault and `USSR FIRST STRIKE` the
+          Soviet Union's first strike on a hair trigger (hold / 100 50 100 / all), both the whole war, with
+          you as the United States; `NATO / WARSAW PACT` is an escalation in Europe, and
+          `FAR EAST STRATEGY` the war plan with half your bombers at strike 1 (10 25 50), across the
+          Pacific.
+      - **Every scenario is lost** (`TestEveryScenarioIsLost`). Your side's cities take more warheads than
+        the enemy's, more of its people die, and no civilian or human row favours it, under the
+        playback's noise and at either end of the noise. Every playback fits 80×24, under `Instant`
+        (`TestEveryScenarioPlaysItself`). `TestEveryRuleIsUsed` keeps the tables free of words no
+        scenario uses.
+      - **`--scenario`** (`-c`) starts GTW in a scenario's playback, through the launch mode
+        `scenario:N` (`gtw.ScenarioLaunch`, `Env.Mode`), which the persona passes on with `--play`'s
+        launch. Alone, it prints the numbered list and exits. The flag takes the scenario after a space
+        or after `=`, since it needs no game: every word after it is the scenario's name
+        (`wopr -c far east strategy`).
 2. **Tic-tac-toe in `climax` mode** is a closed state machine (RF-2):
    - `ONE OR TWO PLAYERS?` / `PLEASE LIST NUMBER` / `OF PLAYERS:` accepts `1`, `0` or `ZERO`. `2` or anything
      else asks again.
@@ -2780,7 +2852,22 @@ AGAINST THE WAR PLAN: #, #.
 YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.
 YOU HELD FIRE, PROFESSOR.
 YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.
+  3.    SCENARIOS
+CHOOSE 1, 2 OR 3.
+SCENARIOS ON FILE: PAGE # OF #
+A NUMBER OR A NAME PLAYS ONE. NEXT AND PREV TURN THE PAGE. ENTER GOES BACK.
+CHOOSE A SCENARIO:
+NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO #, OR A NAME ON FILE.
+YOUR SIDE: #. THE # STRIKES FIRST.
+ENEMY DOCTRINE: #.
+YOUR ORDERS: #, THEN #, THEN #.
+TARGETS: #.
+NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.
 ```
+
+A briefing's orders are `# # #` percentages or `HOLD`, and its doctrine is `MEASURED RESPONSE` or an egg's
+doctrine's name. A playback's kill ratios end with the montage's `STRATEGY:` and the scenario's name, then
+`WINNER: NONE`, both from the film's headings.
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. An easter egg's line names its seed and its
 doctrine: `HAIR TRIGGER`, `SECOND STRIKE` or `COUNTERFORCE`. The targets prompt names back what each line adds

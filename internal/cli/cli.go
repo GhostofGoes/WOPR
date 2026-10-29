@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/movie"
 	"github.com/GhostofGoes/WOPR/internal/theme"
 )
@@ -32,12 +33,14 @@ const (
 	PrintHelp
 	PrintGames
 	PrintScenes
+	PrintScenarios
 	PrintLicenses
 )
 
 // Config is the parsed command line.
 type Config struct {
 	Play         string // resolved game slug, "" for none
+	Mode         string // with Play: the mode it starts in, such as a GTW scenario's playback (--scenario)
 	Movie        bool
 	Scene        string // with Movie: the slug of the scene to play from, "" for the scene menu
 	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
@@ -77,6 +80,7 @@ var flagPairs = []flagPair{
 	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
+	{"scenario", "c", "", "list GTW's scenarios, or watch [scenario]", ""},
 }
 
 // The launch window's length: --launch-window alone gives defaultWindow, and a value must be
@@ -104,6 +108,29 @@ func (o optionalValue) String() string {
 func (o optionalValue) Set(v string) error {
 	*o.v = v
 	return nil
+}
+
+// scenarioNamed is the GTW scenario --scenario names, by its value (after an equals sign) or
+// by the words after it: --scenario 12, --scenario far east strategy. --scenario needs no
+// game, so a word after it can only be the scenario. "" is none: the list.
+func scenarioNamed(value string, positionals []string) (string, error) {
+	if value == "true" {
+		value = ""
+	}
+	if len(positionals) > 0 {
+		if value != "" {
+			return "", usagef("too many arguments: %s", strings.Join(positionals, " "))
+		}
+		value = strings.Join(positionals, " ")
+	}
+	if value == "" {
+		return "", nil
+	}
+	n, ok := gtw.FindScenario(value)
+	if !ok {
+		return "", usagef("no scenario matches %q (wopr --scenario lists them)", value)
+	}
+	return gtw.ScenarioLaunch(n), nil
 }
 
 // windowApart refuses seconds given after a space ("-w 45"). The flag is a switch, so 45 would
@@ -156,7 +183,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	var (
 		cfg                                              Config
 		version, help, list, scenes, licences, mov, only bool
-		play, window                                     string
+		play, window, scenario                           string
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -196,6 +223,9 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
 		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
 	}
+	for _, name := range []string{byName["scenario"].long, byName["scenario"].short} {
+		fs.Var(optionalValue{&scenario}, name, byName["scenario"].help)
+	}
 
 	if err := windowApart(args); err != nil {
 		return cfg, RunTUI, err
@@ -229,6 +259,25 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 			return cfg, RunTUI, usagef("%s needs a non-negative integer, got %q", seedSource(fs), seed)
 		}
 		cfg.Seed, cfg.SeedSet = n, true
+	}
+	if scenario != "" {
+		switch {
+		case mov:
+			return cfg, RunTUI, usagef("--movie and --scenario cannot be combined")
+		case play != "":
+			return cfg, RunTUI, usagef("--scenario starts GTW itself: give it no game")
+		case only:
+			return cfg, RunTUI, usagef("--only needs --movie")
+		}
+		if cfg.Mode, err = scenarioNamed(scenario, positionals); err != nil {
+			return cfg, RunTUI, err
+		}
+		if cfg.Mode == "" {
+			return cfg, PrintScenarios, nil
+		}
+		cfg.Play = gtw.Slug
+		cfg.LaunchWindow, err = launchWindow(window)
+		return cfg, RunTUI, err
 	}
 	if len(positionals) > 1 {
 		return cfg, RunTUI, usagef("too many arguments: %s", strings.Join(positionals, " "))

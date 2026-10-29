@@ -3,6 +3,7 @@ wopr: the WOPR computer from WarGames (1983), in your terminal.
 Usage:
   wopr [flags] [game]
   wopr --movie [--only] [scene]
+  wopr --scenario [scenario]
 
 Flags:
   -v, --version                print the version and exit
@@ -18,6 +19,7 @@ Flags:
   -s, --seed <n>               a repeatable run with this seed (env WOPR_SEED)
   -r, --reduce-motion          no blinking or speed-ups (env WOPR_REDUCE_MOTION)
   -w, --launch-window[=secs]   give GTW's strike orders 30 seconds, or secs
+  -c, --scenario               list GTW's scenarios, or watch [scenario]
 
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.
@@ -32,6 +34,10 @@ n or Right skips to the next scene, p or Left goes back one, and Esc opens
 the menu. The climax's games play to the end: those keys do nothing there.
 With -i the text appears at once, but the scenes still pause.
 
+With -c alone, wopr lists the scenarios of the film's closing montage. With a
+number or a name, GTW plays that scenario by itself, from a short briefing to
+the kill ratios. Enter then opens the scenario menu.
+
 Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
@@ -39,5 +45,6 @@ Examples:
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene
+  wopr -c 2            watch GTW play USSR FIRST STRIKE
 
 Documentation, with how to play each game: https://ghostofgoes.github.io/WOPR/

@@ -124,8 +124,17 @@ func newWar(d doctrineID) *war { return &war{id: d, d: doctrines[d], f: startFor
 // o3, then WOPR's DEFCON 1 attack. The exchange has no dice, so the same doctrine and orders
 // always fight the same war, and the after-action report can fight it again with other orders.
 func fight(d doctrineID, o2, o3 [3]int) (*war, []report) {
+	return wage(d, [strikes][3]int{warPlan[0], o2, o3})
+}
+
+// wage wages a whole war against doctrine d with an order for each strike, the first strike's
+// included, then WOPR's DEFCON 1 attack: a scenario's war (scenarios.go), or fight's.
+func wage(d doctrineID, orders [strikes][3]int) (*war, []report) {
 	w := newWar(d)
-	rs := []report{w.strike(1, warPlan[0]), w.strike(2, o2), w.strike(3, o3)}
+	var rs []report
+	for k, o := range orders {
+		rs = append(rs, w.strike(k+1, o))
+	}
 	return w, append(rs, w.final())
 }
 

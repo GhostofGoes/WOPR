@@ -159,8 +159,13 @@ func gtwGame(t *testing.T) *testkit.GameSession {
 // 8."): feedback for a player, which the film's screen does not show.
 var confirmation = regexp.MustCompile(`^[A-Z][A-Z ,.'-]*\. TARGETS? [0-9]+(-[0-9]+)? OF 8\.$`)
 
+// scenariosChoice is GTW's third choice at the side prompt, the scenario menu, which the
+// film's screen does not have either.
+const scenariosChoice = "  3.    SCENARIOS"
+
 // The first-strike scene, board included, is what GTW prints for the film's choices, but for
-// GTW's confirmations of the targets; and the choices it types are the ones the board plays.
+// GTW's third side choice and its confirmations of the targets; and the choices it types are
+// the ones the board plays.
 func TestFirstStrikeIsTheGames(t *testing.T) {
 	t.Parallel()
 	s := scene(t, "first-strike")
@@ -178,6 +183,9 @@ func TestFirstStrikeIsTheGames(t *testing.T) {
 	for _, l := range transcriptLines(g.Session) {
 		if confirmation.MatchString(l) {
 			confirmed++
+			continue
+		}
+		if l == scenariosChoice {
 			continue
 		}
 		game = append(game, l)

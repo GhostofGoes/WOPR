@@ -43,18 +43,33 @@ func eggFor(envSeed uint64) *egg {
 	return nil
 }
 
-// doctrine is the doctrine WOPR fights this war to.
+// doctrine is the doctrine WOPR fights this war to: a scenario's own, whatever the seed, or
+// the egg's.
 func (g *Game) doctrine() doctrineID {
-	if g.egg == nil {
+	switch {
+	case g.scen != nil:
+		return g.scen.c.d
+	case g.egg == nil:
 		return measured
 	}
 	return g.egg.d
 }
 
+// doctrineName is a doctrine's name, as a scenario's briefing gives it.
+func doctrineName(d doctrineID) string {
+	for _, e := range eggs {
+		if e.d == d {
+			return e.name.Text
+		}
+	}
+	return lineMeasured[0].Text
+}
+
 // announce is the strip line that names an egg's doctrine as the board opens, before the
-// first strike's own lines: "WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)".
+// first strike's own lines: "WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)". A scenario's
+// briefing names its own.
 func (g *Game) announce() []proto.Output {
-	if g.egg == nil {
+	if g.egg == nil || g.scen != nil {
 		return nil
 	}
 	return []proto.Output{strip(fill(lineDoctrine[0], g.egg.seed, g.egg.name.Text))}

@@ -99,7 +99,8 @@ board uses Matthew Thomas's ASCII world map. See [NOTICE.md](NOTICE.md).
   ends the list, and `list` shows the targets on file. The first strike flies at once. Then order two more
   strikes as percentages of your ICBMs, SLBMs and bombers (`50 25 100`, `icbm 50`, `hold`) while DEFCON
   falls to 1. Enter carries out WOPR's war plan, and `auto` hands it the rest. WOPR holds a quarter more of
-  everything. Then try to stop it.
+  everything. Then try to stop it. Choice 3 at the side prompt lists the 156 scenarios of the film's
+  closing montage. Each one plays itself on the board, with no orders, and ends `WINNER: NONE`.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`. `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump
   twice). The `-` and `x` are optional (`c3d4`, `c3e5g7`). Jumps are compulsory.
@@ -169,6 +170,7 @@ film's lines are its own screen text, checked against frame-by-frame transcripti
 | `-s`, `--seed <n>` | a repeatable run. Also `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations). Also `WOPR_REDUCE_MOTION=1` |
 | `-w`, `--launch-window[=secs]` | give each Global Thermonuclear War strike order a time limit: 30 seconds, or 5 to 999 (`-w=60`). At zero, WOPR takes launch authority |
+| `-c`, `--scenario [scenario]` | list the Global Thermonuclear War scenarios and exit, or watch one play itself (`-c 2`, `-c far east strategy`) |
 
 `NO_COLOR` (any value but an empty one) turns colour off. In every theme, the big board in Global
 Thermonuclear War shows the film's colours: the United States in blue, the Soviet Union in red.

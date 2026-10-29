@@ -45,6 +45,7 @@ type Options struct {
 	// waits for ever.
 	LaunchWindow time.Duration
 	Play         string // game slug to start directly
+	Mode         string // with Play: the mode it starts in (--scenario)
 	Movie        bool   // movie mode: the director replays the film's scenes instead of the persona
 	Scene        string // with Movie: the scene to play from (a slug); "" opens the scene menu
 	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
@@ -248,7 +249,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) start() tea.Cmd {
 	m.started = true
 	seed, deterministic, window := m.opts.Seed, m.opts.SeedSet, m.opts.LaunchWindow
-	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play})
+	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play, Mode: m.opts.Mode})
 	if m.opts.Movie {
 		seed, deterministic, window = movie.Seed, true, 0 // nobody gives the film's orders
 		root = movie.New(movie.Options{Scene: m.opts.Scene, Only: m.opts.Only})

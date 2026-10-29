@@ -133,7 +133,7 @@ func (f *Film) step() []string {
 		outs = f.g.showRatios()
 	case ratios:
 		outs = f.g.startClimax()
-	case chooseSide, listTargets, climax:
+	case chooseSide, listTargets, chooseScenario, briefing, climax:
 	}
 	lines := f.take(outs)
 	switch {

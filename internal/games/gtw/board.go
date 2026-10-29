@@ -45,7 +45,7 @@ func (g *Game) View(c *proto.Canvas) {
 		g.drawRatios(c)
 	case flight, orders, assessed, climax:
 		g.drawBoard(c)
-	case chooseSide, listTargets:
+	case chooseSide, listTargets, chooseScenario, briefing:
 	}
 }
 
@@ -55,6 +55,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	c.Put(mapLeft-1, mapTop-1, edge, proto.StyleDim, 0)
 	c.Put(mapLeft-1, boxBottom, edge, proto.StyleDim, 0)
 	title := " " + lineTitle[0].Text + " "
+	if g.scen != nil {
+		title = " " + lineTitle[0].Text + ": " + g.scen.name.Text + " "
+	}
 	c.Put(mapLeft+(assets.MapW-len(title))/2, mapTop-1, title, proto.StyleBright, 0)
 	for i, lon := range []float64{usLon, ussrLon} {
 		name := " " + lineLabels[i].Text + " "
@@ -305,7 +308,7 @@ func (g *Game) drawTrajectories(c *proto.Canvas) {
 		designator := lineDesignator[2*int(g.side-1)+int(m.kind)].Text
 		x := col * trajW
 		letter := string(rune('A' + 2*col))
-		h := heading(g.env.Seed, m.id)
+		h := heading(g.seed(), m.id)
 		c.Put(x, trajRow+1, fmt.Sprintf("%s-%s-A %03d %03d", letter, designator, h[0], h[1]), proto.StyleText, 0)
 		c.Put(x, trajRow+2, fmt.Sprintf("%*s %03d %03d", len(letter)+len(designator)+3, "B", h[2], h[3]), proto.StyleText, 0)
 	}

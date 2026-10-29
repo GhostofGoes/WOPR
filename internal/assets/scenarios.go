@@ -10,6 +10,10 @@ package assets
 
 import "github.com/GhostofGoes/WOPR/internal/script"
 
+// Strategy is the montage's two headings and every row's result, as the film's table shows
+// them: the ending draws the table, and GTW's scenario playbacks end with its verdict.
+var Strategy = script.FromFilm("STRATEGY:", "WINNER:", "NONE")
+
 // Scenarios are the closing montage's strategy names, in abs0's order (credited in NOTICE.md;
 // decision 18). Some are truncated or misspelt as the film shows them.
 //

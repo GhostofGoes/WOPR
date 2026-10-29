@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
@@ -29,6 +30,13 @@ func TestEveryLineHasProvenance(t *testing.T) {
 	if len(Scenarios) != 157 {
 		t.Errorf("abs0's montage has 157 names, have %d", len(Scenarios))
 	}
+}
+
+// The film's lines here are frozen: a change to one shows in review as a change to the
+// film's text (AGENTS.md, "Film text and provenance").
+func TestFilmLines(t *testing.T) {
+	t.Parallel()
+	golden.AssertString(t, "film_lines", strings.Join(script.FilmTexts(Lines), "\n")+"\n")
 }
 
 // checkArt checks a block of art: at most rows rows and width columns, printable ASCII.

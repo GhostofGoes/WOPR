@@ -55,6 +55,8 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 		return printed(stderr, cli.RenderGames(stdout, reg))
 	case cli.PrintScenes:
 		return printed(stderr, cli.RenderScenes(stdout))
+	case cli.PrintScenarios:
+		return printed(stderr, cli.RenderScenarios(stdout))
 	case cli.PrintLicenses:
 		return printed(stderr, writeString(stdout, wopr.License+"\n"+wopr.Notice+"\n"+wopr.ThirdPartyNotices))
 	case cli.RunTUI:
@@ -77,7 +79,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	lg.Printf("wopr %s, seed %d (pinned: %v)", version.Get(), cfg.Seed, cfg.SeedSet)
 	outcome, err := ui.Run(ui.Options{
 		Log: lg, Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
-		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene, Only: cfg.Only,
+		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Mode: cfg.Mode, Movie: cfg.Movie, Scene: cfg.Scene, Only: cfg.Only,
 		LaunchWindow: cfg.LaunchWindow, NoColor: getenv("NO_COLOR") != "", Tmux: scrubenv.InTmux, Panel: panelSetting(getenv),
 		Registry: reg,
 	})

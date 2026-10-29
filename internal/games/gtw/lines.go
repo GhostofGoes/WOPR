@@ -12,7 +12,8 @@ var (
 	lineLabels    = script.FromFilm("UNITED STATES", "SOVIET UNION") // under the outlines, and on the board
 	lineWhichSide = script.FromFilm("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")
 	promptSide    = script.FromFilm("PLEASE CHOOSE ONE:  ")
-	lineSideAgain = script.Orig("CHOOSE 1 OR 2.")
+	lineScenarios = script.Orig("  3.    SCENARIOS") // after the film's two choices, in their layout
+	lineSideAgain = script.Orig("CHOOSE 1, 2 OR 3.")
 	lineAwaiting  = script.FromFilm(
 		"AWAITING FIRST STRIKE COMMAND",
 		"-----------------------------",
@@ -42,6 +43,16 @@ var (
 		"YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.")
 	lineEnemyDead = script.Orig("# MILLION MORE ENEMY DEAD", "# MILLION FEWER ENEMY DEAD", "AS MANY ENEMY DEAD")
 	lineOwnDead   = script.Orig("# MILLION MORE OF YOURS", "# MILLION FEWER OF YOURS", "AS MANY OF YOURS")
+	// The scenario playbacks (scenarios.go): the menu's heading and hint, its prompt and its
+	// refusal; a briefing's lines, an order of nothing, and the measured response's name. # is
+	// filled in order.
+	lineMenu      = script.Orig("SCENARIOS ON FILE: PAGE # OF #", "A NUMBER OR A NAME PLAYS ONE. NEXT AND PREV TURN THE PAGE. ENTER GOES BACK.")
+	promptMenu    = script.Orig("CHOOSE A SCENARIO: ")
+	lineMenuAgain = script.Orig("NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO #, OR A NAME ON FILE.")
+	lineBrief     = script.Orig("YOUR SIDE: #. THE # STRIKES FIRST.", "ENEMY DOCTRINE: #.", "YOUR ORDERS: #, THEN #, THEN #.",
+		"TARGETS: #.", "NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.")
+	lineHold     = script.Orig("HOLD")
+	lineMeasured = script.Orig("MEASURED RESPONSE")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
 	// underlines the first line; the board's three-row strip has no room for that.
 	lineRunning  = script.FromFilm("** GAME ROUTINE RUNNING **")
@@ -144,8 +155,8 @@ var (
 
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
-	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineAccepted, lineListed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
+	lineLabels, lineWhichSide, lineScenarios, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
+	lineOwnSide, lineListHint, lineOnFile, lineMenu, promptMenu, lineMenuAgain, lineBrief, lineHold, lineMeasured, lineAssessed, lineAccepted, lineListed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineEggs, lineShut, lineNoOrders, lineBadOrder,
 	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,

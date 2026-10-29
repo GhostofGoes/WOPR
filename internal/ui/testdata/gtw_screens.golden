@@ -16,14 +16,14 @@ WHICH SIDE DO YOU WANT?
 
   1.    UNITED STATES
   2.    SOVIET UNION
+  3.    SCENARIOS
 
 PLEASE CHOOSE ONE:
 
 
 
-
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
-cursor: col 20, row 18
+cursor: col 20, row 19
 ==== big board: strike 2 orders (DEFCON 4) (80x24) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
 |           . _..::__:  ++++********************+     _,.__             |  +---+

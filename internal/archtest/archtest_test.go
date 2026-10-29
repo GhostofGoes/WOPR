@@ -49,7 +49,7 @@ var rules = []rule{
 	{"internal/debuglog", nil},
 	{"internal/scrubenv", nil},
 	{"internal/version", nil},
-	{"internal/cli", []string{"internal/games", "internal/theme", "internal/movie", "internal/version"}},
+	{"internal/cli", []string{"internal/games", "internal/games/gtw", "internal/theme", "internal/movie", "internal/version"}},
 	{"internal/proto", nil},
 	{"internal/proto/host", []string{"internal/proto"}},
 	{"internal/prompt", nil},

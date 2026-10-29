@@ -163,6 +163,20 @@ func TestScenes(t *testing.T) {
 	}
 }
 
+// --scenario lists GTW's scenarios; an unknown scenario is a usage error that names the list.
+func TestScenarios(t *testing.T) {
+	for _, flagName := range []string{"-c", "--scenario"} {
+		out, _, code := run(t, flagName)
+		if code != 0 || !strings.Contains(out, "  1. U.S. FIRST STRIKE") || !strings.Contains(out, "156. ") {
+			t.Errorf("%s: exit %d, output %q", flagName, code, out)
+		}
+	}
+	_, errOut, code := run(t, "-c", "nowhere")
+	if code != 2 || !strings.Contains(errOut, "no scenario matches") {
+		t.Errorf("an unknown scenario: exit %d, stderr %q; want 2", code, errOut)
+	}
+}
+
 // session is a running wopr in a pseudo-terminal. Its output feeds a terminal emulator, so
 // tests assert on the screen a user would see rather than on the byte stream: the typewriter
 // and Bubble Tea's diffing renderer split text across writes. The emulator's answers to
@@ -379,6 +393,21 @@ func TestMovieKeys(t *testing.T) {
 	}
 	s.send("\x1b") // Esc
 	s.waitFor("SCENE:", 10*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
+// wopr -c 2 plays USSR FIRST STRIKE on the big board with no orders asked. Enter shows the kill ratios and the verdict, and Enter again opens the scenario menu.
+func TestScenarioPlaysItself(t *testing.T) {
+	s := start(t, 80, 24, "-c", "2", "--instant")
+	s.waitFor("GLOBAL THERMONUCLEAR WAR: USSR FIRST STRIKE", 15*time.Second)
+	s.waitFor("STRIKE ASSESSMENT COMPLETE.", 30*time.Second)
+	s.send("\r")
+	s.waitFor("WINNER: NONE", 15*time.Second)
+	s.send("\r")
+	s.waitFor("SCENARIOS ON FILE: PAGE 1 OF 3", 15*time.Second)
 	s.send("\x03")
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)

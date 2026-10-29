@@ -182,6 +182,63 @@ func TestParseSeed(t *testing.T) {
 // seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error. A
 // number after a space is refused, not read as the game. Movie mode gives no orders, so it
 // refuses a window.
+// --scenario alone lists GTW's scenarios; with a number or a name, after a space or an equals
+// sign, it starts GTW in that scenario's playback. The words after it are the scenario, never a
+// game.
+func TestParseScenario(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args   string
+		action Action
+		mode   string
+		window time.Duration
+		usage  string // non-empty: expect a UsageError containing this
+	}{
+		{args: "-c", action: PrintScenarios},
+		{args: "--scenario -i", action: PrintScenarios},
+		{args: "-c 2", mode: "scenario:2"},
+		{args: "--scenario=2", mode: "scenario:2"},
+		{args: "-c=USSR-FIRST-STRIKE", mode: "scenario:2"},
+		{args: "-c far east strategy -i", mode: "scenario:4"},
+		{args: "-i --scenario us first strike", mode: "scenario:1"},
+		{args: "-c 156", mode: "scenario:156"},
+		{args: "-c 2 -w", mode: "scenario:2", window: 30 * time.Second},
+		{args: "-c 157", usage: `no scenario matches "157" (wopr --scenario lists them)`},
+		{args: "-c gtw", usage: `no scenario matches "gtw"`},
+		{args: "gtw -c 2", usage: `no scenario matches "gtw 2"`},
+		{args: "-c=2 3", usage: "too many arguments: 3"},
+		{args: "-p gtw -c 2", usage: "--scenario starts GTW itself"},
+		{args: "-m -c", usage: "--movie and --scenario cannot be combined"},
+		{args: "-o -c 2", usage: "--only needs --movie"},
+		{args: "-c -t pink", usage: "unknown theme"},
+		{args: "-c --scenes", action: PrintScenes},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, act, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			play := ""
+			if tt.mode != "" {
+				play = "global-thermonuclear-war"
+			}
+			if act != tt.action || cfg.Mode != tt.mode || cfg.Play != play || cfg.LaunchWindow != tt.window {
+				t.Errorf("got action %v mode %q play %q window %v", act, cfg.Mode, cfg.Play, cfg.LaunchWindow)
+			}
+		})
+	}
+}
+
 func TestParseLaunchWindow(t *testing.T) {
 	t.Parallel()
 	reg := catalog.Registry()
@@ -254,7 +311,7 @@ func TestEveryLongFlagHasAShorthand(t *testing.T) {
 
 func TestRenderGolden(t *testing.T) {
 	t.Parallel()
-	var games, help, scenes strings.Builder
+	var games, help, scenes, scenarios strings.Builder
 	if err := RenderGames(&games, catalog.Registry()); err != nil {
 		t.Fatal(err)
 	}
@@ -263,11 +320,15 @@ func TestRenderGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "scenes", scenes.String())
+	if err := RenderScenarios(&scenarios); err != nil {
+		t.Fatal(err)
+	}
+	golden.AssertString(t, "scenarios", scenarios.String())
 	if err := RenderHelp(&help); err != nil {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "help", help.String())
-	for _, line := range strings.Split(games.String()+help.String()+scenes.String(), "\n") {
+	for _, line := range strings.Split(games.String()+help.String()+scenes.String()+scenarios.String(), "\n") {
 		if len(line) > 80 {
 			t.Errorf("line wider than 80 columns: %q", line)
 		}

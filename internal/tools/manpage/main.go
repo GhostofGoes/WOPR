@@ -198,6 +198,11 @@ func writeIntro(p *page) {
 	p.macro("RB", "[", "--only", "]")
 	p.macro("RI", "[", "options", "]")
 	p.macro("RI", "[", "scene", "]")
+	p.line(".br")
+	p.macro("B", "wopr")
+	p.macro("B", "--scenario")
+	p.macro("RI", "[", "options", "]")
+	p.macro("RI", "[", "scenario", "]")
 
 	p.macro("SH", "DESCRIPTION")
 	p.macro("B", "wopr")
@@ -238,6 +243,9 @@ var optionDetails = map[string]string{
 		"At zero, WOPR takes launch authority, as `AUTO` gives it. Alone, `--launch-window` gives 30 seconds. " +
 		"`--launch-window=`<secs> gives 5 to 999 seconds, and 0 turns the limit off. " +
 		"`--instant` does not stop the clock. Movie mode gives no orders, so `--movie` refuses this option.",
+	"scenario": "Watch a scenario of the film's closing montage play itself in Global Thermonuclear War. After the kill ratios, Enter opens the menu of scenarios. " +
+		"Name the <scenario> by its number or its name, after a space or an equals sign: `wopr -c 2`, `wopr -c far east strategy`. " +
+		"Alone, `--scenario` lists the scenarios, then exits. It takes no game, and `--movie` refuses it.",
 }
 
 func writeOptions(p *page) error {

@@ -34,7 +34,7 @@ var info = games.Info{Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Layout: 
 func TestFilmScenario(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1983)
-	g.Type("3").Type("2")
+	g.Type("4").Type("2")
 	g.Type("Las Vegas").Type("Seattle, Omaha").Type("") // the first strike flies at once
 	g.Type("").Type("")                                 // strikes 2 and 3: the war plan
 	if !g.Contains("FIRST STRIKE LAUNCHED.") || !g.Contains("STRIKE ASSESSMENT COMPLETE.") {

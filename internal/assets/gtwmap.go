@@ -500,4 +500,4 @@ var placeNames = func() script.Ls {
 }()
 
 // Lines is every script block here, for the provenance test. Map is part of World.
-var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Scenarios, placeNames}
+var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Strategy, Scenarios, placeNames}
