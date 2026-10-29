@@ -9,9 +9,10 @@
   reader's own click always wins. Phones and tablets, ChromeOS and anything else unknown keep the
   first tab, as they do without JavaScript.
 
-  Each download tab has two buttons, one for Intel and AMD computers and one for Arm computers. When
-  the browser says for certain which processor the computer has, it hides the button that does not
-  fit; when it cannot tell, both stay, as they do without JavaScript. Chrome and Edge say it in the
+  The Linux and macOS download tabs have two buttons, one for Intel (and AMD) computers and one for
+  Arm computers (Apple Silicon on a Mac). The Windows installer has one button, for both. When the
+  browser says for certain which processor the computer has, it hides the button that does not fit;
+  when it cannot tell, both stay, as they do without JavaScript. Chrome and Edge say it in the
   client hints they give when asked, on every system. Without client hints, only Firefox on Linux
   names the processor in navigator.platform and its user agent: Windows and macOS browsers name
   x64 or Intel even on Arm computers, and Chrome's user agent says x86_64 on every Linux.

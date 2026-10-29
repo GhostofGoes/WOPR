@@ -375,24 +375,15 @@ screenshot fails the build.
   `sudo`, over HTTPS only. They add that folder to the shell's `PATH` when it is missing. Only the package
   lines need root. In these files, `@VERSION@` becomes the latest release's version (shortcodes do not run
   there). `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a
-  paragraph, becomes two download buttons, side by side, drawn by the shortcode (styled in
-  `site/assets/css/custom.css`). The buttons are "Intel/AMD" and "ARM" on Windows and Linux, and "Apple
-  Silicon" and "Intel" on macOS. Each is a plain link to its release file, with no file name under it. The
-  Windows installer and the Mac app are one file for both kinds of computer, so both of their buttons link
-  to it. Until the latest release has the installers (the `has-installers` partial: every release after
-  v0.4.0), the Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry
-  first ships in the same release (v0.4.0's packages have none). So `@APP-MENU@` in `linux-packages.md`,
-  `linux-apt.md` and both RPM files becomes the sentence in `app-menu.md` only when `has-installers` is
-  true, and nothing before. The `has-signatures` partial says whether the latest release is signed:
-  `docs.yml` passes whether the release has `checksums.txt.asc`, and other builds look for
-  `packaging/wopr-signing-key.fingerprint`. Once the latest release is signed, `@SIGNATURES@` in
-  `linux-packages.md` becomes `packages-signed.md` (before, nothing). The Linux (RPM) command line is then
-  `linux-rpm-signed.md` in place of `linux-rpm.md`. In it, `@KEYURL@` becomes the signing key's address on
-  the site, and `@FINGERPRINT@` becomes its fingerprint. Put text about the signatures in pages inside
-  `{{% if-signed %}}`, which works as `if-installers` does. The fingerprint comes from the
-  `signing-fingerprint` shortcode. Every build reads each file of a set, both RPM files and
-  `packages-signed.md` included, whichever it shows. It fails if one lacks its placeholder, or if a tab
-  still has any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
+  paragraph, becomes download buttons, side by side, drawn by the shortcode (styled in
+  `site/assets/css/custom.css`). Linux has two buttons, "Intel/AMD" and "ARM". Windows has one,
+  "Download Windows installer", because the installer is one file for both kinds of computer. macOS has
+  "Download macOS app (Apple Silicon)" and "Download macOS app (Intel)", which both link to the one app.
+  Each is a plain link to its release file, with no file name under it. `@APP-MENU@` in
+  `linux-packages.md`, `linux-apt.md` and `linux-rpm.md` becomes the sentence in `app-menu.md`. In
+  `linux-rpm.md`, `@KEYURL@` becomes the signing key's address on the site, and `@FINGERPRINT@` becomes
+  its fingerprint. Pages show the fingerprint with the `signing-fingerprint` shortcode. The build fails if
+  a file lacks its placeholder, or if a tab still has any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
   `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked
   before, and saves nothing. It hides the download button that does not fit the reader's processor when
   the browser says it for certain (client hints, or Firefox's user agent on Linux). Otherwise both buttons
@@ -416,15 +407,7 @@ screenshot fails the build.
   build needs no network beyond the Go module proxy.
 - Download commands in pages use the `version` shortcode, and those in `site/assets/install/` use
   `@VERSION@`. Both are the latest published release in `docs.yml`'s builds, and the latest in
-  `CHANGELOG.md` in others. Put text about the Windows installer, the Mac app, or WOPR in the Linux app
-  menu (the packages' menu entry) inside `{{% if-installers %}}`. It shows the text only once the latest
-  release has them (every release after v0.4.0, the `has-installers` partial), so no build of the site
-  names a file that does not exist yet. Put text for the releases before them inside
-  `{{% if-installers "not" %}}`. Its content is Markdown only: a shortcode inside it that writes HTML, such
-  as `tabs`, is dropped. Inside a Hextra `tab`, write it as `{{< if-installers >}}`: the tab renders the
-  Markdown, and the `%` form fails the build there. Text about the `.deb`, the `.rpm` or the archives'
-  `wopr.6` needs no gate: every release since v0.4.0 has them. So `if-packages`, which still wraps some of
-  it, always shows it. Nothing names the snap until it is published.
+  `CHANGELOG.md` in others. Nothing names the snap until it is published.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 

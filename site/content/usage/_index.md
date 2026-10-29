@@ -17,7 +17,7 @@ dial, the logon and the greeting. `wopr chess`, `wopr 7` and `wopr --play chess`
 
 `wopr --help` prints a short summary of the options. The manual page, {{< man-page >}}, has every option,
 every game with how to play it and tips, and movie mode. On Linux and macOS, read a downloaded copy with
-`man ./wopr.6`.{{% if-packages %}} The Linux packages install it, so `man wopr` shows it.{{% /if-packages %}}
+`man ./wopr.6`. The Linux packages install it, so `man wopr` shows it.
 
 [Accessibility](/usage/accessibility) covers play without colour or motion.
 [Troubleshooting](/usage/troubleshooting) says what to do when something goes wrong.

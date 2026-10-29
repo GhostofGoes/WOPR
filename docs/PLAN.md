@@ -1,8 +1,8 @@
 # WOPR — Architecture & Scope Plan (v2.1)
 
-_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.5.0 are
+_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.6.1 are
 released. M5's film text pass is done (2026-10-11, §2.3). QA on all OSes and some owner settings (M0b)
-remain. The installers (R14) ship in the next release. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
+remain. The installers (R14) ship in every release since v0.5.0. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
 [`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md) is the adversarial review of v1, and
 [`docs/reviews/PLAN-v2-review.md`](reviews/PLAN-v2-review.md) reviews v2. Where the plan answers a finding, it
 cites the finding's id inline: v1 ids look like A-3, v2 ids look like AR-1. Implementation follows the
@@ -1465,11 +1465,9 @@ classified address it leads to.
     The secret key must be the committed key's (the script checks the fingerprint), so a replaced secret
     cannot sign. CI signs every build with a throwaway key, and `smoke` installs the packages with
     signature checks on (dnf with `localpkg_gpgcheck=1`, and `gpgv` for the `.deb.asc`). CI's `collect`
-    signs again after adding the installers, as a release does. `docs.yml` looks for `checksums.txt.asc` to
-    tell whether the latest release is signed (the `has-signatures` partial). Once it is, the docs site's
-    Linux (RPM) command line imports the key (served at `/wopr-signing-key.asc`) and installs with the
-    check on, and its Linux download tab says how each package is signed. Before that, zypper needs
-    `--allow-unsigned-rpm`. Like every release file, the packages are also attested, and
+    signs again after adding the installers, as a release does. The docs site's Linux (RPM) command line
+    imports the key (served at `/wopr-signing-key.asc`) and installs with the check on, and its Linux
+    download tab says how each package is signed. Like every release file, the packages are also attested, and
     `gh attestation verify` can check them (§12).
   - **Looking inside an `.rpm`.** nFPM's RPM writer (google/rpmpack) stores the payload's paths as absolute
     (`/usr/bin/wopr`, where rpmbuild writes `./usr/bin/wopr`) and with no times. `rpm` and `dnf` install
@@ -1875,7 +1873,7 @@ its run tests exactly the tree the squash merge produces.
 | `macos` | `macos-26`, with smoke on it and `macos-26-intel` | The reusable `macos.yml` with `release-dist`, the version and `smoke-bundle`. It checks the darwin programs and notices, joins the programs with `lipo`, writes and ad-hoc signs `WOPR.app`, and makes the `.dmg`. It uploads the `.dmg` as `installer-macos`. Then on each runner it checks the image and runs the e2e test against the app's program. On `macos-26` it also opens the app as Finder does (§8). |
 | `snap` | `ubuntu-24.04`, with tests on it and `ubuntu-24.04-arm` | The reusable `snap.yml` with `release-dist`, the version, `smoke-bundle` and `publish: false`. It runs `snapdir` and `snap pack` for each architecture, then the Store's `review-tools`, and uploads the snaps as `snaps`. Then on each runner it installs the snap, runs it and the e2e test under confinement, and removes it. Its publish job is skipped. |
 | `collect` | `ubuntu-24.04` | What `release.yml`'s `collect` and `sign` do, without the uploads. `sizegate -files` on the installer and the `.dmg`, then `stage -merge`, then `sign-packages.sh` with a throwaway key on the result. That way, a problem shows on any push and not first on a tag. |
-| `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`. A deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. Then builds it as for a signed release and as for an unsigned one (`HUGO_PARAMS_SIGNEDRELEASE`). For those builds, the job puts a throwaway key in `packaging/` while the real one is missing. It checks that only the signed build imports the key and publishes it. |
+| `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`. A deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. It checks that the site imports the signing key and publishes it. |
 | `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
 
 Every CI run builds the installers and snaps, as for a tag (owner decision 2026-10-08). That way, a broken
@@ -2155,9 +2153,8 @@ wopr itself.
 - **README.md**:
   - What this is, and a link to the docs site (below).
   - Install, in a few lines. A link to the docs site's download buttons and one-line installs. The latest
-    release, `go install …@latest`, and the Linux packages (since v0.4.0, and they install the manual
-    page). The Windows installer, the Mac app and the packages' menu entry (from the release after v0.4.0).
-    They put WOPR in the Start menu, Applications or the app menu. The installer and the app warn at first
+    release, `go install …@latest`, the Linux packages (they install the manual page), the Windows
+    installer and the Mac app. They put WOPR in the Start menu, Applications or the app menu. The installer and the app warn at first
     because they are unsigned. A link to the section on checking attestations (§12).
   - Quick start (`LOGON:`, `LIST GAMES`, `LOGOFF`). The shell's commands and keys ("what you type is kept")
     are on the docs site's Usage page.
@@ -2215,34 +2212,24 @@ wopr itself.
     - For Linux: the `.deb` and the `.rpm`, opened in the desktop's software app. The tab points to the
       command lines for other distributions and the atomic desktops.
 
-    Each tab has two buttons, side by side, with no file name under them (owner decision 2026-10-10). They
-    are "Intel/AMD" and "ARM" on Windows and Linux, and "Apple Silicon" and "Intel" on macOS. The Windows
-    installer and the Mac app are one file for both, so their two buttons link to the same file. A button is
-    a plain link, at least 44 px tall, in Hextra's primary colour. The `install-tabs` shortcode draws it from
-    a placeholder in the tab's text. Until the latest release has the installer and the Mac app, the Windows
-    and macOS tabs say they come with the next release and point to the command lines. Every release after
-    v0.4.0 has them (the `has-installers` partial). A small script (`site/assets/js/install-platform.js`)
+    The buttons have no file name under them (owner decision 2026-10-10). Linux has two, "Intel/AMD" and
+    "ARM". Windows has one, "Download Windows installer", since the installer is one file for both (owner
+    decision 2026-10-29). macOS has "Download macOS app (Apple Silicon)" and "Download macOS app (Intel)",
+    which link to the same file. The script below shows only the one for the reader's Mac when it can tell.
+    A button is a plain link, at least 44 px tall, in Hextra's primary colour. The `install-tabs` shortcode
+    draws it from a placeholder in the tab's text. A small script (`site/assets/js/install-platform.js`)
     picks the tab for the reader's system, unless the reader picked one before. The tab is Windows, macOS or
     Linux. Among the command lines, it is Linux (apt) or Linux (RPM) when the browser names the distribution.
     The script also hides the download button that does not fit the reader's processor. It hides it when the
     browser says the processor for certain (client hints, or Firefox's user agent on Linux). Both buttons
     stay when it cannot tell, and without JavaScript. Phones, tablets and ChromeOS keep the first tab, as
-    does a browser without JavaScript. The site names the packages' menu entry only from the same release as
-    the installers (v0.4.0's packages have none). Three other places show their new parts only under the
-    same gates. The gates are `if-installers` for the installers and the menu entry, and `if-packages` for
-    the rest of the packages. The places are the Installation page's uninstall steps (the download buttons'
-    first, then the command lines'), the troubleshooting page and the credits page (Inno Setup). The
-    troubleshooting page's new parts are SmartScreen, Smart App Control, Gatekeeper, App Translocation and a
-    missing menu entry. AGENTS.md ("Docs site") has the placeholders that keep each text written once.
-    Nothing names the snap until it is published.
+    does a browser without JavaScript. AGENTS.md ("Docs site") has the placeholders that keep each text
+    written once. Nothing names the snap until it is published.
   - **One source for everything.** A content adapter (`site/content/games/_content.gotmpl`) builds each
     game's page from `site/data/games/<slug>.json`, and the manual page (`docs/man/wopr.6`) comes from the
     same files. The site mounts and renders `CHANGELOG.md`, `CODE_OF_CONDUCT.md`, `NOTICE.md` and AGENTS.md's
     Commands and Pull requests sections, and does not copy them. It mounts `docs/screenshots/` and the
-    manual page the same way. The download commands name the latest release (below). The `.deb` and `.rpm`
-    instructions appear, through the `if-packages` shortcode, once that release has packages. That is any
-    release after v0.3.0, which also has `wopr.6` in its archives. The instructions for the installer, the
-    Mac app and the packages' menu entry appear the same way (`if-installers`). The site's favicons and
+    manual page the same way. The download commands name the latest release (below). The site's favicons and
     navbar logo are the program's icon, drawn by `internal/tools/icons` (§8). Tests in `internal/cli` check
     that the usage page lists every option and environment variable, and that the movie page lists every
     scene.
