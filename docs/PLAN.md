@@ -546,6 +546,9 @@ type Env struct {
 	Deterministic bool   // --seed or WOPR_SEED, or under test, or movie mode: AI search obeys Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking (§4.5)
 	Mode          string // optional launch mode, e.g. "climax" (§6.2)
+	// --launch-window: how long GTW's strike prompts wait for an order (§6.2). 0 (the default,
+	// and always in movie mode) waits for ever.
+	LaunchWindow time.Duration
 }
 
 type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
@@ -748,6 +751,9 @@ its background colour, which no theme can work around.
   montage still play. `--instant` is what skips them: it draws each strike at once and skips the self-play
   and the montage. Movie mode's game clock keeps ticking, as the film shows it. Space pauses it with the
   rest (WCAG 2.2.2).
+- **Time limits.** No prompt times out by default. `-w/--launch-window` is the one time limit, on GTW's
+  strike orders, and only the player turns it on and sets its length, 5 to 999 seconds (WCAG 2.2.1). The
+  board states the seconds left as a number, and `--instant` and `--reduce-motion` leave it running.
 - **Text is real characters.** Every screen and every view is printable ASCII. Boards, maps and tables
   carry words (labels, legends, seat and side names). The console says each of WOPR's moves (in Hearts and
   Bridge, the trick so far). Every prompt with text ends in `:` or `?`. The film's open prompts (WOPR's
@@ -929,6 +935,8 @@ wopr -i | --instant           no pacing                              (env WOPR_I
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
 wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
                               typing or the animations, which -i skips
+wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
+                              a switch, so a value needs "=". No variable. --movie refuses it
 wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
@@ -1053,6 +1061,17 @@ no verdict of their own.
         - Enter (or `FIRE`, `YES`) executes the bracketed plan. Strike 3's plan is `100 100 100`.
         - `AUTO` hands WOPR every remaining strike: `WOPR HAS LAUNCH AUTHORITY.`
         - `HELP` or `?` prints three lines.
+        - **The launch window** (`-w/--launch-window`, `Env.LaunchWindow`; off by default). Each strike
+          prompt gives the order that long, counted on the protocol's ticks (`Animate` every second), so it
+          stands still behind the TOO SMALL card. Row 18 ends at column 79 with `WINDOW 27 SECONDS` (an
+          alert in the last ten), beside the orders hint or the last-orders warning. HELP and refusals do
+          not stop it, and any order does. At zero, WOPR takes launch authority as `AUTO` gives it:
+          `LAUNCH WINDOW CLOSED, PROFESSOR.`, `WOPR HAS LAUNCH AUTHORITY.`, and the war plan for every
+          strike left. The prompt cannot be taken back, so `AwaitKeys` replaces it, with the hint
+          `NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.`, until the assessment's prompt. The window runs
+          under `Instant` (its flights are drawn at once, but the window is real time), `ReduceMotion`
+          and `--seed`. Tests move the clock with ticks. Movie mode has none: `--movie` refuses the flag,
+          the UI passes 0 there, and `Film` never sets it.
         - A refusal asks the same strike again. The refusals are `ORDER NOT RECOGNISED. TYPE HELP.`,
           `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.` (also for a signed or decimal number, including a
           typographic minus or dash such as `–50`), `** ROUTINE MUST COMPLETE BEFORE RESET **` for a
@@ -1089,7 +1108,7 @@ no verdict of their own.
           column 79, a `FORCES` table: ICBMs in silos, SLBMs at sea, bombers grounded (`BMB`) and airborne
           (`AIR`), your side first. The nations' names say whose figures are whose. The colours only repeat
           it.
-        - Row 18 shows one thing, by state:
+        - Row 18 shows one thing, by state, and with the launch window its seconds at the right end:
           - the orders hint, at a strike prompt
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
@@ -1103,7 +1122,7 @@ no verdict of their own.
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
-        everything up to the next prompt. Nothing waits for a tick.
+        everything up to the next prompt. Nothing waits for a tick, unless a launch window runs.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |

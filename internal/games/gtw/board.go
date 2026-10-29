@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -88,9 +89,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 }
 
 // drawFoot fills the row under the tables with one thing, by state: the orders hint at a
-// strike prompt (the last-orders warning at the last one), the launch code at the climax, and
-// otherwise the legend: + and * in their tracks' colours, and X reversed in the neutral text
-// colour, since both sides' impacts show. The film's board (movie mode) has nobody to give
+// strike prompt (the last-orders warning at the last one), with any launch window's seconds
+// after it, the launch code at the climax, and otherwise the legend: + and * in their tracks'
+// colours, and X reversed in the neutral text colour, since both sides' impacts show. The film's board (movie mode) has nobody to give
 // orders, so it shows the legend at the strike prompts too.
 func (g *Game) drawFoot(c *proto.Canvas) {
 	switch {
@@ -103,11 +104,31 @@ func (g *Game) drawFoot(c *proto.Canvas) {
 		g.drawLegend(c)
 	case g.phase == orders && g.stage == strikes-1:
 		c.Put(0, footRow, lineLastOrders[0].Text, proto.StyleAlert, 0)
+		g.drawWindow(c)
 	case g.phase == orders:
 		c.Put(0, footRow, lineOrdersHint[0].Text, proto.StyleDim, 0)
+		g.drawWindow(c)
 	default:
 		g.drawLegend(c)
 	}
+}
+
+// drawWindow ends the foot row at column 79 with what is left of the launch window, if one
+// runs, in whole seconds rounded up: it reads 1 until the window shuts. The last ten seconds
+// are an alert. The figure says the same without colour.
+func (g *Game) drawWindow(c *proto.Canvas) {
+	if g.window <= 0 {
+		return
+	}
+	secs := int((g.window + time.Second - 1) / time.Second)
+	text, style := fill(lineWindow[0], secs), proto.StyleBright
+	if secs == 1 {
+		text = lineWindow[1].Text
+	}
+	if secs <= 10 {
+		style = proto.StyleAlert
+	}
+	c.Put(80-len(text), footRow, text, style, 0)
 }
 
 func (g *Game) drawLegend(c *proto.Canvas) {

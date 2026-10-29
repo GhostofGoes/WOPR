@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
@@ -172,6 +173,57 @@ func TestParseSeed(t *testing.T) {
 			}
 			if act != tt.action || cfg.Seed != tt.seed || cfg.SeedSet != tt.set {
 				t.Errorf("got action=%v seed=%d set=%v, want %v %d %v", act, cfg.Seed, cfg.SeedSet, tt.action, tt.seed, tt.set)
+			}
+		})
+	}
+}
+
+// --launch-window is a switch that may take seconds after an equals sign: alone it gives 30
+// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error. Movie
+// mode gives no orders, so it refuses a window.
+func TestParseLaunchWindow(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args   string
+		window time.Duration
+		play   string
+		usage  string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "gtw", play: "global-thermonuclear-war"},
+		{args: "-w", window: 30 * time.Second},
+		{args: "--launch-window gtw", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "gtw -w", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "-w=45 gtw", window: 45 * time.Second, play: "global-thermonuclear-war"},
+		{args: "--launch-window=5", window: 5 * time.Second},
+		{args: "--launch-window=999", window: 999 * time.Second},
+		{args: "-w=0"},
+		{args: "-w -w=false"},
+		{args: "-w=4", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=1000", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=-5", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=soon", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "gtw -w 45", usage: "too many arguments"},
+		{args: "-m -w", usage: "--movie and --launch-window cannot be combined"},
+		{args: "-m -w=0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.LaunchWindow != tt.window || cfg.Play != tt.play {
+				t.Errorf("got window %v play %q, want %v %q", cfg.LaunchWindow, cfg.Play, tt.window, tt.play)
 			}
 		})
 	}

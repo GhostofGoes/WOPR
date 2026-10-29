@@ -39,6 +39,7 @@ type Config struct {
 	Instant       bool
 	Deterministic bool
 	ReduceMotion  bool
+	LaunchWindow  time.Duration // proto.Env.LaunchWindow
 	Resolve       Resolver
 	Area          Area
 }
@@ -433,6 +434,7 @@ func (r *Runner) env(f *frame, mode string) proto.Env {
 	return proto.Env{
 		Seed: f.seed, Width: f.areaW, Height: f.areaH,
 		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, ReduceMotion: r.cfg.ReduceMotion, Mode: mode,
+		LaunchWindow: r.cfg.LaunchWindow,
 	}
 }
 

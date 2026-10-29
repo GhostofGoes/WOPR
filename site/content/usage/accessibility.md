@@ -37,6 +37,12 @@ underline and reverse instead.
 The typing and the animations still play. Add `--instant` to skip them. With or without either option,
 nothing ever flashes more than three times a second.
 
+## Time limits
+
+No prompt has a time limit unless you ask for one. `--launch-window` (`-w`) gives the strike orders in
+Global Thermonuclear War a time limit. You choose its length, from 5 to 999 seconds (`-w=120`). The board
+shows the seconds that are left, as a number. `--instant` does not stop this clock.
+
 ## Instant text
 
 `--instant` (`-i`, or `WOPR_INSTANT=1`) shows each line at once, instead of one character at a time. It

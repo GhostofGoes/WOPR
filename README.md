@@ -168,6 +168,7 @@ film's lines are its own screen text, checked against frame-by-frame transcripti
 | `-i`, `--instant` | no typewriter pacing. Also `WOPR_INSTANT=1` |
 | `-s`, `--seed <n>` | a repeatable run. Also `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations). Also `WOPR_REDUCE_MOTION=1` |
+| `-w`, `--launch-window[=secs]` | give each Global Thermonuclear War strike order a time limit: 30 seconds, or 5 to 999 (`-w=60`). At zero, WOPR takes launch authority |
 
 `NO_COLOR` (any value but an empty one) turns colour off.
 

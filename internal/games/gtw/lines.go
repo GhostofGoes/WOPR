@@ -48,6 +48,8 @@ var (
 	lineSystems   = script.Orig("ICBM", "SLBM", "BOMBERS")
 	promptStrike  = script.Orig("STRIKE # OF # [# # #]: ")
 	lineAuto      = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	lineShut      = script.Orig("LAUNCH WINDOW CLOSED, PROFESSOR.")
+	lineNoOrders  = script.Orig("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.") // the key hint once the window shuts
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
 	lineBadPct    = script.Orig("PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.")
 	lineOrderHelp = script.Orig(
@@ -75,6 +77,7 @@ var (
 	lineOrdersHint = script.Orig("ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.")
 	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.")
 	lineLegend     = script.Orig("OUTGOING +   INCOMING *   IMPACT X")
+	lineWindow     = script.Orig("WINDOW # SECONDS", "WINDOW 1 SECOND") // at the strike prompt's foot, with --launch-window
 
 	// filmList is LIST GAMES as the film shows it, for the climax. The catalog's tests check
 	// it against the registry's listed names, so the two cannot drift.
@@ -90,10 +93,10 @@ var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
-	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
-	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
+	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineShut, lineNoOrders, lineBadOrder,
+	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
-	lineLegend, filmList,
+	lineLegend, lineWindow, filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

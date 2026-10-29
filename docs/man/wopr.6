@@ -103,6 +103,15 @@ steady pace.\&
 The typing and the animations still play. \%\fB\-\-instant\fR skips them.\&
 The environment variable \%\fBWOPR_REDUCE_MOTION\fR sets it too.\&
 The option wins.\&
+.TP
+\%\fB\-w\fR, \%\fB\-\-launch\-window\fR
+Give each strike order in Global \%Thermonuclear War a time limit.\&
+The board shows the seconds that are left.\&
+At zero, \%WOPR takes launch authority, as \%\fBAUTO\fR gives it.\&
+Alone, \%\fB\-\-launch\-window\fR gives 30 seconds.\&
+\%\fB\-\-launch\-window=\fR\fIsecs\fR gives 5 to 999 seconds, and 0 turns the
+limit off. \%\fB\-\-instant\fR does not stop the clock.\&
+Movie mode gives no orders, so \%\fB\-\-movie\fR refuses this option.\&
 .SH GAMES
 .SS "1. Falken's Maze"
 Start it with
@@ -849,6 +858,9 @@ Give the percentages of the \%ICBMs, \%SLBMs and bombers you still hold (50 25
 100).\&
 Or answer \%ALL, \%HOLD or \%AUTO.\&
 Enter uses the plan in brackets.\&
+With the \%\-\-launch\-window option, the board's last row shows the seconds
+left to give the order.\&
+At zero, \%WOPR takes launch authority, as \%AUTO gives it.\&
 .IP \(bu 2
 After each of your launches, \%WOPR launches on warning and \%DEFCON falls.\&
 The > beside the ladder marks the current level.\&
