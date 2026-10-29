@@ -251,7 +251,7 @@ jobs:
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Size gate
-        run: go run ./internal/tools/sizegate -expect 6 -packages 4
+        run: go run ./internal/tools/sizegate -expect 8 -packages 4
       - name: Stage binaries, end-to-end tests and Linux packages
         run: go run ./internal/tools/stage -archives -assets dist/release
       # Every release file, checked against checksums.txt and still unsigned, as release.yml's build

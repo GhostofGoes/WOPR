@@ -38,6 +38,27 @@ builds:
       - -X github.com/GhostofGoes/WOPR/internal/version.Date={{ .CommitDate }}
     mod_timestamp: "{{ .CommitTimestamp }}"
 
+  # The Linux packages' program: a position-independent executable, so that the kernel loads it at
+  # a new random address each time (ASLR). The archives keep the static program above, which runs
+  # on any distribution. Without cgo, which the sandbox needs, Go cannot make a static PIE: this one
+  # names glibc's dynamic loader, which applies its relocations, and every system that installs a
+  # .deb or an .rpm has that loader. -I pins the loader's path, which the linker would otherwise take
+  # from the build host. -bindnow gives full RELRO. internal/tools/stage checks the result.
+  - id: wopr-pie
+    main: ./cmd/wopr
+    binary: wopr
+    env: [CGO_ENABLED=0]
+    goos: [linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildmode=pie]
+    ldflags:
+      - -s -w
+      - -bindnow -I {{ if eq .Arch "amd64" }}/lib64/ld-linux-x86-64.so.2{{ else }}/lib/ld-linux-aarch64.so.1{{ end }}
+      - -X github.com/GhostofGoes/WOPR/internal/version.Version={{ .Version }}
+      - -X github.com/GhostofGoes/WOPR/internal/version.Commit={{ .FullCommit }}
+      - -X github.com/GhostofGoes/WOPR/internal/version.Date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
 archives:
   - id: wopr
     ids: [wopr]
@@ -78,7 +99,8 @@ archives:
 # Linux packages for amd64 and arm64: a .deb for Debian and Ubuntu, an .rpm for Fedora, RHEL and
 # openSUSE. Both are named by their format's convention (dpkg-name; name-version-release.arch), take
 # Debian revision / RPM release 1 (a snapshot becomes X.Y.Z~snapshot.<commit>-1, which sorts before
-# X.Y.Z-1), have no dependencies (the binary is static), and are byte-reproducible: every time is
+# X.Y.Z-1), have no dependencies (the program needs only the C library's loader, which every glibc
+# system has), and are byte-reproducible: every time is
 # the commit's, the RPM build host is fixed, and the documents come from pkgdocs. Their changelogs
 # come from changie's notes: relnotes writes changelog.yml into $WOPR_NOTES_DIR, and pkgdocs copies
 # it to build/pkg; nfpms.changelog takes no template, so it names that fixed path.
@@ -95,7 +117,7 @@ nfpms:
   # §12.7 wants changelog.Debian.gz (nFPM writes it from the changelog) and the upstream release
   # notes as NEWS.gz.
   - id: deb
-    ids: [wopr]
+    ids: [wopr-pie]
     formats: [deb]
     package_name: wopr
     file_name_template: "{{ .ConventionalFileName }}"
@@ -111,11 +133,11 @@ nfpms:
     mtime: "{{ .CommitDate }}"
     deb:
       compression: xz
-      # Go links the program statically on purpose (CGO_ENABLED=0), so it runs on any distribution.
-      # lintian knows Go binaries are static only when it can see a golang build dependency in
-      # a Debian source package, which a package built by GoReleaser has not.
+      # The program is a position-independent executable that needs no shared library, only the C
+      # library's loader (wopr-pie). lintian takes such a file, with no DT_NEEDED entry, for a
+      # shared library that does not link libc.
       lintian_overrides:
-        - statically-linked-binary [usr/games/wopr]
+        - shared-library-lacks-prerequisites [usr/games/wopr]
     contents:
       - src: build/pkg/wopr.6.gz
         dst: /usr/share/man/man6/wopr.6.gz
@@ -147,7 +169,7 @@ nfpms:
   # %license and the documents in /usr/share/doc as %doc; the package owns both directories.
   # The manual page is compressed, as rpmbuild would leave it. Group is left unset, as Fedora asks.
   - id: rpm
-    ids: [wopr]
+    ids: [wopr-pie]
     formats: [rpm]
     package_name: wopr
     file_name_template: "{{ .ConventionalFileName }}"

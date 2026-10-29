@@ -26,7 +26,7 @@ answers). **D** = derived from a U requirement. **P** = a plan default the owner
 | R1 | Go terminal-UI recreation of WOPR from *WarGames* (1983). The binary is `wopr`. | U | — |
 | R2 | Every game on the film's `LIST GAMES` (15 entries), plus the tic-tac-toe ending. | U | Each game meets the definition of done (§6). |
 | R3 | Persona faithful to the film and to the brother's "WOPR Simulator" prompt. WOPR speaks ALL CAPS, addresses the user as PROFESSOR and is terse. It numbers its lists (except the film's unnumbered `LIST GAMES`, §4.6) and refuses invalid moves. wopr echoes user input as typed, in mixed case, as in the film (F-1). | U | Persona table tests and golden transcripts (§9). |
-| R4 | Single static binary for **Linux and Windows**. | U | CI smoke-runs the release binaries natively (§11). |
+| R4 | Single static binary for **Linux and Windows** (the Linux packages' copy is a PIE, §8). | U | CI smoke-runs the release binaries natively (§11). |
 | R5 | **macOS 26 (Tahoe)** on Intel and Apple Silicon. Older macOS versions are out of scope. | U (2026-10-06) | Smoke runs on `macos-26` and `macos-26-intel`. |
 | R6 | Size: **target ≤ 10 MB, hard limit 15 MB** per binary (decimal MB). | U (confirmed 2026-10-06) | CI warns above 10,000,000 bytes and fails above 15,000,000. |
 | R7 | `wopr` starts the TUI. `--version`, `--help`, `--games`, `-p/--play <game>`. | U | CLI tests (§5). |
@@ -47,9 +47,11 @@ answers). **D** = derived from a U requirement. **P** = a plan default the owner
 | macOS | 26 Tahoe | amd64, arm64 | `macos-26-intel`, `macos-26` |
 | Windows | 11 | amd64, arm64 | `windows-2025`, `windows-11-arm` |
 
-Binaries are static (`CGO_ENABLED=0`). Go 1.27's own floor is macOS 13, so builds run fine on 26 (D-5). A
-static Linux binary needs nothing from the distribution, only a kernel. Go's floor is Linux 3.2, and 22.04
-ships 5.15. The `ubuntu-22.04` runner image is deprecated and unsupported from 2027-04-17. An `ubuntu:22.04`
+Binaries are built without cgo (`CGO_ENABLED=0`). Go 1.27's own floor is macOS 13, so builds run fine on 26
+(D-5). The Linux archives' program is static, so it needs nothing from the distribution, only a kernel. The
+`.deb` and `.rpm` hold a position-independent build of the same program (§8, "Process hardening"), which
+needs glibc's dynamic loader too. Every system that installs those packages has it. Go's floor is Linux
+3.2, and 22.04 ships 5.15. The `ubuntu-22.04` runner image is deprecated and unsupported from 2027-04-17. An `ubuntu:22.04`
 container would still run on the host's kernel. So CI tests neither, and the 22.04 claim rests on that floor
 (B-5).
 
@@ -1344,11 +1346,12 @@ classified address it leads to.
   Windows programs' resources (below). The standard library's HTTP client (M7) added 3.9 to 4.5 MB to a
   one-view program (2026-10-06). As much again would take the amd64 programs to about 10.5 to 11 MB: over
   the 10 MB target and under the 15 MB limit. A provider SDK would add about 4.5 MB more, so wopr uses none.
-- **Size gate**: `go run ./internal/tools/sizegate -expect 6 -packages 4`, which reads `dist/artifacts.json`
+- **Size gate**: `go run ./internal/tools/sizegate -expect 8 -packages 4`, which reads `dist/artifacts.json`
   (B-7, B-9).
   - It reads GoReleaser's artifact list and gates the `Binary` entries and the Linux packages.
-  - It fails on an empty list. It also fails when the number of binaries is not the expected six, or the
-    number of packages is not the expected four.
+  - It fails on an empty list. It also fails when the number of binaries is not the expected eight, or the
+    number of packages is not the expected four. The eight are the six targets' programs and the Linux
+    packages' two PIE programs.
   - It writes a table to the step summary, warns above 10 MB and fails above 15 MB.
   - GoReleaser's `report_sizes` also logs the sizes.
   - `sizegate -files <file>...` holds the Windows installer and the macOS disk image to the same budget, in
@@ -1375,7 +1378,7 @@ classified address it leads to.
     - abs0's transcription and Matthew Thomas's map, with their terms from `NOTICE.md`.
     - every module linked into the Linux builds. The tool files each under Expat or BSD-3-clause only if
       its licence has those words, so any other licence stops the tool until someone files it.
-  - **Metadata.** Section `games`, priority `optional`, no dependencies (the binary is static), homepage the
+  - **Metadata.** Section `games`, priority `optional`, no dependencies (the program needs only glibc's loader), homepage the
     repository. Maintainer and packager `Christopher Goes <ghostofgoes@gmail.com>`, RPM vendor
     `Christopher Goes`. `License: MIT AND BSD-2-Clause AND BSD-3-Clause AND LicenseRef-Matthew-Thomas-map`:
     wopr, abs0's transcription, the Go modules, and Matthew Thomas's map. The map is compiled into the
@@ -1445,7 +1448,11 @@ classified address it leads to.
     the override. rpmlint 2.10 with Fedora 44's configuration finds nothing new (its desktop-file and
     AppData checks ran). `appstreamcli` 1.0.2 `--pedantic` gives one info note,
     `description-first-word-not-capitalized`, because the description starts with `wopr`.
-    `appstream-util validate-relax` passes.
+    `appstream-util validate-relax` passes. Linted again on 2026-10-29, when the packages' program became a
+    PIE. lintian 2.117 `--pedantic` reports `shared-library-lacks-prerequisites`, which the package now
+    overrides: lintian takes a PIE with no `DT_NEEDED` entry for a shared library without libc. rpmlint
+    2.8.0 still reports `statically-linked-binary`, for the same reason, and no longer
+    `position-independent-executable-suggested`. `packaging/rpmlintrc` no longer filters that one.
   - **Signatures** (owner decision 2026-10-10). Releases are signed with wopr's OpenPGP key. Its public half
     and fingerprint are committed as `packaging/wopr-signing-key.asc` and
     `packaging/wopr-signing-key.fingerprint`. The secret half is the `release` environment's
@@ -1684,6 +1691,22 @@ classified address it leads to.
   on amd64 and arm64, as a user and as root, with `WOPR_SANDBOX_REQUIRE=1` so that a missing kernel
   feature fails. Not done yet: the M7 LLM brain, which will need one Landlock rule for TCP port 443, a
   socket that the filter allows, and its files loaded before the lockdown.
+- **Position-independent program** (Linux packages, 2026-10-29). The `.deb` and the `.rpm`
+  install the `wopr-pie` build in `.goreleaser.yaml`: `-buildmode=pie`, so that the kernel loads the code
+  at a new random address each time (ASLR). `-ldflags=-bindnow` gives full RELRO. Go's internal linker
+  makes it without cgo, but it cannot make a static PIE. So the program names glibc's dynamic loader
+  (`/lib64/ld-linux-x86-64.so.2` or `/lib/ld-linux-aarch64.so.1`), which applies its relocations. `-I`
+  pins that path, so that the build does not depend on the host. A static PIE needs cgo, which turns off
+  most of the sandbox. The archives, the snap and the installers keep the static program, which runs on
+  any distribution, musl and NixOS included. The loader is a new trust boundary for the packages' program
+  only: it reads `LD_PRELOAD`, `LD_AUDIT` and `/etc/ld.so.preload` before wopr starts (`SECURITY.md`).
+  These are the user's own, or root's, so they give no one new access.
+  - `internal/tools/stage` checks every Linux program from the ELF headers and Go's build information.
+    The archives' program must be static. The packages' must be a PIE with the pinned loader, `PT_GNU_RELRO`,
+    `DF_BIND_NOW` and no shared libraries. Neither may have an executable stack, and Go must have built
+    both without cgo. Each package must install the PIE program for its architecture, byte for byte.
+  - The e2e test `TestLinuxPIE` starts the program twice and checks that its code is at two addresses.
+    The smoke jobs run the e2e tests against the installed `.deb`'s program, with `WOPR_E2E_PIE=1`.
 
 ---
 

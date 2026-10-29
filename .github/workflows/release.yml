@@ -130,7 +130,7 @@ jobs:
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
       - name: Size gate
-        run: go run ./internal/tools/sizegate -expect 6 -packages 4
+        run: go run ./internal/tools/sizegate -expect 8 -packages 4
       # dist/release gets every file GoReleaser made for the release, each checked against
       # checksums.txt; collect adds the installers.
       - name: Stage binaries, check archive and package contents, collect the release files

@@ -122,21 +122,41 @@ var rpmFiles = func() map[string]uint32 {
 // checkPackages checks that every Linux build has exactly one .deb and one .rpm, and checks each.
 func checkPackages(arts []artifact) error { return checkPackagesFrom(arts, pkgDir) }
 
-// checkPackagesFrom is checkPackages, with what pkgdocs wrote in pkgs.
+// checkPackagesFrom is checkPackages, with what pkgdocs wrote in pkgs. Each package must install
+// the program of the wopr-pie build for its architecture, byte for byte.
 func checkPackagesFrom(arts []artifact, pkgs string) error {
+	programs := map[string][]byte{} // goarch -> the packages' program
+	for _, a := range arts {
+		if a.Type == "Binary" && a.Extra.ID == pieBuild {
+			data, err := os.ReadFile(a.Path)
+			if err != nil {
+				return err
+			}
+			programs[a.Goarch] = data
+		}
+	}
 	have := map[string]int{} // "<arch> <format>" -> count
 	for _, a := range arts {
 		if !a.pkg() {
 			continue
 		}
+		var digest string
+		var sum func([]byte) string
 		var err error
 		switch a.Extra.Format {
 		case "deb":
-			err = checkDeb(a, pkgs)
+			digest, err = checkDeb(a, pkgs)
+			sum = md5Sum
 		case "rpm":
-			err = checkRPM(a, pkgs)
+			digest, err = checkRPM(a, pkgs)
+			sum = sha256Sum
 		default:
 			err = fmt.Errorf("unexpected package format %q", a.Extra.Format)
+		}
+		if program, ok := programs[a.Goarch]; err == nil && !ok {
+			err = fmt.Errorf("no %s program for linux/%s; see builds in .goreleaser.yaml", pieBuild, a.Goarch)
+		} else if err == nil && digest != sum(program) {
+			err = fmt.Errorf("its program's digest is %q, but the %s program's is %q", digest, pieBuild, sum(program))
 		}
 		if err != nil {
 			return fmt.Errorf("%s: %w", a.Name, err)
@@ -157,27 +177,31 @@ func checkPackagesFrom(arts []artifact, pkgs string) error {
 	return nil
 }
 
+func md5Sum(b []byte) string    { s := md5.Sum(b); return hex.EncodeToString(s[:]) }
+func sha256Sum(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
+
 // checkDeb reads a .deb's control file and the list of files it installs (md5sums), from
 // control.tar.gz, and checks them, the package's file name, and its desktop files against pkgs.
-func checkDeb(a artifact, pkgs string) error {
+// It returns the program's MD5.
+func checkDeb(a artifact, pkgs string) (string, error) {
 	members, err := readAr(a.Path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if string(members["debian-binary"]) != "2.0\n" {
-		return errors.New("debian-binary is not 2.0")
+		return "", errors.New("debian-binary is not 2.0")
 	}
 	names := slices.Sorted(maps.Keys(members))
 	if !slices.ContainsFunc(names, func(n string) bool { return strings.HasPrefix(n, "data.tar") }) {
-		return errors.New("no data.tar member")
+		return "", errors.New("no data.tar member")
 	}
 	ctl, ok := members["control.tar.gz"]
 	if !ok {
-		return fmt.Errorf("no control.tar.gz (has %v)", names)
+		return "", fmt.Errorf("no control.tar.gz (has %v)", names)
 	}
 	files, err := untarGz(ctl)
 	if err != nil {
-		return fmt.Errorf("control.tar.gz: %w", err)
+		return "", fmt.Errorf("control.tar.gz: %w", err)
 	}
 	control := parseControl(string(files["control"]))
 	want := map[string]string{
@@ -185,19 +209,19 @@ func checkDeb(a artifact, pkgs string) error {
 	}
 	for k, v := range want {
 		if control[k] != v {
-			return fmt.Errorf("control has %s %q, want %q", k, control[k], v)
+			return "", fmt.Errorf("control has %s %q, want %q", k, control[k], v)
 		}
 	}
 	for _, k := range []string{"Version", "Maintainer", "Homepage", "Installed-Size"} {
 		if control[k] == "" {
-			return fmt.Errorf("control has no %s", k)
+			return "", fmt.Errorf("control has no %s", k)
 		}
 	}
 	if synopsis, extended, _ := strings.Cut(control["Description"], "\n"); synopsis == "" || extended == "" {
-		return errors.New("control's Description needs a synopsis and an extended description")
+		return "", errors.New("control's Description needs a synopsis and an extended description")
 	}
 	if name := fmt.Sprintf("wopr_%s_%s.deb", control["Version"], control["Architecture"]); a.Name != name {
-		return fmt.Errorf("named %s; Debian's convention (dpkg-name) is %s", a.Name, name)
+		return "", fmt.Errorf("named %s; Debian's convention (dpkg-name) is %s", a.Name, name)
 	}
 	sums := map[string]string{} // installed path, without the leading slash -> MD5
 	var installed []string
@@ -209,11 +233,13 @@ func checkDeb(a artifact, pkgs string) error {
 	}
 	for _, f := range debFiles {
 		if !slices.Contains(installed, f) {
-			return fmt.Errorf("does not install /%s (installs %v)", f, installed)
+			return "", fmt.Errorf("does not install /%s (installs %v)", f, installed)
 		}
 	}
-	md5sum := func(b []byte) string { s := md5.Sum(b); return hex.EncodeToString(s[:]) }
-	return checkDesktop(pkgs, "deb", "/usr/games/wopr", func(f string) string { return sums[f] }, md5sum)
+	if err := checkDesktop(pkgs, "deb", "/usr/games/wopr", func(f string) string { return sums[f] }, md5Sum); err != nil {
+		return "", err
+	}
+	return sums["usr/games/wopr"], nil
 }
 
 // checkDesktop checks that a package carries the menu entry pkgdocs wrote for its format into
@@ -349,39 +375,39 @@ const rpmSHA256 = 8
 
 // checkRPM reads an .rpm's header and checks its name, its file name, the files it installs and
 // how it marks them, its desktop files against pkgs, and that its changelog starts with this
-// version.
-func checkRPM(a artifact, pkgs string) error {
+// version. It returns the program's SHA-256.
+func checkRPM(a artifact, pkgs string) (string, error) {
 	data, err := os.ReadFile(a.Path)
 	if err != nil {
-		return err
+		return "", err
 	}
 	h, err := readRPMHeader(data)
 	if err != nil {
-		return err
+		return "", err
 	}
 	name, version, release, arch := h.str(tagName), h.str(tagVersion), h.str(tagRelease), h.str(tagArch)
 	if name != "wopr" || arch != rpmArch[a.Goarch] {
-		return fmt.Errorf("is %s for %s, want wopr for %s", name, arch, rpmArch[a.Goarch])
+		return "", fmt.Errorf("is %s for %s, want wopr for %s", name, arch, rpmArch[a.Goarch])
 	}
 	if h.str(tagSummary) == "" || h.str(tagLicense) == "" {
-		return errors.New("has no Summary or no License")
+		return "", errors.New("has no Summary or no License")
 	}
 	if want := fmt.Sprintf("%s-%s-%s.%s.rpm", name, version, release, arch); a.Name != want {
-		return fmt.Errorf("named %s; RPM's convention is %s", a.Name, want)
+		return "", fmt.Errorf("named %s; RPM's convention is %s", a.Name, want)
 	}
 	dirs, bases, idx, flags := h.strs(tagDirNames), h.strs(tagBaseNames), h.ints(tagDirIndexes), h.ints(tagFileFlags)
 	digests, algo := h.strs(tagFileDigests), h.ints(tagDigestAlgo)
 	if len(idx) != len(bases) || len(flags) != len(bases) || len(digests) != len(bases) {
-		return errors.New("the header's file lists do not line up")
+		return "", errors.New("the header's file lists do not line up")
 	}
 	if len(algo) == 0 || algo[0] != rpmSHA256 {
-		return fmt.Errorf("file digest algorithm %v, want %d (SHA-256)", algo, rpmSHA256)
+		return "", fmt.Errorf("file digest algorithm %v, want %d (SHA-256)", algo, rpmSHA256)
 	}
 	installed := map[string]uint32{}
 	digest := map[string]string{} // installed path, without the leading slash -> SHA-256
 	for i, b := range bases {
 		if int(idx[i]) >= len(dirs) {
-			return errors.New("a file's directory index is out of range")
+			return "", errors.New("a file's directory index is out of range")
 		}
 		installed[dirs[idx[i]]+b] = flags[i]
 		digest[strings.TrimPrefix(dirs[idx[i]]+b, "/")] = digests[i]
@@ -390,17 +416,19 @@ func checkRPM(a artifact, pkgs string) error {
 		got, ok := installed[f]
 		switch {
 		case !ok:
-			return fmt.Errorf("does not install %s (installs %v)", f, slices.Sorted(maps.Keys(installed)))
+			return "", fmt.Errorf("does not install %s (installs %v)", f, slices.Sorted(maps.Keys(installed)))
 		case got&want != want:
-			return fmt.Errorf("%s has flags %#x, want %#x set (%%doc %#x, %%license %#x)", f, got, want, rpmDoc, rpmLicense)
+			return "", fmt.Errorf("%s has flags %#x, want %#x set (%%doc %#x, %%license %#x)", f, got, want, rpmDoc, rpmLicense)
 		}
 	}
 	changes := h.strs(tagChangelogName)
 	if len(changes) == 0 || !strings.HasSuffix(changes[0], " - "+version+"-"+release) {
-		return fmt.Errorf("the changelog's newest entry is %q, want one for %s-%s", changes, version, release)
+		return "", fmt.Errorf("the changelog's newest entry is %q, want one for %s-%s", changes, version, release)
 	}
-	sha256sum := func(b []byte) string { s := sha256.Sum256(b); return hex.EncodeToString(s[:]) }
-	return checkDesktop(pkgs, "rpm", "/usr/bin/wopr", func(f string) string { return digest[f] }, sha256sum)
+	if err := checkDesktop(pkgs, "rpm", "/usr/bin/wopr", func(f string) string { return digest[f] }, sha256Sum); err != nil {
+		return "", err
+	}
+	return digest["usr/bin/wopr"], nil
 }
 
 // rpmHeader is an RPM header's index and data store.
