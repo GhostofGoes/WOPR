@@ -29,6 +29,12 @@ var (
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
+	// The after-action report under the kill ratios (original): the POPULATION DEATHS row
+	// against the same war fought with HOLD at both prompts, and with the war plan.
+	lineAfter = script.Orig("AGAINST HOLDING FIRE: #, #.", "AGAINST THE WAR PLAN: #, #.",
+		"YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.", "YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.")
+	lineEnemyDead = script.Orig("# MILLION MORE ENEMY DEAD", "# MILLION FEWER ENEMY DEAD", "AS MANY ENEMY DEAD")
+	lineOwnDead   = script.Orig("# MILLION MORE OF YOURS", "# MILLION FEWER OF YOURS", "AS MANY OF YOURS")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
 	// underlines the first line; the board's three-row strip has no room for that.
 	lineRunning  = script.FromFilm("** GAME ROUTINE RUNNING **")
@@ -88,8 +94,8 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
-	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
+	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
+	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,

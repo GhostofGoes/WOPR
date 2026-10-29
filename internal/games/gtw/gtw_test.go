@@ -494,6 +494,29 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 	}
 }
 
+// The kill ratios come with the after-action report, before the line that asks for Enter;
+// the film's board (movie mode) gives none, since nobody there gave orders.
+func TestAfterActionUnderTheRatios(t *testing.T) {
+	t.Parallel()
+	for orders, want := range map[string]string{
+		"":               "AGAINST HOLDING FIRE: 43 MILLION MORE ENEMY DEAD, 2 MILLION MORE OF YOURS.\nYOUR ORDERS WERE THE WAR PLAN, PROFESSOR.",
+		"auto":           "YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.",
+		"hold|hold":      "YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.\nAGAINST THE WAR PLAN: 43 MILLION FEWER ENEMY DEAD,",
+		"0 100 100|hold": "AGAINST HOLDING FIRE: 43 MILLION MORE ENEMY DEAD, AS MANY OF YOURS.",
+	} {
+		g, _ := war(t, 7, strings.Split(orders, "|")...)
+		g.Type("")
+		if !inOrder(g.Transcript(), "PROJECTED KILL RATIOS.", want, "PRESS ENTER TO CONTINUE.") {
+			t.Errorf("%q: want %q under the kill ratios:\n%s", orders, want, g.Transcript())
+		}
+	}
+	for _, l := range gtw.NewFilm(7, false).Run(gtw.FilmRatios) {
+		if strings.HasPrefix(l, "AGAINST ") || strings.HasSuffix(l, "PROFESSOR.") {
+			t.Errorf("the film's kill ratios gave a report: %q", l)
+		}
+	}
+}
+
 // Firing everything leaves nothing to order: the last strike runs by itself. AUTO hands
 // WOPR the rest.
 func TestNothingLeftAndAutoSkipPrompts(t *testing.T) {

@@ -1118,6 +1118,19 @@ no verdict of their own.
         - The other rows scale with damage `1000·hits/(hits+400)` per mille, times one seeded noise factor
           per row (97–103%) shared by both columns. So your civilian and human rows are never better than
           the other side's.
+      - **The after-action report.** Under the kill ratios, before `PRESS ENTER TO CONTINUE.`, two
+        `original` lines say what your orders changed in the `POPULATION DEATHS` row. GTW fights the same
+        war again with `HOLD` at both prompts and with the war plan at both, under the table's noise, so
+        the figures agree with the table (`gtw.go`, `afterAction`).
+        - `AGAINST HOLDING FIRE: 42 MILLION MORE ENEMY DEAD, 2 MILLION MORE OF YOURS.` A difference of
+          zero reads `AS MANY ENEMY DEAD` or `AS MANY OF YOURS`.
+        - `AGAINST THE WAR PLAN: …`, in the same words, with `FEWER` where your orders killed fewer.
+        - A war with the same tallies as holding fire replaces the first line with `YOU HELD FIRE,
+          PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.` Holding fire leaves the fewest dead on both sides
+          (`TestHoldingFireKillsFewest`).
+        - A war with the war plan's tallies (Enter at both prompts, or `AUTO` at the first) replaces the
+          second line with `YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.`
+        - The film's board (movie mode) shows the film's figures and gives no report.
       - **The board** (80×19 with the front panel, the map box in rows 0–14).
         - Rows 15–17: on the left, the `TRAJECTORY HEADING` table in two columns (your latest two missiles).
           A strike that drew one track keeps an earlier one in the second column. On the right, ending at
@@ -2662,11 +2675,17 @@ PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
 ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
 HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
+AGAINST HOLDING FIRE: #, #.
+AGAINST THE WAR PLAN: #, #.
+YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.
+YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.
 ```
 
-The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `FORCES` table (`FORCES`,
-`ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
-`ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
+The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The after-action report's `#` are
+`# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
+`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES`
+table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`,
+`SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
 figures.
