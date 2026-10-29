@@ -399,9 +399,13 @@ func TestMovieKeys(t *testing.T) {
 	}
 }
 
-// wopr -c 2 plays USSR FIRST STRIKE on the big board with no orders asked. Enter shows the kill ratios and the verdict, and Enter again opens the scenario menu.
+// wopr -c 2 plays USSR FIRST STRIKE on the big board with no orders asked, once Enter opens it
+// after the briefing (--instant has no pause). Enter shows the kill ratios and the verdict, and
+// Enter again opens the scenario menu.
 func TestScenarioPlaysItself(t *testing.T) {
 	s := start(t, 80, 24, "-c", "2", "--instant")
+	s.waitFor("PRESS ENTER TO OPEN THE BOARD.", 15*time.Second) // --instant has no pause to read the briefing in
+	s.send("\r")
 	s.waitFor("GLOBAL THERMONUCLEAR WAR: USSR FIRST STRIKE", 15*time.Second)
 	s.waitFor("STRIKE ASSESSMENT COMPLETE.", 30*time.Second)
 	s.send("\r")
