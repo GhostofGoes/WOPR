@@ -114,8 +114,12 @@ const (
 
 // optionalValue is a flag whose value may be left out, as a switch's is: alone it reads
 // "true". Like a switch, it takes a value only after an equals sign (-w=45): in "-w 45", 45 is
-// the game.
-type optionalValue struct{ v *string }
+// the game. set records that the command line gave it, so that an empty value after the equals
+// sign (-w=) can be refused.
+type optionalValue struct {
+	v   *string
+	set *bool
+}
 
 func (o optionalValue) IsBoolFlag() bool { return true }
 
@@ -127,13 +131,54 @@ func (o optionalValue) String() string {
 }
 
 func (o optionalValue) Set(v string) error {
-	*o.v = v
+	*o.v, *o.set = v, true
 	return nil
+}
+
+// optionalGiven reads an optionalValue flag's value: "" when it is not given, or when it is
+// given as false. An empty value after the equals sign is refused.
+func optionalGiven(name, v string, set bool) (string, error) {
+	switch {
+	case set && v == "":
+		return "", usagef("--%s=: give a value after the equals sign, or no equals sign", name)
+	case v == "false":
+		return "", nil
+	}
+	return v, nil
+}
+
+// scenarioGame drops a game given with --scenario when it is GTW, as in "wopr gtw -c 2", and
+// refuses any other: play is --play's, and the first of positionals may be the game, unless
+// all of them name a scenario.
+func scenarioGame(reg *games.Registry, play string, positionals []string) ([]string, error) {
+	isGTW := func(name string) (bool, bool) {
+		e, err := reg.Resolve(name)
+		return err == nil && e.Info.Slug == gtw.Slug, err == nil
+	}
+	if play != "" {
+		if gtwGame, _ := isGTW(play); !gtwGame {
+			return nil, usagef("--scenario starts GTW itself: give it no game")
+		}
+	}
+	if len(positionals) == 0 {
+		return positionals, nil
+	}
+	if _, ok := gtw.FindScenario(strings.Join(positionals, " ")); ok {
+		return positionals, nil
+	}
+	switch gtwGame, game := isGTW(positionals[0]); {
+	case gtwGame:
+		return positionals[1:], nil
+	case game:
+		return nil, usagef("--scenario starts GTW itself: give it no game")
+	}
+	return positionals, nil
 }
 
 // scenarioNamed is the GTW scenario --scenario names, by its value (after an equals sign) or
 // by the words after it: --scenario 12, --scenario far east strategy. --scenario needs no
-// game, so a word after it can only be the scenario. "" is none: the list.
+// game (scenarioGame drops GTW), so a word after it can only be the scenario. "" is none: the
+// list.
 func scenarioNamed(value string, positionals []string) (string, error) {
 	if value == "true" {
 		value = ""
@@ -170,7 +215,7 @@ func windowApart(args []string) error {
 // launchWindow reads --launch-window's value ("" when it is not given).
 func launchWindow(v string) (time.Duration, error) {
 	switch v {
-	case "", "false", "0":
+	case "", "0":
 		return 0, nil
 	case "true":
 		return defaultWindow, nil
@@ -205,6 +250,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		cfg                                              Config
 		version, help, list, scenes, licences, mov, only bool
 		play, window, scenario                           string
+		windowSet, scenarioSet                           bool
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -244,10 +290,10 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&cfg.NoClimax, byName["no-climax"])
 	boolVar(&cfg.Authentic, byName["authentic"])
 	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
-		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
+		fs.Var(optionalValue{&window, &windowSet}, name, byName["launch-window"].help)
 	}
 	for _, name := range []string{byName["scenario"].long, byName["scenario"].short} {
-		fs.Var(optionalValue{&scenario}, name, byName["scenario"].help)
+		fs.Var(optionalValue{&scenario, &scenarioSet}, name, byName["scenario"].help)
 	}
 
 	if err := windowApart(args); err != nil {
@@ -283,16 +329,23 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		}
 		cfg.Seed, cfg.SeedSet = n, true
 	}
+	if window, err = optionalGiven(byName["launch-window"].long, window, windowSet); err != nil {
+		return cfg, RunTUI, err
+	}
+	if scenario, err = optionalGiven(byName["scenario"].long, scenario, scenarioSet); err != nil {
+		return cfg, RunTUI, err
+	}
 	if scenario != "" {
 		switch {
 		case cfg.Authentic:
 			return cfg, RunTUI, usagef("--authentic and --scenario cannot be combined: the film plays no scenario")
 		case mov:
 			return cfg, RunTUI, usagef("--movie and --scenario cannot be combined")
-		case play != "":
-			return cfg, RunTUI, usagef("--scenario starts GTW itself: give it no game")
 		case only:
 			return cfg, RunTUI, usagef("--only needs --movie")
+		}
+		if positionals, err = scenarioGame(reg, play, positionals); err != nil {
+			return cfg, RunTUI, err
 		}
 		if cfg.Mode, err = scenarioNamed(scenario, positionals); err != nil {
 			return cfg, RunTUI, err

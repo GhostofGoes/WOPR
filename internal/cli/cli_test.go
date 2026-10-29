@@ -179,12 +179,13 @@ func TestParseSeed(t *testing.T) {
 }
 
 // --launch-window is a switch that may take seconds after an equals sign: alone it gives 30
-// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error. A
-// number after a space is refused, not read as the game. Movie mode gives no orders, so it
-// refuses a window.
+// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error, an
+// equals sign with nothing after it too. A number after a space is refused, not read as the
+// game. Movie mode gives no orders, so it refuses a window.
 // --scenario alone lists GTW's scenarios; with a number or a name, after a space or an equals
-// sign, it starts GTW in that scenario's playback. The words after it are the scenario, never a
-// game.
+// sign, it starts GTW in that scenario's playback. The words after it are the scenario. GTW
+// may come before it, as every GTW option may, but no other game. False, as for a switch, is
+// no scenario, and an equals sign with nothing after it is refused.
 func TestParseScenario(t *testing.T) {
 	t.Parallel()
 	reg := catalog.Registry()
@@ -205,10 +206,17 @@ func TestParseScenario(t *testing.T) {
 		{args: "-c 156", mode: "scenario:156"},
 		{args: "-c 2 -w", mode: "scenario:2", window: 30 * time.Second},
 		{args: "-c 157", usage: `no scenario matches "157" (wopr --scenario lists them)`},
-		{args: "-c gtw", usage: `no scenario matches "gtw"`},
-		{args: "gtw -c 2", usage: `no scenario matches "gtw 2"`},
+		{args: "-c gtw", action: PrintScenarios},
+		{args: "gtw -c 2", mode: "scenario:2"},
+		{args: "15 -c far east strategy", mode: "scenario:4"},
+		{args: "-p gtw -c 2", mode: "scenario:2"},
+		{args: "-c nowhere", usage: `no scenario matches "nowhere"`},
+		{args: "-c chad alertxyz", usage: `no scenario matches "chad alertxyz"`},
 		{args: "-c=2 3", usage: "too many arguments: 3"},
-		{args: "-p gtw -c 2", usage: "--scenario starts GTW itself"},
+		{args: "-p chess -c 2", usage: "--scenario starts GTW itself: give it no game"},
+		{args: "chess -c 2", usage: "--scenario starts GTW itself: give it no game"},
+		{args: "-c= gtw", usage: "--scenario=: give a value after the equals sign"},
+		{args: "-c=false", action: RunTUI},
 		{args: "-m -c", usage: "--movie and --scenario cannot be combined"},
 		{args: "-o -c 2", usage: "--only needs --movie"},
 		{args: "-c -t pink", usage: "unknown theme"},
@@ -258,6 +266,8 @@ func TestParseLaunchWindow(t *testing.T) {
 		{args: "--launch-window=999", window: 999 * time.Second},
 		{args: "-w=0"},
 		{args: "-w -w=false"},
+		{args: "-w=false gtw", play: "global-thermonuclear-war"},
+		{args: "-w= gtw", usage: "--launch-window=: give a value after the equals sign"},
 		{args: "-w=4", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
 		{args: "-w=1000", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
 		{args: "-w=-5", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
