@@ -54,6 +54,7 @@ func NewFilm(seed uint64, reduceMotion bool) *Film {
 
 	// Paced: Film steps the frames itself.
 	g.Start(proto.Env{Seed: seed, Width: 80, Height: 19, ReduceMotion: reduceMotion})
+	g.doctrine = measured // the film's WOPR answers a quarter more, whatever the seed
 	g.Handle(proto.LineEvent{Text: FilmSide})
 	for _, t := range FilmTargets {
 		g.Handle(proto.LineEvent{Text: t})

@@ -44,10 +44,18 @@ var (
 	lineLaunch = script.Orig("FIRST STRIKE LAUNCHED. #.", "STRIKE # LAUNCHED. #.", "NO LAUNCH ORDERED.", "NOTHING LEFT TO LAUNCH.")
 	lineDetect = script.Orig("ENEMY LAUNCH DETECTED. #. DEFCON #.", "ENEMY BOMBERS INBOUND. DEFCON #.",
 		"FULL-SCALE ENEMY ATTACK. #. DEFCON 1.")
-	lineCost      = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
-	lineSystems   = script.Orig("ICBM", "SLBM", "BOMBERS")
-	promptStrike  = script.Orig("STRIKE # OF # [# # #]: ")
-	lineAuto      = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	lineCost     = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
+	lineSystems  = script.Orig("ICBM", "SLBM", "BOMBERS")
+	promptStrike = script.Orig("STRIKE # OF # [# # #]: ")
+	lineAuto     = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	// The doctrine WOPR fought to, named with the kill ratios: one line a doctrine, in the
+	// order of doctrineID.
+	lineDoctrine = script.Orig(
+		"DOCTRINE: MEASURED RESPONSE. A QUARTER MORE THAN YOU FIRED, PROFESSOR.",
+		"DOCTRINE: HAIR TRIGGER. TWICE WHAT YOU FIRED, AND AS SOON AS IT COULD.",
+		"DOCTRINE: COUNTERFORCE. YOUR SILOS AND YOUR BOMBERS FIRST, PROFESSOR.",
+		"DOCTRINE: SECOND STRIKE. FORCES HELD FOR DEFCON 1, AIMED AT YOUR CITIES.",
+	)
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
 	lineBadPct    = script.Orig("PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.")
 	lineOrderHelp = script.Orig(
@@ -90,7 +98,7 @@ var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
-	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
+	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, filmList,

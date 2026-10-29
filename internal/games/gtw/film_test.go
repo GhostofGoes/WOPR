@@ -14,7 +14,8 @@ import (
 )
 
 // The film's war, as movie mode shows it, is the game's own: the same strip lines and prompt
-// as a player who types the film's choices and then presses Enter at each strike.
+// as a player who types the film's choices and then presses Enter at each strike. The film's
+// WOPR answers a measured response whatever the seed: seed 7 would draw counterforce in a game.
 func TestFilmPlaysTheGame(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1983)
@@ -97,6 +98,10 @@ func TestFilmClimax(t *testing.T) {
 		if !strings.Contains(c.String(), want) {
 			t.Errorf("missing %q:\n%s", want, c.String())
 		}
+	}
+	if lines := strings.Join(gtw.NewFilm(1, false).Run(gtw.FilmRatios), "\n"); strings.Contains(lines, "DOCTRINE") ||
+		!strings.HasSuffix(lines, "STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.\nPRESS ENTER TO CONTINUE.") {
+		t.Errorf("the film's kill ratios name no doctrine:\n%s", lines)
 	}
 	if lines := f.Run(gtw.FilmClimax); len(lines) != 1 || lines[0] != "** GAME ROUTINE RUNNING **" {
 		t.Errorf("the climax opens with %q", lines)

@@ -4,13 +4,13 @@
   "name": "Global Thermonuclear War",
   "launch": "wopr gtw",
   "aliases": ["15", "global-thermonuclear-war", "thermonuclear"],
-  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
+  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, and fights each war to one of four doctrines. The war cannot be won.",
   "howToPlay": [
     "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION.",
     "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
     "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]. Give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100). Or answer ALL, HOLD or AUTO. Enter uses the plan in brackets.",
     "After each of your launches, WOPR launches on warning and DEFCON falls. The > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it still holds.",
-    "Press Enter for the PROJECTED KILL RATIOS, then Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop.",
+    "Press Enter for the PROJECTED KILL RATIOS. Under the table, WOPR names the doctrine it fought to, such as DOCTRINE: HAIR TRIGGER. Press Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop.",
     "WOPR accepts only TIC-TAC-TOE. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending. Then it offers a game of chess."
   ],
   "controls": [
@@ -29,8 +29,12 @@
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
   ],
   "tips": [
-    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
-    "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
+    "The war cannot be won. Whatever you order, your cities take at least 1,079 warheads, and the enemy's take at most 750. The warhead counts have no dice. Against the same doctrine, the same orders always give the same counts.",
+    "WOPR picks one of four doctrines for each war: MEASURED RESPONSE, HAIR TRIGGER, COUNTERFORCE or SECOND STRIKE. It names the doctrine only with the kill ratios. Before that, watch how much it launches, and when.",
+    "Against MEASURED RESPONSE or HAIR TRIGGER, hold your ICBMs to spare your cities. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
+    "COUNTERFORCE strikes your silos and your grounded bombers hard. Fire about half your ICBMs at strike 2, then hold the rest. Launch your bombers at strike 2, before more of them are destroyed.",
+    "SECOND STRIKE launches little until DEFCON 1. Then it aims everything at your cities, so your full silos protect nothing. Fire all your ICBMs at its silos before DEFCON 1.",
+    "A seed gives the same doctrine each time. wopr gtw -s 1983 gives the film's MEASURED RESPONSE, -s 6 a HAIR TRIGGER, -s 1 COUNTERFORCE and -s 4 a SECOND STRIKE.",
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
   ],

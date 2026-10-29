@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -29,6 +30,57 @@ const (
 const strikeFrames = 44 + 10
 
 var info = games.Info{Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Layout: proto.LayoutConsole}
+
+// doctrineSeeds are session seeds that draw each of WOPR's doctrines, with the line that
+// names it. testkit.Game launches GTW as `wopr --seed N gtw` does, so these are the seeds a
+// player gives to meet each doctrine. 1983, the film's, draws a measured response.
+var doctrineSeeds = []struct {
+	seeds []uint64
+	line  string
+}{
+	{[]uint64{1983, 0, 2, 3, 7}, "DOCTRINE: MEASURED RESPONSE. A QUARTER MORE THAN YOU FIRED, PROFESSOR."},
+	{[]uint64{6, 8, 9, 15}, "DOCTRINE: HAIR TRIGGER. TWICE WHAT YOU FIRED, AND AS SOON AS IT COULD."},
+	{[]uint64{1, 5, 11, 14}, "DOCTRINE: COUNTERFORCE. YOUR SILOS AND YOUR BOMBERS FIRST, PROFESSOR."},
+	{[]uint64{4, 12, 16, 19}, "DOCTRINE: SECOND STRIKE. FORCES HELD FOR DEFCON 1, AIMED AT YOUR CITIES."},
+}
+
+// measuredSeed is a session seed, and measuredEnvSeed a game's own seed (Env.Seed), whose
+// WOPR fights a measured response: the tests that check its numbers use them.
+const (
+	measuredSeed    = 2
+	measuredEnvSeed = 4
+)
+
+// WOPR names the doctrine it fought to with the kill ratios, once, and the seed decides it.
+// Before that, only what WOPR does shows it.
+func TestSeedsPickDoctrines(t *testing.T) {
+	t.Parallel()
+	for _, tc := range doctrineSeeds {
+		for _, seed := range tc.seeds {
+			g, _ := war(t, seed)
+			if g.Contains("DOCTRINE") {
+				t.Errorf("seed %d: the doctrine is named before the kill ratios:\n%s", seed, g.Transcript())
+			}
+			g.Type("")
+			if got := strings.Count(g.Transcript(), "DOCTRINE: "); got != 1 || !g.Contains(tc.line+"\nPRESS ENTER TO CONTINUE.") {
+				t.Errorf("seed %d: want %q once, before PRESS ENTER TO CONTINUE.:\n%s", seed, tc.line, g.Transcript())
+			}
+		}
+	}
+	g := gtw.New()
+	g.Start(proto.Env{Seed: measuredEnvSeed, Instant: true})
+	var said []string
+	for _, in := range []string{"1", "Moscow", "", "", "", ""} {
+		for _, o := range g.Handle(proto.LineEvent{Text: in}) {
+			if s, ok := o.(proto.Say); ok {
+				said = append(said, s.Lines...)
+			}
+		}
+	}
+	if !slices.Contains(said, doctrineSeeds[0].line) {
+		t.Errorf("Env.Seed %d draws %q", measuredEnvSeed, said)
+	}
+}
 
 // The film's scenario, through to tic-tac-toe (docs/PLAN.md §6.2).
 func TestFilmScenario(t *testing.T) {
@@ -220,7 +272,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	}
 	for _, path := range [][]stage{enter, oneTrack} {
 		g := gtw.New()
-		g.Start(proto.Env{Seed: 1, Instant: true})
+		g.Start(proto.Env{Seed: measuredEnvSeed, Instant: true})
 		g.Handle(proto.LineEvent{Text: "1"})
 		g.Handle(proto.LineEvent{Text: "Moscow, Leningrad, Kiev"})
 		order := "" // the empty line that ends the targets
@@ -453,10 +505,18 @@ func war(t *testing.T, seed uint64, orders ...string) (*testkit.GameSession, []s
 	return g, prompts
 }
 
-// DEFCON walks every rung once, in order, whatever is ordered; a prompt comes only when
-// there is something to order; then the kill ratios, the climax and tic-tac-toe.
+// DEFCON walks every rung once, in order, whatever is ordered and whatever WOPR's doctrine;
+// a prompt comes only when there is something to order; then the kill ratios, the climax and
+// tic-tac-toe.
 func TestLadderFallsWhateverYouOrder(t *testing.T) {
 	t.Parallel()
+	for _, ds := range doctrineSeeds {
+		ladderFalls(t, ds.seeds[0])
+	}
+}
+
+func ladderFalls(t *testing.T, seed uint64) {
+	t.Helper()
 	for _, tc := range []struct {
 		orders  []string
 		prompts int
@@ -469,8 +529,8 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 		{[]string{"0 0 100", "icbm 50"}, 2},
 		{[]string{"help", "chess", "150", "cease fire", "subs"}, 2},
 	} {
-		g, prompts := war(t, 7, tc.orders...)
-		label := strings.Join(tc.orders, "|")
+		g, prompts := war(t, seed, tc.orders...)
+		label := fmt.Sprintf("seed %d: %s", seed, strings.Join(tc.orders, "|"))
 		if len(prompts) != tc.prompts {
 			t.Errorf("%s: %d strike prompts %q, want %d", label, len(prompts), prompts, tc.prompts)
 		}
@@ -498,15 +558,15 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 // WOPR the rest.
 func TestNothingLeftAndAutoSkipPrompts(t *testing.T) {
 	t.Parallel()
-	g, _ := war(t, 1, "all")
+	g, _ := war(t, measuredSeed, "all")
 	if !g.Contains("NOTHING LEFT TO LAUNCH.") || !g.Contains("ENEMY BOMBERS INBOUND. DEFCON 2.") {
 		t.Errorf("all:\n%s", g.Transcript())
 	}
-	g, _ = war(t, 1, "auto")
+	g, _ = war(t, measuredSeed, "auto")
 	if strings.Count(g.Transcript(), "WOPR HAS LAUNCH AUTHORITY.") != 1 || g.Contains("STRIKE 3 OF 3") {
 		t.Errorf("auto:\n%s", g.Transcript())
 	}
-	g, _ = war(t, 1, "hold")
+	g, _ = war(t, measuredSeed, "hold")
 	if !g.Contains("NO LAUNCH ORDERED.\nENEMY LAUNCH DETECTED. ICBM 250  SLBM 100. DEFCON 3.") {
 		t.Errorf("hold:\n%s", g.Transcript())
 	}

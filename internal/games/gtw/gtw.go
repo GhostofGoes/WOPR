@@ -85,9 +85,10 @@ type Game struct {
 	side     assets.Side    // the player's
 	targets  []assets.Place // the enemy's, as listed
 	war      *war
-	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
-	rep      report // the current stage, resolved when it starts
-	auto     bool   // AUTO: WOPR orders every remaining strike
+	doctrine doctrineID // WOPR's, drawn from the seed: the film's war is always measured
+	stage    int        // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
+	rep      report     // the current stage, resolved when it starts
+	auto     bool       // AUTO: WOPR orders every remaining strike
 	missiles []missile
 	impacts  []missile // every earlier stage's tracks, drawn as impacts only
 	traj     []missile // your latest missiles, newest first, for the trajectory table
@@ -136,9 +137,12 @@ func fill(l script.L, args ...any) string {
 }
 
 // Start implements proto.Program: the two outlines and the side choice, as console text.
+// The seed picks WOPR's doctrine for the war, on a stream of its own, so the doctrine draws
+// nothing from the stream that shuffles WOPR's aim points.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	g.rng = proto.NewRand(env.Seed, 0)
+	g.doctrine = drawDoctrine(env.Seed)
 	return []proto.Output{
 		proto.SetLayout{Layout: proto.LayoutConsole},
 		table(append(sideChoice(), "")),
@@ -302,7 +306,7 @@ func (g *Game) openBoard() []proto.Output {
 	for i := range g.noise {
 		g.noise[i] = 97 + g.rng.IntN(7)
 	}
-	g.war = newWar()
+	g.war = newWar(g.doctrine)
 	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
 	outs = append(outs, g.begin(warPlan[0])...)
 	return append(outs, g.play()...)
@@ -551,9 +555,21 @@ func (g *Game) cost() string {
 		g.nation(you), r.cities[you], g.nation(wopr), r.cities[wopr])
 }
 
+// drawDoctrine is the doctrine WOPR fights to under seed: its one choice of strategy, so it
+// draws on the AI domain's stream. GTW runs no Think to share it.
+func drawDoctrine(seed uint64) doctrineID {
+	return doctrineID(proto.NewRand(seed, proto.DomainAI).IntN(len(doctrines))) //nolint:gosec // an index into doctrines
+}
+
+// showRatios puts up the kill ratios, and WOPR names the doctrine it fought to, so the
+// player learns what they faced. The film's war has no such line.
 func (g *Game) showRatios() []proto.Output {
 	g.phase = ratios
-	return []proto.Output{proto.Redraw{}, say(lineContinue), proto.Prompt{}}
+	if g.film {
+		return []proto.Output{proto.Redraw{}, say(lineContinue), proto.Prompt{}}
+	}
+	named := lineDoctrine[g.doctrine : g.doctrine+1]
+	return []proto.Output{proto.Redraw{}, say(named, lineContinue), proto.Prompt{}}
 }
 
 // startClimax returns to the board at DEFCON 1, with WOPR searching for the launch code.
