@@ -75,6 +75,9 @@ jobs:
       # No module in any build list may be newer than 14 days at this commit (AGENTS.md, "Dependency cooldown").
       - name: Dependency cooldown
         run: go run ./internal/tools/cooldown
+      # No function that nothing calls, and none in shipped code that only tests call (AGENTS.md).
+      - name: Dead code
+        run: go run ./internal/tools/deadcheck
       - name: zizmor online audits
         env:
           GH_TOKEN: ${{ github.token }}

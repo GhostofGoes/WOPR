@@ -18,6 +18,9 @@ import (
 	"testing"
 )
 
+// srcSized is the source drawn for the transparent icon at exactly n×n pixels.
+func srcSized(n int) string { return fmt.Sprintf("%s/wopr-%d.svg", srcDir, n) }
+
 // repoRoot is the repository, from this package's directory.
 const repoRoot = "../../.."
 

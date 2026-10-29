@@ -32,6 +32,7 @@ system. There is no Makefile.
 | Lint | `go tool -modfile=tools/lint/go.mod golangci-lint run ./...` |
 | Format | `go tool -modfile=tools/lint/go.mod golangci-lint fmt ./...` |
 | Vulnerabilities | `go tool -modfile=tools/go.mod govulncheck ./...` |
+| Dead code ([deadcode](https://pkg.go.dev/golang.org/x/tools/cmd/deadcode), on linux, darwin and windows) | `go run ./internal/tools/deadcheck` (a pre-push hook. CI's `lint` job runs it) |
 | Dependency cooldown (no module newer than 14 days) | `go run ./internal/tools/cooldown` |
 | Secret scan (full history) | `go tool -modfile=tools/go.mod gitleaks git --redact .` |
 | Third-party notices and the `.deb`'s copyright file | `go run ./internal/tools/notices` (writes `THIRD_PARTY_NOTICES.txt` and `packaging/debian/copyright`). CI runs it with `-check` |
@@ -60,7 +61,7 @@ system. There is no Makefile.
 them (`windows.yml`, `macos.yml`, `snap.yml`).
 
 `go.mod` pins Go 1.27.2 (`toolchain go1.27.2`). `GOTOOLCHAIN=auto` downloads it, and a newer local Go is
-fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck, gobco),
+fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (gitleaks, govulncheck, gobco, deadcode),
 `tools/lint/go.mod` (golangci-lint), `tools/release/go.mod` (GoReleaser, changie, go-winres) and
 `tools/docs/go.mod` (Hugo, the standard edition). Never use `go run …@latest`. The four modules are
 separate because their dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module that
@@ -92,6 +93,11 @@ its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stab
   `testdata/film_lines.golden`, through `script.FilmTexts`. A change to that file is a change to the film's
   text, which never happens without new evidence from the film and the owner's decision ([Film text and
   provenance](#film-text-and-provenance)).
+- **No dead code.** `internal/tools/deadcheck` runs deadcode for linux, darwin and windows. It fails on a
+  function that no program and no test calls. It also fails on a function in shipped code that only tests
+  call. Remove such a function, or move it into a `_test.go` file. A helper that tests in other packages
+  share may stay only when `tools/deadcheck-allow.txt` lists it with the reason. Remove its line when the
+  helper changes. golangci-lint's `unused` catches unused unexported names on each commit.
 - **Dependency cooldown.** Regular updates wait 14 days. No module in any build list (wopr's, the four
   tool modules' and `site/go.mod`'s) may be less than 14 days old at the commit being checked. A module's
   age counts from the time the module proxy gives for its version. `go run ./internal/tools/cooldown`

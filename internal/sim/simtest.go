@@ -10,7 +10,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/script"
 )
 
-// Simple is a plain strategy for scripted players in tests and the movie: attack the
+// Simple is a plain strategy for scripted players in tests: attack the
 // weakest enemy in range, else advance toward WOPR's rear, else hold.
 func Simple(s *State, u *Unit) string {
 	best, bestCol := -1, -1

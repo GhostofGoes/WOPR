@@ -1,0 +1,14 @@
+# Functions that only tests call but that stay in a package that ships (internal/tools/deadcheck).
+# Tests in several packages share each one, and each needs its own package's unexported names or
+# states that package's rules, so it cannot move into a _test.go file. One function per line, as
+# deadcheck names it, with the reason after '#'. Add a line only when a helper cannot move.
+internal/games/cards.CornerProblems  # the card games' art tests; reads the face layout
+internal/proto.Styles                # the theme tests range over every style; needs numStyles
+internal/script.FilmTexts            # each package's film_lines golden (AGENTS.md)
+internal/script.Validate             # each package's provenance test (docs/PLAN.md §2)
+internal/script.checkThirdParty      # called only by Validate
+internal/script.isWebArt             # called only by Validate
+internal/sim.ArtProblems             # the war games' art tests; reads ArtRows
+internal/sim.EngineLines             # the provenance tests; reads the engine's text
+internal/sim.Simple                  # the scripted player of the war games' tests
+internal/theme.Distinct              # the theme tests and the accessibility sweeps (docs/PLAN.md §4.5)

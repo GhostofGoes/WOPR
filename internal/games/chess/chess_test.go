@@ -8,10 +8,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"testing"
-	"time"
 
 	cg "github.com/corentings/chess/v2"
 
@@ -162,28 +160,26 @@ func selfPlay(t *testing.T, seed uint64) {
 	}
 }
 
-// How long the deterministic search takes over a game's opening and middlegame; the plan
-// quotes a median of 27 ms and a p99 of 150 ms. Logged, not asserted: machines differ.
-func TestDeterministicSearchTime(t *testing.T) {
-	t.Parallel()
-	if testing.Short() || raceDetector {
-		t.Skip("timing means nothing under -short or -race")
-	}
-	g := cg.NewGame()
-	var times []time.Duration
-	for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
-		start := time.Now()
-		m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
-		times = append(times, time.Since(start))
-		for _, l := range g.Position().ValidMoves() {
-			if moveOf(l) == m {
-				_ = g.Move(&l, nil)
-				break
+// BenchmarkDeterministicSearch times the deterministic search over a game's opening and
+// middlegame: the first 30 plies of a game it plays against itself. The plan quotes a median of
+// 27 ms a search. It is a benchmark, not a test, because machines differ:
+// go test -run '^$' -bench DeterministicSearch ./internal/games/chess
+func BenchmarkDeterministicSearch(b *testing.B) {
+	searches := 0
+	for b.Loop() {
+		g := cg.NewGame()
+		for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
+			m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
+			searches++
+			for _, l := range g.Position().ValidMoves() {
+				if moveOf(l) == m {
+					_ = g.Move(&l, nil)
+					break
+				}
 			}
 		}
 	}
-	sort.Slice(times, func(i, j int) bool { return times[i] < times[j] })
-	t.Logf("depth %d: median %v, max %v over %d searches", deterministicDepth, times[len(times)/2], times[len(times)-1], len(times))
+	b.ReportMetric(float64(b.Elapsed().Milliseconds())/float64(searches), "ms/search")
 }
 
 // A deterministic transcript that follows WOPR's replies: the test replays them on its own
