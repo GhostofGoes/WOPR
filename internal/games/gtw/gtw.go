@@ -4,8 +4,9 @@
 // Package gtw is Global Thermonuclear War, the film's set piece (docs/PLAN.md §6.2): choose
 // a side and list targets, or one of the closing montage's scenarios; the first strike flies
 // on the big board at once, then you order two more as DEFCON falls, and WOPR takes the last
-// rung alone. The kill ratios follow, then you try to stop a war that will not stop. Only tic-tac-toe gets through: GTW hands off to
-// it in "climax" mode, and to the ending after that. The game cannot be won (exchange.go).
+// rung alone. The kill ratios follow, then you try to stop a war that will not stop. Only
+// tic-tac-toe gets through: GTW hands off to it in "climax" mode, and to the ending after
+// that. The game cannot be won (exchange.go).
 package gtw
 
 import (

@@ -1095,8 +1095,9 @@ no verdict of their own.
           its first launch.
         - ICBMs go first at the enemy's silos, enough to empty them. Each destroys four in five of the ICBMs
           held there. The rest go at cities. SLBMs go at cities.
-        - Grounded bombers lose a third whenever missiles land on their side, and all of them at DEFCON 1.
-          A quarter of arriving bombers are shot down.
+        - Grounded bombers lose a third whenever missiles land on their side, but never more bombers than
+          the missiles that land. At DEFCON 1, all of them are destroyed. A quarter of arriving bombers are
+          shot down.
       - **It cannot be won.** Your cities take at least 1,144 warheads and the other side's at most 750,
         whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent). Your
         ICBM orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn

@@ -44,7 +44,7 @@ func (g *Game) View(c *proto.Canvas) {
 		g.drawRatios(c)
 	case flight, orders, assessed, climax:
 		g.drawBoard(c)
-	case chooseSide, listTargets:
+	case chooseSide, listTargets, chooseScenario, briefing:
 	}
 }
 

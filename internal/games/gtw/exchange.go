@@ -24,7 +24,7 @@ const (
 	strikes   = 3   // ordered strikes; WOPR's DEFCON 1 attack follows
 	kPerMil   = 400 // damage = 1000*hits/(hits+kPerMil), in per mille
 	shootDown = 4   // one arriving bomber in shootDown is shot down
-	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up
+	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up (land)
 )
 
 // doctrine is a war's rules: the forces each side starts with, the war plan, how hard WOPR
@@ -200,7 +200,8 @@ func (w *war) final() report {
 
 // land applies the missiles of r: ICBMs on silo fields destroy four in five of the
 // ICBMs held there, every warhead aimed at cities lands, and grounded bombers under
-// attack lose a third.
+// attack lose a third, but never more than the missiles that land: one stray SLBM destroys
+// one bomber, not a hundred.
 func (w *war) land(r *report) {
 	for s := range 2 {
 		in := r.fire[1-s] // what landed on side s
@@ -213,7 +214,7 @@ func (w *war) land(r *report) {
 		w.t[s].Cities += hits
 		r.cities[s] += hits
 		if in.missiles() > 0 && r.stage <= strikes {
-			lost := ceilDiv(w.f[s].Ground, groundCut)
+			lost := min(ceilDiv(w.f[s].Ground, groundCut), in.missiles())
 			w.f[s].Ground -= lost
 			w.t[s].BombersLost += lost
 			r.ground[s] += lost

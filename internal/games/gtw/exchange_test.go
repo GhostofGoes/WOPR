@@ -19,7 +19,7 @@ func wageWith(d doctrine, o2, o3 [3]int) (*war, []report) {
 	return w, append(rs, w.final())
 }
 
-// war is one doctrine GTW plays, with the bounds its quality test proves: whatever you
+// warCase is one doctrine GTW plays, with the bounds its quality test proves: whatever you
 // order, your cities take at least yours warheads and the other side's at most theirs, and
 // your dead are never under dead million.
 type warCase struct {
@@ -38,7 +38,7 @@ var scenarioBounds = [][3]int{
 	{1485, 500, 83},  // USSR CHINA ATTACK: a third of your forces are gone
 	{1032, 750, 76},  // SEATO DECAPITATING
 	{1050, 750, 77},  // CUBAN PROVOCATION
-	{1032, 750, 76},  // INADVERTENT INCIDENT
+	{1032, 825, 76},  // INADVERTENT INCIDENT: one stray missile, and your bombers stay ready
 	{1459, 1100, 83}, // ATLANTIC HEAVY
 	{1032, 750, 76},  // PACIFIC TERRITORIAL
 	{229, 150, 38},   // ARCTIC MINIMAL: a fifth of the forces, and still no winner
@@ -260,5 +260,19 @@ func TestScenarioFirstStrikes(t *testing.T) {
 		if r.snap[0][second] != s.d.forces[second] || r.snap[0][first] == s.d.forces[first] && r.fire[first] != (salvo{}) {
 			t.Errorf("%s: after the first launch the forces are %+v", s.name.Text, r.snap[0])
 		}
+	}
+}
+
+// Grounded bombers lose a third under attack, but never more than the missiles that land: a
+// stray SLBM destroys one bomber, and the film's first strike still a third.
+func TestStrayMissile(t *testing.T) {
+	t.Parallel()
+	w := newWar(with(filmDoctrine, first(0, 1, 0)))
+	if r := w.strike(1, [3]int{}); r.ground[you] != 1 || w.f[you].Ground != 299 {
+		t.Errorf("one SLBM: lost on the ground %d, bombers left %d; want 1 and 299", r.ground[you], w.f[you].Ground)
+	}
+	w = newWar(filmDoctrine)
+	if w.strike(1, filmDoctrine.plan[0]); w.f[you].Ground != 200 {
+		t.Errorf("the film's first strike leaves %d bombers on the ground, want 200", w.f[you].Ground)
 	}
 }
