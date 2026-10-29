@@ -34,7 +34,7 @@
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
     "The big board is in the film's colours in every theme: the United States in blue, the Soviet Union in red and the other countries in green. Your missiles are +, WOPR's are *, and X marks each impact. So the board shows the same things without colour.",
     "Read what WOPR says about each order. It has a different remark for the war plan, ALL, HOLD, AUTO and your own orders. Its remarks give hints about what your order changes. The seed selects the words, so other seeds give other remarks.",
-    "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
+    "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint. Each hint tells you more than the one before. From the ninth refusal on, WOPR tells you what to type."
   ],
   "screenshots": [
     {"file": "gtw-1.png", "caption": "The side choice: outlines of the two nations, WHICH SIDE DO YOU WANT? and PLEASE CHOOSE ONE:."},

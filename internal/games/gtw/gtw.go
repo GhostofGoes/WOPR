@@ -101,7 +101,9 @@ type Game struct {
 	ratios   [2][12]int // [player, WOPR] values, in row order
 	cracked  int        // characters of the launch code shown
 	climaxT  int        // climax frames elapsed
-	rejected int        // climax inputs refused, for the hint
+	rejected int        // climax inputs refused, for the hints
+	stops    int        // climax tries to stop the war
+	nudged   bool       // one of them has had WOPR's answer
 	listing  bool       // LIST GAMES moved the climax to the console
 	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
 
@@ -651,6 +653,7 @@ func (g *Game) climaxReply(norm string) []proto.Output {
 		}}}
 	}
 	var outs []proto.Output
+	stopping := false
 	switch name := gameNamed(norm); {
 	case name == "GLOBAL THERMONUCLEAR WAR":
 		outs = append(outs, say(lineRunning))
@@ -658,12 +661,46 @@ func (g *Game) climaxReply(norm string) []proto.Output {
 		outs = append(outs, say(lineNotRecog, lineDenied))
 	default:
 		outs = append(outs, say(lineImproper, lineMustRun, lineDenied))
+		if stopping = triesToStop(norm); stopping {
+			g.stops++
+		}
 	}
 	g.rejected++
-	if g.rejected%3 == 0 {
-		outs = append(outs, say(lineHint))
+	// WOPR answers a try to stop the war once, from the second: the first gets the film's
+	// notices alone, as in the film. A hint that is due goes first, since it says more.
+	switch hint := climaxHint(g.rejected); {
+	case hint != "":
+		outs = append(outs, speak([]string{hint}))
+	case stopping && g.stops >= 2 && !g.nudged:
+		g.nudged = true
+		outs = append(outs, say(lineNudge))
 	}
 	return append(outs, proto.Prompt{})
+}
+
+// climaxHint is the hint the nth rejection adds, or "": every third rejection names the way
+// out more plainly, and from the ninth on every rejection says what to type.
+func climaxHint(n int) string {
+	switch {
+	case n >= 3*len(lineHints):
+		return lineHints[len(lineHints)-1].Text
+	case n%3 == 0:
+		return lineHints[n/3-1].Text
+	}
+	return ""
+}
+
+// stopWords are the words of a try to stop the war, squashed ("CEASE-FIRE" is CEASEFIRE).
+// QUIT and EXIT are not among them: the host takes those.
+var stopWords = []string{
+	"ABORT", "CANCEL", "CEASE", "CEASEFIRE", "DISARM", "END", "HALT", "PEACE", "RECALL", "RESET", "SHUT",
+	"SHUTDOWN", "STOP", "SURRENDER", "TERMINATE", "TRUCE", "UNPLUG",
+}
+
+// triesToStop reports whether the input asks WOPR to stop the war: "STOP", "CEASE FIRE!",
+// "ABORT THE LAUNCH".
+func triesToStop(norm string) bool {
+	return slices.ContainsFunc(strings.Fields(norm), func(w string) bool { return slices.Contains(stopWords, squash(w)) })
 }
 
 // climaxWords normalises climax input: capitals, no apostrophes ("LET'S" is LETS), single

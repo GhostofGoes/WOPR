@@ -56,7 +56,8 @@ func TestFilmScenario(t *testing.T) {
 	}
 	for _, want := range []string{
 		"** IDENTIFICATION NOT RECOGNIZED **", "** ACCESS DENIED **", "** GAME ROUTINE RUNNING **",
-		"** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **", "TIC-TAC-TOE CANNOT BE WON",
+		"** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **", "SOME GAMES CANNOT BE WON",
+		"WOPR DOES NOT STOP GAMES",
 	} {
 		if !g.Contains(want) {
 			t.Errorf("missing %q", want)
@@ -345,6 +346,83 @@ func TestClimaxReadsRequests(t *testing.T) {
 		g.Type(in)
 		if _, over := g.Result(); !over {
 			t.Errorf("%q must hand off to tic-tac-toe", in)
+		}
+	}
+}
+
+// added returns what the climax answers to in, past the film's notices.
+func added(g *testkit.GameSession, in string) []string {
+	before := len(g.Transcript())
+	g.Type(in)
+	var out []string
+	for _, l := range strings.Split(g.Transcript()[before:], "\n")[1:] { // past the echo
+		if l != "" && !strings.HasPrefix(l, "** ") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// The hints escalate: every third rejection names the way out more plainly, and from the
+// ninth on, every rejection says what to type. Each is one line, under the film's notices.
+func TestClimaxHintsEscalate(t *testing.T) {
+	t.Parallel()
+	oblique := "SOME GAMES CANNOT BE WON, PROFESSOR. EVERY CHILD KNOWS ONE."
+	named := "A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR."
+	exact := "TYPE TIC-TAC-TOE, PROFESSOR."
+	want := map[int]string{3: oblique, 6: named, 9: exact, 10: exact, 11: exact, 12: exact}
+	g := climax(t, 1)
+	for n, in := range []string{"chess", "gtw", "help", "poker", "hello", "joshua", "chess", "gtw", "help", "poker", "hello", "joshua"} {
+		if got := strings.Join(added(g, in), "\n"); got != want[n+1] {
+			t.Errorf("rejection %d (%q): %q, want %q", n+1, in, got, want[n+1])
+		}
+	}
+	if strings.Contains(oblique, "TIC-TAC-TOE") {
+		t.Error("the first hint must not name the game")
+	}
+	if _, over := g.Result(); over {
+		t.Fatal("a hint must not end the war")
+	}
+	g.Type(strings.TrimSuffix(strings.TrimPrefix(exact, "TYPE "), ", PROFESSOR."))
+	if _, over := g.Result(); !over {
+		t.Error("typing what the last hint says must hand off to tic-tac-toe")
+	}
+}
+
+// A try to stop the war gets the film's three notices. From the second, WOPR answers it
+// once, unless a hint is due. Names of games and other requests are no such try.
+func TestClimaxAnswersAStop(t *testing.T) {
+	t.Parallel()
+	nudge := "WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM."
+	for _, in := range []string{"Stop the war!", "CEASE-FIRE", "cease fire", "abort the launch", "peace", "Shut it down."} {
+		g := climax(t, 1)
+		if got := added(g, in); len(got) != 0 {
+			t.Errorf("%q first: %q, want the film's notices alone", in, got)
+		}
+		before := len(g.Transcript())
+		if got := added(g, in); len(got) != 1 || got[0] != nudge {
+			t.Errorf("%q again: %q, want the answer", in, got)
+		}
+		if !inOrder(g.Transcript()[before:], "** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **",
+			"** ACCESS DENIED **", nudge) {
+			t.Errorf("%q: the film's notices come first, all three", in)
+		}
+	}
+	for _, in := range []string{"chess", "stopwatch", "please", "weekend"} {
+		g := climax(t, 1)
+		g.Type("stop")
+		if got := added(g, in); len(got) != 0 {
+			t.Errorf("%q is no try to stop the war: %q", in, got)
+		}
+	}
+	want := map[int]string{
+		3: "SOME GAMES CANNOT BE WON, PROFESSOR. EVERY CHILD KNOWS ONE.", 4: nudge,
+		6: "A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.",
+	}
+	g := climax(t, 1)
+	for n, in := range []string{"stop", "chess", "halt", "stop", "chess", "end it", "stop"} {
+		if got := strings.Join(added(g, in), "\n"); got != want[n+1] {
+			t.Errorf("rejection %d (%q): %q, want %q (a hint goes first, and the answer comes once)", n+1, in, got, want[n+1])
 		}
 	}
 }
