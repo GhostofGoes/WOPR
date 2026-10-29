@@ -9,15 +9,8 @@ next: /usage
 
 ## Install
 
-{{% if-installers %}}
 Pick your system. Click the download button, and follow the steps under it. To install from a terminal
 instead, or with Go, see [Command line install methods](#command-line-install-methods).
-{{% /if-installers %}}
-{{% if-installers "not" %}}
-Pick your system. On Linux, click a download button and follow the steps under it. The downloads for
-Windows and macOS come with the next release. Until then, and to install with Go, see
-[Command line install methods](#command-line-install-methods).
-{{% /if-installers %}}
 
 {{< install-tabs >}}
 
@@ -35,7 +28,6 @@ If you installed WOPR with a download button:
 {{< tabs >}}
 
 {{< tab name="Windows" >}}
-{{< if-installers >}}
 
 1. Open **Settings**, then **Apps**, then **Installed apps**.
 2. Click **...** next to **WOPR**, then **Uninstall**.
@@ -44,14 +36,9 @@ If you installed WOPR with a download button:
 On Windows 10, open **Settings**, then **Apps**, then **Apps & features**. Click **WOPR**, then
 **Uninstall**. This removes the Start menu entry and the debug log too. It also removes WOPR's folder
 from your `PATH`, even if the PowerShell line put it there.
-{{< /if-installers >}}
-{{< if-installers "not" >}}
-The Windows installer comes with the next release. Until then, WOPR installs from PowerShell: see below.
-{{< /if-installers >}}
 {{< /tab >}}
 
 {{< tab name="macOS" >}}
-{{< if-installers >}}
 Drag **WOPR** from **Applications** to the Trash, and empty the Trash. Then delete the debug log, if
 there is one, in Terminal:
 
@@ -59,10 +46,6 @@ there is one, in Terminal:
 rm -rf ~/Library/Caches/wopr
 ```
 
-{{< /if-installers >}}
-{{< if-installers "not" >}}
-The Mac app comes with the next release. Until then, WOPR installs from Terminal: see below.
-{{< /if-installers >}}
 {{< /tab >}}
 
 {{< tab name="Linux" >}}
@@ -78,9 +61,7 @@ For the `.rpm`:
 sudo dnf remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
-{{< if-installers >}}
 This also removes WOPR from your app menu.
-{{< /if-installers >}}
 {{< /tab >}}
 
 {{< /tabs >}}
@@ -126,9 +107,7 @@ that copy with `sudo rm -f /usr/local/bin/wopr`.
 sudo apt remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
-{{< if-installers >}}
 This also removes WOPR from your app menu.
-{{< /if-installers >}}
 {{< /tab >}}
 
 {{< tab name="Linux (RPM)" >}}
@@ -137,7 +116,7 @@ This also removes WOPR from your app menu.
 sudo dnf remove wopr; rm -rf "${XDG_CACHE_HOME:-$HOME/.cache}/wopr"
 ```
 
-On openSUSE, use `sudo zypper remove wopr` in place of `sudo dnf remove wopr`.{{< if-installers >}} This also removes WOPR from your app menu.{{< /if-installers >}}
+On openSUSE, use `sudo zypper remove wopr` in place of `sudo dnf remove wopr`. This also removes WOPR from your app menu.
 {{< /tab >}}
 
 {{< tab name="Go" >}}
@@ -194,9 +173,9 @@ a file:
    installed: `"$(command -v wopr)"` on Linux and macOS, `(Get-Command wopr).Source` in PowerShell. The
    check compares the file's contents, so the file's name does not matter. A program installed with
    `go install` was built on your computer, not by the release workflow. It has no attestation, so this
-   check fails for it. Go already checked its source against the Go checksum database.{{% if-installers %}}
+   check fails for it. Go already checked its source against the Go checksum database.
    The program inside the Mac app does not pass the check either, because it is not one of the release's
-   files (see the list below). Check the `.dmg` you downloaded instead.{{% /if-installers %}}
+   files (see the list below). Check the `.dmg` you downloaded instead.
 
 `Verification succeeded!` means that this repository's release workflow built the file from the tagged
 source, on GitHub's own machines. For a file from a release, any other result means: do not run it.
@@ -211,28 +190,21 @@ it. Each release has, for each system:
   (macOS) or `windows`. `<arch>` is `amd64` or `arm64`. On Linux and macOS, make it executable with
   `chmod +x`.
 - `wopr_<version>_<os>_<arch>.tar.gz` (`.zip` on Windows): the program with the README, the licence and
-  the notices.{{% if-packages %}} On Linux and macOS it also holds the manual page, `wopr.6`.{{% /if-packages %}}
-{{% if-installers %}}
+  the notices. On Linux and macOS it also holds the manual page, `wopr.6`.
 - `wopr_<version>_windows_setup.exe`: the Windows installer. It holds both Windows programs, and it
   installs the one that fits the computer as `wopr.exe`, unchanged. So the check passes for the installed
   `wopr.exe` too.
 - `wopr_<version>_macos.dmg`: the Mac app, `WOPR.app`, in a disk image. Its program joins the two macOS
   programs into one file, so it matches neither of them. Check the `.dmg` itself, before you open it.
-{{% /if-installers %}}
-{{% if-packages %}}
 - `wopr_<version>-1_<arch>.deb` (`<arch>` as above: `amd64` or `arm64`) and `wopr-<version>-1.<arch>.rpm`
   (here `<arch>` is `x86_64` or `aarch64`, as `uname -m` prints it): the Linux packages. Install a file
   you downloaded with `sudo apt install ./FILE` or `sudo dnf install ./FILE`.
-{{% /if-packages %}}
-- `checksums.txt`: the SHA-256 checksum of every file.{{% if-installers %}} The installer and the `.dmg` are
-  listed and attested like the rest.{{% /if-installers %}}
-{{% if-signed %}}
+- `checksums.txt`: the SHA-256 checksum of every file. The installer and the `.dmg` are
+  listed and attested like the rest.
 - `checksums.txt.asc` and `wopr_<version>-1_<arch>.deb.asc`: OpenPGP signatures of `checksums.txt` and
   the `.deb` files, made with wopr's [signing key](/wopr-signing-key.asc). The `.rpm` files carry their
   signature inside.
-{{% /if-signed %}}
 
-{{% if-signed %}}
 To check a signature:
 
 1. Download the [signing key](/wopr-signing-key.asc), and check that its fingerprint is
@@ -245,22 +217,21 @@ To check a signature:
 
 For an `.rpm`, import the key with `rpm --import`, then run `rpm -K FILE.rpm`. It prints
 `digests signatures OK`.
-{{% /if-signed %}}
 
 A program downloaded with a web browser carries a mark that says it came from the internet, and the
 system may stop it. After you check the file:
 
 - **macOS** says that it cannot check the program for malware. Clear the mark with
-  `xattr -d com.apple.quarantine FILE`.{{% if-installers %}} For the Mac app, follow the steps in the
+  `xattr -d com.apple.quarantine FILE`. For the Mac app, follow the steps in the
   **macOS** tab under [Install](#install). Or drag the app to Applications, and clear the mark from all
-  of it with `xattr -dr com.apple.quarantine /Applications/WOPR.app` before you open it.{{% /if-installers %}}
+  of it with `xattr -dr com.apple.quarantine /Applications/WOPR.app` before you open it.
 - **Windows** SmartScreen may say that it does not recognise the program. Choose *More info*, then
   *Run anyway*. Or clear the mark with `Unblock-File FILE` in PowerShell.
 
 The lines in [Command line install methods](#command-line-install-methods) download with `curl`, `wget`
-or `dnf`, which do not mark files, so these warnings do not appear for them.{{% if-installers %}} For the
+or `dnf`, which do not mark files, so these warnings do not appear for them. For the
 installer and the Mac app, the **Windows** and **macOS** tabs under [Install](#install) say what to
-click.{{% /if-installers %}} Windows' Smart App Control is different: when it is on, it blocks every
+click. Windows' Smart App Control is different: when it is on, it blocks every
 program that is not signed, however the program was downloaded. [Troubleshooting](/usage/troubleshooting)
 says more.
 
