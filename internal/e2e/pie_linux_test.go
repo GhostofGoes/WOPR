@@ -23,6 +23,9 @@ import (
 // addresses. The archives' program is static, so the test skips it, unless WOPR_E2E_PIE is set (the
 // smoke job's run against the installed .deb). internal/tools/stage checks both programs' headers.
 func TestLinuxPIE(t *testing.T) {
+	if snapped() {
+		t.Skip("the snap holds the archives' static program, and /snap/bin/wopr is snapd's launcher")
+	}
 	f, err := elf.Open(binary)
 	if err != nil {
 		t.Fatal(err)
