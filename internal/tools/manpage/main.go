@@ -244,16 +244,18 @@ var optionDetails = map[string]string{
 		"`--launch-window=`<secs> gives 5 to 999 seconds, and 0 turns the limit off. " +
 		"`--instant` does not stop the clock. Movie mode gives no orders, so `--movie` refuses this option.",
 	"no-climax": "In Global Thermonuclear War, skip the launch code at the end of the war. " +
-		"After the kill ratios, Enter asks ANOTHER WAR, PROFESSOR? " +
+		"After the kill ratios, press Enter. WOPR shows what your orders changed again, and asks ANOTHER WAR, PROFESSOR? " +
 		"Yes or Enter starts a new war at the side choice. No ends the game, and WOPR says WINNER: NONE. " +
 		"The film's war ends with the launch code, so `--movie` refuses this option.",
-	"authentic": "Play Global Thermonuclear War as the film shows it, with only the film's own text. " +
+	"authentic": "Play Global Thermonuclear War as the film shows it. The console and the lines under the big board show only the film's own text. " +
+		"The big board is the same as in other wars. " +
 		"The side prompt has two choices, and the targets prompt says nothing back. Nobody gives orders: WOPR fires its war plan at every strike. " +
-		"Then the kill ratios show, and the climax starts, with no Enter between them. The climax gives no hints. " +
+		"Three seconds after DEFCON 1, the kill ratios show for eight seconds, and then the climax starts. No key holds them. The climax gives no hints. " +
 		"`--instant` does not skip these pauses. `--movie`, `--scenario`, `--launch-window` and `--no-climax` refuse this option.",
 	"scenario": "Watch a scenario of the film's closing montage play itself in Global Thermonuclear War. After the kill ratios, Enter opens the menu of scenarios. " +
 		"Name the <scenario> by its number or its name, after a space or an equals sign: `wopr -c 2`, `wopr -c far east strategy`. " +
-		"Alone, `--scenario` lists the scenarios, then exits. It takes no game, and `--movie` refuses it.",
+		"With `--instant`, press Enter after the briefing to open the board. " +
+		"Alone, `--scenario` lists the scenarios, then exits. It takes no game but Global Thermonuclear War (`wopr gtw -c 2`), and `--movie` refuses it.",
 }
 
 func writeOptions(p *page) error {

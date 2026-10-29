@@ -122,19 +122,23 @@ Movie mode gives no orders, so \%\fB\-\-movie\fR refuses this option.\&
 .TP
 \%\fB\-n\fR, \%\fB\-\-no\-climax\fR
 In Global \%Thermonuclear War, skip the launch code at the end of the war.\&
-After the kill ratios, Enter asks \%ANOTHER \%WAR, \%PROFESSOR?\&
+After the kill ratios, press Enter.\&
+\%WOPR shows what your orders changed again, and asks \%ANOTHER \%WAR,
+\%PROFESSOR?\&
 Yes or Enter starts a new war at the side choice.\&
 No ends the game, and \%WOPR says \%WINNER: \%NONE.\&
 The film's war ends with the launch code, so \%\fB\-\-movie\fR refuses this
 option.\&
 .TP
 \%\fB\-a\fR, \%\fB\-\-authentic\fR
-Play Global \%Thermonuclear War as the film shows it, with only the film's own
-text.\&
+Play Global \%Thermonuclear War as the film shows it.\&
+The console and the lines under the big board show only the film's own text.\&
+The big board is the same as in other wars.\&
 The side prompt has two choices, and the targets prompt says nothing back.\&
 Nobody gives orders: \%WOPR fires its war plan at every strike.\&
-Then the kill ratios show, and the \%climax starts, with no Enter between
-them.\&
+Three seconds after \%DEFCON 1, the kill ratios show for eight seconds, and then
+the \%climax starts.\&
+No key holds them.\&
 The \%climax gives no hints. \%\fB\-\-instant\fR does not skip these pauses.\&
 \%\fB\-\-movie\fR, \%\fB\-\-scenario\fR, \%\fB\-\-launch\-window\fR and
 \%\fB\-\-no\-climax\fR refuse this option.\&
@@ -146,8 +150,10 @@ After the kill ratios, Enter opens the menu of scenarios.\&
 Name the \%\fIscenario\fR by its number or its name, after a space or an equals
 sign: \%\fBwopr\fR \%\fB\-c\fR \fB2\fR, \%\fBwopr\fR \%\fB\-c\fR \%\fBfar\fR
 \%\fBeast\fR \%\fBstrategy\fR.\&
+With \%\fB\-\-instant\fR, press Enter after the briefing to open the board.\&
 Alone, \%\fB\-\-scenario\fR lists the scenarios, then exits.\&
-It takes no game, and \%\fB\-\-movie\fR refuses it.\&
+It takes no game but Global \%Thermonuclear War \%(\fBwopr\fR \%\fBgtw\fR
+\%\fB\-c\fR \fB2\fR), and \%\fB\-\-movie\fR refuses it.\&
 .SH GAMES
 .SS "1. Falken's Maze"
 Start it with
@@ -887,8 +893,8 @@ Name up to eight targets on the enemy's side.\&
 Type one per line, or several on a line with commas between them \%(LAS \%VEGAS,
 \%SEATTLE).\&
 \%LIST shows the enemy targets on file.\&
-\%WOPR names each new target back, with its number out of eight, and tells you
-if a target is already on the list.\&
+\%WOPR names each new target back, with its number out of eight.\&
+It also tells you if a target is already on the list.\&
 \%WOPR refuses your own cities, and names not on file.\&
 An empty line ends the list and launches the first strike on \%WOPR's war
 plan.\&
@@ -919,16 +925,13 @@ It accepts only \%TIC\-TAC\-TOE.\&
 Answer 0 at \%PLEASE \%LIST \%NUMBER \%OF \%PLAYERS: and \%WOPR plays itself to
 the film's ending.\&
 Then it offers a game of \%chess.\&
-With the \%\-\-no\-climax option, there is no launch code.\&
-Enter after the kill ratios asks \%ANOTHER \%WAR, \%PROFESSOR? instead.\&
-Type \%YES or press Enter for a new war, from the side choice.\&
-Type \%NO to stop.\&
 .IP \(bu 2
 A scenario plays itself.\&
 In the scenario menu, type a number or a name.\&
 \%NEXT and \%PREV turn the page.\&
 \%WOPR gives a short briefing: your side, the side that strikes first, the
 enemy's doctrine, your side's orders and the targets.\&
+With \%\-\-instant, press Enter to open the board.\&
 Then the war flies on the big board, and nobody gives orders.\&
 Press Enter for the kill ratios, which end with \%WINNER: \%NONE.\&
 Enter again returns to the menu.\&

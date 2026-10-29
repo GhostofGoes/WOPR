@@ -83,7 +83,7 @@ var flagPairs = []flagPair{
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
 	{"no-climax", "n", "", "after GTW's kill ratios, offer another war", ""},
-	{"authentic", "a", "", "play GTW as the film shows it, with nothing added", ""},
+	{"authentic", "a", "", "play GTW as the film shows it, film lines only", ""},
 	{"scenario", "c", "", "list GTW's scenarios, or watch [scenario]", ""},
 }
 

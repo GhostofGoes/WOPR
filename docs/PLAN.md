@@ -795,9 +795,12 @@ its background colour, which no theme can work around.
   montage still play. `--instant` is what skips them: it draws each strike at once and skips the self-play
   and the montage. Movie mode's game clock keeps ticking, as the film shows it. Space pauses it with the
   rest (WCAG 2.2.2).
-- **Time limits.** No prompt times out by default. `-w/--launch-window` is the one time limit, on GTW's
-  strike orders, and only the player turns it on and sets its length, 5 to 999 seconds (WCAG 2.2.1). The
-  board states the seconds left as a number, and `--instant` and `--reduce-motion` leave it running.
+- **Time limits.** No prompt times out by default. `-w/--launch-window` is the one time limit on input, on
+  GTW's strike orders, and only the player turns it on and sets its length, 5 to 999 seconds (WCAG 2.2.1).
+  The board states the seconds left as a number, and `--instant` and `--reduce-motion` leave it running.
+  `-a/--authentic`, which only the player turns on, times two screens as the film does: DEFCON 1 stays 3 s,
+  and the kill ratios 8 s, before the climax replaces them. No key holds them, and `--instant` keeps them.
+  The accessibility page says so, and that the default mode shows the kill ratios until Enter.
 - **Text is real characters.** Every screen and every view is printable ASCII. Boards, maps and tables
   carry words (labels, legends, seat and side names). The console says each of WOPR's moves (in Hearts and
   Bridge, the trick so far). Every prompt with text ends in `:` or `?`. The film's open prompts (WOPR's
@@ -1127,7 +1130,7 @@ no verdict of their own.
           not stop it, and any order does. At zero, WOPR takes launch authority as `AUTO` gives it:
           `LAUNCH WINDOW CLOSED, PROFESSOR.`, `WOPR HAS LAUNCH AUTHORITY.`, and the war plan for every
           strike left. The prompt cannot be taken back, so `AwaitKeys` replaces it, with the hint
-          `NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.`, until the assessment's prompt. An order still
+          `NO ORDERS ACCEPTED, PROFESSOR.`, until the assessment's prompt. An order still
           being typed is dropped. The strike that the closed window starts gets its own remark (below).
           The window runs under `Instant` (its flights are drawn at once, but the window is real time),
           `ReduceMotion` and `--seed`. Tests move the clock with ticks. Movie mode has none: `--movie`
@@ -1142,8 +1145,8 @@ no verdict of their own.
         WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
         DEFCON line shows within about half a second of the rung moving. An easter egg's war (below) adds
         one line as the board opens, before strike 1's three. It stays in view for that strike's flight,
-        and the strike 2 prompt moves it up out of the strip. Under `Instant` that is at once, and PgUp
-        shows it.
+        and the strike 2 prompt moves it up out of the strip (under `Instant`, at once). So the board's
+        title names the doctrine too, for the whole war: `GLOBAL THERMONUCLEAR WAR: S-1962 HAIR TRIGGER`.
       - **WOPR remarks on your orders** (`gtw/react.go`), on the board's row 18 and not in the strip, so the
         strip keeps its three report lines and nothing delays them. As each stage starts, an `original`
         line in WOPR's voice types in at speech pace (three characters a frame) in place of the legend. It
@@ -1261,10 +1264,12 @@ no verdict of their own.
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
-        everything up to the next prompt. Nothing waits for a tick, unless a launch window runs.
+        everything up to the next prompt. Nothing waits for a tick, unless a launch window or `--authentic`
+        runs.
       - **Another war instead of the climax** (`-n/--no-climax`, `Env.NoClimax`; off by default). The
-        Enter after the kill ratios does not start the climax. It asks `ANOTHER WAR, PROFESSOR?` in the
-        strip, with the table still on the board. Yes (`prompt.YesNo`), or Enter alone, clears the war
+        Enter after the kill ratios does not start the climax. It prints the after-action report's two
+        lines again, since that Enter scrolls them out of the strip, and asks `ANOTHER WAR, PROFESSOR?`,
+        with the table still on the board. Yes (`prompt.YesNo`), or Enter alone, clears the war
         away and asks for a side again. The new war has all its forces, a new target list and new
         orders. The game keeps its environment, its easter egg and its two seed streams, which draw on
         from where they are. So a seeded session plays the same wars in turn. The exchange has no
@@ -1300,13 +1305,16 @@ no verdict of their own.
         of 52, numbered down three columns, each page 23 rows with its prompt `CHOOSE A SCENARIO:`. `NEXT`
         and `PREV` turn the page and wrap round. A number, or a name in any capitals, spacing and
         punctuation (`us first strike`, `nato warsaw pact`), briefs a scenario. A name the montage cuts
-        short is also found by its whole last word (`VIETNAMESE RETALIATION`). Enter on an empty line,
-        or `BACK`, returns to the side choice. Anything else gets
-        `NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE.`
+        short is also found by its whole last word (`VIETNAMESE RETALIATION`). Nothing else after a name
+        finds it (`CHAD ALERTXYZ`). Enter on an empty line, or `BACK`, returns to the side choice.
+        Anything else puts the page up again with
+        `NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE.` in place of its hint, so the
+        page still fits.
       - **The briefing**, on a new page: the name, underlined, then `YOUR SIDE: #. THE # STRIKES FIRST.`,
         `ENEMY DOCTRINE: #.`, `YOUR ORDERS: #, THEN #, THEN #.`, `TARGETS: #.` and
         `NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.` It asks nothing. Once it is typed, a 3 s
-        `Wait` and a `Drain` open the board (any key skips the wait, and `Instant` has none).
+        `Wait` and a `Drain` open the board (any key skips the wait). `Instant` has no wait, so there the
+        briefing ends with `PRESS ENTER TO OPEN THE BOARD.` and an empty prompt, and Enter opens it.
       - **The playback** is the exchange above, as under `AUTO`: the scenario's own order at every
         strike, the first included, against the scenario's doctrine, then WOPR's DEFCON 1 attack. WOPR
         makes no remarks, and no easter egg applies. The board's title is
@@ -1358,7 +1366,9 @@ no verdict of their own.
         `scenario:N` (`gtw.ScenarioLaunch`, `Env.Mode`), which the persona passes on with `--play`'s
         launch. Alone, it prints the numbered list and exits. The flag takes the scenario after a space
         or after `=`, since it needs no game: every word after it is the scenario's name
-        (`wopr -c far east strategy`).
+        (`wopr -c far east strategy`). GTW may come before it, as before every GTW option
+        (`wopr gtw -c 2`); any other game is refused. `-c=false` is no scenario, as for a switch, and
+        `-c=` (or `-w=`) is refused.
    7. **Authentic mode** (`-a/--authentic`, `Env.Authentic`; off by default; the owner's request,
       2026-10-29). GTW shows only what the film shows, as the film shows it (R15). It changes GTW only.
       - **The side choice** is the film's: the two outlines, `WHICH SIDE DO YOU WANT?`, the two sides and
@@ -1386,10 +1396,11 @@ no verdict of their own.
       - **What the film does not show, and stays.** No line of text: every line GTW prints is the film's
         (`TestAuthenticShowsOnlyTheFilm`, over a whole war with refusals at each prompt). What stays is
         the pictures, the film's screens as this project draws them, the same as movie mode's:
-        - the two outlines of the side choice (`original` art) and the row that names them
-          (`reconstructed`, from the film's two names)
-        - the big board: its title, the DEFCON ladder and its label, the forces table, the legend and the
-          climax's `LAUNCH CODE:` label (`original`). The film's war is drawn on this board in movie mode
+        - the two outlines of the side choice (`original` art) and the row that names them (the film's
+          two names, `film`, in a row whose spacing is `reconstructed`)
+        - the big board: its title, the DEFCON ladder and its label, the forces table, the trajectory
+          table's designators (`MM3`, `C4`, `SS20`, `SSN8`), the legend and the climax's `LAUNCH CODE:`
+          label (`original`). The film's war is drawn on this board in movie mode
           too, and the legend says what the glyphs mean, which colour alone must not (§4.5)
       - **Combinations.** The command line refuses `--authentic` with `--scenario` (the film plays no
         scenario), `--launch-window` (it gives no strike orders), `--no-climax` (its war ends in the
@@ -1595,8 +1606,8 @@ classified address it leads to.
   and the NORAD session are not the persona's to play. But WOPR's answers there (`YOU SHOULD KNOW
   PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`, `WHAT'S THE DIFFERENCE?`) must equal what the
   persona's scripted brain answers to the same questions. `first-strike`, board strip included, must equal
-  GTW's own transcript for the same lines, less GTW's confirmations of the targets, which the film does not
-  show. The climax's NORAD notices must equal GTW's replies to them.
+  GTW's own transcript for the same lines, less GTW's third side choice (`3.    SCENARIOS`) and its
+  confirmations of the targets, which the film does not show. The climax's NORAD notices must equal GTW's replies to them.
   Movie mode and interactive play cannot diverge, and the scenes double as end-to-end tests.
 - **Tests.** The whole film is a golden (`internal/movie/testdata/film.golden`), and two replays must be
   identical. The UI goldens `movie_menu` and `movie_screens` are at 80×24 with the front panel. They show
@@ -2901,7 +2912,7 @@ STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
 WOPR IS USING DOCTRINE S-# (#)
 LAUNCH WINDOW CLOSED, PROFESSOR.
-NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.
+NO ORDERS ACCEPTED, PROFESSOR.
 ANOTHER WAR, PROFESSOR?
 YES FOR ANOTHER WAR. NO ENDS THE GAME.
 ORDER NOT RECOGNISED. TYPE HELP.
@@ -2925,6 +2936,7 @@ ENEMY DOCTRINE: #.
 YOUR ORDERS: #, THEN #, THEN #.
 TARGETS: #.
 NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.
+PRESS ENTER TO OPEN THE BOARD.
 ```
 
 A briefing's orders are `# # #` percentages or `HOLD`, and its doctrine is `MEASURED RESPONSE` or an egg's
@@ -2932,7 +2944,8 @@ doctrine's name. A playback's kill ratios end with the montage's `STRATEGY:` and
 `WINNER: NONE`, both from the film's headings.
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. An easter egg's line names its seed and its
-doctrine: `HAIR TRIGGER`, `SECOND STRIKE` or `COUNTERFORCE`. The targets prompt names back what each line adds
+doctrine: `HAIR TRIGGER`, `SECOND STRIKE` or `COUNTERFORCE`, and so does the board's title after the game's
+name (`S-# #`). The targets prompt names back what each line adds
 (`#. TARGET # OF #.`, `#. TARGETS #-# OF #.`) and notes a repeat (`# IS ALREADY LISTED.`). The after-action
 report's `#` are `# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
 `# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES` table

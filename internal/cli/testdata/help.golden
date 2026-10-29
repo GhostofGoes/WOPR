@@ -20,7 +20,7 @@ Flags:
   -r, --reduce-motion          no blinking or speed-ups (env WOPR_REDUCE_MOTION)
   -w, --launch-window[=secs]   give GTW's strike orders 30 seconds, or secs
   -n, --no-climax              after GTW's kill ratios, offer another war
-  -a, --authentic              play GTW as the film shows it, with nothing added
+  -a, --authentic              play GTW as the film shows it, film lines only
   -c, --scenario               list GTW's scenarios, or watch [scenario]
 
 At the LOGON: prompt, the film's backdoor still works: Joshua.
