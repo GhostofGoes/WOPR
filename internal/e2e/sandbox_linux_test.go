@@ -110,10 +110,9 @@ func TestLinuxSandbox(t *testing.T) {
 	inOrder(t, log, ` sandbox: `, ` think [0-9]+: `, ` session ended: outcome 1, `)
 }
 
-// Inside tmux, the colour detection runs `tmux info` (charmbracelet/colorprofile). That must
-// happen before the lockdown, which refuses to run a program: a fake tmux that says it has
-// true colour must raise the profile, and must run only then. A suspend and a resume do not
-// run it again.
+// Inside tmux, wopr draws in true colour without asking tmux (scrubenv), and a suspend and a
+// resume, which set the terminal up again after the lockdown, keep it so: a fake tmux first on
+// the PATH must never run, and the debug log must name the TrueColor profile.
 func TestTmuxColours(t *testing.T) {
 	if snapped() {
 		t.Skip("the snap cannot run a program from the test's /tmp")
@@ -132,7 +131,6 @@ func TestTmuxColours(t *testing.T) {
 		data, _ := os.ReadFile(runs)
 		return strings.Count(string(data), "run\n")
 	}
-	started := count()
 	suspend(t, s)
 	s.send("Joshua\r")
 	s.waitFor("GREETINGS PROFESSOR FALKEN.", 10*time.Second)
@@ -140,8 +138,12 @@ func TestTmuxColours(t *testing.T) {
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)
 	}
-	if started == 0 || count() != started {
-		t.Errorf("tmux ran %d times by the logon screen and %d times in all; want at least once, and only then", started, count())
+	if n := count(); n != 0 {
+		t.Errorf("tmux ran %d times, want none", n)
+	}
+	out := s.output()
+	if resumed := out[strings.LastIndex(out, "\x1b[?1049h"):]; !strings.Contains(resumed, "38;2;") {
+		t.Error("no 24-bit colour after the resume")
 	}
 	inOrder(t, debugLog(t, cache), ` colour profile TrueColor, `)
 }

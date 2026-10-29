@@ -406,7 +406,6 @@ jobs:
       artifact: release-dist
       version: ${{ needs.build.outputs.version }}
       stage-artifact: smoke-bundle
-      publish: false
 
   # release.yml's collect and sign jobs on this commit's installers: they must fit the size budget
   # and join the release files and checksums.txt, which are then signed as release.yml signs them,

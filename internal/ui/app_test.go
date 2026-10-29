@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -19,6 +20,25 @@ import (
 
 func instant() Options {
 	return Options{Instant: true, Seed: 1, SeedSet: true, Registry: catalog.Registry()}
+}
+
+func TestForcedProfile(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		opts Options
+		want colorprofile.Profile
+		ok   bool
+	}{
+		{"detected", Options{}, 0, false},
+		{"NO_COLOR", Options{NoColor: true}, colorprofile.Ascii, true},
+		{"tmux", Options{Tmux: true}, colorprofile.TrueColor, true},
+		{"NO_COLOR in tmux", Options{NoColor: true, Tmux: true}, colorprofile.Ascii, true},
+	} {
+		if got, ok := forcedProfile(tc.opts); got != tc.want || ok != tc.ok {
+			t.Errorf("%s: forcedProfile = %v, %v; want %v, %v", tc.name, got, ok, tc.want, tc.ok)
+		}
+	}
 }
 
 func TestLogonJoshua(t *testing.T) {

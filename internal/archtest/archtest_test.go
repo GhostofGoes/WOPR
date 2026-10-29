@@ -45,9 +45,10 @@ var testAllow = map[string][]string{
 // packages come before the subtrees that contain them.
 var rules = []rule{
 	{".", nil},
-	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/debuglog", "internal/games/catalog", "internal/sandbox", "internal/llm"}},
+	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/debuglog", "internal/games/catalog", "internal/sandbox", "internal/llm", "internal/scrubenv"}},
 	{"internal/debuglog", nil},
 	{"internal/sandbox", []string{"golang.org/x/sys/unix"}},
+	{"internal/scrubenv", nil},
 	{"internal/version", nil},
 	{"internal/cli", []string{"internal/games", "internal/theme", "internal/movie", "internal/version"}},
 	{"internal/proto", nil},

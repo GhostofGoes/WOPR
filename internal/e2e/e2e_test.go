@@ -188,11 +188,17 @@ func start(t *testing.T, w, h int, args ...string) *session {
 // startEnv starts wopr with extra environment variables.
 func startEnv(t *testing.T, w, h int, env []string, args ...string) *session {
 	t.Helper()
+	return startProgram(t, w, h, env, binary, args...)
+}
+
+// startProgram starts any program, such as a tmux client, as startEnv starts wopr.
+func startProgram(t *testing.T, w, h int, env []string, name string, args ...string) *session {
+	t.Helper()
 	p, err := xpty.NewPty(w, h)
 	if err != nil {
 		t.Fatalf("pty: %v", err)
 	}
-	cmd := exec.Command(binary, args...)
+	cmd := exec.Command(name, args...)
 	cmd.Env = append(append(os.Environ(), "TERM=xterm-256color"), env...)
 	controllingTerminal(cmd)
 	modes := terminalModes(t, p)
@@ -489,5 +495,94 @@ func TestDebugLog(t *testing.T) {
 				t.Errorf("the log must say there is no sandbox on %s:\n%s", runtime.GOOS, data)
 			}
 		})
+	}
+}
+
+// The libraries' own switches stay off (SECURITY.md): inside tmux, colour detection would
+// run `tmux info` from the PATH, and TEA_TRACE would append raw input and output to any path.
+// A fake tmux first on the PATH records any run. TEA_DEBUG writes only on a panic, and this
+// Bubble Tea never reads UV_DEBUG, so for those two the test checks only that nothing appears;
+// scrubenv's own test checks that all four are removed. Each variable that ends colour
+// detection before it asks tmux is unset. wopr still draws in true colour there, as its debug
+// log says. The fake is a shell script, so the test is Unix-only. test-snap.sh skips it: a snap
+// has its own /tmp.
+func TestLibrarySwitchesStayOff(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake tmux is a shell script")
+	}
+	for _, k := range []string{"COLORTERM", "NO_COLOR", "CLICOLOR_FORCE", "TTY_FORCE", "WT_SESSION", "GOOGLE_CLOUD_SHELL"} {
+		t.Setenv(k, "") // restored after the test
+		if err := os.Unsetenv(k); err != nil {
+			t.Fatal(err)
+		}
+	}
+	dir := t.TempDir()
+	ran := filepath.Join(dir, "tmux-ran")
+	fake := "#!/bin/sh\necho \"$@\" >> '" + ran + "'\n"
+	if err := os.WriteFile(filepath.Join(dir, "tmux"), []byte(fake), 0o755); err != nil { //nolint:gosec // the fake must be executable
+		t.Fatal(err)
+	}
+	trace, uvDebug := filepath.Join(dir, "tea-trace.log"), filepath.Join(dir, "uv-debug.log")
+	cache := filepath.Join(dir, "cache")
+	env := []string{
+		"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"),
+		"TMUX=/tmp/tmux-1000/default,1,0",
+		"TEA_TRACE=" + trace, "TEA_DEBUG=1", "UV_DEBUG=" + uvDebug,
+		"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache,
+	}
+	s := startEnv(t, 80, 24, env, "--instant")
+	s.waitFor("LOGON:", 10*time.Second)
+	s.send("\x03")
+	s.wait(10 * time.Second)
+	for _, f := range []string{ran, trace, uvDebug} {
+		if data, err := os.ReadFile(f); err == nil {
+			t.Errorf("%s exists:\n%s", filepath.Base(f), data)
+		}
+	}
+	// TERM=xterm-256color alone gives 256 colours. Inside tmux, wopr draws in true colour.
+	var log []byte
+	_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
+		if err == nil && d.Name() == "debug.log" {
+			log, _ = os.ReadFile(path)
+		}
+		return nil
+	})
+	if !strings.Contains(string(log), "colour profile TrueColor") {
+		t.Errorf("inside tmux, the debug log names no true colour profile:\n%s", log)
+	}
+}
+
+// A TERM that is a path does not make the terminfo loader read outside its folder
+// (internal/scrubenv): /dev/zero would never end. --version still prints and exits.
+func TestTermPathIgnored(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("no /dev/zero")
+	}
+	s := startEnv(t, 80, 24, []string{"TERM=../../../../../../../../../dev/zero"}, "--version")
+	if code := s.wait(10 * time.Second); code != 0 {
+		t.Errorf("exit %d, want 0; screen:\n%s", code, s.screen())
+	}
+	if !strings.Contains(s.screen(), "wopr") {
+		t.Errorf("no version line:\n%s", s.screen())
+	}
+}
+
+// scrubenv must clear the environment before Lip Gloss reads it in a package-level variable
+// (internal/scrubenv). Go's own init trace shows the order the binary really runs inits in.
+// test-snap.sh skips it, as snapd may not pass GODEBUG through.
+func TestScrubenvInitsBeforeLipGloss(t *testing.T) {
+	_, stderr, code := runEnv(t, []string{"GODEBUG=inittrace=1"}, "--version")
+	if code != 0 {
+		t.Fatalf("exit %d:\n%s", code, stderr)
+	}
+	scrub := strings.Index(stderr, "init github.com/GhostofGoes/WOPR/internal/scrubenv ")
+	for _, pkg := range []string{"github.com/charmbracelet/colorprofile", "charm.land/lipgloss/v2"} {
+		i := strings.Index(stderr, "init "+pkg+" ")
+		switch {
+		case scrub < 0 || i < 0:
+			t.Fatalf("the init trace lacks scrubenv or %s:\n%s", pkg, stderr)
+		case scrub > i:
+			t.Errorf("%s initialises before scrubenv", pkg)
+		}
 	}
 }
