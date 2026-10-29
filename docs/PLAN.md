@@ -651,6 +651,7 @@ Rules:
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
   between them as it needs (the movie director: keys while a scene plays, a line at the scene menu). While a
   `Prompt` is active, the host delivers an empty Enter as `LineEvent{""}`. GTW ends its target list that way.
+  `AwaitKeys` withdraws an active prompt: the UI drops the line typed or held for it (GTW's launch window).
 - **Launch and hand-off** (AR-5, IM-6).
   - The host resolves `Launch{Slug}` through the injected `Resolver`. `ui` builds it from the registry: a
     `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. The ending is a registry
@@ -936,7 +937,8 @@ wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/
 wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
                               typing or the animations, which -i skips
 wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
-                              a switch, so a value needs "=". No variable. --movie refuses it
+                              a switch, so a value needs "=" ("-w 45" is refused). No variable. --movie
+                              refuses it
 wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
@@ -1068,10 +1070,10 @@ no verdict of their own.
           not stop it, and any order does. At zero, WOPR takes launch authority as `AUTO` gives it:
           `LAUNCH WINDOW CLOSED, PROFESSOR.`, `WOPR HAS LAUNCH AUTHORITY.`, and the war plan for every
           strike left. The prompt cannot be taken back, so `AwaitKeys` replaces it, with the hint
-          `NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.`, until the assessment's prompt. The window runs
-          under `Instant` (its flights are drawn at once, but the window is real time), `ReduceMotion`
-          and `--seed`. Tests move the clock with ticks. Movie mode has none: `--movie` refuses the flag,
-          the UI passes 0 there, and `Film` never sets it.
+          `NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.`, until the assessment's prompt. An order still
+          being typed is dropped. The window runs under `Instant` (its flights are drawn at once, but the
+          window is real time), `ReduceMotion` and `--seed`. Tests move the clock with ticks. Movie mode
+          has none: `--movie` refuses the flag, the UI passes 0 there, and `Film` never sets it.
         - A refusal asks the same strike again. The refusals are `ORDER NOT RECOGNISED. TYPE HELP.`,
           `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.` (also for a signed or decimal number, including a
           typographic minus or dash such as `–50`), `** ROUTINE MUST COMPLETE BEFORE RESET **` for a

@@ -11,8 +11,9 @@ import (
 
 // GTW's launch window (--launch-window) on the 80x24 screen, paced: the strike prompt shows
 // the seconds left at the board's foot and counts them down. When the window shuts, the key
-// hint takes the prompt's place while WOPR's strikes fly, and the assessment's prompt follows.
-// Every one of these screens passes the accessibility checks.
+// hint takes the prompt's place while WOPR's strikes fly, and the assessment's prompt follows,
+// without the order that was still being typed. Every one of these screens passes the
+// accessibility checks.
 func TestLaunchWindowScreens(t *testing.T) {
 	t.Parallel()
 	opts := instant()
@@ -33,6 +34,7 @@ func TestLaunchWindowScreens(t *testing.T) {
 		t.Fatalf("the strike prompt shows no launch window:\n%s", d.screen())
 	}
 	inspectScreen(t, "the window open", d)
+	d.press("50 5") // an order still being typed when the window shuts
 	until(" WINDOW 1 SECOND\n")
 	inspectScreen(t, "the last second", d)
 	until("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.")
@@ -44,5 +46,8 @@ func TestLaunchWindowScreens(t *testing.T) {
 	d.steps(30)
 	if d.m.keyMode || !d.m.asking {
 		t.Errorf("the war does not reach the assessment:\n%s", d.screen())
+	}
+	if !d.m.ed.Empty() || strings.Contains(d.screen(), "50 5") {
+		t.Errorf("the order typed for the closed window stays in the input line:\n%s", d.screen())
 	}
 }

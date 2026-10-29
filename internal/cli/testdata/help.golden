@@ -17,7 +17,7 @@ Flags:
   -i, --instant                no typewriter pacing (env WOPR_INSTANT)
   -s, --seed <n>               a repeatable run with this seed (env WOPR_SEED)
   -r, --reduce-motion          no blinking or speed-ups (env WOPR_REDUCE_MOTION)
-  -w, --launch-window          in GTW, WOPR fires if no order in 30s (or =secs)
+  -w, --launch-window[=secs]   give GTW's strike orders 30 seconds, or secs
 
 At the LOGON: prompt, the film's backdoor still works: Joshua.
 Type LOGOFF to leave. Ctrl+C quits at any time.

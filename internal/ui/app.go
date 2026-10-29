@@ -372,6 +372,10 @@ func (m *model) applyAll(effects []host.Effect) tea.Cmd {
 			m.keyMode = false
 			m.tw.Prompt(e.Prompt)
 		case host.AskKeys:
+			if m.asking || m.held { // key mode withdraws the prompt: its line, typed or held, answers nothing
+				m.held = false
+				m.ed.Clear()
+			}
 			m.keyMode = true
 			m.asking = false
 			m.keyHint = e.Hint

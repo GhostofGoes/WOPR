@@ -87,7 +87,10 @@ func RenderHelp(w io.Writer) error {
 	b.WriteString("Usage:\n  wopr [flags] [game]\n  wopr --movie [--only] [scene]\n\nFlags:\n")
 	for _, f := range flagPairs {
 		names := "-" + f.short + ", --" + f.long
-		if f.arg != "" {
+		switch {
+		case strings.HasPrefix(f.arg, "="):
+			names += "[" + f.arg + "]"
+		case f.arg != "":
 			names += " <" + f.arg + ">"
 		}
 		help := f.help

@@ -179,8 +179,9 @@ func TestParseSeed(t *testing.T) {
 }
 
 // --launch-window is a switch that may take seconds after an equals sign: alone it gives 30
-// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error. Movie
-// mode gives no orders, so it refuses a window.
+// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error. A
+// number after a space is refused, not read as the game. Movie mode gives no orders, so it
+// refuses a window.
 func TestParseLaunchWindow(t *testing.T) {
 	t.Parallel()
 	reg := catalog.Registry()
@@ -204,7 +205,11 @@ func TestParseLaunchWindow(t *testing.T) {
 		{args: "-w=1000", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
 		{args: "-w=-5", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
 		{args: "-w=soon", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
-		{args: "gtw -w 45", usage: "too many arguments"},
+		{args: "gtw -w 45", usage: "-w 45: give the seconds after an equals sign (-w=45), or the game before -w"},
+		{args: "-w 10", usage: "-w 10: give the seconds after"},
+		{args: "--launch-window 30 gtw", usage: "--launch-window 30: give the seconds after"},
+		{args: "-w gtw", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "7 -w", window: 30 * time.Second, play: "chess"},
 		{args: "-m -w", usage: "--movie and --launch-window cannot be combined"},
 		{args: "-m -w=0"},
 	}

@@ -56,7 +56,9 @@ func (e *UsageError) Error() string { return e.Msg }
 
 func usagef(format string, a ...any) error { return &UsageError{Msg: fmt.Sprintf(format, a...)} }
 
-// flagPair is one option: its long name, its shorthand, and its help text.
+// flagPair is one option: its long name, its shorthand, and its help text. arg names its
+// value, if it takes one. An arg that starts with = is a value that may be left out, and that
+// only follows an equals sign (--launch-window=45).
 type flagPair struct {
 	long, short, arg, help, env string
 }
@@ -74,7 +76,7 @@ var flagPairs = []flagPair{
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
 	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
-	{"launch-window", "w", "", "in GTW, WOPR fires if no order in 30s (or =secs)", ""},
+	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
 }
 
 // The launch window's length: --launch-window alone gives defaultWindow, and a value must be
@@ -104,6 +106,19 @@ func (o optionalValue) Set(v string) error {
 	return nil
 }
 
+// windowApart refuses seconds given after a space ("-w 45"). The flag is a switch, so 45 would
+// be read as the game (game 45, or too many arguments), which is never what was meant.
+func windowApart(args []string) error {
+	for i := 0; i+1 < len(args) && args[i] != "--"; i++ {
+		name, next := strings.TrimPrefix(strings.TrimPrefix(args[i], "-"), "-"), args[i+1]
+		isWindow := strings.HasPrefix(args[i], "-") && (name == "w" || name == "launch-window")
+		if isWindow && next != "" && strings.Trim(next, "0123456789") == "" {
+			return usagef("%s %s: give the seconds after an equals sign (%s=%s), or the game before %s", args[i], next, args[i], next, args[i])
+		}
+	}
+	return nil
+}
+
 // launchWindow reads --launch-window's value ("" when it is not given).
 func launchWindow(v string) (time.Duration, error) {
 	switch v {
@@ -122,7 +137,7 @@ func launchWindow(v string) (time.Duration, error) {
 // Flag is one option as the help shows it, for the manual page (internal/tools/manpage).
 type Flag struct {
 	Long, Short string
-	Arg         string // the value's name, "" for a switch
+	Arg         string // the value's name, "" for a switch, and with a leading = if it may be left out
 	Help        string
 	Env         string // the environment variable that sets it too, or ""
 }
@@ -182,6 +197,9 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
 	}
 
+	if err := windowApart(args); err != nil {
+		return cfg, RunTUI, err
+	}
 	positionals, err := parseInterspersed(fs, args)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {

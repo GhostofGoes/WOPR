@@ -255,7 +255,10 @@ func writeOptions(p *page) error {
 		}
 		p.macro("TP")
 		short, long := "`-"+f.Short+"`", "`--"+f.Long+"`"
-		if f.Arg != "" {
+		switch {
+		case strings.HasPrefix(f.Arg, "="): // a value that may be left out, shown once as the help does
+			long += "[=<" + strings.TrimPrefix(f.Arg, "=") + ">]"
+		case f.Arg != "":
 			short, long = short+" <"+f.Arg+">", long+" <"+f.Arg+">"
 		}
 		p.line(p.phrase(short + ", " + long))
