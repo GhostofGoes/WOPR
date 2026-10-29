@@ -35,9 +35,11 @@ func TestScenariosAreTheMontage(t *testing.T) {
 			t.Errorf("%q finds %d, %v", s.name.Text, n, ok)
 		}
 	}
-	for in, found := range map[string]bool{"vietnamese retaliation": true, "Bangladesh Theaterwide": true,
+	for in, found := range map[string]bool{
+		"vietnamese retaliation": true, "Bangladesh Theaterwide": true,
 		"chad alertxyz": false, "cuban provocations": false, "nato alert please": false, "U.S. FIRST STRIKE NOW": false,
-		"vietnamese retaliationx": false} {
+		"vietnamese retaliationx": false,
+	} {
 		if n, ok := FindScenario(in); ok != found || ok && !strings.HasPrefix(strings.ToUpper(in), Scenarios()[n-1]) {
 			t.Errorf("%q finds %d, %v", in, n, ok)
 		}
