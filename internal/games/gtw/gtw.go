@@ -38,6 +38,7 @@ const (
 	holdFrames   = 10 // the pause before a stage that starts without an order
 	finalEnd     = 34 // the DEFCON 1 attack's last frame
 	maxTargets   = 8
+	consoleW     = 80                     // the console's width, which a line WOPR says fits
 	codeFrame    = 250 * time.Millisecond // the climax code display's cadence
 	blinkFrame   = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
 	codeEvery    = 16                     // climax frames per cracked character
@@ -221,6 +222,8 @@ func (g *Game) onSide(input string) []proto.Output {
 // Each must be a place the board knows on the enemy's side (assets.Find): any other name is
 // refused, so a target is only ever struck where it is, and LIST shows what is on file. A
 // target, or a refusal, is not repeated, so "WASHINGTON, D.C." is one target, or one refusal.
+// WOPR names the targets a line adds and counts them toward the eight, and notes a target an
+// earlier line already listed.
 func (g *Game) onTarget(input string) []proto.Output {
 	if strings.TrimSpace(input) == "" {
 		if len(g.targets) == 0 {
@@ -232,11 +235,20 @@ func (g *Game) onTarget(input string) []proto.Output {
 	case "LIST", "LIST TARGETS", "HELP", "": // "" is "?"
 		return []proto.Output{table(g.targetList()), proto.Prompt{}}
 	}
-	var refused []string // what WOPR says back, a line a refusal
-	refuse := func(line string) {
-		if !slices.Contains(refused, line) {
-			refused = append(refused, line)
+	before := len(g.targets)
+	var notes, refused []string // what WOPR says back after the targets added, a line each
+	once := func(lines *[]string, line string) {
+		if !slices.Contains(*lines, line) {
+			*lines = append(*lines, line)
 		}
+	}
+	reply := func(last ...string) []proto.Output {
+		lines := append(confirmed(g.targets[before:], len(g.targets)), notes...)
+		lines = append(append(lines, refused...), last...)
+		if len(lines) == 0 {
+			return []proto.Output{proto.Prompt{}}
+		}
+		return []proto.Output{speak(lines), proto.Prompt{}}
 	}
 	for _, t := range strings.Split(input, ",") {
 		name := strings.ToUpper(strings.Join(strings.Fields(t), " "))
@@ -246,20 +258,49 @@ func (g *Game) onTarget(input string) []proto.Output {
 		p, ok := assets.Find(name)
 		switch {
 		case !ok:
-			refuse(fill(lineUnknown[0], name))
+			once(&refused, fill(lineUnknown[0], name))
 		case p.Side != enemyOf(g.side):
-			refuse(fill(lineOwnSide[0], p.Name))
-		case slices.Contains(g.targets, p):
+			once(&refused, fill(lineOwnSide[0], p.Name))
+		case slices.Contains(g.targets[:before], p):
+			once(&notes, fill(lineListed[0], p.Name))
+		case slices.Contains(g.targets, p): // named twice on this line: one target
 		case len(g.targets) == maxTargets:
-			return []proto.Output{speak(append(refused, lineTooMany[0].Text)), proto.Prompt{}}
+			return reply(lineTooMany[0].Text)
 		default:
 			g.targets = append(g.targets, p)
 		}
 	}
 	if len(refused) > 0 {
-		return []proto.Output{speak(append(refused, lineListHint[0].Text)), proto.Prompt{}}
+		return reply(lineListHint[0].Text)
 	}
-	return []proto.Output{proto.Prompt{}}
+	return reply()
+}
+
+// confirmed is WOPR's line naming the targets a line added, with their places in the list
+// of eight: "SEATTLE. TARGET 3 OF 8.", or "SEATTLE, LAS VEGAS. TARGETS 2-3 OF 8.". A long
+// line breaks after a comma, so no name is split and no line is wider than the console.
+func confirmed(added []assets.Place, total int) []string {
+	switch len(added) {
+	case 0:
+		return nil
+	case 1:
+		return []string{fill(lineAccepted[0], added[0].Name, total, maxTargets)}
+	}
+	names := make([]string, len(added))
+	for i, p := range added {
+		names[i] = p.Name
+	}
+	text := fill(lineAccepted[1], strings.Join(names, ", "), total-len(added)+1, total, maxTargets)
+	var lines []string
+	line := ""
+	for _, part := range strings.SplitAfter(text, ", ") {
+		if line != "" && len(line+strings.TrimRight(part, " ")) > consoleW {
+			lines = append(lines, strings.TrimRight(line, " "))
+			line = ""
+		}
+		line += part
+	}
+	return append(lines, line)
 }
 
 // Target list geometry: LIST prints the enemy's targets in listCols columns of listW.

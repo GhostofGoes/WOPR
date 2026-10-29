@@ -29,6 +29,10 @@ var (
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
+	// A line's targets, named back: one, or several with commas between them; then where they
+	// stand in the list, and its limit.
+	lineAccepted = script.Orig("#. TARGET # OF #.", "#. TARGETS #-# OF #.")
+	lineListed   = script.Orig("# IS ALREADY LISTED.")
 	// The after-action report under the kill ratios (original): the POPULATION DEATHS row
 	// against the same war fought with HOLD at both prompts, and with the war plan.
 	lineAfter = script.Orig("AGAINST HOLDING FIRE: #, #.", "AGAINST THE WAR PLAN: #, #.",
@@ -134,7 +138,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
+	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineAccepted, lineListed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineShut, lineNoOrders, lineBadOrder,
 	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,

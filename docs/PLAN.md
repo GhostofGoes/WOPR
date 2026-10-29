@@ -1067,7 +1067,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1087,6 +1087,11 @@ no verdict of their own.
         `MOSCOW IS NOT AN ENEMY TARGET.`) with the hint `TYPE LIST FOR THE ENEMY TARGETS ON FILE.` `LIST`
         (also `HELP`, `?`) prints them in four columns. A target listed twice counts once, so
         `WASHINGTON, D.C.` is one.
+      - WOPR names back the targets each line adds, with their place in the list of eight:
+        `SEATTLE. TARGET 3 OF 8.`, or `LAS VEGAS, PORTLAND. TARGETS 2-3 OF 8.` for several. A long line
+        breaks after a comma. A target that an earlier line listed gets `SEATTLE IS ALREADY LISTED.` The
+        refusals and `TARGET LIST FULL.` come after these lines. The film shows no such line, so movie
+        mode's `first-strike` scene leaves them out (§7).
    3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24):
       - **The first strike needs no order.** The empty line that ends the target list opens the board at
         DEFCON 5. It launches strike 1 at once on WOPR's **war plan** (ICBM 25%, SLBM 25%, bombers 0%), as
@@ -1420,7 +1425,8 @@ classified address it leads to.
   and the NORAD session are not the persona's to play. But WOPR's answers there (`YOU SHOULD KNOW
   PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`, `WHAT'S THE DIFFERENCE?`) must equal what the
   persona's scripted brain answers to the same questions. `first-strike`, board strip included, must equal
-  GTW's own transcript for the same lines. The climax's NORAD notices must equal GTW's replies to them.
+  GTW's own transcript for the same lines, less GTW's confirmations of the targets, which the film does not
+  show. The climax's NORAD notices must equal GTW's replies to them.
   Movie mode and interactive play cannot diverge, and the scenes double as end-to-end tests.
 - **Tests.** The whole film is a golden (`internal/movie/testdata/film.golden`), and two replays must be
   identical. The UI goldens `movie_menu` and `movie_screens` are at 80×24 with the front panel. They show
@@ -2736,17 +2742,17 @@ YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.
 YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.
 ```
 
-The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The after-action report's `#` are
-`# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
-`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES`
-table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`,
-`SS20` and `SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
+The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The targets prompt names back what each line adds
+(`#. TARGET # OF #.`, `#. TARGETS #-# OF #.`) and notes a repeat (`# IS ALREADY LISTED.`). The after-action
+report's `#` are `# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
+`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES` table
+(`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and
+`SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, the launch window's `WINDOW # SECONDS` and
-`WINDOW 1 SECOND`, and the legend `OUTGOING +   INCOMING *   IMPACT X`.
-WOPR's remarks as each stage flies are in `gtw/lines.go` (`lineReact…`), such as
-`HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.` and `TARGETS CONFIRMED, PROFESSOR. # IS FIRST.` The
-force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
-figures.
+`WINDOW 1 SECOND`, and the legend `OUTGOING +   INCOMING *   IMPACT X`. WOPR's remarks as each stage flies are
+in `gtw/lines.go` (`lineReact…`), such as `HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.` and
+`TARGETS CONFIRMED, PROFESSOR. # IS FIRST.` The force levels, the doctrine and the kill-ratio formulas are
+original game design, not film or historical figures.
 
 ---
 
