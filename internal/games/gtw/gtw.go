@@ -241,7 +241,9 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 			return g.onAnother(ev.Text)
 		case climax:
 			return g.onClimax(ev.Text)
-		case flight, briefing: // no prompt is up; the host never sends one
+		case briefing: // under Instant, the Enter that opens the board
+			return g.openBoard()
+		case flight: // no prompt is up; the host never sends one
 		}
 	case proto.Drained: // a briefing has been read
 		if g.phase == briefing {

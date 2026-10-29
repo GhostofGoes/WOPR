@@ -346,7 +346,11 @@ func menuPages() (pages, per int) {
 }
 
 // showMenu puts up page p of the scenario menu (wrapping round), numbered down each column.
-func (g *Game) showMenu(p int) []proto.Output {
+func (g *Game) showMenu(p int) []proto.Output { return g.menuPage(p, lineMenu[1].Text) }
+
+// menuPage is page p of the menu with foot, the hint or a refusal, as its last line, so that
+// a refusal never scrolls the page.
+func (g *Game) menuPage(p int, foot string) []proto.Output {
 	pages, per := menuPages()
 	g.phase, g.page = chooseScenario, (p%pages+pages)%pages
 	list := scenarios[g.page*per : min((g.page+1)*per, len(scenarios))]
@@ -361,12 +365,13 @@ func (g *Game) showMenu(p int) []proto.Output {
 		}
 		lines = append(lines, strings.TrimRight(b.String(), " "))
 	}
-	lines = append(lines, "", lineMenu[1].Text)
+	lines = append(lines, "", foot)
 	return []proto.Output{proto.Clear{}, table(lines), proto.Prompt{Text: promptMenu[0].Text}}
 }
 
 // onMenu reads the scenario menu: a number or a name briefs that scenario, NEXT and PREV turn
-// the page, and Enter or BACK returns to the side choice.
+// the page, and Enter or BACK returns to the side choice. Anything else puts the page up again,
+// with the refusal in place of the hint.
 func (g *Game) onMenu(input string) []proto.Output {
 	if strings.TrimSpace(input) == "" {
 		g.phase = chooseSide
@@ -386,12 +391,13 @@ func (g *Game) onMenu(input string) []proto.Output {
 	if n, ok := FindScenario(input); ok {
 		return g.brief(&scenarios[n-1])
 	}
-	return []proto.Output{speak([]string{fill(lineMenuAgain[0], len(scenarios))}), proto.Prompt{Text: promptMenu[0].Text}}
+	return g.menuPage(g.page, fill(lineMenuAgain[0], len(scenarios)))
 }
 
 // brief sets scenario s up and briefs it: its name, your side and who strikes first, the
-// enemy's doctrine, your side's orders and its targets. The board opens by itself once the
-// briefing has been read, and the war plays itself, as under AUTO.
+// enemy's doctrine, your side's orders and its targets. The board opens by itself a few
+// seconds after the briefing has been read, or, under Instant, which has no pause, at Enter.
+// Then the war plays itself, as under AUTO.
 func (g *Game) brief(s *scenario) []proto.Output {
 	g.scen, g.side, g.targets, g.phase, g.auto = s, s.side, slices.Clone(s.targets), briefing, true
 	first, o := s.side, s.c.orders
@@ -408,13 +414,11 @@ func (g *Game) brief(s *scenario) []proto.Output {
 		fill(lineBrief[2], order(o[0]), order(o[1]), order(o[2])),
 	}
 	lines = append(append(lines, commaLines(fill(lineBrief[3], strings.Join(names, ", ")))...), lineBrief[4].Text)
-	return []proto.Output{
-		proto.Clear{},
-		table([]string{s.name.Text, strings.Repeat("-", len(s.name.Text)), ""}),
-		speak(lines),
-		proto.Wait{D: briefPause},
-		proto.Drain{},
+	outs := []proto.Output{proto.Clear{}, table([]string{s.name.Text, strings.Repeat("-", len(s.name.Text)), ""})}
+	if g.env.Instant {
+		return append(outs, speak(append(lines, lineOpen[0].Text)), proto.Prompt{})
 	}
+	return append(outs, speak(lines), proto.Wait{D: briefPause}, proto.Drain{})
 }
 
 // order is an order as the briefing gives it: "50 50 100", or HOLD.

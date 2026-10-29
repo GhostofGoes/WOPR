@@ -50,13 +50,17 @@ func (g *Game) View(c *proto.Canvas) {
 }
 
 func (g *Game) drawBoard(c *proto.Canvas) {
-	// The map box, titled, with each side named under its land.
+	// The map box, titled with the game's name (and a playback's scenario, or an easter egg's
+	// doctrine), with each side named under its land.
 	edge := "+" + strings.Repeat("-", assets.MapW) + "+"
 	c.Put(mapLeft-1, mapTop-1, edge, proto.StyleDim, 0)
 	c.Put(mapLeft-1, boxBottom, edge, proto.StyleDim, 0)
 	title := " " + lineTitle[0].Text + " "
-	if g.scen != nil {
+	switch {
+	case g.scen != nil:
 		title = " " + lineTitle[0].Text + ": " + g.scen.name.Text + " "
+	case g.egg != nil: // the doctrine stays named after its strip line scrolls away
+		title = " " + lineTitle[0].Text + ": " + fill(lineEggTitle[0], g.egg.seed, g.egg.name.Text) + " "
 	}
 	c.Put(mapLeft+(assets.MapW-len(title))/2, mapTop-1, title, proto.StyleBright, 0)
 	for i, lon := range []float64{usLon, ussrLon} {

@@ -21,7 +21,8 @@ import (
 // " 12. CUBAN PROVOCATION".
 var menuEntry = regexp.MustCompile(`^ *(\d+)\. (\S.*?) *$`)
 
-// page is the last menu page a transcript shows: its lines, from the heading to the hint.
+// page is the last menu page a transcript shows: its lines, from the heading to the hint or
+// the refusal in its place.
 func page(t *testing.T, transcript string) []string {
 	t.Helper()
 	i := strings.LastIndex(transcript, "SCENARIOS ON FILE: PAGE ")
@@ -30,7 +31,7 @@ func page(t *testing.T, transcript string) []string {
 	}
 	lines := strings.Split(transcript[i:], "\n")
 	for j, l := range lines {
-		if strings.HasPrefix(l, "A NUMBER OR A NAME PLAYS ONE.") {
+		if strings.HasPrefix(l, "A NUMBER OR A NAME PLAYS ONE.") || strings.HasPrefix(l, "NO SUCH SCENARIO, PROFESSOR.") {
 			return lines[:j+1]
 		}
 	}
@@ -40,8 +41,9 @@ func page(t *testing.T, transcript string) []string {
 
 // 3 at the side prompt opens the scenario menu: every scenario, numbered once, over pages
 // that fit 80x24 with the front panel, which NEXT and PREV turn round. A number or a name in
-// any spacing and punctuation briefs one; anything else is refused, and Enter or BACK returns
-// to the side choice, which still reads 1 and 2 as the sides.
+// any spacing and punctuation briefs one; anything else is refused on the page put up again,
+// which still fits, and Enter or BACK returns to the side choice, which still reads 1 and 2 as
+// the sides.
 func TestScenarioMenu(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1)
@@ -87,9 +89,13 @@ func TestScenarioMenu(t *testing.T) {
 	if lines := page(t, g.Transcript()); lines[0] != "SCENARIOS ON FILE: PAGE 3 OF 3" {
 		t.Errorf("PREV on the first page turns to %q", lines[0])
 	}
-	g.Type("157")
-	if !g.Contains("NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE.") {
-		t.Errorf("157 is refused:\n%s", g.Transcript())
+	for _, wrong := range []string{"157", "nowhere"} {
+		g.Type(wrong)
+		lines := page(t, g.Transcript())
+		if lines[0] != "SCENARIOS ON FILE: PAGE 3 OF 3" || lines[len(lines)-1] != "NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE." ||
+			len(lines)+1 > 23 {
+			t.Errorf("%q is refused on the page:\n%s", wrong, strings.Join(lines, "\n"))
+		}
 	}
 	for _, back := range []string{"", "back"} {
 		before := strings.Count(g.Transcript(), "WHICH SIDE DO YOU WANT?")
@@ -142,7 +148,7 @@ func play(t *testing.T, n int, seed uint64) ([]string, *proto.Canvas) {
 	}
 	name := gtw.Scenarios()[n-1]
 	record(g.Start(proto.Env{Seed: seed, Instant: true, Width: 80, Height: 19, Mode: gtw.ScenarioLaunch(n)}))
-	record(g.Handle(proto.Drained{}))
+	record(g.Handle(proto.LineEvent{Text: ""})) // the briefing's Enter
 	c := proto.NewCanvas(100, 19)
 	g.View(c)
 	board := c
@@ -163,7 +169,8 @@ func play(t *testing.T, n int, seed uint64) ([]string, *proto.Canvas) {
 
 // Every scenario plays itself: its briefing and every line fit 80 columns, no strike prompt
 // is asked, DEFCON falls a rung a stage, the kill ratios end with the montage's verdict, and
-// Enter returns to the menu at the scenario's page, never to the climax.
+// Enter returns to the menu at the scenario's page, never to the climax. Under Instant the
+// briefing waits for Enter, since it has no pause to be read in.
 func TestEveryScenarioPlaysItself(t *testing.T) {
 	t.Parallel()
 	for i, name := range gtw.Scenarios() {
@@ -184,7 +191,10 @@ func TestEveryScenarioPlaysItself(t *testing.T) {
 		if got := strings.Join(ladder, " "); got != "DEFCON 4. DEFCON 3. DEFCON 2. DEFCON 1." {
 			t.Errorf("%s: the ladder reads %q", name, got)
 		}
-		_, after, _ := strings.Cut(text, "> \n") // the assessment's Enter
+		if !strings.Contains(text, "WOPR PLAYS BOTH SIDES.\nPRESS ENTER TO OPEN THE BOARD.\n> \n") {
+			t.Errorf("%s: the briefing does not wait for Enter:\n%s", name, text)
+		}
+		_, after, _ := strings.Cut(text, "PROJECTED KILL RATIOS.\n> \n") // the assessment's Enter
 		if !strings.HasPrefix(after, "STRATEGY: "+name+"\nWINNER: NONE\nPRESS ENTER TO CONTINUE.\n") {
 			t.Errorf("%s: the kill ratios end with:\n%s", name, after)
 		}
@@ -252,7 +262,7 @@ func TestPlaybackRunsOnTheClock(t *testing.T) {
 func TestScenarioTranscript(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1983)
-	g.Type("3").Type("USSR First Strike").Type("").Type("").Type("")
+	g.Type("3").Type("USSR First Strike").Type("").Type("").Type("").Type("")
 	if !g.Contains("WINNER: NONE") || g.Contains("STRIKE 2 OF 3") {
 		t.Fatalf("the scenario did not play itself:\n%s", g.Transcript())
 	}

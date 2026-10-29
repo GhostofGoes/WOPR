@@ -124,7 +124,7 @@ func TestAnotherWarKeepsTheEgg(t *testing.T) {
 func TestNoClimaxPlaybackReturnsToTheMenu(t *testing.T) {
 	t.Parallel()
 	s, _ := noClimax(t, 1983)
-	s.Type("3").Type("USSR First Strike").Type("").Type("") // the kill ratios, then Enter
+	s.Type("3").Type("USSR First Strike").Type("").Type("").Type("") // the board, the kill ratios, then Enter
 	if asking, p := s.Asking(); !asking || p != "CHOOSE A SCENARIO: " {
 		t.Errorf("the playback asks %q, want the menu:\n%s", p, s.Transcript())
 	}

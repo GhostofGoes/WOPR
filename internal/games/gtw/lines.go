@@ -54,6 +54,7 @@ var (
 	lineMenuAgain = script.Orig("NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO #, OR A NAME ON FILE.")
 	lineBrief     = script.Orig("YOUR SIDE: #. THE # STRIKES FIRST.", "ENEMY DOCTRINE: #.", "YOUR ORDERS: #, THEN #, THEN #.",
 		"TARGETS: #.", "NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.")
+	lineOpen     = script.Orig("PRESS ENTER TO OPEN THE BOARD.") // a briefing's end under Instant, which has no pause
 	lineHold     = script.Orig("HOLD")
 	lineMeasured = script.Orig("MEASURED RESPONSE")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
@@ -83,12 +84,13 @@ var (
 	lineSystems  = script.Orig("ICBM", "SLBM", "BOMBERS")
 	promptStrike = script.Orig("STRIKE # OF # [# # #]: ")
 	lineAuto     = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
-	// An easter egg's doctrine (doctrine.go), named as the board opens: the session's seed and
-	// the doctrine's name, in the order of eggs.
+	// An easter egg's doctrine (doctrine.go), named as the board opens and in the board's title:
+	// the session's seed and the doctrine's name, in the order of eggs.
 	lineDoctrine  = script.Orig("WOPR IS USING DOCTRINE S-# (#)")
+	lineEggTitle  = script.Orig("S-# #")
 	lineEggs      = script.Orig("HAIR TRIGGER", "SECOND STRIKE", "COUNTERFORCE")
 	lineShut      = script.Orig("LAUNCH WINDOW CLOSED, PROFESSOR.")
-	lineNoOrders  = script.Orig("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.") // the key hint once the window shuts
+	lineNoOrders  = script.Orig("NO ORDERS ACCEPTED, PROFESSOR.") // the key hint once the window shuts
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
 	lineBadPct    = script.Orig("PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.")
 	lineOrderHelp = script.Orig(
@@ -159,14 +161,15 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, lineScenarios, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineMenu, promptMenu, lineMenuAgain, lineBrief, lineHold, lineMeasured, lineAssessed, lineAccepted, lineListed, lineContinue, promptAnother, lineAnother, lineAfter, lineEnemyDead, lineOwnDead,
+	lineOwnSide, lineListHint, lineOnFile, lineMenu, promptMenu, lineMenuAgain, lineBrief, lineOpen, lineHold, lineMeasured,
+	lineAssessed, lineAccepted, lineListed, lineContinue, promptAnother, lineAnother, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
-	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineEggs, lineShut, lineNoOrders, lineBadOrder,
-	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
-	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
-	lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll, lineReactHold, lineReactSilosFull,
-	lineReactPartial, lineReactAuto, lineReactShut, lineReactAutoStrike, lineReactQuiet, lineReactEmpty,
-	lineReactFinal, lineWindow, filmList,
+	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineEggTitle, lineEggs, lineShut,
+	lineNoOrders, lineBadOrder, lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead,
+	lineMilitary, lineCivilian, lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator,
+	lineOrdersHint, lineLastOrders, lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll,
+	lineReactHold, lineReactSilosFull, lineReactPartial, lineReactAuto, lineReactShut, lineReactAutoStrike, lineReactQuiet,
+	lineReactEmpty, lineReactFinal, lineWindow, filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

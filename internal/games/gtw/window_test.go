@@ -90,7 +90,7 @@ func TestLaunchWindowPaced(t *testing.T) {
 		t.Errorf("a second into the window: %#v", outs)
 	}
 	outs = g.Handle(proto.TickEvent{Dt: time.Second})
-	if len(outs) == 0 || outs[0] != proto.Output(proto.AwaitKeys{Hint: "NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY."}) ||
+	if len(outs) == 0 || outs[0] != proto.Output(proto.AwaitKeys{Hint: "NO ORDERS ACCEPTED, PROFESSOR."}) ||
 		slices.ContainsFunc(outs, isPrompt) || !slices.Contains(outs, proto.Output(proto.Animate{Every: frameEvery})) {
 		t.Errorf("the window shut: %#v", outs)
 	}

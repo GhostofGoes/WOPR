@@ -37,7 +37,7 @@ func TestLaunchWindowScreens(t *testing.T) {
 	d.press("50 5") // an order still being typed when the window shuts
 	until(" WINDOW 1 SECOND\n")
 	inspectScreen(t, "the last second", d)
-	until("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.")
+	until("NO ORDERS ACCEPTED, PROFESSOR.")
 	if !d.m.keyMode || strings.Contains(d.screen(), "STRIKE 2 OF 3") {
 		t.Errorf("the strike prompt stays after the window shut:\n%s", d.screen())
 	}

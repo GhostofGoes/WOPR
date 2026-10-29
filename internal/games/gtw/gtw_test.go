@@ -590,8 +590,9 @@ var eggs = []struct {
 }
 
 // `wopr --seed 1962 gtw` meets a hair trigger, and WOPR says so once, as the board opens and
-// before the first strike's lines. Any other seed, the film's and the eggs' neighbours among
-// them, meets the measured response and hears no doctrine named.
+// before the first strike's lines, and the board's title names it for the whole war. Any other
+// seed, the film's and the eggs' neighbours among them, meets the measured response and hears
+// no doctrine named.
 func TestEasterEggDoctrines(t *testing.T) {
 	t.Parallel()
 	for _, egg := range eggs {
@@ -602,6 +603,18 @@ func TestEasterEggDoctrines(t *testing.T) {
 		}
 		if wide := g.Wide(80); len(wide) > 0 {
 			t.Errorf("seed %d: lines wider than 80: %q", egg.seed, wide)
+		}
+	}
+	for _, egg := range eggs { // the title, which stays when the strip line scrolls away
+		b := gtw.New()
+		g := testkit.Game(t, b, info, "", egg.seed)
+		g.Type("2").Type("Las Vegas").Type("")
+		c := proto.NewCanvas(80, 19)
+		b.View(c)
+		seed, name, _ := strings.Cut(strings.TrimPrefix(egg.line, "WOPR IS USING DOCTRINE "), " (")
+		title := " GLOBAL THERMONUCLEAR WAR: " + seed + " " + strings.TrimSuffix(name, ")") + " "
+		if top, _, _ := strings.Cut(c.String(), "\n"); !strings.Contains(top, title) {
+			t.Errorf("seed %d: the board's title is not %q:\n%s", egg.seed, title, c.String())
 		}
 	}
 	for _, seed := range []uint64{1983, 0, 1, 7, 1961, 1963, 1964, 1966, 1973, 1975} {
