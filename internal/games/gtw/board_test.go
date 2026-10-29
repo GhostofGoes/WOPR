@@ -13,8 +13,8 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
-// Every track lands before its stage ends, whatever is ordered, and the board's rows fit
-// the 19 the Full layout leaves with the front panel.
+// Every track lands before its stage ends, whatever is ordered, and no false alarm's track
+// lands at all. The board's rows fit the 19 the Full layout leaves with the front panel.
 func TestTracksLandInTime(t *testing.T) {
 	t.Parallel()
 	if footRow > 18 {
@@ -40,6 +40,11 @@ func TestTracksLandInTime(t *testing.T) {
 			for _, m := range g.missiles {
 				if m.launch+flightFrames[m.kind] > end {
 					t.Fatalf("stage %d: %+v lands after frame %d", g.stage, m, end)
+				}
+			}
+			for _, m := range g.phantom { // a false alarm's never lands
+				if g.frame >= m.launch+flightFrames[m.kind] {
+					t.Fatalf("stage %d, frame %d: the false alarm's %+v has landed", g.stage, g.frame, m)
 				}
 			}
 			g.Handle(proto.TickEvent{Dt: 100 * time.Millisecond})

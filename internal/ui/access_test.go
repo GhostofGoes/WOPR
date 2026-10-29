@@ -117,6 +117,12 @@ func sweepCases() []sweepCase {
 		slug := e.Info.Slug
 		cases = append(cases, sweepCase{slug, func(o Options) Options { o.Play = slug; return o }, playbooks[slug], false})
 	}
+	// GTW on seed 9, whose war has a false alarm before strike 2 (gtw's TestFalseAlarmSeeds):
+	// held, so the sweeps see its tracks in flight at the prompt, and the board once it clears.
+	cases = append(cases, sweepCase{"global-thermonuclear-war false alarm", func(o Options) Options {
+		o.Play, o.Seed = "global-thermonuclear-war", 9
+		return o
+	}, playbook{inputs: []string{"2", "Las Vegas", "", "hold", "", "", ""}, want: []string{">|", "HUMAN RESOURCES"}}, false})
 	return cases
 }
 

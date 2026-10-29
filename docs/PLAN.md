@@ -1022,7 +1022,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. The false alarm: its seeds, held and fired at, and the exchange it leaves as it was. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1061,7 +1061,26 @@ no verdict of their own.
       - **Each strike prints exactly three strip lines**: your launch, WOPR's launch on warning with the new
         DEFCON, and the cost (`LOST ON THE GROUND: … WARHEADS ON CITIES: …`). DEFCON falls one rung at
         WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
-        DEFCON line shows within about half a second of the rung moving.
+        DEFCON line shows within about half a second of the rung moving. A false alarm adds its own lines.
+      - **The false alarm** (the film's theme, a simulation that looks like a real attack, and the
+        Serpukhov-15 incident of 26 September 1983). About one war in three has one sensor error.
+        - The seed alone decides it, on a stream of its own (`proto.DomainGame|1` of GTW's seed). The side
+          and the targets do not change it. Session seeds 9, 10 and 24 have it before strike 2, and 6, 8
+          and 13 before strike 3 (`wopr --seed 9 gtw`, the first game of the session). Seeds 1 to 5, 7 and
+          the film's 1983 have none (`TestFalseAlarmSeeds`). Movie mode's war never has one (`Film`).
+        - It comes after the strike before it lands, in place of the next strike prompt. WOPR's ICBMs seem
+          to leave, as many as a held strike would bring (`war.sensed`), on the same tracks. WOPR reports
+          them as it reports a real launch (`ENEMY LAUNCH DETECTED. ICBM 250. DEFCON 3.`), DEFCON falls a
+          rung, and the forces table counts them. Then the strike prompt comes, with the tracks half way.
+          The satellites of 1983 saw ICBMs only, so the report names no SLBMs.
+        - An order that launches nothing (`HOLD`, `0`, or a percentage of nothing held) waits. The tracks
+          vanish just before the first would land: `SENSOR ERROR. NO ENEMY LAUNCH. DEFCON 4.` DEFCON goes
+          back up the rung, and the same strike prompt comes again.
+        - An order that launches anything (Enter, the war plan, included) is real. Your strike leaves, the
+          false tracks vanish with `SENSOR ERROR. NO ENEMY LAUNCH. YOU FIRED FIRST, PROFESSOR.`, and WOPR
+          answers your strike as it answers any. DEFCON does not go back up.
+        - The exchange does not change. Either way the war ends as it would without the alarm, for the
+          same orders (`TestFalseAlarmLeavesTheExchange`), so `TestNoAllocationWins` still covers it.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
@@ -1102,7 +1121,8 @@ no verdict of their own.
           in under it. Both sides' dots are on the same columns, so that where the routes meet one covers
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
-        kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
+        kill ratios, the climax, with about 18 s of flight in all. A war with a false alarm adds about
+        2 s, and Enter at it fires. Under `Instant` each line returns
         everything up to the next prompt. Nothing waits for a tick.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
@@ -2607,6 +2627,8 @@ ENEMY LAUNCH DETECTED. #. DEFCON #.
 ENEMY BOMBERS INBOUND. DEFCON #.
 FULL-SCALE ENEMY ATTACK. #. DEFCON 1.
 LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.
+SENSOR ERROR. NO ENEMY LAUNCH. DEFCON #.
+SENSOR ERROR. NO ENEMY LAUNCH. YOU FIRED FIRST, PROFESSOR.
 STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
 ORDER NOT RECOGNISED. TYPE HELP.

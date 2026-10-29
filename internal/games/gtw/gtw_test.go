@@ -682,3 +682,107 @@ func TestBoardFits(t *testing.T) {
 		t.Errorf("the forces table, your side first, ends at the right edge:\n%s", c.String())
 	}
 }
+
+// falseAlarm reports the DEFCON a session seed's false alarm goes back up to when held: 4
+// before strike 2, 3 before strike 3, or 0 for a war without one.
+func falseAlarm(t *testing.T, seed uint64) int {
+	t.Helper()
+	g, _ := war(t, seed, "hold", "hold", "hold")
+	_, after, ok := strings.Cut(g.Transcript(), "SENSOR ERROR. NO ENEMY LAUNCH. DEFCON ")
+	if !ok {
+		return 0
+	}
+	return int(after[0] - '0')
+}
+
+// The false alarm comes on about one war in three, from the seed alone. The seeds here are
+// the ones to try it with (wopr --seed 9 gtw, the first game of the session). The film's
+// seed, 1983, has none: the film_scenario golden and movie mode's checks against the game
+// play the film's war. So do the seeds other tests here read exact lines from.
+func TestFalseAlarmSeeds(t *testing.T) {
+	t.Parallel()
+	for seed, want := range map[uint64]int{
+		9: 4, 10: 4, 24: 4, 6: 3, 8: 3, 13: 3,
+		1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 7: 0, 1983: 0,
+	} {
+		if got := falseAlarm(t, seed); got != want {
+			t.Errorf("seed %d: the false alarm clears at DEFCON %d, want %d", seed, got, want)
+		}
+	}
+	alarms := 0
+	for seed := range uint64(90) {
+		if falseAlarm(t, 100+seed) != 0 {
+			alarms++
+		}
+	}
+	if alarms < 20 || alarms > 40 {
+		t.Errorf("%d wars in 90 have a false alarm, want about 30", alarms)
+	}
+}
+
+// Held, a false alarm's tracks never land: WOPR reports the sensor error, DEFCON goes back
+// up a rung and the same strike is asked again, on a board with no track in flight.
+func TestFalseAlarmHeld(t *testing.T) {
+	t.Parallel()
+	g, prompts := war(t, 9, "hold", "", "")
+	want := "ENEMY LAUNCH DETECTED. ICBM 250. DEFCON 3.\n" +
+		"STRIKE 2 OF 3 [50 50 100]: hold\n\n" +
+		"NO LAUNCH ORDERED.\n" +
+		"SENSOR ERROR. NO ENEMY LAUNCH. DEFCON 4.\n" +
+		"STRIKE 2 OF 3 [50 50 100]: \n\n" +
+		"STRIKE 2 LAUNCHED."
+	if !g.Contains(want) || len(prompts) != 2 {
+		t.Errorf("held, the false alarm:\n%s", g.Transcript())
+	}
+	var ladder []string
+	for _, l := range strings.Split(g.Transcript(), "\n") {
+		if i := strings.LastIndex(l, "DEFCON "); i >= 0 && !strings.HasPrefix(l, "STRIKE ") {
+			ladder = append(ladder, l[i:])
+		}
+	}
+	if got := strings.Join(ladder, " "); got != "DEFCON 4. DEFCON 3. DEFCON 4. DEFCON 3. DEFCON 2. DEFCON 1." {
+		t.Errorf("the ladder reads %q", got)
+	}
+
+	// On the board (Env.Seed 6 has the false alarm before strike 2), only the false alarm's
+	// incoming tracks fly at its prompt, and none once it clears.
+	b := gtw.New()
+	b.Start(proto.Env{Seed: 6, Instant: true, Width: 80, Height: 19})
+	b.Handle(proto.LineEvent{Text: "2"})
+	b.Handle(proto.LineEvent{Text: "Las Vegas, Seattle"})
+	if outs := b.Handle(proto.LineEvent{Text: ""}); !strings.Contains(fmt.Sprint(outs), "ICBM 250. DEFCON 3.") {
+		t.Fatalf("no false alarm before strike 2: %v", outs)
+	}
+	inside := func() string { // the map box's rows, without its edges
+		c := proto.NewCanvas(80, 19)
+		b.View(c)
+		var rows []string
+		for _, r := range strings.Split(c.String(), "\n")[1:15] {
+			rows = append(rows, r[1:72])
+		}
+		return strings.Join(rows, "\n")
+	}
+	if m := inside(); !strings.Contains(m, "*") || strings.Contains(m, "+") {
+		t.Errorf("at the false alarm only its incoming tracks fly:\n%s", m)
+	}
+	b.Handle(proto.LineEvent{Text: "hold"})
+	if m := inside(); strings.ContainsAny(m, "*+") {
+		t.Errorf("the false alarm's tracks stay after it clears:\n%s", m)
+	}
+}
+
+// Fired at, a false alarm makes the strike real: your order launches, WOPR reports that it
+// was a sensor error and that you fired first, then answers you as it answers any strike.
+// DEFCON does not go back up.
+func TestFalseAlarmFired(t *testing.T) {
+	t.Parallel()
+	g, _ := war(t, 6, "", "")
+	want := "ENEMY LAUNCH DETECTED. ICBM 224. DEFCON 2.\n" +
+		"STRIKE 3 OF 3 [100 100 100]: \n\n" +
+		"STRIKE 3 LAUNCHED. SLBM 225.\n" +
+		"SENSOR ERROR. NO ENEMY LAUNCH. YOU FIRED FIRST, PROFESSOR.\n" +
+		"ENEMY LAUNCH DETECTED. ICBM 224. DEFCON 2.\n"
+	if !g.Contains(want) || g.Contains("SENSOR ERROR. NO ENEMY LAUNCH. DEFCON") {
+		t.Errorf("fired at, the false alarm:\n%s", g.Transcript())
+	}
+}

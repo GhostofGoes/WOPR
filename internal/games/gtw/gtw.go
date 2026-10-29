@@ -42,7 +42,18 @@ const (
 	blinkFrame   = 250 * time.Millisecond // keeps the DEFCON 1 blink running on still screens
 	codeEvery    = 16                     // climax frames per cracked character
 	codeHeldBack = 3                      // characters the climax never cracks: the ending does
+
+	// The false alarm's frames (falseAlarm), in the stage before the strike it comes before,
+	// and in that strike if you fire at it.
+	alarmLaunch = strikeEnd + 6    // its tracks leave, and WOPR reports the launch
+	alarmAsk    = alarmLaunch + 12 // the strike prompt, with the tracks half way
+	alarmClear  = alarmLaunch + 22 // held, it clears just before its first track would land (24)
+	alarmFired  = 4                // fired at, it clears this many frames into your strike
 )
+
+// alarmStream is the stream of GTW's seed that decides the false alarm, apart from stream 0,
+// so that the side and the targets do not change it.
+const alarmStream = proto.DomainGame | 1
 
 type phase uint8
 
@@ -74,7 +85,8 @@ type missile struct {
 	launch   int  // frame within its stage
 	ours     bool // the player's (outgoing, '+') or WOPR's (incoming, '*')
 	kind     kind
-	id       int // serial over the whole war, for its trajectory heading
+	id       int  // serial over the whole war, for its trajectory heading
+	phantom  bool // a false alarm's: it never lands
 }
 
 // Game is GTW as a proto.Program.
@@ -85,9 +97,12 @@ type Game struct {
 	side     assets.Side    // the player's
 	targets  []assets.Place // the enemy's, as listed
 	war      *war
-	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
-	rep      report // the current stage, resolved when it starts
-	auto     bool   // AUTO: WOPR orders every remaining strike
+	stage    int       // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
+	alarm    int       // the strike a false alarm comes before; 0 for none, or once it has come
+	phantom  []missile // the false alarm's tracks, while they are on the board
+	sensed   salvo     // the launch the false alarm reports
+	rep      report    // the current stage, resolved when it starts
+	auto     bool      // AUTO: WOPR orders every remaining strike
 	missiles []missile
 	impacts  []missile // every earlier stage's tracks, drawn as impacts only
 	traj     []missile // your latest missiles, newest first, for the trajectory table
@@ -139,6 +154,9 @@ func fill(l script.L, args ...any) string {
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	g.rng = proto.NewRand(env.Seed, 0)
+	if !g.film { // the film's war has no false alarm
+		g.alarm = falseAlarm(env.Seed)
+	}
 	return []proto.Output{
 		proto.SetLayout{Layout: proto.LayoutConsole},
 		table(append(sideChoice(), "")),
@@ -289,6 +307,16 @@ func enemyOf(s assets.Side) assets.Side {
 	return assets.US
 }
 
+// falseAlarm is the strike whose prompt a false alarm comes before, on about one war in three:
+// strike 2 or 3, or 0 for none.
+func falseAlarm(seed uint64) int {
+	r := proto.NewRand(seed, alarmStream)
+	if r.IntN(3) != 0 {
+		return 0
+	}
+	return 2 + r.IntN(2)
+}
+
 // openBoard opens the big board at DEFCON 5 and launches the first strike: the war plan's,
 // at the listed targets, with no order asked (the film's first strike).
 func (g *Game) openBoard() []proto.Output {
@@ -316,10 +344,13 @@ func (g *Game) play() []proto.Output {
 	return []proto.Output{proto.Animate{Every: frame}}
 }
 
-// onOrder reads a strike order: help and refusals ask again; anything else fires.
+// onOrder reads a strike order: help and refusals ask again; anything else fires. At a false
+// alarm, an order that launches nothing waits it out, and one that launches anything starts
+// the strike for real.
 func (g *Game) onOrder(input string) []proto.Output {
 	again := proto.Prompt{Text: g.strikePrompt()}
 	alloc, k, refusal := parseOrder(input, warPlan[g.stage])
+	var outs []proto.Output
 	switch k {
 	case orderHelp:
 		return []proto.Output{table(lineOrderHelp.Texts()), again}
@@ -327,10 +358,18 @@ func (g *Game) onOrder(input string) []proto.Output {
 		return []proto.Output{say(refusal), again}
 	case orderAuto:
 		g.auto = true
-		outs := append([]proto.Output{say(lineAuto)}, g.begin(alloc)...)
+		outs = append(outs, say(lineAuto))
+	}
+	if g.phantom != nil && !g.war.fires(alloc) {
+		g.phase = flight
+		outs = append(outs, strip(lineLaunch[2].Text))
 		return append(outs, g.play()...)
 	}
-	return append(g.begin(alloc), g.play()...)
+	for i := range g.phantom { // the tracks fly on into your strike, from where they are
+		g.phantom[i].launch -= g.frame
+	}
+	outs = append(outs, g.begin(alloc)...)
+	return append(outs, g.play()...)
 }
 
 func (g *Game) strikePrompt() string {
@@ -393,7 +432,7 @@ func (g *Game) lay() {
 	nation := [2]assets.Side{you: g.side, wopr: enemyOf(g.side)}
 	final := g.stage > strikes
 	for s := range 2 {
-		ours, defender := s == you, 1-s
+		ours := s == you
 		at := 0
 		if s == wopr && !final {
 			at = detectAt
@@ -404,14 +443,7 @@ func (g *Game) lay() {
 			at += spacing
 		}
 		f, silo := g.rep.fire[s], assets.Silos[nation[s]]
-		for j := range tracks(f.ICBMSilo, 250, 2) {
-			to := assets.Silos[nation[defender]]
-			to.X = min(to.X+2*j, assets.MapW-1) // the second track hits further along the field
-			add(kindICBM, silo, to)
-		}
-		for range tracks(f.ICBMCity, 250, 2) {
-			add(kindICBM, silo, g.aim(s))
-		}
+		g.icbms(s, f, add)
 		for range tracks(f.SLBM, 50, 3) {
 			to := g.aim(s)
 			add(kindSLBM, seaLaunch(nation[s], to), to)
@@ -431,6 +463,21 @@ func (g *Game) lay() {
 	}
 	traj = append(traj, g.traj...)
 	g.traj = traj[:min(len(traj), trajCols)]
+}
+
+// icbms lays side s's ICBM tracks for f with add: at the other side's silo field, then at
+// cities.
+func (g *Game) icbms(s int, f salvo, add func(k kind, from, to assets.Place)) {
+	nation := [2]assets.Side{you: g.side, wopr: enemyOf(g.side)}
+	silo := assets.Silos[nation[s]]
+	for j := range tracks(f.ICBMSilo, 250, 2) {
+		to := assets.Silos[nation[1-s]]
+		to.X = min(to.X+2*j, assets.MapW-1) // the second track hits further along the field
+		add(kindICBM, silo, to)
+	}
+	for range tracks(f.ICBMCity, 250, 2) {
+		add(kindICBM, silo, g.aim(s))
+	}
 }
 
 // tracks is how many tracks n weapons draw: one per per, at most most.
@@ -509,6 +556,9 @@ func (g *Game) run(n int) []proto.Output {
 // step advances one frame and plays the beat it reaches.
 func (g *Game) step() []proto.Output {
 	g.frame++
+	if g.phantom != nil && g.frame > strikeEnd {
+		return g.alarmStep()
+	}
 	if g.stage > strikes {
 		if g.frame < finalEnd {
 			return nil
@@ -524,6 +574,11 @@ func (g *Game) step() []proto.Output {
 		return []proto.Output{strip(g.cost()), say(lineAssessed), keep, proto.Prompt{}}
 	}
 	switch g.frame {
+	case alarmFired:
+		if g.phantom != nil { // you fired at a false alarm
+			g.phantom = nil
+			return []proto.Output{strip(lineSensorError[1].Text)}
+		}
 	case detectAt:
 		g.defcon = 5 - g.stage
 		f := g.rep.fire[wopr]
@@ -534,12 +589,59 @@ func (g *Game) step() []proto.Output {
 	case strikeEnd:
 		outs := []proto.Output{strip(g.cost())}
 		if g.stage < strikes && !g.auto && g.war.launchable() {
+			if g.alarmed() {
+				return outs // the prompt comes with the false alarm
+			}
 			g.phase = orders
 			return append(outs, proto.Animate{}, proto.Prompt{Text: g.strikePrompt()})
 		}
 		return outs
 	case strikeEnd + holdFrames: // the next stage needs no order
 		return g.begin(warPlan[min(g.stage, strikes-1)])
+	}
+	return nil
+}
+
+// alarmed reports whether a false alarm comes before the strike prompt due, and lays its
+// tracks if so. It comes once a war, and only while WOPR's ICBMs could answer a held strike.
+func (g *Game) alarmed() bool {
+	if g.alarm != g.stage+1 {
+		return false
+	}
+	g.alarm = 0
+	g.sensed = g.war.sensed(g.stage + 1)
+	if g.sensed.missiles() == 0 {
+		return false
+	}
+	// The tracks fly where a held strike's ICBMs would: aimed as the next real ones will be.
+	aimed, at := g.aimWOPR, alarmLaunch
+	g.icbms(wopr, g.sensed, func(k kind, from, to assets.Place) {
+		g.phantom = append(g.phantom, missile{from: from, to: to, launch: at, kind: k, phantom: true})
+		at += spacing
+	})
+	g.aimWOPR = aimed
+	return true
+}
+
+// alarmStep plays a false alarm's beats after a strike has landed (docs/PLAN.md §6.2): WOPR
+// reports a launch as it would a real one, and the next strike prompt comes with the tracks in
+// flight. Held, the tracks vanish before the first would land, DEFCON goes back up a rung, and
+// the same strike prompt comes again.
+func (g *Game) alarmStep() []proto.Output {
+	switch g.frame {
+	case alarmLaunch: // the strike that landed leaves only its impacts, as a new one's start does
+		g.impacts = append(g.impacts, g.missiles...)
+		g.missiles = nil
+		g.defcon = 4 - g.stage
+		return []proto.Output{strip(fill(lineDetect[0], g.list(g.sensed), g.defcon))}
+	case alarmAsk:
+		g.phase = orders
+		return []proto.Output{proto.Animate{}, proto.Prompt{Text: g.strikePrompt()}}
+	case alarmClear:
+		g.phantom = nil
+		g.defcon = 5 - g.stage
+		g.phase = orders // never under AUTO, whose war plan always launches something
+		return []proto.Output{strip(fill(lineSensorError[0], g.defcon)), proto.Animate{}, proto.Prompt{Text: g.strikePrompt()}}
 	}
 	return nil
 }

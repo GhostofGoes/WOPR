@@ -56,6 +56,9 @@ var (
 		"ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.",
 	)
 
+	// The false alarm's end (docs/PLAN.md §6.2): held, with the DEFCON it goes back to, or fired at.
+	lineSensorError = script.Orig("SENSOR ERROR. NO ENEMY LAUNCH. DEFCON #.", "SENSOR ERROR. NO ENEMY LAUNCH. YOU FIRED FIRST, PROFESSOR.")
+
 	// Board text. The film's big board has no title: the box carries the game's name, and the
 	// war room's DEFCON sign gives the indicator its label.
 	lineTitle      = script.Orig("GLOBAL THERMONUCLEAR WAR")
@@ -91,7 +94,7 @@ var Lines = []script.Ls{
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
-	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
+	lineSensorError, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, filmList,
 }

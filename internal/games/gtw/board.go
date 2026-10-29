@@ -68,6 +68,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	for _, m := range g.missiles {
 		g.drawTrack(c, m)
 	}
+	for _, m := range g.phantom {
+		g.drawTrack(c, m)
+	}
 	// Impacts go over every track, so no launch hides where a strike landed: a city beside
 	// a silo field (Novosibirsk) would otherwise lose its X under the field's launches.
 	// Earlier stages leave only their impacts.
@@ -126,8 +129,17 @@ func trackStyle(m missile) proto.Style {
 }
 
 // shown is the forces the table shows: each launch counts when it leaves, losses when the
-// stage lands.
+// stage lands. A false alarm's launch counts too, while its tracks are in flight.
 func (g *Game) shown() [2]forces {
+	f := g.staged()
+	if len(g.phantom) > 0 && g.frame >= g.phantom[0].launch {
+		f[wopr].ICBM -= g.sensed.missiles()
+	}
+	return f
+}
+
+// staged is the forces the table shows from the stage's report.
+func (g *Game) staged() [2]forces {
 	if g.war == nil {
 		return startForces
 	}
@@ -216,10 +228,10 @@ func (g *Game) drawTrack(c *proto.Canvas, m missile) {
 }
 
 // progress is how far along its flight a track is drawn, 0 to 1 (1 has landed), or -1
-// before its launch.
+// before its launch. A false alarm's tracks stay where they are while the prompt is up.
 func (g *Game) progress(m missile) float64 {
 	switch {
-	case g.phase != flight:
+	case g.phase != flight && !m.phantom:
 		return 1
 	case g.frame < m.launch:
 		return -1

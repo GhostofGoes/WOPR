@@ -93,6 +93,19 @@ func (w *war) launchable() bool {
 // fired is what pct percent of held comes to: floored, and all of it at 100.
 func fired(held, pct int) int { return held * pct / 100 }
 
+// fires reports whether order launches anything of what the player holds.
+func (w *war) fires(order [3]int) bool {
+	f := w.f[you]
+	return fired(f.ICBM, order[sysICBM])+fired(f.SLBM, order[sysSLBM])+fired(f.Ground, order[sysBombers]) > 0
+}
+
+// sensed is the launch a false alarm reports before strike k: the ICBMs WOPR would fire if
+// you held, aimed as it would aim them. w is a copy, so the war itself is untouched.
+func (w war) sensed(k int) salvo {
+	f := w.strike(k, [3]int{}).fire[wopr]
+	return salvo{ICBMSilo: f.ICBMSilo, ICBMCity: f.ICBMCity}
+}
+
 // strike resolves strike k (1..3) for the player's order, in percent.
 func (w *war) strike(k int, order [3]int) report {
 	r := report{stage: k}
