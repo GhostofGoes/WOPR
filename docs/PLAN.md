@@ -1066,18 +1066,32 @@ no verdict of their own.
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
       - **Doctrine** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness).
-        - You hold ICBM 1000, SLBM 600 and bombers 300. WOPR holds a quarter more (1250, 750, 375).
-        - WOPR answers each launch on warning with a quarter more of each missile, never under its ladder
-          (ICBM 125/250/375, SLBM 50/100/150). It keeps 300 SLBMs at sea until DEFCON 1 and sends its
-          bombers airborne at the first strike.
+        - Each nation has its own forces, in the spirit of 1983's. The United States holds ICBM 900, SLBM
+          700 and bombers 300: lighter in ICBMs, heavier at sea and in the air. The Soviet Union holds ICBM
+          1300, SLBM 500 and bombers 150. A launcher puts one warhead on a city, so the American SLBMs, which
+          carried more warheads, outnumber the Soviet ones. WOPR plays the other nation, with a quarter more
+          of each: 1625, 625 and 188 against the United States, 1125, 875 and 375 against the Soviet Union.
+        - WOPR answers each launch on warning with a quarter more of each missile, never under its ladder.
+          The ladder scales with WOPR's stock: at strike k it fires at least k tenths of its starting ICBMs
+          and k fifteenths of its starting SLBMs. It keeps two fifths of its SLBMs at sea until DEFCON 1 and
+          sends its bombers airborne at the first strike.
         - ICBMs go first at the enemy's silos, enough to empty them. Each destroys four in five of the ICBMs
           held there. The rest go at cities. SLBMs go at cities.
         - Grounded bombers lose a third whenever missiles land on their side, and all of them at DEFCON 1.
           A quarter of arriving bombers are shot down.
-      - **It cannot be won.** Your cities take at least 1,144 warheads and the other side's at most 750,
-        whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent). Your
-        ICBM orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn
-        WOPR's on your cities. Your SLBMs and bombers alone decide what lands on theirs.
+      - **It cannot be won.** Whatever you order, your cities take at least 1,366 warheads as the United
+        States and 1,157 as the Soviet Union. The other side's take at most 850 and 776
+        (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent, for each side). Your ICBM
+        orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn WOPR's
+        on your cities. Your SLBMs, your bombers and the ICBMs that WOPR's silos cannot absorb decide what
+        lands on theirs.
+      - **The two sides play differently** (`TestSidesPlayDifferently`). As the United States, the ICBMs
+        you fire turn WOPR's on your cities, and none of yours reaches its cities: holding them all is best.
+        On Enter at every strike your cities take 1,467 warheads and theirs 850. As the Soviet Union, your
+        ICBMs outnumber the American silo field. Half of them at strike 2 cost your cities nothing, and
+        then neither does the rest at strike 3. Those the silos cannot absorb hit your targets. The most
+        damage comes from about a third at strike 2 and the rest at strike 3. On Enter at every strike (the
+        film path) your cities take 1,157 and theirs 575.
       - **The kill ratios come from** the exchange.
         - BOMBERS and ICBM are the counts destroyed.
         - The other rows scale with damage `1000·hits/(hits+400)` per mille, times one seeded noise factor
@@ -2611,8 +2625,8 @@ STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
 ORDER NOT RECOGNISED. TYPE HELP.
 PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
-ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
-HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
+ICBMS HIT ENEMY SILOS FIRST, THEN YOUR TARGETS. SLBMS HIT YOUR TARGETS.
+BOMBERS ARRIVE AT DEFCON 1. HELD ICBMS AND BOMBERS CAN BE LOST ON THE GROUND.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 ```
 
@@ -2620,8 +2634,8 @@ The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `
 `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
 `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
-force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
-figures.
+force levels (in the spirit of 1983's: the United States heavier at sea and in the air, the Soviet Union in
+ICBMs), the doctrine and the kill-ratio formulas are original game design, not film or historical figures.
 
 ---
 

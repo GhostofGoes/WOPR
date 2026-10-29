@@ -98,8 +98,8 @@ board uses Matthew Thomas's ASCII world map. See [NOTICE.md](NOTICE.md).
 - **Global Thermonuclear War** (`gtw`): choose a side and list the enemy's cities to target. An empty line
   ends the list, and `list` shows the targets on file. The first strike flies at once. Then order two more
   strikes as percentages of your ICBMs, SLBMs and bombers (`50 25 100`, `icbm 50`, `hold`) while DEFCON
-  falls to 1. Enter carries out WOPR's war plan, and `auto` hands it the rest. WOPR holds a quarter more of
-  everything. Then try to stop it.
+  falls to 1. Enter carries out WOPR's war plan, and `auto` hands it the rest. The two nations have different
+  forces, and WOPR holds a quarter more of each of the other nation's. Then try to stop it.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`. `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump
   twice). The `-` and `x` are optional (`c3d4`, `c3e5g7`). Jumps are compulsory.

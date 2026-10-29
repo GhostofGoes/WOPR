@@ -302,7 +302,7 @@ func (g *Game) openBoard() []proto.Output {
 	for i := range g.noise {
 		g.noise[i] = 97 + g.rng.IntN(7)
 	}
-	g.war = newWar()
+	g.war = newWar(g.side)
 	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
 	outs = append(outs, g.begin(warPlan[0])...)
 	return append(outs, g.play()...)

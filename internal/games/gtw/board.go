@@ -128,9 +128,6 @@ func trackStyle(m missile) proto.Style {
 // shown is the forces the table shows: each launch counts when it leaves, losses when the
 // stage lands.
 func (g *Game) shown() [2]forces {
-	if g.war == nil {
-		return startForces
-	}
 	snap := g.rep.snap
 	switch {
 	case g.phase != flight:

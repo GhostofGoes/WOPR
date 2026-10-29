@@ -29,8 +29,8 @@ cursor: col 20, row 18
 |           . _..::__:  ++++********************+     _,.__             |  +---+
 |   _.___ _ _<_>`!(._+++***** /      ***************_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,'+****  \  / {)      /********* ******           mt-2_|  +---+
-|  \_.:--. +     ****)`^-. "'       , [_/**  ****X   *X*X        __,/-' | >| 4 |
-| '"'     ++X   X*  "    _L        oD_,--'X    ***        )     /. (|   |  +---+
+|  \_.:--. +     ****+`^-. "'       , [_/**  ****X   *X*X        __,/-' | >| 4 |
+| '"'     ++X   X*X "    _L        oD_,--'X    ***        )     /. (|   |  +---+
 |         +++++        ,'          _)_.\\._<> 6  *X          _,' /  '   |  | 3 |
 |          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
@@ -41,12 +41,12 @@ cursor: col 20, row 18
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 932 534     C-SSN8-A 319 667            USSR      500   450   200     0
-       B 487 038            B 558 572            US        737   562     0   375
+A-SS20-A 932 534     C-SS20-A 319 667            USSR      650   375   100     0
+       B 487 038            B 558 572            US        458   718     0   375
 ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
-FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
-ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
-LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
+FIRST STRIKE LAUNCHED. ICBM 325  SLBM 125.
+ENEMY LAUNCH DETECTED. ICBM 407  SLBM 157  BOMBERS 375. DEFCON 4.
+LOST ON THE GROUND: USSR 375  US 260. WARHEADS ON CITIES: USSR 157  US 125.
 STRIKE 2 OF 3 [50 50 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 27, row 22
@@ -55,8 +55,8 @@ cursor: col 27, row 22
 |           . _..::__:  ++++********************+     _,.__             |  +---+
 |   _.___ _ _<_>`!(._+++***** /      ***************_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,'+****  \  / {)      /********* ******           mt-2_|  +---+
-|  \_.:--. +     ****)`^-. "'       , [_/**  ****X   *X*X        __,/-' | >| 4 |
-| '"'     ++X   X*  "    _L        oD_,--'X    ***        )     /. (|   |  +---+
+|  \_.:--. +     ****+`^-. "'       , [_/**  ****X   *X*X        __,/-' | >| 4 |
+| '"'     ++X   X*X "    _L        oD_,--'X    ***        )     /. (|   |  +---+
 |         +++++        ,'          _)_.\\._<> 6  *X          _,' /  '   |  | 3 |
 |          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
@@ -67,11 +67,11 @@ cursor: col 27, row 22
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 932 534     C-SSN8-A 319 667            USSR      500   450   200     0
-       B 487 038            B 558 572            US        737   562     0   375
+A-SS20-A 932 534     C-SS20-A 319 667            USSR      650   375   100     0
+       B 487 038            B 558 572            US        458   718     0   375
 ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
-ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
-HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
+ICBMS HIT ENEMY SILOS FIRST, THEN YOUR TARGETS. SLBMS HIT YOUR TARGETS.
+BOMBERS ARRIVE AT DEFCON 1. HELD ICBMS AND BOMBERS CAN BE LOST ON THE GROUND.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 STRIKE 2 OF 3 [50 50 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
@@ -81,8 +81,8 @@ cursor: col 27, row 22
 |           . _..::__:  ++++********************+     _,.__             |  +---+
 |   _.___ _ _<_>`!(._+++***** /      ******  *******_/  '  '-._.---.-.__|  | 5 |
 |>.{     " " `-==,'+****  \  / {)      / ***>_,-' ******           mt-2_|  +---+
-|  \_.:--. +     ****)`^-. "'       , [_/(*XX    X   *X*X   **** __,/-' |  | 4 |
-| '"'     ++X   X*  "    _L        oD_,--'X              X***  ******   |  +---+
+|  \_.:--. +     ****+`^-. "'       , [_/(*XX    X   *X*X   **** __,/-' |  | 4 |
+| '"'     ++X   X*X "    _L        oD_,--'X              X***  ******   |  +---+
 |         +++++        ,'          _)_.\\._<> 6   X          _,' /  **  | >| 3 |
 |          `. X       /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
@@ -93,23 +93,23 @@ cursor: col 27, row 22
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 655 931     C-SSN8-A 696 073            USSR        0   225     0   200
-       B 301 836            B 814 740            US        224   300     0   375
+A-SS20-A 696 073     C-SS20-A 929 559            USSR        0   188     0   100
+       B 814 740            B 247 071            US          0   484     0   375
 LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.
-STRIKE 2 LAUNCHED. ICBM 250  SLBM 225  BOMBERS 200.
-ENEMY LAUNCH DETECTED. ICBM 313  SLBM 262. DEFCON 3.
-LOST ON THE GROUND: USSR 250  US 200. WARHEADS ON CITIES: USSR 262  US 225.
+STRIKE 2 LAUNCHED. ICBM 325  SLBM 187  BOMBERS 100.
+ENEMY LAUNCH DETECTED. ICBM 407  SLBM 234. DEFCON 3.
+LOST ON THE GROUND: USSR 325  US 51. WARHEADS ON CITIES: USSR 234  US 187.
 STRIKE 3 OF 3 [100 100 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 29, row 22
 ==== big board: DEFCON 1, assessed (80x24) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
-|   _.___ _ _<_>`!(._`.`-.    /      ************_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+****               mt-2_|  +---+
-|  \_.:--.       `._ )`+-+ +'    * *,*[*/**XX* * X  *XX X        __,/-' |  | 4 |
-| '"'     \ X   X* *"* * *L* * * * oD_,--'XXX            X)     /. (|   |  +---+
-|          |     + +   ,'          _)_.\\._<> 6   X          _,' /  '   |  | 3 |
+|           . _..::__:  ,-"-"._        |7       ,     _,.__             |  +---+
+|   _.___ _ _<_>`!(._`.`-.    /      ****._     `_ ,_/  '  '-._.---.-.__|  | 5 |
+|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'    * *,*[*/*XXX* * X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* * * * oD_,--'XXX            X)     *****   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
 |          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
@@ -119,11 +119,11 @@ cursor: col 29, row 22
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+A-SSN8-A 251 974     C-SSN8-A 467 519            USSR        0     0     0     0
+       B 981 902            B 954 851            US          0     0     0     0
 OUTGOING +   INCOMING *   IMPACT X
-FULL-SCALE ENEMY ATTACK. SLBM 300  BOMBERS 375. DEFCON 1.
-LOST ON THE GROUND: USSR 0  US 0. WARHEADS ON CITIES: USSR 582  US 150.
+FULL-SCALE ENEMY ATTACK. SLBM 350  BOMBERS 375. DEFCON 1.
+LOST ON THE GROUND: USSR 0  US 0. WARHEADS ON CITIES: USSR 632  US 75.
 STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
@@ -133,21 +133,21 @@ cursor: col 0, row 22
 UNITS DESTROYED            MILITARY FORCES            UNITS DESTROYED
 --------------------------------------------------------------------------------
       24%                  BOMBERS                          50%
-      32%                  ICBM'S                           50%
-      26%                  ATTACK SUBS                      30%
-      60%                  TACTICAL AIRCRAFT                70%
-      47%                  GROUND FORCES                    54%
+      27%                  ICBM'S                           50%
+      25%                  ATTACK SUBS                      30%
+      57%                  TACTICAL AIRCRAFT                69%
+      44%                  GROUND FORCES                    53%
 UNITS DESTROYED            CIVILIAN ASSETS            UNITS DESTROYED
 --------------------------------------------------------------------------------
-      62%                  HOUSING                          72%
-      64%                  COMMUNICATIONS                   75%
-      58%                  TRANSPORTATION                   68%
-      51%                  FOOD STOCKPILES                  59%
-      65%                  HOSPITALS                        76%
+      56%                  HOUSING                          71%
+      58%                  COMMUNICATIONS                   73%
+      53%                  TRANSPORTATION                   66%
+      46%                  FOOD STOCKPILES                  58%
+      59%                  HOSPITALS                        75%
 UNITED STATES              HUMAN RESOURCES            SOVIET UNION
 --------------------------------------------------------------------------------
- 41 MILLION                NON-FATAL INJURED           48 MILLION
- 73 MILLION                POPULATION DEATHS           85 MILLION
+ 37 MILLION                NON-FATAL INJURED           47 MILLION
+ 66 MILLION                POPULATION DEATHS           83 MILLION
 
 
 PRESS ENTER TO CONTINUE.
@@ -156,12 +156,12 @@ PRESS ENTER TO CONTINUE.
 cursor: col 0, row 22
 ==== climax (80x24) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
-|   _.___ _ _<_>`!(._`.`-.    /      ************_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+****               mt-2_|  +---+
-|  \_.:--.       `._ )`+-+ +'    * *,*[*/**XX* * X  *XX X        __,/-' |  | 4 |
-| '"'     \ X   X* *"* * *L* * * * oD_,--'XXX            X)     /. (|   |  +---+
-|          |     + +   ,'          _)_.\\._<> 6   X          _,' /  '   |  | 3 |
+|           . _..::__:  ,-"-"._        |7       ,     _,.__             |  +---+
+|   _.___ _ _<_>`!(._`.`-.    /      ****._     `_ ,_/  '  '-._.---.-.__|  | 5 |
+|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'    * *,*[*/*XXX* * X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* * * * oD_,--'XXX            X)     *****   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
 |          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
@@ -171,8 +171,8 @@ cursor: col 0, row 22
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+A-SSN8-A 251 974     C-SSN8-A 467 519            USSR        0     0     0     0
+       B 981 902            B 954 851            US          0     0     0     0
                            LAUNCH CODE: CPE 1704 ___
 
 
@@ -208,12 +208,12 @@ GLOBAL THERMONUCLEAR WAR
 cursor: col 0, row 22
 ==== climax: the board again (80x24) ====
 +---------------------- GLOBAL THERMONUCLEAR WAR -----------------------+ DEFCON
-|           . _..::__:  ,-"-"._        **       ,     _,.__             |  +---+
-|   _.___ _ _<_>`!(._`.`-.    /      ************_ ,_/  '  '-._.---.-.__|  | 5 |
-|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+****               mt-2_|  +---+
-|  \_.:--.       `._ )`+-+ +'    * *,*[*/**XX* * X  *XX X        __,/-' |  | 4 |
-| '"'     \ X   X* *"* * *L* * * * oD_,--'XXX            X)     /. (|   |  +---+
-|          |     + +   ,'          _)_.\\._<> 6   X          _,' /  '   |  | 3 |
+|           . _..::__:  ,-"-"._        |7       ,     _,.__             |  +---+
+|   _.___ _ _<_>`!(._`.`-.    /      ****._     `_ ,_/  '  '-._.---.-.__|  | 5 |
+|>.{     " " `-==,',._\{  \  + +)+ + + +***X>+,+'+`+               mt-2_|  +---+
+|  \_.:--.       `._ )`+-+ +'    * *,*[*/*XXX* * X   XX X        __,/-' |  | 4 |
+| '"'     \ X   X*X*"* * *L* * * * oD_,--'XXX            X)     *****   |  +---+
+|          |     + +   ,'          _)_.\\._<> 6   X          _,X*/  **  |  | 3 |
 |          `. X+      /           [_/_'` `"(                <'}  )      |  +---+
 |           \\    .-. )           /   `-'"..' `:.#          _)  '       |  | 2 |
 |    `        \  (  `(           /         `:\  > \  ,-^.  /' '         |  +---+
@@ -223,8 +223,8 @@ cursor: col 0, row 22
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
 TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+A-SSN8-A 251 974     C-SSN8-A 467 519            USSR        0     0     0     0
+       B 981 902            B 954 851            US          0     0     0     0
                            LAUNCH CODE: CPE 1704 ___
 
 ** IDENTIFICATION NOT RECOGNIZED **

@@ -202,10 +202,10 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	}
 	enter := []stage{
 		{"strike 2 orders", "", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
-			"A-MM3-A", "C-C4-A", "US        500   450   200     0", "USSR      737   562     0   375",
+			"A-MM3-A", "C-C4-A", "US        450   525   200     0", "USSR     1163   406     0   188",
 		}, 4},
 		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
-			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
+			"A-MM3-A", "C-C4-A", "US          0   263     0   200", "USSR      658   250     0   188",
 		}, 3},
 		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
 			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
@@ -507,7 +507,7 @@ func TestNothingLeftAndAutoSkipPrompts(t *testing.T) {
 		t.Errorf("auto:\n%s", g.Transcript())
 	}
 	g, _ = war(t, 1, "hold")
-	if !g.Contains("NO LAUNCH ORDERED.\nENEMY LAUNCH DETECTED. ICBM 250  SLBM 100. DEFCON 3.") {
+	if !g.Contains("NO LAUNCH ORDERED.\nENEMY LAUNCH DETECTED. ICBM 225  SLBM 116. DEFCON 3.") {
 		t.Errorf("hold:\n%s", g.Transcript())
 	}
 }
@@ -522,7 +522,7 @@ func TestRefusalsKeepTheStrike(t *testing.T) {
 		"icbm 150":    "PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.",
 		"tic-tac-toe": "** ROUTINE MUST COMPLETE BEFORE RESET **",
 		"gtw":         "** GAME ROUTINE RUNNING **",
-		"?":           "ICBMS HIT ENEMY SILOS.",
+		"?":           "ICBMS HIT ENEMY SILOS FIRST, THEN YOUR TARGETS.",
 	} {
 		before := len(g.Transcript())
 		g.Type(in)

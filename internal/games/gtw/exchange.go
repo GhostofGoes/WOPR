@@ -3,6 +3,8 @@
 
 package gtw
 
+import "github.com/GhostofGoes/WOPR/internal/assets"
+
 // The exchange model (docs/PLAN.md §6.2): three strikes and WOPR's DEFCON 1 attack, in
 // integer arithmetic. It knows nothing of the board or the protocol; gtw.go plays a
 // report out frame by frame. The force levels and rules are original game design.
@@ -22,25 +24,30 @@ const (
 
 const (
 	strikes   = 3   // ordered strikes; WOPR's DEFCON 1 attack follows
-	reserve   = 300 // SLBMs WOPR keeps at sea until DEFCON 1
 	kPerMil   = 400 // damage = 1000*hits/(hits+kPerMil), in per mille
 	shootDown = 4   // one arriving bomber in shootDown is shot down
 	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up
 )
 
-// The forces each side starts with: the machine always has a quarter more.
-var startForces = [2]forces{
-	you:  {ICBM: 1000, SLBM: 600, Ground: 300},
-	wopr: {ICBM: 1250, SLBM: 750, Ground: 375},
+// The forces each nation starts with, in the spirit of 1983's: the United States lighter in
+// ICBMs and heavier at sea and in the air, the Soviet Union heavy in ICBMs. A launcher here
+// puts one warhead on a city, so the American SLBM force, which carried more warheads,
+// outweighs the larger Soviet fleet.
+var nationForces = map[assets.Side]forces{
+	assets.US:   {ICBM: 900, SLBM: 700, Ground: 300},
+	assets.USSR: {ICBM: 1300, SLBM: 500, Ground: 150},
 }
 
 // warPlan is the Enter default for each strike, in percent of ICBM, SLBM and bombers.
 var warPlan = [strikes][3]int{{25, 25, 0}, {50, 50, 100}, {100, 100, 100}}
 
-// WOPR's ladder floors: the least it fires in each strike while it has the stock.
-var (
-	ladderICBM = [strikes]int{125, 250, 375}
-	ladderSLBM = [strikes]int{50, 100, 150}
+// WOPR's ladder scales with its stock: in strike k it fires at least k/ladderICBM of its
+// starting ICBMs and k/ladderSLBM of its starting SLBMs while it has them, and it keeps
+// reserveFifths fifths of its starting SLBMs at sea until DEFCON 1.
+const (
+	ladderICBM    = 10
+	ladderSLBM    = 15
+	reserveFifths = 2
 )
 
 // forces are launchers: ICBMs in silos, SLBMs at sea, bombers on the ground and airborne.
@@ -73,11 +80,21 @@ type report struct {
 
 // war is the whole exchange.
 type war struct {
-	f [2]forces
-	t [2]tally
+	start [2]forces // what each side started with
+	f     [2]forces
+	t     [2]tally
 }
 
-func newWar() *war { return &war{f: startForces} }
+// newWar sets up the war for a player who took side: that nation's forces, against the
+// other nation's with a quarter more of each, so the machine always holds more in all.
+func newWar(side assets.Side) *war {
+	e := nationForces[enemyOf(side)]
+	start := [2]forces{
+		you:  nationForces[side],
+		wopr: {ICBM: quarterMore(e.ICBM), SLBM: quarterMore(e.SLBM), Ground: quarterMore(e.Ground)},
+	}
+	return &war{start: start, f: start}
+}
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
 
@@ -109,8 +126,10 @@ func (w *war) strike(k int, order [3]int) report {
 
 	// 2. WOPR launches on warning: a quarter more than you fired, never under its ladder,
 	// and never into its SLBM reserve. Its bombers all take off at the first strike.
-	wI := min(e.ICBM, max(ladderICBM[k-1], quarterMore(pI)))
-	wS := min(max(e.SLBM-reserve, 0), max(ladderSLBM[k-1], quarterMore(pS)))
+	st := w.start[wopr]
+	reserve := reserveFifths * st.SLBM / 5
+	wI := min(e.ICBM, max(st.ICBM*k/ladderICBM, quarterMore(pI)))
+	wS := min(max(e.SLBM-reserve, 0), max(st.SLBM*k/ladderSLBM, quarterMore(pS)))
 	r.fire[wopr].ICBMSilo = min(wI, quarterMore(p.ICBM))
 	r.fire[wopr].ICBMCity = wI - r.fire[wopr].ICBMSilo
 	r.fire[wopr].SLBM = wS
@@ -190,7 +209,7 @@ var ratioScale = [10]int{40, 95, 70, 95, 100, 90, 80, 100, 65, 110}
 func (w *war) ratios(noise [10]int) [2][12]int {
 	var out [2][12]int
 	for s := range 2 {
-		t, f := w.t[s], startForces[s]
+		t, f := w.t[s], w.start[s]
 		c, m := damage(t.Cities), damage(t.SiloHits)
 		out[s][0] = min(100*t.BombersLost/f.Ground, 100)
 		out[s][1] = min(100*t.ICBMLost/f.ICBM, 100)

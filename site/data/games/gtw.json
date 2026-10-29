@@ -4,7 +4,7 @@
   "name": "Global Thermonuclear War",
   "launch": "wopr gtw",
   "aliases": ["15", "global-thermonuclear-war", "thermonuclear"],
-  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
+  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. The two nations have different forces. The United States has more submarine missiles and bombers, and the Soviet Union more ICBMs. WOPR plays the other nation with a quarter more of each, so the war cannot be won.",
   "howToPlay": [
     "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION.",
     "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
@@ -29,9 +29,10 @@
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
   ],
   "tips": [
-    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
-    "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
-    "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
+    "The war cannot be won. Whatever you order, your cities take more warheads than the enemy's. As the United States, your cities take at least 1,366 and the enemy's at most 850. As the Soviet Union, the counts are 1,157 and 776. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
+    "The FORCES table shows each side's weapons. Each side plays differently, so try both.",
+    "As the United States, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead. Your SLBMs and bombers decide what lands on the enemy's cities.",
+    "As the Soviet Union, you have more ICBMs than the American silos can take. Try 40 50 100 at strike 2, then Enter at strike 3. Your cities take no more warheads than if you held your ICBMs. The ICBMs that the silos cannot take hit your targets.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
   ],
   "screenshots": [
