@@ -1061,22 +1061,23 @@ no verdict of their own.
       - **Each strike prints exactly three strip lines**: your launch, WOPR's launch on warning with the new
         DEFCON, and the cost (`LOST ON THE GROUND: … WARHEADS ON CITIES: …`). DEFCON falls one rung at
         WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
-        DEFCON line shows within about half a second of the rung moving. A false alarm adds its own lines.
+        DEFCON line shows within about half a second of the rung moving. A false alarm adds its own lines,
+        and moves DEFCON down a rung and back up when you hold.
       - **The false alarm** (the film's theme, a simulation that looks like a real attack, and the
         Serpukhov-15 incident of 26 September 1983). About one war in three has one sensor error.
         - The seed alone decides it, on a stream of its own (`proto.DomainGame|1` of GTW's seed). The side
           and the targets do not change it. Session seeds 9, 10 and 24 have it before strike 2, and 6, 8
           and 13 before strike 3 (`wopr --seed 9 gtw`, the first game of the session). Seeds 1 to 5, 7 and
           the film's 1983 have none (`TestFalseAlarmSeeds`). Movie mode's war never has one (`Film`).
-        - It comes after the strike before it lands, in place of the next strike prompt. WOPR's ICBMs seem
-          to leave, as many as a held strike would bring (`war.sensed`), on the same tracks. WOPR reports
+        - It comes once the strike before it has landed, in place of the next strike prompt. WOPR's ICBMs
+          seem to leave, as many as a held strike would bring (`war.sensed`), on the same tracks. WOPR reports
           them as it reports a real launch (`ENEMY LAUNCH DETECTED. ICBM 250. DEFCON 3.`), DEFCON falls a
           rung, and the forces table counts them. Then the strike prompt comes, with the tracks half way.
           The satellites of 1983 saw ICBMs only, so the report names no SLBMs.
         - An order that launches nothing (`HOLD`, `0`, or a percentage of nothing held) waits. The tracks
           vanish just before the first would land: `SENSOR ERROR. NO ENEMY LAUNCH. DEFCON 4.` DEFCON goes
           back up the rung, and the same strike prompt comes again.
-        - An order that launches anything (Enter, the war plan, included) is real. Your strike leaves, the
+        - An order that launches anything (Enter too, since it fires the war plan) is real. Your strike leaves, the
           false tracks vanish with `SENSOR ERROR. NO ENEMY LAUNCH. YOU FIRED FIRST, PROFESSOR.`, and WOPR
           answers your strike as it answers any. DEFCON does not go back up.
         - The exchange does not change. Either way the war ends as it would without the alarm, for the
@@ -1122,8 +1123,8 @@ no verdict of their own.
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. A war with a false alarm adds about
-        2 s, and Enter at it fires. Under `Instant` each line returns
-        everything up to the next prompt. Nothing waits for a tick.
+        2 s, and Enter at it fires. Under `Instant` each line returns everything up to the next prompt.
+        Nothing waits for a tick.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |

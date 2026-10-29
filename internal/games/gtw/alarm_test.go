@@ -101,6 +101,12 @@ func TestFalseAlarmLooksReal(t *testing.T) {
 			t.Errorf("a false alarm's track is %+v, %.2f of the way", m, g.progress(m))
 		}
 	}
+	for _, in := range []string{"help", "maybe"} { // asked again, with the tracks where they were
+		g.Handle(proto.LineEvent{Text: in})
+		if g.phase != orders || len(g.phantom) == 0 {
+			t.Errorf("%q at the false alarm: phase %d, %d tracks", in, g.phase, len(g.phantom))
+		}
+	}
 	g.Handle(proto.LineEvent{Text: "hold"})
 	if g.phantom != nil || g.defcon != 4 || g.shown()[wopr].ICBM != g.war.f[wopr].ICBM {
 		t.Errorf("held, the false alarm stays: %d tracks, DEFCON %d", len(g.phantom), g.defcon)

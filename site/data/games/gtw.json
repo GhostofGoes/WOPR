@@ -32,7 +32,7 @@
     "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
     "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
-    "Do not trust every detection. A launch that WOPR reports before a strike prompt can be a sensor error. Answer HOLD and wait. If the tracks vanish, DEFCON goes back up and the same strike prompt comes again. Enter fires the war plan at the false alarm, and then you have started that strike.",
+    "Do not trust every detection. A launch that WOPR reports before a strike prompt can be a sensor error. Answer HOLD and wait. If the tracks vanish, DEFCON goes back up and the same strike prompt comes again. If you press Enter, you fire the war plan at the false alarm, and WOPR answers your strike.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
   ],
   "screenshots": [

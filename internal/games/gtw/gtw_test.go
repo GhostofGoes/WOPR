@@ -683,9 +683,9 @@ func TestBoardFits(t *testing.T) {
 	}
 }
 
-// falseAlarm reports the DEFCON a session seed's false alarm goes back up to when held: 4
+// alarmDefcon reports the DEFCON a session seed's false alarm goes back up to when held: 4
 // before strike 2, 3 before strike 3, or 0 for a war without one.
-func falseAlarm(t *testing.T, seed uint64) int {
+func alarmDefcon(t *testing.T, seed uint64) int {
 	t.Helper()
 	g, _ := war(t, seed, "hold", "hold", "hold")
 	_, after, ok := strings.Cut(g.Transcript(), "SENSOR ERROR. NO ENEMY LAUNCH. DEFCON ")
@@ -705,13 +705,13 @@ func TestFalseAlarmSeeds(t *testing.T) {
 		9: 4, 10: 4, 24: 4, 6: 3, 8: 3, 13: 3,
 		1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 7: 0, 1983: 0,
 	} {
-		if got := falseAlarm(t, seed); got != want {
+		if got := alarmDefcon(t, seed); got != want {
 			t.Errorf("seed %d: the false alarm clears at DEFCON %d, want %d", seed, got, want)
 		}
 	}
 	alarms := 0
 	for seed := range uint64(90) {
-		if falseAlarm(t, 100+seed) != 0 {
+		if alarmDefcon(t, 100+seed) != 0 {
 			alarms++
 		}
 	}
