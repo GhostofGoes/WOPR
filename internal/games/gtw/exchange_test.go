@@ -29,7 +29,8 @@ func check(t *testing.T, side assets.Side, w *war, rs []report, label string) {
 	t.Helper()
 	b := bounds[side]
 	if you, them := w.t[you].Cities, w.t[wopr].Cities; you < b[0] || them > b[1] || you <= them {
-		t.Fatalf("%s as %d: warheads on cities: yours %d (want >= %d), WOPR's side %d (want <= %d)", label, side, you, b[0], them, b[1])
+		t.Fatalf("%s as %d: warheads on cities: yours %d (want >= %d, and more than WOPR's side), WOPR's side %d (want <= %d)",
+			label, side, you, b[0], them, b[1])
 	}
 	fired := [2]salvo{}
 	for _, r := range rs {
@@ -110,7 +111,7 @@ func TestNoAllocationWins(t *testing.T) {
 // tallies on it and on HOLD, HOLD for both sides.
 func TestDoctrine(t *testing.T) {
 	t.Parallel()
-	w, rs := wage(assets.USSR, warPlan[1], warPlan[2])
+	_, rs := wage(assets.USSR, warPlan[1], warPlan[2])
 	type stage struct{ you, wopr salvo }
 	want := []stage{
 		{salvo{ICBMSilo: 325, SLBM: 125}, salvo{ICBMSilo: 407, SLBM: 157, Bombers: 375}},
@@ -122,9 +123,6 @@ func TestDoctrine(t *testing.T) {
 		if r.fire[you] != want[i].you || r.fire[wopr] != want[i].wopr {
 			t.Errorf("stage %d: you %+v, WOPR %+v; want %+v", i+1, r.fire[you], r.fire[wopr], want[i])
 		}
-	}
-	if got := w.t; got != [2]tally{{1157, 814, 650, 75}, {575, 650, 311, 93}} {
-		t.Errorf("film path tallies %+v", got)
 	}
 	tallies := map[assets.Side][2][2]tally{ // the war plan's, then HOLD, HOLD's
 		assets.US:   {{{1467, 564, 450, 150}, {850, 450, 360, 47}}, {{1366, 845, 675, 300}, {175, 225, 180, 47}}},
@@ -148,7 +146,7 @@ func TestSidesPlayDifferently(t *testing.T) {
 	t.Parallel()
 	// best is the ICBM orders, at strikes 2 and 3, that leave the narrowest gap between the
 	// warheads on your cities and on theirs, with SLBMs held for strike 3 and bombers sent
-	// at strike 2.
+	// at strike 2. leak reports whether any of those orders put your ICBMs on cities.
 	best := func(side assets.Side) (i2, i3 int, leak bool) {
 		gap := 1 << 30
 		for a := 0; a <= 100; a++ {
