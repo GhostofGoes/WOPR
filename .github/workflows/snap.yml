@@ -5,10 +5,9 @@
 # wopr: every program it packs is one that checksums.txt lists. Called by ci.yml and release.yml
 # after their build job. The snaps, snaps, stay a workflow artifact and never become release files.
 #
-# The publish job uploads them to the Snap Store's stable channel. It runs only when the caller
-# passes publish (release.yml, for a tag) and the repository variable SNAP_PUBLISH is true, in the
-# snap-store environment, which holds SNAPCRAFT_STORE_CREDENTIALS and admits only v* tags. Until the
-# owner registers the name and sets these up (AGENTS.md), it is skipped.
+# It never publishes. release.yml's snap-attest and snap-publish jobs attest the snaps and upload them
+# to the Snap Store. They are not here: a called workflow's job may not ask for more permissions
+# than its caller grants, and ci.yml, which fork pull requests run, grants only contents: read.
 name: Snap
 
 on:
@@ -22,21 +21,11 @@ on:
         description: GoReleaser's .Version of the build (1.2.3, or 1.2.4-snapshot.abc1234)
         required: true
         type: string
-      publish:
-        description: Upload the snaps to the Snap Store's stable channel, if the repository variable SNAP_PUBLISH is also true
-        required: false
-        type: boolean
-        default: false
       stage-artifact:
         description: Name of the staged artifact with the end-to-end tests (stage/linux_<arch>/e2e.test); empty skips them
         required: false
         type: string
         default: ""
-    secrets:
-      # An environment secret reaches a called workflow only when the caller passes it.
-      SNAPCRAFT_STORE_CREDENTIALS:
-        description: The snap-store environment's login from snapcraft export-login; only publish reads it
-        required: false
 
 permissions: {}
 
@@ -130,42 +119,3 @@ jobs:
         env:
           E2E: ${{ inputs.stage-artifact != '' && format('stage/linux_{0}/e2e.test', matrix.arch) || '' }}
         run: packaging/snap/test-snap.sh "build/snaps/wopr_${VERSION}_${ARCH}.snap" "${VERSION}" ${E2E:+"${E2E}"}
-
-  publish:
-    name: publish (Snap Store)
-    needs: [build, test]
-    if: inputs.publish && vars.SNAP_PUBLISH == 'true'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    environment: snap-store
-    permissions: {}
-    env:
-      VERSION: ${{ inputs.version }}
-    steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: snaps
-          path: build/snaps
-      # snapcraft follows its 9.x track, so a new major version cannot change the upload unannounced.
-      # snap-confine starts it too, so / must be owned by root, as in the build job.
-      - name: Install snapcraft
-        run: |
-          if [[ "$(stat -c %u:%g /)" != 0:0 ]]; then sudo chown root:root /; fi
-          sudo snap install snapcraft --classic --channel=9.x/stable
-      # Each upload waits for the store's automated review, the one the build job ran, then releases
-      # the revision to stable. A strictly confined snap with no plugs needs no person's review.
-      - name: Upload and release to stable
-        env:
-          SNAPCRAFT_STORE_CREDENTIALS: ${{ secrets.SNAPCRAFT_STORE_CREDENTIALS }}
-        run: |
-          if [[ ! "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::only a release's version, X.Y.Z, goes to the Snap Store, not ${VERSION}"
-            exit 1
-          fi
-          if [[ -z "${SNAPCRAFT_STORE_CREDENTIALS}" ]]; then
-            echo "::error::SNAPCRAFT_STORE_CREDENTIALS is empty: set it in the snap-store environment, and pass it from the caller"
-            exit 1
-          fi
-          for arch in amd64 arm64; do
-            snapcraft upload --release=stable "build/snaps/wopr_${VERSION}_${arch}.snap"
-          done

@@ -261,8 +261,9 @@ PR (AR-1, IM-4).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, debuglog, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
+cmd/wopr             → ., cli, ui, version, debuglog, scrubenv, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
+internal/scrubenv    → os only                        clears the libraries' TMUX, TEA_TRACE, TEA_DEBUG, UV_DEBUG in init (§8)
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
@@ -1599,9 +1600,12 @@ classified address it leads to.
     pty under its confinement with the e2e tests, and removes it, on `ubuntu-24.04` and `ubuntu-24.04-arm`.
     The snaps are the workflow artifact `snaps` (kept 90 days for a tag), never release files, and not
     checked for reproducibility.
-  - `snap.yml`'s publish job uploads them to the stable channel, in the `snap-store` environment that holds
-    `SNAPCRAFT_STORE_CREDENTIALS` (AGENTS.md). It runs only for a `v*` tag, after the GitHub release is
-    published, and when the repository variable `SNAP_PUBLISH` is `true`. It stays off until the owner
+  - `release.yml`'s `snap-attest` job attests both snaps, so a snap from the Store can be checked with
+    `gh attestation verify`. Its `snap-publish` job then uploads them to the stable channel, in the
+    `snap-store` environment that holds `SNAPCRAFT_STORE_CREDENTIALS` (AGENTS.md). Both run only for a `v*`
+    tag, after the GitHub release is published, and when the repository variable `SNAP_PUBLISH` is `true`.
+    They are not in `snap.yml`: a called workflow's job may not ask for more permissions than its caller
+    grants, and `ci.yml`, which fork pull requests run, grants only `contents: read`. It stays off until the owner
     registers the name `wopr` and configures these.
   - App Center's own Open button starts a program without a terminal (from snapd's and App Center's source,
     untested). So the docs will send users to the app grid instead. With `WOPR_DEBUG`, the snap's log is
@@ -1631,11 +1635,33 @@ classified address it leads to.
     hand). It never follows a symbolic link at the log's directory or file (`O_NOFOLLOW` on Unix). On Unix
     it also refuses a directory another user owns. So a cache directory in a shared place
     (`XDG_CACHE_HOME=/tmp`, say) cannot make wopr append to some other file.
+  - A log larger than 5 MB (`debuglog.MaxSize`) is emptied when wopr opens it, so old sessions cannot
+    fill the disk. One session writes only a few lines.
   - If there is no cache dir, wopr disables logging and writes a note to stderr.
   - wopr prints the path on exit.
   - wopr's debug log never holds typed input.
-  - Bubble Tea's own `TEA_TRACE` and `TEA_DEBUG`, if the user sets them, record raw input and output or write a
-    panic log into the CWD. wopr never sets them. They are the user's own developer switches (SL-7).
+  - The libraries' own switches are off (`internal/scrubenv`, review of 2026-10-26). Bubble Tea's `TEA_TRACE`
+    records raw input and output to any path, `TEA_DEBUG` writes a panic log into the CWD, Ultraviolet's
+    `UV_DEBUG` appends a log to any path, and `TMUX` makes colorprofile run `tmux info` from the PATH. Lip
+    Gloss detects the colour profile in a package-level variable, so `scrubenv` unsets all four in `init`:
+    its path sorts before every `github.com/charmbracelet` package, and it imports only `os`, so Go
+    initialises it first. The e2e test `TestScrubenvInitsBeforeLipGloss` checks that order in Go's init
+    trace (`GODEBUG=inittrace=1`). `scrubenv.InTmux` keeps whether `TMUX` was set, and inside tmux the UI
+    forces the true-colour profile unless `NO_COLOR` is set (`ui.Options.Tmux`). tmux itself converts RGB
+    colours for an outer terminal without true colour, so nothing needs to ask it.
+    `TestLibrarySwitchesStayOff` puts a fake `tmux` first on the PATH and checks that nothing runs or is
+    written, and that the debug log names the TrueColor profile. `TestTmux` runs wopr in a private tmux
+    server (its own socket, no configuration file) and plays the opening through `send-keys`. It reads
+    24-bit colour from `capture-pane -e` (tmux's own `TERM` gives only 256), and none with `NO_COLOR`.
+    `TestTmuxConvertsForOuterTerminal` attaches a client with `TERM=xterm-256color` and checks that tmux
+    sends it 256-colour codes only.
+  - `TERM` must be a terminfo name: letters, digits and `+-._`, not starting with a dot
+    (`scrubenv.ValidTerm`). Otherwise `scrubenv` removes it. The terminfo loader that colorprofile uses
+    reads the whole file at `<dir>/<first letter>/<TERM>`, so a path in `TERM` made it read any file, and
+    `/dev/zero` without end, before `main` ran (review of 2026-10-29). `TestTermPathIgnored` checks it.
+    The review found nothing else to remove: the other variables the libraries read (`COLORTERM`,
+    `TERM_PROGRAM`, `TERMINFO`, `LANG` and the like) only choose colours, widths and keys, and the Go
+    runtime's own (`GODEBUG`, `GOTRACEBACK`) are read before any package's `init`.
 
 ---
 
@@ -1710,8 +1736,9 @@ classified address it leads to.
     assertion is weaker (exit code and final screen), because conhost owns the console modes.
   - The `build` job cross-compiles the test per target (`internal/tools/stage`) and ships it next to each
     binary, so smoke runners need no Go toolchain. The same test also runs against the program inside the
-    Mac app (`macos.yml`) and against the confined snap (`snap.yml`, all but `TestDebugLog`). A snap's
-    `/tmp` is its own, so `test-snap.sh` checks the log where the snap writes it.
+    Mac app (`macos.yml`) and against the confined snap (`snap.yml`, all but `TestDebugLog` and
+    `TestLibrarySwitchesStayOff`). A snap's `/tmp` is its own, so those tests could not see what it writes.
+    `test-snap.sh` checks the log where the snap writes it.
 - **Race.**
   - CI runs `go test -race ./...` on `ubuntu-24.04` and `macos-26`, and plain `go test ./...` on
     `windows-2025`. The race detector there would need a C toolchain on the runner.
@@ -1810,7 +1837,7 @@ classified address it leads to.
   `prek-version: 0.5.5` (T-11), and GoReleaser and gitleaks via `go tool`.
 - `permissions: {}` at the top of each workflow. Each job grants only what it needs.
 - `persist-credentials: false` on every checkout. The workflows use only `GITHUB_TOKEN`, except
-  `SNAPCRAFT_STORE_CREDENTIALS`, a secret of the `snap-store` environment that only `snap.yml`'s publish job
+  `SNAPCRAFT_STORE_CREDENTIALS`, a secret of the `snap-store` environment that only `release.yml`'s `snap-publish` job
   reads (§12). No `pull_request_target`.
 - **`actions/setup-go`** uses `go-version-file: go.mod`, and **nothing sets `GOTOOLCHAIN` before it** (D-6).
   setup-go exports `GOTOOLCHAIN=local` itself after installing 1.27.2. `archtest` asserts the exact toolchain in
@@ -1868,10 +1895,10 @@ its run tests exactly the tree the squash merge produces.
 | `secrets` | `ubuntu-24.04` | `fetch-depth: 0`. gitleaks over the checked-out history (`--log-opts="--full-history HEAD"`): the pushed branch, or a fork's PR merged with `main`. It does not scan every branch, so a stale branch cannot block every PR. `--no-color`, because gitleaks colours its log even into a pipe, so the step fails on any `ERR` line. The step also fails on `0 commits scanned` and on a finding (S-1, SL-2). |
 | `test` | `ubuntu-24.04`, `macos-26`, `windows-2025` | `go test -race ./...` (plain on Windows). On Linux: every fuzz target for 10 s, with crashing inputs uploaded on failure. Also on Linux: `govulncheck`, the third-party-notices check (§12), the manual-page check (§13), the icons check (`icons -check`, §8) and branch coverage (`branchcov -min 80`: gobco on each package that ships, with the table in the job summary). |
 | `build` | `ubuntu-24.04` | `relnotes -snapshot`: the release notes for this commit's snapshot version, as `release.yml` makes them for a tag (§11.3). The job shows them in its summary and passes them to GoReleaser in `WOPR_NOTES_DIR`. On a release pull request, whose version is batched but not yet tagged, they are that version's notes under the snapshot's version. So the packages' first changelog entry is still their own. A GoReleaser snapshot of all six targets and the four Linux packages. The size gate. `internal/tools/stage -archives -assets dist/release`, which copies each binary to `stage/<os>_<arch>/` and cross-compiles the e2e test next to it. It puts the `.deb` and `.rpm` beside the Linux ones, checks every archive's and package's contents, and collects the release files (below). The job uploads one download per platform: the bare binary as-is, named after its file, such as `wopr_<version>_linux_amd64`. `archive: false`, so it is not zipped. It loses its executable bit, and `--licenses` prints its notices. These downloads are kept 30 days on `main`, 7 on other branches and 3 on PRs (B-13). The job also uploads a `smoke-bundle` of every staged binary and e2e test (1 day). This run's smoke jobs use it, and so do the end-to-end tests of its `macos` and `snap` jobs. Its `version` output is GoReleaser's `.Version` from `dist/metadata.json`, which names the installers and snaps. For them it uploads `dist/release` as `release-dist` (1 day), unsigned, as `release.yml`'s build does. Then it signs the Linux packages with a throwaway key made for the run (`packaging/sign-packages.sh`, §8). It stages the signed `.rpm`, the `.deb.asc` and the public key beside the Linux binaries, for the smoke jobs' signature checks. |
-| `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact and `chmod +x`es the files (artifacts lose the executable bit). It runs the e2e test against the binary with `-test.timeout=5m`, with no Go toolchain. Every target has a native runner, so none is skipped. On the two Linux runners it also installs the `.deb` with `sudo apt-get install`. It finds `wopr` on the `PATH` that `/etc/environment` gives every login, and its manual page with `man -w`. It checks that the changelog starts with the package's version, and removes the package. It also installs the `.rpm` with `dnf` in a Fedora 44 container pinned by digest, with no network (it needs no other package). It runs `rpm -V`, checks the changelog, and removes the package. With CI's throwaway key staged, `gpgv` checks the `.deb.asc` before the install. In that case the `.rpm` must also pass `rpm -K` with the key imported, and it installs with `localpkg_gpgcheck=1`. The release's stage is unsigned, so there `rpm -K --nosignature` checks its digests. Both check the menu entry (whose `Exec` names the package's program), the icon in every size and the AppStream metadata. The Ubuntu step checks them with `desktop-file-validate`, `appstreamcli` and `appstream-util` (apt installs those first). The Fedora step checks that the package owns the icon directories. Neither removal may leave a file behind. |
+| `smoke` | `ubuntu-24.04`, `ubuntu-24.04-arm`, `macos-26`, `macos-26-intel`, `windows-2025`, `windows-11-arm` | The reusable `smoke.yml`, with one input, `artifact` (CR-3). It downloads the staged artifact and `chmod +x`es the files (artifacts lose the executable bit). It runs the e2e test against the binary with `-test.timeout=5m`, with no Go toolchain. On Linux it installs `tmux` first and sets `WOPR_E2E_TMUX=1`, so the tmux tests run there and cannot skip. Every target has a native runner, so none is skipped. On the two Linux runners it also installs the `.deb` with `sudo apt-get install`. It finds `wopr` on the `PATH` that `/etc/environment` gives every login, and its manual page with `man -w`. It checks that the changelog starts with the package's version, and removes the package. It also installs the `.rpm` with `dnf` in a Fedora 44 container pinned by digest, with no network (it needs no other package). It runs `rpm -V`, checks the changelog, and removes the package. With CI's throwaway key staged, `gpgv` checks the `.deb.asc` before the install. In that case the `.rpm` must also pass `rpm -K` with the key imported, and it installs with `localpkg_gpgcheck=1`. The release's stage is unsigned, so there `rpm -K --nosignature` checks its digests. Both check the menu entry (whose `Exec` names the package's program), the icon in every size and the AppStream metadata. The Ubuntu step checks them with `desktop-file-validate`, `appstreamcli` and `appstream-util` (apt installs those with `tmux`). The Fedora step checks that the package owns the icon directories. Neither removal may leave a file behind. |
 | `windows` | `windows-2025`, with smoke on it and `windows-11-arm` | The reusable `windows.yml` with `release-dist` and the version. It checks the files it packs against `checksums.txt`, builds the Inno Setup installer and the MSIX packages (§8), and uploads them as `installer-windows` and `msix`. Then on each runner it installs, checks and uninstalls the installer, also over a copy from the PowerShell line. It also signs a copy of the MSIX package with a throwaway certificate, installs it, runs it through its alias and removes it. |
 | `macos` | `macos-26`, with smoke on it and `macos-26-intel` | The reusable `macos.yml` with `release-dist`, the version and `smoke-bundle`. It checks the darwin programs and notices, joins the programs with `lipo`, writes and ad-hoc signs `WOPR.app`, and makes the `.dmg`. It uploads the `.dmg` as `installer-macos`. Then on each runner it checks the image and runs the e2e test against the app's program. On `macos-26` it also opens the app as Finder does (§8). |
-| `snap` | `ubuntu-24.04`, with tests on it and `ubuntu-24.04-arm` | The reusable `snap.yml` with `release-dist`, the version, `smoke-bundle` and `publish: false`. It runs `snapdir` and `snap pack` for each architecture, then the Store's `review-tools`, and uploads the snaps as `snaps`. Then on each runner it installs the snap, runs it and the e2e test under confinement, and removes it. Its publish job is skipped. |
+| `snap` | `ubuntu-24.04`, with tests on it and `ubuntu-24.04-arm` | The reusable `snap.yml` with `release-dist`, the version and `smoke-bundle`. It runs `snapdir` and `snap pack` for each architecture, then the Store's `review-tools`, and uploads the snaps as `snaps`. Then on each runner it installs the snap, runs it and the e2e test under confinement, and removes it. |
 | `collect` | `ubuntu-24.04` | What `release.yml`'s `collect` and `sign` do, without the uploads. `sizegate -files` on the installer and the `.dmg`, then `stage -merge`, then `sign-packages.sh` with a throwaway key on the result. That way, a problem shows on any push and not first on a tag. |
 | `docs` | `ubuntu-24.04` | Builds the docs site (§13) as `docs.yml` does, with `--panicOnWarning --printPathWarnings`. A deprecated setting, a broken internal link, a missing screenshot or a malformed game data file fails it. It checks that the site imports the signing key and publishes it. |
 | `ci-ok` | `ubuntu-24.04` | `needs: [lint, secrets, test, build, smoke, windows, macos, snap, collect, docs]`, `if: always()` (and skipped, under an unevaluated expression name, with the rest on a PR from this repository). Fails unless every needed job succeeded. **This is the only required check** (S-3), so matrix names never appear in settings. |
@@ -1880,9 +1907,7 @@ Every CI run builds the installers and snaps, as for a tag (owner decision 2026-
 installer shows on the branch that broke it. `windows.yml`, `macos.yml` and `snap.yml` are reusable
 workflows, called with `$/` like `smoke.yml`. Each takes the `release-dist` artifact and the version, never
 compiles wopr, and checks what it packs against `checksums.txt`. Their calling jobs grant `contents: read`,
-because the called jobs check out the repository for the packaging files. `snap.yml`'s publish job is
-skipped in CI. GitHub reports such a called workflow as a success to `ci-ok` (undocumented, but CI's runs
-show it).
+because the called jobs check out the repository for the packaging files.
 
 ### 11.3 `release.yml` (on `v*` tags): gated, reproducible, attested (B-10, S-7)
 
@@ -1966,11 +1991,10 @@ and the snaps.
    `gh workflow run docs.yml --ref main`. That run publishes the docs site again, so that its download
    commands name the new release (§13). A run that `GITHUB_TOKEN` starts through `workflow_dispatch` is the
    one kind such a token may start.
-10. **`snap`**, after a successful `publish`: `snap.yml` on `release-dist` and `release-stage`, with
-    `publish: true` for a tag push and `SNAPCRAFT_STORE_CREDENTIALS` passed by name. An environment's secret
-    reaches a called workflow only that way. It builds and tests the snaps, kept 90 days as `snaps`. Its
-    publish job uploads them only when `SNAP_PUBLISH` is `true`, in the `snap-store` environment, after the
-    owner approves (§8, AGENTS.md). It runs after `publish` so that the Snap Store never has a version the
+10. **`snap`**, after a successful `publish`: `snap.yml` on `release-dist` and `release-stage`. It builds
+    and tests the snaps, kept 90 days as `snaps`. Then, only for a tag push and when `SNAP_PUBLISH` is
+    `true`, `snap-attest` attests them and `snap-publish` uploads them, in the `snap-store` environment,
+    after the owner approves (§8, AGENTS.md). It runs after `publish` so that the Snap Store never has a version the
     GitHub release lacks. The same order means the release never waits for that approval. `ci-ok`, which
     `verify` requires, already built and tested the snaps on the same commit.
 

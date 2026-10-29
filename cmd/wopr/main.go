@@ -16,6 +16,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/cli"
 	"github.com/GhostofGoes/WOPR/internal/debuglog"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
+	"github.com/GhostofGoes/WOPR/internal/scrubenv" // clears TMUX, TEA_TRACE and the like before the libraries read them
 	"github.com/GhostofGoes/WOPR/internal/ui"
 	"github.com/GhostofGoes/WOPR/internal/version"
 )
@@ -77,7 +78,7 @@ func run(args []string, stdout, stderr io.Writer, getenv func(string) string) in
 	outcome, err := ui.Run(ui.Options{
 		Log: lg, Theme: cfg.Theme, Instant: cfg.Instant, Seed: cfg.Seed, SeedSet: cfg.SeedSet,
 		ReduceMotion: cfg.ReduceMotion, Play: cfg.Play, Movie: cfg.Movie, Scene: cfg.Scene, Only: cfg.Only,
-		NoColor: getenv("NO_COLOR") != "", Panel: panelSetting(getenv), Registry: reg,
+		NoColor: getenv("NO_COLOR") != "", Tmux: scrubenv.InTmux, Panel: panelSetting(getenv), Registry: reg,
 	})
 	lg.Printf("session ended: outcome %d, err %v", outcome, err)
 	switch outcome {
