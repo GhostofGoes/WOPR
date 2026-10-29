@@ -83,9 +83,6 @@ you do not want. An earlier version of these pages put `wopr` in `/usr/local/bin
 
 **Strange colours.** Try another theme (`--theme green`), or turn colour off with `NO_COLOR=1`.
 
-**Fewer colours inside tmux.** `wopr` does not ask tmux which colours it can show. If tmux shows 24-bit
-colour, set `COLORTERM=truecolor` before you start `wopr`.
-
 **The mouse wheel changes what I typed.** Some terminals (GNOME Terminal and others built on VTE) turn the
 wheel into the Up and Down keys on a full screen. Those keys step through the lines you typed. Scroll
 back with PgUp and PgDn. `wopr` leaves mouse reporting off, so that you can still select and copy text.

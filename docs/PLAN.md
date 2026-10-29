@@ -1648,8 +1648,11 @@ classified address it leads to.
     Gloss detects the colour profile in a package-level variable, so `scrubenv` unsets all four in `init`:
     its path sorts before every `github.com/charmbracelet` package, and it imports only `os`, so Go
     initialises it first. The e2e test `TestScrubenvInitsBeforeLipGloss` checks that order in Go's init
-    trace (`GODEBUG=inittrace=1`). `TestLibrarySwitchesStayOff` puts a fake `tmux` first on the PATH and
-    checks that nothing runs or is written.
+    trace (`GODEBUG=inittrace=1`). `scrubenv.InTmux` keeps whether `TMUX` was set, and inside tmux the UI
+    forces the true-colour profile unless `NO_COLOR` is set (`ui.Options.Tmux`). tmux itself converts RGB
+    colours for an outer terminal without true colour, so nothing needs to ask it.
+    `TestLibrarySwitchesStayOff` puts a fake `tmux` first on the PATH and checks that nothing runs or is
+    written, and that the debug log names the TrueColor profile.
 
 ---
 

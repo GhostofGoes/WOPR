@@ -454,8 +454,9 @@ func TestDebugLog(t *testing.T) {
 // A fake tmux first on the PATH records any run. TEA_DEBUG writes only on a panic, and this
 // Bubble Tea never reads UV_DEBUG, so for those two the test checks only that nothing appears;
 // scrubenv's own test checks that all four are removed. Each variable that ends colour
-// detection before it asks tmux is unset. The fake is a shell script, so the test is Unix-only.
-// test-snap.sh skips it: a snap has its own /tmp.
+// detection before it asks tmux is unset. wopr still draws in true colour there, as its debug
+// log says. The fake is a shell script, so the test is Unix-only. test-snap.sh skips it: a snap
+// has its own /tmp.
 func TestLibrarySwitchesStayOff(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("the fake tmux is a shell script")
@@ -473,10 +474,12 @@ func TestLibrarySwitchesStayOff(t *testing.T) {
 		t.Fatal(err)
 	}
 	trace, uvDebug := filepath.Join(dir, "tea-trace.log"), filepath.Join(dir, "uv-debug.log")
+	cache := filepath.Join(dir, "cache")
 	env := []string{
 		"PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"),
 		"TMUX=/tmp/tmux-1000/default,1,0",
 		"TEA_TRACE=" + trace, "TEA_DEBUG=1", "UV_DEBUG=" + uvDebug,
+		"WOPR_DEBUG=1", "XDG_CACHE_HOME=" + cache, "HOME=" + cache,
 	}
 	s := startEnv(t, 80, 24, env, "--instant")
 	s.waitFor("LOGON:", 10*time.Second)
@@ -486,6 +489,17 @@ func TestLibrarySwitchesStayOff(t *testing.T) {
 		if data, err := os.ReadFile(f); err == nil {
 			t.Errorf("%s exists:\n%s", filepath.Base(f), data)
 		}
+	}
+	// TERM=xterm-256color alone gives 256 colours. Inside tmux, wopr draws in true colour.
+	var log []byte
+	_ = filepath.WalkDir(cache, func(path string, d os.DirEntry, err error) error {
+		if err == nil && d.Name() == "debug.log" {
+			log, _ = os.ReadFile(path)
+		}
+		return nil
+	})
+	if !strings.Contains(string(log), "colour profile TrueColor") {
+		t.Errorf("inside tmux, the debug log names no true colour profile:\n%s", log)
 	}
 }
 

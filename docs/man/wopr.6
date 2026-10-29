@@ -1014,6 +1014,13 @@ See \%FILES.\&
 .B \%NO_COLOR
 When it is set to any value but an empty one, it turns colour off.\&
 .TP
+.B \%TMUX
+tmux sets it.\&
+When it is set, \%\fBwopr\fR draws in \%24\-bit colour, and tmux changes the
+colours for a terminal that cannot show them.\&
+\%\fBwopr\fR removes it from its environment when it starts, so that no library
+runs \%\fBtmux\fR.\&
+.TP
 .B \%TERM
 When it is \%\fBdumb\fR, \%\fBwopr\fR does not start its \%full\-screen
 interface, and it exits with status 2.\&

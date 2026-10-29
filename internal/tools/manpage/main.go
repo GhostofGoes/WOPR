@@ -379,6 +379,7 @@ func writeEnd(p *page) {
 		{"WOPR_PANEL", "When true, it shows the front panel in any theme. When false, it hides the panel in any theme. When it is unset or empty, the theme decides: `norad` shows the panel."},
 		{"WOPR_DEBUG", "When true, `wopr` writes a debug log (never what you type) and prints its path when it exits. See FILES."},
 		{"NO_COLOR", "When it is set to any value but an empty one, it turns colour off."},
+		{"TMUX", "tmux sets it. When it is set, `wopr` draws in 24-bit colour, and tmux changes the colours for a terminal that cannot show them. `wopr` removes it from its environment when it starts, so that no library runs `tmux`."},
 		{"TERM", "When it is `dumb`, `wopr` does not start its full-screen interface, and it exits with status 2. The options that print and exit still work."},
 	} {
 		p.macro("TP")

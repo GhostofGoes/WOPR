@@ -46,6 +46,7 @@ type Options struct {
 	Scene        string // with Movie: the scene to play from (a slug); "" opens the scene menu
 	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
 	NoColor      bool   // NO_COLOR set to any non-empty value (no-color.org)
+	Tmux         bool   // inside tmux: draw in true colour, which tmux converts if it must
 	Panel        Panel  // the front-panel row
 	Registry     *games.Registry
 	Log          *debuglog.Log // nil: no debug log
@@ -76,11 +77,23 @@ const (
 // Run runs the TUI until the user leaves.
 func Run(opts Options) (Outcome, error) {
 	var teaOpts []tea.ProgramOption
-	if opts.NoColor { // colorprofile alone parses NO_COLOR with ParseBool and ignores NO_COLOR=yes
-		teaOpts = append(teaOpts, tea.WithColorProfile(colorprofile.Ascii))
+	if p, ok := forcedProfile(opts); ok {
+		teaOpts = append(teaOpts, tea.WithColorProfile(p))
 	}
 	_, err := runWatched(newModel(opts, teaScheduler), opts.Log, teaOpts...)
 	return classify(err), err
+}
+
+// forcedProfile is the colour profile that opts decide, if any. Otherwise Bubble Tea
+// detects one from the environment.
+func forcedProfile(opts Options) (colorprofile.Profile, bool) {
+	switch {
+	case opts.NoColor: // colorprofile alone parses NO_COLOR with ParseBool and ignores NO_COLOR=yes
+		return colorprofile.Ascii, true
+	case opts.Tmux: // colorprofile cannot ask tmux without running it (internal/scrubenv)
+		return colorprofile.TrueColor, true
+	}
+	return 0, false
 }
 
 // classify maps Bubble Tea's error. ErrInterrupted comes first: both it and
