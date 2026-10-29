@@ -264,9 +264,9 @@ func TestGTWScreens(t *testing.T) {
 }
 
 // The big board is in the war room's colours unless the player chose a theme, while the
-// console and the games in a panel stay white phosphor: in the film the NORAD screens are in colour and WOPR's
-// terminal is not. A theme the player chose, the default's name included, and NO_COLOR keep
-// the board in the console's theme.
+// console and the games in a panel stay white phosphor: in the film the NORAD screens are in
+// colour and WOPR's terminal is not. A theme the player chose, the default's name included,
+// and NO_COLOR keep the board in the console's theme.
 func TestBigBoardColours(t *testing.T) {
 	t.Parallel()
 	const (

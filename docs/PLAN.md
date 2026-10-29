@@ -744,7 +744,7 @@ and the rest green (2) (§2.4). The monochrome themes draw all land as `Dim`.
 
 **Contrast** (RF-10). `TestTextContrast` checks every Style against its background. In truecolor, the
 ratio must meet WCAG AA (4.5:1), or 3:1 for the deliberately faint `Dim` and the land styles
-(`theme.Faint`). The test also checks the big board's theme on the default background. Under the default
+(`theme.isFaint`). The test also checks the big board's theme on the default background. Under the default
 xterm and VGA 16-colour palettes, it must be at least 3:1. The theme tests range over `proto.Styles()`,
 so they cover a Style added later as soon as it is declared. norad's Dim is cyan (6), because ANSI blue
 (4) is under 2.3:1 on black in both palettes. Two exceptions are accepted and documented. imsai's Dim is
@@ -1127,6 +1127,9 @@ no verdict of their own.
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
+        - The map draws the United States' land in `LandUS`, the Soviet Union's in `LandUSSR` and every
+          other country's in `Land`: blue, red and green on the war room's screens (§2.4). The names under
+          the map say whose land is whose, so the colours only repeat it.
         - Earlier strikes leave only their impacts. ICBMs fly polar arcs that rise with distance. WOPR's
           arcs are lower than yours, so both show between the silo fields. SLBMs hop low from real patrol
           areas placed by latitude and longitude, from whichever is nearer the target. The Soviet boats are

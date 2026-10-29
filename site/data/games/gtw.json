@@ -32,7 +32,7 @@
     "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
     "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
-    "The big board is in the film's colours: the United States in blue, the Soviet Union in red and the other countries in green. Your missiles are +, WOPR's are *, and X marks each impact. To play in one colour, choose a theme with --theme.",
+    "The big board is in the film's colours: the United States in blue, the Soviet Union in red and the other countries in green. Your missiles are +, WOPR's are *, and X marks each impact. To see it in one colour, choose imsai, green or amber with --theme.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
   ],
   "screenshots": [

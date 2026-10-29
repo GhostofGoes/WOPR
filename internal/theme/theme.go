@@ -148,7 +148,7 @@ func (t *Theme) Lip(s proto.Style, a proto.Attr, p colorprofile.Profile) lipglos
 		st = st.Foreground(ansi.BasicColor(spec.FG.ANSI)).Background(ansi.BasicColor(t.bg(spec).ANSI)) //nolint:gosec // ANSI colours are 0..15 (theme tests check)
 	default: // ASCII and NoTTY: no colour at all
 		attr |= spec.NoColAttr
-		if Faint(s) {
+		if isFaint(s) {
 			st = st.Faint(true)
 		}
 	}
@@ -157,9 +157,9 @@ func (t *Theme) Lip(s proto.Style, a proto.Attr, p colorprofile.Profile) lipglos
 		Underline(attr&proto.AttrUnderline != 0)
 }
 
-// Faint reports whether a style is deliberately faint: Dim, and the land of every nation.
+// isFaint reports whether a style is deliberately faint: Dim, and the land of every nation.
 // Without colour it is drawn faint, and its contrast need only be 3:1.
-func Faint(s proto.Style) bool {
+func isFaint(s proto.Style) bool {
 	switch s {
 	case proto.StyleDim, proto.StyleLand, proto.StyleLandUS, proto.StyleLandUSSR:
 		return true

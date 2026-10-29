@@ -168,7 +168,7 @@ func TestBoard(t *testing.T) {
 	land := map[int]bool{}
 	for _, s := range []proto.Style{proto.StyleLand, proto.StyleLandUS, proto.StyleLandUSSR} {
 		land[b.Styles[s].FG.ANSI] = true
-		if !Faint(s) {
+		if !isFaint(s) {
 			t.Errorf("land style %c is not faint", s.Letter())
 		}
 	}
@@ -205,7 +205,7 @@ func TestTextContrast(t *testing.T) {
 		for _, s := range proto.Styles() {
 			spec := th.Styles[s]
 			bg := th.bg(spec)
-			faint := Faint(s)
+			faint := isFaint(s)
 			want := 4.5
 			if faint {
 				want = 3
