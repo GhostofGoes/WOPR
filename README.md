@@ -56,7 +56,6 @@ the list. Type `LOGOFF` to leave. Ctrl+C always quits.
 ## Screenshots
 
 All screenshots come from the program itself, in an 80×24 terminal with the default white-phosphor theme.
-They were recorded before the big board had the film's colours, so they show it in white.
 
 | Logon and the film's conversation | Global Thermonuclear War's big board |
 |---|---|
