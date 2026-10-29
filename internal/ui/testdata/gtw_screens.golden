@@ -40,13 +40,13 @@ cursor: col 20, row 18
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 932 534     C-SSN8-A 319 667            USSR      500   450   200     0
-       B 487 038            B 558 572            US        737   562     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 932 534     C-SSN8-A 319 667     USSR  500 -250 450 200 -100   0    188
+       B 487 038            B 558 572     US    737 -200 562   0      375    150
 ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
 FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
 ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
-LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
+USSR: 350 LOST ON THE GROUND, 188 ON CITIES.  US: 200 LOST, 150 ON CITIES.
 STRIKE 2 OF 3 [50 50 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 27, row 22
@@ -66,9 +66,9 @@ cursor: col 27, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 932 534     C-SSN8-A 319 667            USSR      500   450   200     0
-       B 487 038            B 558 572            US        737   562     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 932 534     C-SSN8-A 319 667     USSR  500 -250 450 200 -100   0    188
+       B 487 038            B 558 572     US    737 -200 562   0      375    150
 ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
 ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
 HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
@@ -92,13 +92,13 @@ cursor: col 27, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 655 931     C-SSN8-A 696 073            USSR        0   225     0   200
-       B 301 836            B 814 740            US        224   300     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 655 931     C-SSN8-A 696 073     USSR    0 -250 225   0      200    450
+       B 301 836            B 814 740     US    224 -200 300   0      375    375
 LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.
 STRIKE 2 LAUNCHED. ICBM 250  SLBM 225  BOMBERS 200.
 ENEMY LAUNCH DETECTED. ICBM 313  SLBM 262. DEFCON 3.
-LOST ON THE GROUND: USSR 250  US 200. WARHEADS ON CITIES: USSR 262  US 225.
+USSR: 250 LOST ON THE GROUND, 262 ON CITIES.  US: 200 LOST, 225 ON CITIES.
 STRIKE 3 OF 3 [100 100 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 29, row 22
@@ -118,12 +118,12 @@ cursor: col 29, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 141 434     C-SSN8-A 938 162     USSR    0        0   0        0   1256
+       B 985 453            B 063 518     US      0        0   0        0    750
 OUTGOING +   INCOMING *   IMPACT X
 FULL-SCALE ENEMY ATTACK. SLBM 300  BOMBERS 375. DEFCON 1.
-LOST ON THE GROUND: USSR 0  US 0. WARHEADS ON CITIES: USSR 582  US 150.
+USSR: 0 LOST ON THE GROUND, 582 ON CITIES.  US: 0 LOST, 150 ON CITIES.
 STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
@@ -170,9 +170,9 @@ cursor: col 0, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 141 434     C-SSN8-A 938 162     USSR    0        0   0        0   1256
+       B 985 453            B 063 518     US      0        0   0        0    750
                            LAUNCH CODE: CPE 1704 ___
 
 
@@ -222,9 +222,9 @@ cursor: col 0, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 141 434     C-SSN8-A 938 162            USSR        0     0     0     0
-       B 985 453            B 063 518            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 141 434     C-SSN8-A 938 162     USSR    0        0   0        0   1256
+       B 985 453            B 063 518     US      0        0   0        0    750
                            LAUNCH CODE: CPE 1704 ___
 
 ** IDENTIFICATION NOT RECOGNIZED **

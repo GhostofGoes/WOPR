@@ -4,6 +4,7 @@
 package gtw
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -189,6 +190,136 @@ func TestTablesDoNotOverlap(t *testing.T) {
 	}
 	if forcesX+forcesW != 80 {
 		t.Errorf("the forces table ends at column %d", forcesX+forcesW-1)
+	}
+}
+
+// The forces table and the cost line fit whatever is ordered: every figure keeps a blank
+// column before it, a loss mark fits between its figure and the next, and the cost line fits
+// 80 columns with either side first. Strike orders run as in TestNoAllocationWins, every
+// percent of ICBMs with SLBMs and bombers at the ends and the middle.
+func TestStrikeCostFits(t *testing.T) {
+	t.Parallel()
+	g := &Game{side: assets.USSR} // the longer name first
+	ends := []int{0, 50, 100}
+	for i2 := 0; i2 <= 100; i2++ {
+		for i3 := 0; i3 <= 100; i3++ {
+			for _, s2 := range ends {
+				for _, b2 := range ends {
+					_, rs := wage([3]int{i2, s2, b2}, [3]int{i3, 100 - s2, 100})
+					for _, r := range rs {
+						g.rep = r
+						if line := g.cost(); len(line) > 80 {
+							t.Fatalf("the cost line is %d wide: %q", len(line), line)
+						}
+						for s := range 2 {
+							lost := [2]int{r.snap[1][s].ICBM - r.snap[2][s].ICBM, r.snap[1][s].Ground - r.snap[2][s].Ground}
+							if lost[0]+lost[1] != r.ground[s] {
+								t.Fatalf("stage %d, side %d: the marks %v are not the %d lost on the ground", r.stage, s, lost, r.ground[s])
+							}
+							for _, f := range r.snap {
+								if f[s].ICBM > 9999 || max(f[s].SLBM, f[s].Ground, f[s].Air) > 999 || max(lost[0], lost[1]) > 999 {
+									t.Fatalf("stage %d, side %d: %+v losing %v overflows the table", r.stage, s, f[s], lost)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// After each strike lands, the forces table shows what it cost: each side's row marks the
+// ICBMs and bombers destroyed beside their figures, reversed, the marks add up to the cost
+// line's LOST ON THE GROUND, and CITIES is the warheads landed on that side so far. While the
+// next strike flies, no marks show and CITIES does not yet count its warheads.
+func TestForcesShowWhatEachStrikeCost(t *testing.T) {
+	t.Parallel()
+	mark := func(c *proto.Canvas, x, y int) int {
+		n := 0
+		for x++; c.At(x, y).R >= '0' && c.At(x, y).R <= '9'; x++ {
+			n = 10*n + int(c.At(x, y).R-'0')
+		}
+		return n
+	}
+	figure := func(c *proto.Canvas, end, y int) string {
+		var b strings.Builder
+		for x := end - 6; x <= end; x++ {
+			b.WriteRune(c.At(x, y).R)
+		}
+		return strings.TrimSpace(b.String())
+	}
+	for _, side := range []string{"1", "2"} {
+		for _, script := range [][]string{nil, {"hold", "hold"}, {"all"}, {"0 0 100", "100 0 0"}} {
+			label := side + " " + strings.Join(script, "|")
+			g := New().(*Game)
+			g.Start(proto.Env{Seed: 1, Instant: true})
+			g.Handle(proto.LineEvent{Text: side})
+			g.Handle(proto.LineEvent{Text: "Moscow, Las Vegas"})
+			g.Handle(proto.LineEvent{Text: ""})
+			for i := 0; ; i++ {
+				c := proto.NewCanvas(80, 19)
+				g.View(c)
+				var said []string // the cost line names your side first
+				for s := range 2 {
+					y := trajRow + 1 + s
+					lost := 0
+					for _, x := range []int{forcesICBMMark, forcesBMBMark} {
+						cell := c.At(forcesX+x, y)
+						if cell.R == ' ' {
+							continue
+						}
+						if cell.R != '-' || cell.S != proto.StyleAlert || cell.A&proto.AttrReverse == 0 {
+							t.Fatalf("%s: the mark at %d,%d is %q %v %v:\n%s", label, forcesX+x, y, cell.R, cell.S, cell.A, c.String())
+						}
+						lost += mark(c, forcesX+x, y)
+					}
+					if lost != g.rep.ground[s] {
+						t.Errorf("%s, stage %d: side %d's marks add up to %d, want %d:\n%s", label, g.stage, s, lost, g.rep.ground[s], c.String())
+					}
+					if got, want := figure(c, 79, y), fmt.Sprint(g.war.t[s].Cities); got != want {
+						t.Errorf("%s, stage %d: side %d's CITIES shows %s, want %s", label, g.stage, s, got, want)
+					}
+					said = append(said, fmt.Sprintf("%s: %d LOST", g.nation(s), lost))
+				}
+				if cost := g.cost(); !strings.HasPrefix(cost, said[0]+" ON THE GROUND, ") || !strings.Contains(cost, ".  "+said[1]+", ") {
+					t.Errorf("%s, stage %d: the cost line %q does not match the marks %q", label, g.stage, cost, said)
+				}
+				if g.phase != orders {
+					break
+				}
+				order := ""
+				if i < len(script) {
+					order = script[i]
+				}
+				g.Handle(proto.LineEvent{Text: order})
+			}
+			if g.phase != assessed {
+				t.Fatalf("%s: the war ended at %v", label, g.phase)
+			}
+		}
+	}
+	// In flight, before the strike lands: no marks, and only earlier strikes' warheads.
+	g := New().(*Game)
+	g.Start(proto.Env{Seed: 1, Width: 80, Height: 19})
+	for _, in := range []string{"2", "Las Vegas", ""} {
+		g.Handle(proto.LineEvent{Text: in})
+	}
+	g.Handle(proto.TickEvent{Dt: time.Minute}) // strike 2's prompt
+	g.Handle(proto.LineEvent{Text: ""})
+	g.Handle(proto.TickEvent{Dt: 20 * frame})
+	c := proto.NewCanvas(80, 19)
+	g.View(c)
+	for s := range 2 {
+		y := trajRow + 1 + s
+		for _, x := range []int{forcesICBMMark, forcesBMBMark} {
+			if r := c.At(forcesX+x, y).R; r != ' ' {
+				t.Errorf("side %d shows a mark %q in flight:\n%s", s, r, c.String())
+			}
+		}
+		if got, want := figure(c, 79, y), fmt.Sprint(g.war.t[s].Cities-g.rep.cities[s]); got != want {
+			t.Errorf("side %d's CITIES shows %s in flight, want %s:\n%s", s, got, want, c.String())
+		}
 	}
 }
 

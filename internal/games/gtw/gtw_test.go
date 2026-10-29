@@ -193,7 +193,7 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	t.Parallel()
 	always := []string{
 		"GLOBAL THERMONUCLEAR WAR", "DEFCON", "| 5 |", "| 4 |", "| 3 |", "| 2 |", "| 1 |",
-		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING   TRAJECTORY HEADING", "FORCES   ICBM  SLBM   BMB   AIR",
+		"UNITED STATES", "SOVIET UNION", "TRAJECTORY HEADING   TRAJECTORY HEADING", "ICBM     SLBM BMB      AIR CITIES",
 	}
 	type stage struct {
 		name, order, last string
@@ -202,13 +202,13 @@ func TestBoardKeepsEveryElement(t *testing.T) {
 	}
 	enter := []stage{
 		{"strike 2 orders", "", "ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.", []string{
-			"A-MM3-A", "C-C4-A", "US        500   450   200     0", "USSR      737   562     0   375",
+			"A-MM3-A", "C-C4-A", "US    500 -250 450 200 -100   0    188", "USSR  737 -200 562   0      375    150",
 		}, 4},
 		{"strike 3 orders", "", "LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.", []string{
-			"A-MM3-A", "C-C4-A", "US          0   225     0   200", "USSR      224   300     0   375",
+			"A-MM3-A", "C-C4-A", "US      0 -250 225   0      200    450", "USSR  224 -200 300   0      375    375",
 		}, 3},
 		{"assessed", "", "OUTGOING +   INCOMING *   IMPACT X", []string{
-			"A-C4-A", "C-C4-A", "US          0     0     0     0", "USSR        0     0     0     0",
+			"A-C4-A", "C-C4-A", "US      0        0   0        0   1256", "USSR    0        0   0        0    750",
 		}, 1},
 		{"kill ratios", "", "", nil, 0},
 		{"climax", "", "LAUNCH CODE: CPE 1704 ___", []string{"A-C4-A", "C-C4-A"}, 1},
@@ -590,7 +590,7 @@ func TestStripKeepsUpWithTheLadder(t *testing.T) {
 			continue
 		}
 		for _, l := range say.Lines {
-			if strings.Contains(l, "DEFCON") || strings.Contains(l, "LAUNCH") || strings.HasPrefix(l, "LOST ON THE GROUND") {
+			if strings.Contains(l, "DEFCON") || strings.Contains(l, "LAUNCH") || strings.Contains(l, " LOST ON THE GROUND, ") {
 				t.Errorf("%q prints at %v, want table pace", l, say.Pace)
 			}
 		}
@@ -676,9 +676,9 @@ func TestBoardFits(t *testing.T) {
 	c := proto.NewCanvas(80, 19)
 	g.View(c)
 	rows := strings.Split(c.String(), "\n")
-	if !strings.HasSuffix(rows[15], "FORCES   ICBM  SLBM   BMB   AIR") || len(rows[15]) != 80 ||
-		len(rows[16]) != 80 || !strings.HasPrefix(rows[16][49:], "US ") ||
-		len(rows[17]) != 80 || !strings.HasPrefix(rows[17][49:], "USSR ") {
+	if !strings.HasSuffix(rows[15], "ICBM     SLBM BMB      AIR CITIES") || len(rows[15]) != 80 ||
+		len(rows[16]) != 80 || !strings.HasPrefix(rows[16][42:], "US ") ||
+		len(rows[17]) != 80 || !strings.HasPrefix(rows[17][42:], "USSR ") {
 		t.Errorf("the forces table, your side first, ends at the right edge:\n%s", c.String())
 	}
 }

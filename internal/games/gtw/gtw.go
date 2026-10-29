@@ -544,11 +544,11 @@ func (g *Game) step() []proto.Output {
 	return nil
 }
 
-// cost is a stage's third line: what each side lost on the ground and took on its cities.
+// cost is a stage's third line: what each side lost on the ground and took on its cities,
+// yours first, each side's two figures together.
 func (g *Game) cost() string {
 	r := g.rep
-	return fill(lineCost[0], g.nation(you), r.ground[you], g.nation(wopr), r.ground[wopr],
-		g.nation(you), r.cities[you], g.nation(wopr), r.cities[wopr])
+	return fill(lineCost[0], g.nation(you), r.ground[you], r.cities[you], g.nation(wopr), r.ground[wopr], r.cities[wopr])
 }
 
 func (g *Game) showRatios() []proto.Output {

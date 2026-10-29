@@ -25,7 +25,7 @@ const (
 	trajRow    = boxBottom + 1         // the trajectory and forces tables' headings
 	trajCols   = 2                     // trajectory columns
 	trajW      = 21                    // a trajectory column and the gap after it
-	forcesW    = 31                    // the forces table: a 7-column name and four 6-column figures
+	forcesW    = 38                    // the forces table: a 4-column name, five figures and two loss marks
 	forcesX    = 80 - forcesW          // right-aligned to the 80-column board, clear of the trajectories
 	footRow    = trajRow + 3           // the orders hint, the last-orders warning, the launch code or the legend
 	arcLift    = 0.14                  // how far an ICBM's track rises over the map, in rows per column flown
@@ -125,36 +125,55 @@ func trackStyle(m missile) proto.Style {
 	return proto.StyleIncoming
 }
 
-// shown is the forces the table shows: each launch counts when it leaves, losses when the
-// stage lands.
-func (g *Game) shown() [2]forces {
-	if g.war == nil {
-		return startForces
+// landed reports whether the current stage's strike has landed: the forces table then shows
+// what it cost.
+func (g *Game) landed() bool {
+	end := strikeEnd
+	if g.stage > strikes {
+		end = finalEnd
 	}
-	snap := g.rep.snap
-	switch {
-	case g.phase != flight:
-		return snap[2]
-	case g.stage > strikes && g.frame < finalEnd:
-		return snap[1]
-	case g.stage > strikes:
-		return snap[2]
-	case g.frame < detectAt:
-		return snap[0]
-	case g.frame < strikeEnd:
-		return snap[1]
-	}
-	return snap[2]
+	return g.phase != flight || g.frame >= end
 }
 
-// drawForces is the table of each side's launchers, yours first as in the kill ratios: ICBMs
-// in silos, SLBMs at sea, bombers on the ground and in the air. The nations' names say whose
-// figures are whose; the colours only repeat it.
+// shown is the forces the table shows, and the warheads landed on each side's cities so far:
+// each launch counts when it leaves, losses and warheads when the stage lands.
+func (g *Game) shown() ([2]forces, [2]int) {
+	if g.war == nil {
+		return startForces, [2]int{}
+	}
+	snap, cities := g.rep.snap, [2]int{g.war.t[you].Cities, g.war.t[wopr].Cities}
+	if g.landed() {
+		return snap[2], cities
+	}
+	for s := range cities {
+		cities[s] -= g.rep.cities[s]
+	}
+	if g.stage <= strikes && g.frame < detectAt {
+		return snap[0], cities
+	}
+	return snap[1], cities
+}
+
+// Forces table columns, from forcesX: where the figures start, and the sign of the loss mark
+// beside the ICBM and BMB figures.
+const (
+	forcesFigures  = 4
+	forcesICBMMark = 10
+	forcesBMBMark  = 23
+)
+
+// drawForces is the forces table, each side's row yours first as in the kill ratios: ICBMs in
+// silos, SLBMs at sea, bombers on the ground and in the air, then the warheads landed on its
+// cities so far. Once a stage's strike has landed, what it destroyed shows beside the figure it
+// cut, reversed as an impact is (-250 beside ICBM or BMB), until the next launch; together the
+// marks are the cost line's LOST ON THE GROUND. The nations' names say whose figures are whose,
+// and the minus sign marks a loss; the colours only repeat it.
 func (g *Game) drawForces(c *proto.Canvas) {
 	labels := lineForces.Texts()
-	f := g.shown()
-	head := fmt.Sprintf("%-7s%6s%6s%6s%6s", labels[0], labels[1], labels[2], labels[3], labels[4])
+	f, cities := g.shown()
+	head := fmt.Sprintf("%9s%9s%4s%9s%7s", labels[0], labels[1], labels[2], labels[3], labels[4])
 	c.Put(forcesX, trajRow, head, proto.StyleLabel, 0)
+	before := g.rep.snap[1] // the stage's forces as its strike arrives
 	for i, s := range []int{you, wopr} {
 		y := trajRow + 1 + i
 		style := proto.StyleOutgoing
@@ -162,7 +181,16 @@ func (g *Game) drawForces(c *proto.Canvas) {
 			style = proto.StyleIncoming
 		}
 		c.Put(forcesX, y, g.nation(s), proto.StyleLabel, 0)
-		c.Put(forcesX+7, y, fmt.Sprintf("%6d%6d%6d%6d", f[s].ICBM, f[s].SLBM, f[s].Ground, f[s].Air), style, 0)
+		row := fmt.Sprintf("%5d     %4d%4d     %4d%7d", f[s].ICBM, f[s].SLBM, f[s].Ground, f[s].Air, cities[s])
+		c.Put(forcesX+forcesFigures, y, row, style, 0)
+		if !g.landed() {
+			continue
+		}
+		for _, m := range [2][2]int{{forcesICBMMark, before[s].ICBM - f[s].ICBM}, {forcesBMBMark, before[s].Ground - f[s].Ground}} {
+			if m[1] > 0 {
+				c.Put(forcesX+m[0], y, fmt.Sprintf("-%d", m[1]), proto.StyleAlert, proto.AttrReverse)
+			}
+		}
 	}
 }
 

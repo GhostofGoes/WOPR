@@ -44,7 +44,7 @@ var (
 	lineLaunch = script.Orig("FIRST STRIKE LAUNCHED. #.", "STRIKE # LAUNCHED. #.", "NO LAUNCH ORDERED.", "NOTHING LEFT TO LAUNCH.")
 	lineDetect = script.Orig("ENEMY LAUNCH DETECTED. #. DEFCON #.", "ENEMY BOMBERS INBOUND. DEFCON #.",
 		"FULL-SCALE ENEMY ATTACK. #. DEFCON 1.")
-	lineCost      = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
+	lineCost      = script.Orig("#: # LOST ON THE GROUND, # ON CITIES.  #: # LOST, # ON CITIES.")
 	lineSystems   = script.Orig("ICBM", "SLBM", "BOMBERS")
 	promptStrike  = script.Orig("STRIKE # OF # [# # #]: ")
 	lineAuto      = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
@@ -69,7 +69,7 @@ var (
 	lineHuman      = script.FromFilm("NON-FATAL INJURED", "POPULATION DEATHS")
 	lineMillion    = script.FromFilm("MILLION")
 	lineCodeLabel  = script.Orig("LAUNCH CODE: ")
-	lineForces     = script.Orig("FORCES", "ICBM", "SLBM", "BMB", "AIR") // in silos, at sea, bombers grounded and airborne
+	lineForces     = script.Orig("ICBM", "SLBM", "BMB", "AIR", "CITIES") // in silos, at sea, bombers grounded and airborne; warheads on cities
 	lineNations    = script.Orig("US", "USSR")
 	lineDesignator = script.Orig("MM3", "C4", "SS20", "SSN8") // ICBM and SLBM: US, then USSR
 	lineOrdersHint = script.Orig("ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.")

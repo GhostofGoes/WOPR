@@ -66,13 +66,13 @@ cursor: hidden
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 647 281     C-SSN8-A 536 143            USSR      500   450   200     0
-       B 086 996            B 225 668            US        737   562     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 647 281     C-SSN8-A 536 143     USSR  500 -250 450 200 -100   0    188
+       B 086 996            B 225 668     US    737 -200 562   0      375    150
 OUTGOING +   INCOMING *   IMPACT X
 FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.
 ENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.
-LOST ON THE GROUND: USSR 350  US 200. WARHEADS ON CITIES: USSR 188  US 150.
+USSR: 350 LOST ON THE GROUND, 188 ON CITIES.  US: 200 LOST, 150 ON CITIES.
 STRIKE 2 OF 3 [50 50 100]:
  W.O.P.R.   LINE 1200 BAUD   ONLINE                             * . * . * . * .
 cursor: col 27, row 22
@@ -92,9 +92,9 @@ cursor: col 27, row 22
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 309 221     C-SSN8-A 804 319            USSR        0     0     0     0
-       B 133 308            B 837 260            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 309 221     C-SSN8-A 804 319     USSR    0        0   0        0   1256
+       B 133 308            B 837 260     US      0        0   0        0    750
                            LAUNCH CODE: C__ ____ ___
 CHESS
 

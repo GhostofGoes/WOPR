@@ -14,9 +14,9 @@
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 019 448     C-SSN8-A 869 895            USSR      750   450   300     0
-       B 023 673            B 697 086            US       1250   750   375     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 019 448     C-SSN8-A 869 895     USSR  750      450 300        0      0
+       B 023 673            B 697 086     US   1250      750 375        0      0
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -34,9 +34,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
-.......t.ttt.ttt............t.ttt.ttt............LL.......iiii...iii...iii.....i
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL..ooo......ooo.ooo........o......o
+.......t.ttt.ttt............t.ttt.ttt.....LL...iiii......iii.iii........i......i
 dddddddd.o...dddddddd.i...dddddd.t
 
 ==== strike 1, frame 20 ====
@@ -55,9 +55,9 @@ dddddddd.o...dddddddd.i...dddddd.t
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 019 448     C-SSN8-A 869 895            USSR      750   450   300     0
-       B 023 673            B 697 086            US        937   562     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 019 448     C-SSN8-A 869 895     USSR  750      450 300        0      0
+       B 023 673            B 697 086     US    937      562   0      375      0
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -75,9 +75,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
-.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL..ooo......ooo.ooo........o......o
+.......t.ttt.ttt............t.ttt.ttt.....LL....iii......iii...i......iii......i
 dddddddd.o...dddddddd.i...dddddd.t
 
 ==== strike 2 orders (DEFCON 4) ====
@@ -96,9 +96,9 @@ dddddddd.o...dddddddd.i...dddddd.t
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 019 448     C-SSN8-A 869 895            USSR      500   450   200     0
-       B 023 673            B 697 086            US        737   562     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 019 448     C-SSN8-A 869 895     USSR  500 -250 450 200 -100   0    188
+       B 023 673            B 697 086     US    737 -200 562   0      375    150
 ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -116,9 +116,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL......ooo...ooo...ooo.....o
-.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL..ooo.AAAA.ooo.ooo.AAAA...o....ooo
+.......t.ttt.ttt............t.ttt.ttt.....LL....iii.AAAA.iii...i......iii....iii
 ddddddd.ddddddd.dd.dddd.dddd.dddddddd.dddd.ddddd.ddddd.ddddd
 
 ==== strike 2 (ICBM 100, BOMBERS 100), frame 20 ====
@@ -137,9 +137,9 @@ ddddddd.ddddddd.dd.dddd.dddd.dddddddd.dddd.ddddd.ddddd.ddddd
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 476 377     C-SS20-A 485 868            USSR        0   450     0   200
-       B 001 419            B 887 229            US        112   462     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 476 377     C-SS20-A 485 868     USSR    0      450   0      200    188
+       B 001 419            B 887 229     US    112      462   0      375    150
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -157,9 +157,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o...ooo.....o...ooo
-.......t.ttt.ttt............t.ttt.ttt............LL........iii...iii.....i...iii
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL....o......ooo...o......ooo....ooo
+.......t.ttt.ttt............t.ttt.ttt.....LL....iii......iii...i......iii....iii
 dddddddd.o...dddddddd.i...dddddd.t
 
 ==== strike 3 orders (DEFCON 3) ====
@@ -178,9 +178,9 @@ dddddddd.o...dddddddd.i...dddddd.t
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SS20-A 476 377     C-SS20-A 485 868            USSR        0   450     0   200
-       B 001 419            B 887 229            US          0   462     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SS20-A 476 377     C-SS20-A 485 868     USSR    0      450   0      200    913
+       B 001 419            B 887 229     US      0 -112 462   0      375    150
 LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -198,9 +198,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o...ooo.....o...ooo
-.......t.ttt.ttt............t.ttt.ttt............LL..........i...iii.....i...iii
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL....o......ooo...o......ooo....ooo
+.......t.ttt.ttt............t.ttt.ttt.....LL......i.AAAA.iii...i......iii....iii
 AAAA.AAAAAAA.AA.AAAAAA.A.AAAA.AAAAA.AAAAAAAAAAA
 
 ==== DEFCON 1, frame 20 ====
@@ -219,9 +219,9 @@ AAAA.AAAAAAA.AA.AAAAAA.A.AAAA.AAAAA.AAAAAAAAAAA
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0   200
-       B 824 228            B 623 229            US          0     0     0   375
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 948 219     C-SSN8-A 156 885     USSR    0        0   0      200   1075
+       B 824 228            B 623 229     US      0        0   0      375    600
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -239,9 +239,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o...ooo
-.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i...iii
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL....o........o...o......ooo...oooo
+.......t.ttt.ttt............t.ttt.ttt.....LL......i........i...i......iii....iii
 dddddddd.o...dddddddd.i...dddddd.t
 
 ==== DEFCON 1, assessed ====
@@ -260,9 +260,9 @@ dddddddd.o...dddddddd.i...dddddd.t
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
-       B 824 228            B 623 229            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 948 219     C-SSN8-A 156 885     USSR    0        0   0        0   1657
+       B 824 228            B 623 229     US      0        0   0        0    750
 OUTGOING +   INCOMING *   IMPACT X
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -280,9 +280,9 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o.....o
-.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i.....i
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL....o........o...o........o...oooo
+.......t.ttt.ttt............t.ttt.ttt.....LL......i........i...i........i....iii
 dddddddd.o...dddddddd.i...dddddd.t
 
 ==== kill ratios ====
@@ -342,9 +342,9 @@ dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
 |                   |    `-._         |     /          `:`<_|h--._      |
 |                   (        >        .     | ,          `=.__.`-'\     |
 +--------- UNITED STATES ------------------------ SOVIET UNION ---------+
-TRAJECTORY HEADING   TRAJECTORY HEADING          FORCES   ICBM  SLBM   BMB   AIR
-A-SSN8-A 948 219     C-SSN8-A 156 885            USSR        0     0     0     0
-       B 824 228            B 623 229            US          0     0     0     0
+TRAJECTORY HEADING   TRAJECTORY HEADING        ICBM     SLBM BMB      AIR CITIES
+A-SSN8-A 948 219     C-SSN8-A 156 885     USSR    0        0   0        0   1657
+       B 824 228            B 623 229     US      0        0   0        0    750
                            LAUNCH CODE: CPE 1704 ___
 
 ddddddddddddddddddddddd.bbbbbb.bbbbbbbbbbbbb.bbb.dddddddddddddddddddddddd.LLLLLL
@@ -362,7 +362,7 @@ d.................lllllll........lllll.......ll.....ll..ll.ll.ll........d..ddddd
 d...................l....llll.........l.....l..........lllllllllll......d
 d...................l........l........l.....l.l..........llllllllll.....d
 dddddddddd.LLLLLL.LLLLLL.dddddddddddddddddddddddd.LLLLLL.LLLLL.dddddddddd
-LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL..........LLLLLL...LLLL..LLLL...LLL...LLL
-tttttttt.ttt.ttt.....tttttttt.ttt.ttt............LLLL........o.....o.....o.....o
-.......t.ttt.ttt............t.ttt.ttt............LL..........i.....i.....i.....i
+LLLLLLLLLL.LLLLLLL...LLLLLLLLLL.LLLLLLL........LLLL.....LLLL.LLL......LLL.LLLLLL
+tttttttt.ttt.ttt.....tttttttt.ttt.ttt.....LLLL....o........o...o........o...oooo
+.......t.ttt.ttt............t.ttt.ttt.....LL......i........i...i........i....iii
 ...........................AAAAAA.AAAAA.AAA.AAAA.AAA
