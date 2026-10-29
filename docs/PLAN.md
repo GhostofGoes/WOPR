@@ -2635,8 +2635,9 @@ YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. The after-action report's `#` are
 `# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
-`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES` table (`FORCES`,
-`ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
+`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES`
+table (`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20`
+and `SSN8`,
 `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
 `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
 force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
