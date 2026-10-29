@@ -87,8 +87,11 @@ WizardSmallImageFile={#RepoDir}\packaging\icons\hicolor\64x64\apps\io.github.gho
 ; nothing to check.
 CloseApplications=force
 RestartApplications=no
-; One Setup at a time, in case the download is opened twice.
-SetupMutex=WOPRSetup-A7D86110-58E9-404E-9164-FBDDBDC6AC22,Global\WOPRSetup-A7D86110-58E9-404E-9164-FBDDBDC6AC22
+; One Setup at a time, in case the download is opened twice. The name is local to the Windows
+; session, which an elevated /ALLUSERS Setup shares too. It has no Global\ twin: any process of any
+; user may create a Global\ mutex, and while one exists Setup refuses to run (a silent Setup exits),
+; so another account on the same PC could stop every install.
+SetupMutex=WOPRSetup-A7D86110-58E9-404E-9164-FBDDBDC6AC22
 ; The PATH task changes the environment; Explorer and new terminals see it at once.
 ChangesEnvironment=yes
 
@@ -105,6 +108,11 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [CustomMessages]
 PathGroup=Terminal:
 AddToPath=&Add WOPR to PATH, so typing wopr in a terminal starts it
+; %1 is the folder, %2 one of the reasons below.
+PathNotAdded=Setup did not add %1 to PATH. %2%n%nWOPR is installed. Start it from the Start menu.
+PathHasSemicolon=The folder's name has a semicolon, which would split it into two PATH entries.
+PathNotText=PATH is not a text value in the registry, so Setup does not change it.
+PathWriteFailed=Windows did not let Setup change PATH.
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -144,10 +152,25 @@ Filename: "{app}\wopr.exe"; WorkingDir: "{app}"; Description: "{cm:LaunchProgram
 
 [Code]
 // The "path" task adds the WOPR folder to PATH: the user's, or the system's after an /ALLUSERS
-// install (HKEY_AUTO is HKLM or HKCU to match). Uninstall takes the folder off PATH again, also
-// when the PowerShell install line put it there, since the folder is then gone. Path is read and
-// written without expanding it, so entries such as %USERPROFILE%\bin stay as they are, and it stays
-// REG_EXPAND_SZ. Entries match the way Windows matches them: ignoring case and a trailing backslash.
+// install (HKEY_AUTO is HKLM or HKCU to match). Path is read and written without expanding it, so
+// entries such as %USERPROFILE%\bin stay as they are, and it stays REG_EXPAND_SZ. Entries match the
+// way Windows matches them: ignoring case and a trailing backslash. A Path that is not a string value
+// (REG_SZ or REG_EXPAND_SZ) is never written, since writing it back would lose its entries.
+//
+// Uninstall takes the folder off PATH only if Setup added it, or if it is the default folder,
+// {autopf}\WOPR. That folder is WOPR's alone, and Uninstall removes it: the PowerShell install line
+// puts the same folder on PATH, and so did every Setup before this rule. Any other folder that was
+// on PATH already, such as one that /DIR= named and other programs share, stays on it. Setup keeps
+// the folder it added as previous data in the uninstall key ("Inno Setup CodeFile: AddedToPath").
+// Inno Setup writes that key again on every install, so an upgrade copies the record forward while
+// PATH still has the folder. Setup 0.6.1 and earlier kept no record, so after an upgrade from one
+// of them, a folder that /DIR= named stays on PATH at uninstall.
+
+var
+  // The folder that this install adds to PATH, or that an earlier one added and PATH still has; ''
+  // otherwise. Found at ssInstall: RegisterPreviousData runs while Setup saves the uninstall
+  // information, before ssPostInstall.
+  AddedToPath: String;
 
 function EnvironmentKey: String;
 begin
@@ -186,16 +209,46 @@ begin
   end;
 end;
 
-procedure CurStepChanged(CurStep: TSetupStep);
-var
-  Path, Dir: String;
+function OnPath(Path, Dir: String): Boolean;
 begin
-  if (CurStep <> ssPostInstall) or not WizardIsTaskSelected('path') then
+  Result := PathWithout(Path, Dir) <> Path;
+end;
+
+// ReadPath sets Path to the stored value, or to '' when there is none. It returns False when Path
+// exists but is not a string value: then nothing may write it.
+function ReadPath(var Path: String): Boolean;
+begin
+  Path := '';
+  Result := RegQueryStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path) or
+    not RegValueExists(HKEY_AUTO, EnvironmentKey, 'Path');
+  if not Result then
+    Log('PATH is not a string value, so it stays as it is');
+end;
+
+// A folder whose name has a semicolon would become two PATH entries, the second one relative.
+function CanBeOnPath(Dir: String): Boolean;
+begin
+  Result := Pos(';', Dir) = 0;
+end;
+
+procedure PathNotAdded(Dir, Reason: String);
+begin
+  SuppressibleMsgBox(FmtMessage(CustomMessage('PathNotAdded'), [Dir, CustomMessage(Reason)]), mbError, MB_OK, IDOK);
+end;
+
+procedure AddToPath(Dir: String);
+var
+  Path: String;
+begin
+  if not CanBeOnPath(Dir) then begin
+    PathNotAdded(Dir, 'PathHasSemicolon');
     Exit;
-  Dir := ExpandConstant('{app}');
-  if not RegQueryStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path) then
-    Path := '';
-  if PathWithout(Path, Dir) <> Path then begin
+  end;
+  if not ReadPath(Path) then begin
+    PathNotAdded(Dir, 'PathNotText');
+    Exit;
+  end;
+  if OnPath(Path, Dir) then begin
     Log('PATH already has ' + Dir);
     Exit;
   end;
@@ -204,23 +257,55 @@ begin
   if RegWriteExpandStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path + Dir) then
     Log('Added ' + Dir + ' to PATH')
   else
-    SuppressibleMsgBox('Setup could not add ' + Dir + ' to PATH. WOPR is installed; start it from the Start menu.', mbError, MB_OK, IDOK);
+    PathNotAdded(Dir, 'PathWriteFailed');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  Path, Dir: String;
+begin
+  Dir := ExpandConstant('{app}');
+  case CurStep of
+    ssInstall:
+      if ReadPath(Path) then begin
+        if not OnPath(Path, Dir) then begin
+          if WizardIsTaskSelected('path') and CanBeOnPath(Dir) then
+            AddedToPath := Dir;
+        end else if SameDir(GetPreviousData('AddedToPath', ''), Dir) then
+          AddedToPath := Dir;
+      end;
+    ssPostInstall:
+      if WizardIsTaskSelected('path') then
+        AddToPath(Dir);
+  end;
+end;
+
+procedure RegisterPreviousData(PreviousDataKey: Integer);
+begin
+  // SetPreviousData writes nothing for '', so no record means that Setup did not add the folder.
+  SetPreviousData(PreviousDataKey, 'AddedToPath', AddedToPath);
 end;
 
 procedure RemoveFromPath;
 var
-  Path, NewPath: String;
+  Path, NewPath, Dir: String;
 begin
-  if not RegQueryStringValue(HKEY_AUTO, EnvironmentKey, 'Path', Path) then
+  Dir := ExpandConstant('{app}');
+  if not SameDir(GetPreviousData('AddedToPath', ''), Dir) and
+     not SameDir(Dir, ExpandConstant('{autopf}\WOPR')) then begin
+    Log('PATH keeps ' + Dir + ': Setup did not add it');
     Exit;
-  NewPath := PathWithout(Path, ExpandConstant('{app}'));
+  end;
+  if not ReadPath(Path) then
+    Exit;
+  NewPath := PathWithout(Path, Dir);
   if NewPath = Path then
     Exit;
   if NewPath = '' then
     RegDeleteValue(HKEY_AUTO, EnvironmentKey, 'Path')
   else
     RegWriteExpandStringValue(HKEY_AUTO, EnvironmentKey, 'Path', NewPath);
-  Log('Removed ' + ExpandConstant('{app}') + ' from PATH');
+  Log('Removed ' + Dir + ' from PATH');
 end;
 
 // Windows may still have the Start menu shortcut open when Uninstall deletes it: the shell and the
