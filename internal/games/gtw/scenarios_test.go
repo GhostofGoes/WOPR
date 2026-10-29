@@ -14,7 +14,8 @@ import (
 
 // The scenarios are the montage's names, each once, in the montage's order: all 156 of its
 // 157 rows, since it runs CHAD ALERT twice. A name is found by its number and by its own
-// text, and by no other scenario's.
+// text, and by no other scenario's. A name the montage cuts short is found by its whole last
+// word too, but nothing after a whole name finds it.
 func TestScenariosAreTheMontage(t *testing.T) {
 	t.Parallel()
 	var want []string
@@ -32,6 +33,13 @@ func TestScenariosAreTheMontage(t *testing.T) {
 		}
 		if n, ok := FindScenario(s.name.Text); !ok || n != s.number {
 			t.Errorf("%q finds %d, %v", s.name.Text, n, ok)
+		}
+	}
+	for in, found := range map[string]bool{"vietnamese retaliation": true, "Bangladesh Theaterwide": true,
+		"chad alertxyz": false, "cuban provocations": false, "nato alert please": false, "U.S. FIRST STRIKE NOW": false,
+		"vietnamese retaliationx": false} {
+		if n, ok := FindScenario(in); ok != found || ok && !strings.HasPrefix(strings.ToUpper(in), Scenarios()[n-1]) {
+			t.Errorf("%q finds %d, %v", in, n, ok)
 		}
 	}
 }

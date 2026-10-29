@@ -307,17 +307,25 @@ func FindScenario(text string) (int, bool) {
 	if n, err := strconv.Atoi(norm); err == nil {
 		return n, n >= 1 && n <= len(scenarios)
 	}
-	in, found, longest := squash(norm), 0, 0
+	in := squash(norm)
 	for _, s := range scenarios {
 		name := squash(s.name.Text)
-		switch {
-		case in == name:
+		if rest, ok := strings.CutPrefix(in, name); ok && (rest == "" || completes(s.name.Text, rest)) {
 			return s.number, true
-		case strings.HasPrefix(in, name) && len(name) > longest:
-			found, longest = s.number, len(name)
 		}
 	}
-	return found, found > 0
+	return 0, false
+}
+
+// completes reports whether rest is what the montage cut off the end of name: N completes
+// VIETNAMESE RETALIATIO, but nothing completes a name that ends in a whole word.
+func completes(name, rest string) bool {
+	_, word := ruleWords(name)
+	if _, whole := kinds[word]; whole {
+		return false
+	}
+	_, ok := kinds[squash(word)+rest]
+	return ok
 }
 
 // scenarioFor is the scenario a launch mode names (ScenarioLaunch), or nil.
