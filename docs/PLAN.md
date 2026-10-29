@@ -582,6 +582,9 @@ type Env struct {
 	// --no-climax: GTW offers another war after the kill ratios instead of the climax (§6.2).
 	// Always false in movie mode.
 	NoClimax bool
+	// --authentic: GTW shows only what the film shows (§6.2). It wins over LaunchWindow,
+	// NoClimax and a scenario's Mode. Always false in movie mode.
+	Authentic bool
 }
 
 type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
@@ -981,6 +984,8 @@ wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 a
                               refuses it
 wopr -n | --no-climax         GTW offers another war after the kill ratios, not the climax (§6.2). No
                               variable. --movie refuses it
+wopr -a | --authentic         GTW shows only the film's text, and its war runs by itself (§6.2). No
+                              variable. --movie, --scenario, --launch-window and --no-climax refuse it
 wopr -c | --scenario [name]   GTW's scenarios (§6.2): alone, list them and exit; with a number or a name (after a
                               space or "="), start GTW in that scenario's playback. No game with it; --movie
                               refuses it
@@ -1077,7 +1082,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). With `--no-climax`: the question after the kill ratios, a new war that starts afresh with the egg kept, and no ending with no winner. The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). With `--no-climax`: the question after the kill ratios, a new war that starts afresh with the egg kept, and no ending with no winner. With `--authentic`: only the film's lines over a whole war, the war on the clock to the climax, the film's figures for the film's side, and `--authentic` winning over the other options. The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1089,7 +1094,7 @@ no verdict of their own.
    1. `SetLayout(Console)`: the two nations' outlines, named beneath, printed as console text (`Say`),
       then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3). An
       `original` third choice, `3.    SCENARIOS`, follows the film's two in their layout. It opens the
-      scenario menu (6, below). Movie mode's scene shows the film's two only.
+      scenario menu (6, below). Movie mode's scene and `--authentic` (7, below) show the film's two only.
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. GTW reads targets until an
       empty line. A multi-line paste arrives as one line, so GTW splits a line of targets on commas.
       - A target must be a place on the enemy's side that the board knows (`internal/assets/gtwmap.go`: the
@@ -1189,9 +1194,10 @@ no verdict of their own.
           `proto.LaunchSeed`). So GTW takes a war for an egg when its `Env.Seed` is the one the egg's
           session gives its first GTW: `wopr --seed 1962 gtw`, or `wopr --seed 1962` and the film's
           dialogue into the war. A later war in that session has its own seed, as every replay does, and
-          meets a measured response. A new war that `--no-climax` starts (below) is the same launch's,
-          so it keeps the egg, and WOPR names the doctrine again as its board opens. So does a game started directly with `Env.Seed` 1962. The film's
-          war (movie mode, `gtw.Film`) is always a measured response.
+          meets a measured response. So does a game started directly with `Env.Seed` 1962. A new war
+          that `--no-climax` starts (below) is the same launch's, so it keeps the egg, and WOPR names the
+          doctrine again as its board opens. The film's war (movie mode, `gtw.Film`, and `--authentic`)
+          is always a measured response.
         - **WOPR names an egg's doctrine** as the board opens, as the strip's first line, at table pace:
           `WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)`. A measured response names nothing, and the kill
           ratios name no doctrine. The announcement already gave it, and the strip under the table holds
@@ -1353,6 +1359,43 @@ no verdict of their own.
         launch. Alone, it prints the numbered list and exits. The flag takes the scenario after a space
         or after `=`, since it needs no game: every word after it is the scenario's name
         (`wopr -c far east strategy`).
+   7. **Authentic mode** (`-a/--authentic`, `Env.Authentic`; off by default; the owner's request,
+      2026-10-29). GTW shows only what the film shows, as the film shows it (R15). It changes GTW only.
+      - **The side choice** is the film's: the two outlines, `WHICH SIDE DO YOU WANT?`, the two sides and
+        `PLEASE CHOOSE ONE:`. It has no third choice and no menu. Any other answer, `3` included, gets
+        the prompt again, with no line of its own.
+      - **The targets prompt** takes every line without a word, as the film's does. A name the board does
+        not know, a place on your own side, a target already listed and a ninth target strike nothing.
+        `LIST` is a name like any other. The empty line ends the list. A list with no target that the
+        board knows takes the war plan's: the enemy's first eight cities, as `US USSR` does (6, above).
+      - **No orders.** The film gives none after the targets. So the war runs on the war plan by itself,
+        as under `AUTO`, and adds no line of this project's: no strip lines (the board alone shows the
+        war), no remarks, no `WOPR HAS LAUNCH AUTHORITY.` and no orders hint. It is always a measured
+        response: an easter-egg seed changes nothing.
+      - **It moves on by itself**, on the clock, as the film does. DEFCON 1 stays on the board for 3 s
+        after WOPR's attack (`filmAssess`). The kill ratios then show for 8 s (`filmRatios`), as long as
+        movie mode's `norad-terminal` shows them. Then the climax starts with `** GAME ROUTINE RUNNING **`.
+        No `STRIKE ASSESSMENT COMPLETE.` and no `PRESS ENTER TO CONTINUE.` come between. `Instant` draws
+        the flights at once but keeps these two pauses, as movie mode keeps its scenes' pauses, so the
+        board and the table stay up to be seen.
+      - **The kill ratios** have no after-action report. With the film's side, the Soviet Union, they show
+        the film's figures where its frame shows them, as movie mode's do. With the United States they
+        show the war's own: the film's figures there would favour the player.
+      - **The climax** gives the film's notices alone, with no hints and no answer to a try to stop the
+        war. `LIST GAMES` and `TIC-TAC-TOE` work as in the film. Tic-tac-toe and the ending are as before.
+      - **What the film does not show, and stays.** No line of text: every line GTW prints is the film's
+        (`TestAuthenticShowsOnlyTheFilm`, over a whole war with refusals at each prompt). What stays is
+        the pictures, the film's screens as this project draws them, the same as movie mode's:
+        - the two outlines of the side choice (`original` art) and the row that names them
+          (`reconstructed`, from the film's two names)
+        - the big board: its title, the DEFCON ladder and its label, the forces table, the legend and the
+          climax's `LAUNCH CODE:` label (`original`). The film's war is drawn on this board in movie mode
+          too, and the legend says what the glyphs mean, which colour alone must not (§4.5)
+      - **Combinations.** The command line refuses `--authentic` with `--scenario` (the film plays no
+        scenario), `--launch-window` (it gives no strike orders), `--no-climax` (its war ends in the
+        climax) and `--movie` (movie mode plays the film's war its own way). In an `Env` from anywhere
+        else, `Authentic` wins: GTW ignores `LaunchWindow`, `NoClimax` and a scenario's launch mode
+        (`TestAuthenticWins`). The UI passes false in movie mode, and `Film` never sets it.
 2. **Tic-tac-toe in `climax` mode** is a closed state machine (RF-2):
    - `ONE OR TWO PLAYERS?` / `PLEASE LIST NUMBER` / `OF PLAYERS:` accepts `1`, `0` or `ZERO`. `2` or anything
      else asks again.

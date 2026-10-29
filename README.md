@@ -101,7 +101,8 @@ board uses Matthew Thomas's ASCII world map. See [NOTICE.md](NOTICE.md).
   falls to 1. Enter carries out WOPR's war plan, and `auto` hands it the rest. WOPR holds a quarter more of
   everything. Then try to stop it, or, with `--no-climax`, start another war. Choice 3 at the side prompt
   lists the 156 scenarios of the film's closing montage. Each one plays itself on the board, with no
-  orders, and ends `WINNER: NONE`.
+  orders, and ends `WINNER: NONE`. With `--authentic`, the game shows only the film's own text. You choose
+  a side and the targets, and the war then plays itself to the climax.
 - **Chess**: you are White. Type moves as `e2e4` or `Nf3`. `resign` ends the game.
 - **Checkers**: you are Black and move first. Type `c3-d4`, or `c3xe5` to jump (`c3xe5xg7` to jump
   twice). The `-` and `x` are optional (`c3d4`, `c3e5g7`). Jumps are compulsory.
@@ -172,6 +173,7 @@ film's lines are its own screen text, checked against frame-by-frame transcripti
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations). Also `WOPR_REDUCE_MOTION=1` |
 | `-w`, `--launch-window[=secs]` | give each Global Thermonuclear War strike order a time limit: 30 seconds, or 5 to 999 (`-w=60`). At zero, WOPR takes launch authority |
 | `-n`, `--no-climax` | in Global Thermonuclear War, offer another war after the kill ratios, in place of the launch code |
+| `-a`, `--authentic` | in Global Thermonuclear War, show only the film's own text. After the targets, the war, the kill ratios and the climax come by themselves |
 | `-c`, `--scenario [scenario]` | list the Global Thermonuclear War scenarios and exit, or watch one play itself (`-c 2`, `-c far east strategy`) |
 
 `NO_COLOR` (any value but an empty one) turns colour off. In every theme, the big board in Global

@@ -41,6 +41,7 @@ type Config struct {
 	ReduceMotion  bool
 	LaunchWindow  time.Duration // proto.Env.LaunchWindow
 	NoClimax      bool          // proto.Env.NoClimax
+	Authentic     bool          // proto.Env.Authentic
 	Resolve       Resolver
 	Area          Area
 }
@@ -435,7 +436,7 @@ func (r *Runner) env(f *frame, mode string) proto.Env {
 	return proto.Env{
 		Seed: f.seed, Width: f.areaW, Height: f.areaH,
 		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, ReduceMotion: r.cfg.ReduceMotion, Mode: mode,
-		LaunchWindow: r.cfg.LaunchWindow, NoClimax: r.cfg.NoClimax,
+		LaunchWindow: r.cfg.LaunchWindow, NoClimax: r.cfg.NoClimax, Authentic: r.cfg.Authentic,
 	}
 }
 

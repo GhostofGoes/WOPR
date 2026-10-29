@@ -117,6 +117,13 @@ func sweepCases() []sweepCase {
 			inputs: []string{"2", "Las Vegas", "", "", "", "", "", "maybe", "yes", "1", "Moscow", "", "", "", "", "", "no"},
 			want:   []string{"HUMAN RESOURCES"},
 		}, false},
+		// --authentic: the film's side choice, refusing the third choice; targets, one of them
+		// unknown; the war, the kill ratios and the climax on the clock; then the film's climax
+		// to the ending.
+		{"gtw --authentic", func(o Options) Options { o.Play, o.Authentic = "global-thermonuclear-war", true; return o }, playbook{
+			inputs: []string{"3", "2", "Las Vegas", "Smallville", "", "List Games", "Chess", "stop", "Tic-Tac-Toe", "0", "Hello."},
+			want:   []string{">|", "LAUNCH CODE"},
+		}, false},
 	}
 	for _, e := range catalog.Registry().All() {
 		if e.Info.Status != games.Playable {

@@ -37,6 +37,10 @@ type Env struct {
 	// NoClimax is --no-climax: after the kill ratios, GTW offers another war instead of the
 	// climax. Always false in movie mode.
 	NoClimax bool
+	// Authentic is --authentic: GTW shows only what the film shows, and its war runs by itself
+	// on the war plan. It wins over LaunchWindow, NoClimax and a scenario's Mode. Always false
+	// in movie mode.
+	Authentic bool
 }
 
 // Layout says where a program's View goes.

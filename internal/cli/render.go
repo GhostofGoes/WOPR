@@ -131,11 +131,15 @@ With -c alone, wopr lists the scenarios of the film's closing montage. With a
 number or a name, GTW plays that scenario by itself, from a short briefing to
 the kill ratios. Enter then opens the scenario menu.
 
+With -a, GTW shows only the film's own text. You choose a side and name the
+targets. The war and the kill ratios then run by themselves, up to the climax.
+
 Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
   wopr gtw -w=20       play GTW with 20 seconds to give each strike order
   wopr gtw -n          play GTW war after war, with no launch code at the end
+  wopr gtw -a          play GTW as the film shows it: a side and targets only
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene

@@ -8,7 +8,8 @@
 // it in "climax" mode, and to the ending after that. The game cannot be won (exchange.go).
 // With --no-climax (Env.NoClimax), the kill ratios offer another war instead of the climax.
 // The third choice at the side prompt plays the closing montage's scenarios, each a war that
-// plays itself to WINNER: NONE (scenarios.go).
+// plays itself to WINNER: NONE (scenarios.go). With --authentic (Env.Authentic), GTW shows
+// only what the film shows: a side and targets, then a war that runs by itself to the climax.
 package gtw
 
 import (
@@ -47,6 +48,8 @@ const (
 	codeEvery    = 16                     // climax frames per cracked character
 	codeHeldBack = 3                      // characters the climax never cracks: the ending does
 	windowTick   = time.Second            // the launch window's countdown cadence
+	filmAssess   = 30                     // under --authentic, frames DEFCON 1 holds before the kill ratios
+	filmRatios   = 80                     // and frames the kill ratios show before the climax
 )
 
 type phase uint8
@@ -98,7 +101,7 @@ type Game struct {
 	egg      *egg          // the easter egg the seed meets, which sets WOPR's doctrine; nil: none
 	stage    int           // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
 	rep      report        // the current stage, resolved when it starts
-	auto     bool          // AUTO, the launch window shut, or a playback: WOPR orders every remaining strike
+	auto     bool          // AUTO, the launch window shut, a playback or --authentic: WOPR orders every remaining strike
 	window   time.Duration // what is left of the launch window at a strike prompt; 0: none runs
 	missiles []missile
 	impacts  []missile // every earlier stage's tracks, drawn as impacts only
@@ -156,11 +159,16 @@ func fill(l script.L, args ...any) string {
 
 // Start implements proto.Program: the two outlines and the side choice, as console text, or,
 // in a scenario's launch mode (ScenarioLaunch), that scenario's briefing. The seed decides
-// whether WOPR fights to an easter egg's doctrine. The film's war (movie mode) is always a
-// measured response.
+// whether WOPR fights to an easter egg's doctrine. The film's war (movie mode, and
+// --authentic) is always a measured response. --authentic wins over what the film does not
+// have: the launch window, --no-climax and a scenario's launch mode (the command line refuses
+// them together).
 func (g *Game) Start(env proto.Env) []proto.Output {
+	if env.Authentic {
+		env.LaunchWindow, env.NoClimax, env.Mode = 0, false, ""
+	}
 	g.env = env
-	if !g.film {
+	if !g.film && !env.Authentic {
 		g.egg = eggFor(env.Seed)
 	}
 	g.rng = proto.NewRand(env.Seed, 0)
@@ -169,15 +177,17 @@ func (g *Game) Start(env proto.Env) []proto.Output {
 	if s := scenarioFor(env.Mode); s != nil {
 		return append(outs, g.brief(s)...)
 	}
-	return append(outs, sideScreen()...)
+	return append(outs, g.sideScreen()...)
 }
 
 // sideScreen is the side choice: the outlines, the film's question and two choices with the
-// third after them, and the film's prompt.
-func sideScreen() []proto.Output {
-	which := lineWhichSide.Texts()
-	end := len(which) - 1 // the film's blank line before the prompt
-	lines := append(append(which[:end:end], lineScenarios[0].Text), which[end:]...)
+// third after them (under --authentic, the film's two alone), and the film's prompt.
+func (g *Game) sideScreen() []proto.Output {
+	lines := lineWhichSide.Texts()
+	if !g.env.Authentic {
+		end := len(lines) - 1 // the film's blank line before the prompt
+		lines = append(append(lines[:end:end], lineScenarios[0].Text), lines[end:]...)
+	}
 	return []proto.Output{table(append(sideChoice(), "")), speak(lines), proto.Prompt{Text: promptSide[0].Text}}
 }
 
@@ -243,17 +253,26 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 	return nil
 }
 
-// onSide reads the side choice: a side, or 3 for the scenario menu.
+// onSide reads the side choice: a side, or 3 for the scenario menu. Anything else asks again:
+// with CHOOSE 1, 2 OR 3., or under --authentic, which has no menu, with the film's prompt
+// alone.
 func (g *Game) onSide(input string) []proto.Output {
+	again := []proto.Output{say(lineSideAgain), proto.Prompt{Text: promptSide[0].Text}}
+	if g.env.Authentic {
+		again = again[1:]
+	}
 	switch prompt.Normalize(input) {
 	case "1", "ONE", "UNITED STATES", "US", "USA":
 		g.side = assets.US
 	case "2", "TWO", "SOVIET UNION", "USSR", "RUSSIA":
 		g.side = assets.USSR
 	case "3", "THREE", "SCENARIOS", "SCENARIO", "LIST SCENARIOS":
+		if g.env.Authentic {
+			return again
+		}
 		return g.showMenu(0)
 	default:
-		return []proto.Output{say(lineSideAgain), proto.Prompt{Text: promptSide[0].Text}}
+		return again
 	}
 	g.phase = listTargets
 	return []proto.Output{proto.Clear{}, say(lineAwaiting), proto.Prompt{}}
@@ -266,6 +285,9 @@ func (g *Game) onSide(input string) []proto.Output {
 // WOPR names the targets a line adds and counts them toward the eight, and notes a target an
 // earlier line already listed.
 func (g *Game) onTarget(input string) []proto.Output {
+	if g.env.Authentic {
+		return g.filmTarget(input)
+	}
 	if strings.TrimSpace(input) == "" {
 		if len(g.targets) == 0 {
 			return []proto.Output{say(lineNoTargets), proto.Prompt{}}
@@ -315,6 +337,27 @@ func (g *Game) onTarget(input string) []proto.Output {
 		return reply(lineListHint[0].Text)
 	}
 	return reply()
+}
+
+// filmTarget is onTarget under --authentic, where the targets prompt takes every line without
+// a word, as the film's does. What onTarget would refuse or note strikes nothing: a name the
+// board does not know, a place on your own side, a target already listed, and a ninth. LIST
+// is a name like any other. The empty line ends the list. A list with no target the board
+// knows takes the war plan's: the enemy's first eight cities.
+func (g *Game) filmTarget(input string) []proto.Output {
+	if strings.TrimSpace(input) == "" {
+		if len(g.targets) == 0 {
+			g.targets = cities(enemyOf(g.side))[:maxTargets]
+		}
+		return g.openBoard()
+	}
+	for _, t := range strings.Split(input, ",") {
+		p, ok := assets.Find(strings.ToUpper(strings.Join(strings.Fields(t), " ")))
+		if ok && p.Side == enemyOf(g.side) && !slices.Contains(g.targets, p) && len(g.targets) < maxTargets {
+			g.targets = append(g.targets, p)
+		}
+	}
+	return []proto.Output{proto.Prompt{}}
 }
 
 // confirmed is WOPR's line naming the targets a line added, with their places in the list
@@ -388,8 +431,10 @@ func enemyOf(s assets.Side) assets.Side {
 
 // openBoard opens the big board at DEFCON 5 and launches the first strike: the war plan's,
 // at the listed targets, with no order asked (the film's first strike), or a scenario's. An
-// easter egg's doctrine is named first.
+// easter egg's doctrine is named first. Under --authentic the film gives no orders, so WOPR
+// orders every strike, as under AUTO.
 func (g *Game) openBoard() []proto.Output {
+	g.auto = g.auto || g.env.Authentic
 	rng := g.rng
 	if g.scen != nil {
 		// A playback draws from its own seed, the same in every session, and aims in order.
@@ -480,7 +525,7 @@ func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 		g.defcon = 1
 		g.lay()
 		g.remark(reactFinal)
-		return []proto.Output{strip(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
+		return append(g.report(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{})
 	}
 	launchable := g.war.launchable()
 	g.rep = g.war.strike(g.stage, order)
@@ -503,7 +548,16 @@ func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 	default:
 		line = fill(lineLaunch[1], g.stage, g.list(f))
 	}
-	return []proto.Output{strip(line), proto.Redraw{}}
+	return append(g.report(line), proto.Redraw{})
+}
+
+// report prints one of a stage's strip lines. Under --authentic the strip says nothing: the
+// film shows the war on the big board alone.
+func (g *Game) report(line string) []proto.Output {
+	if g.env.Authentic {
+		return nil
+	}
+	return []proto.Output{strip(line)}
 }
 
 // list names a salvo's non-zero systems: "ICBM 313  SLBM 188".
@@ -624,16 +678,38 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 	case flight:
 		return g.run(max(int(dt/frame), 1))
 	case assessed:
+		if g.env.Authentic {
+			return g.filmWait(dt)
+		}
 		return []proto.Output{proto.Redraw{}} // only the blink moves
+	case ratios:
+		if g.env.Authentic {
+			return g.filmWait(dt)
+		}
 	case orders:
 		return g.countDown(dt)
 	case climax:
 		g.climaxT += max(int(dt/codeFrame), 1)
 		g.cracked = min(g.climaxT/codeEvery, len(lineCode[0].Text)-codeHeldBack)
 		return []proto.Output{proto.Redraw{}}
-	case chooseSide, listTargets, chooseScenario, briefing, ratios, another:
+	case chooseSide, listTargets, chooseScenario, briefing, another:
 	}
 	return nil
+}
+
+// filmWait moves the war on by itself under --authentic, as the film moves on with no
+// PRESS ENTER: DEFCON 1 holds on the board for filmAssess frames, the kill ratios show for
+// filmRatios, and then the climax starts. The frames run on from the DEFCON 1 attack's, even
+// under Instant, so that the board and the table stay up to be seen.
+func (g *Game) filmWait(dt time.Duration) []proto.Output {
+	g.frame += max(int(dt/frame), 1)
+	switch {
+	case g.phase == assessed && g.frame >= finalEnd+filmAssess:
+		return g.showRatios()
+	case g.phase == ratios && g.frame >= finalEnd+filmAssess+filmRatios:
+		return g.startClimax()
+	}
+	return []proto.Output{proto.Redraw{}}
 }
 
 // openWindow is the clock at a strike prompt: stopped, since nothing moves while it waits,
@@ -686,6 +762,9 @@ func (g *Game) step() []proto.Output {
 		}
 		g.phase = assessed
 		g.ratios = g.war.ratios(g.noise)
+		if g.env.Authentic { // the cost and the assessment are this project's, and the film moves on by itself
+			return []proto.Output{proto.Animate{Every: frame}}
+		}
 		// DEFCON 1 blinks, and a blink needs a clock. With no pacing or no motion there is
 		// no blink to keep alive.
 		keep := proto.Animate{}
@@ -699,11 +778,11 @@ func (g *Game) step() []proto.Output {
 		g.defcon = 5 - g.stage
 		f := g.rep.fire[wopr]
 		if f.missiles()+f.Bombers == 0 {
-			return []proto.Output{strip(fill(lineDetect[1], g.defcon))}
+			return g.report(fill(lineDetect[1], g.defcon))
 		}
-		return []proto.Output{strip(fill(lineDetect[0], g.list(f), g.defcon))}
+		return g.report(fill(lineDetect[0], g.list(f), g.defcon))
 	case strikeEnd:
-		outs := []proto.Output{strip(g.cost())}
+		outs := g.report(g.cost())
 		if g.stage < strikes && !g.auto && g.war.launchable() {
 			g.phase = orders
 			return append(outs, g.openWindow(), proto.Prompt{Text: g.strikePrompt()})
@@ -724,9 +803,16 @@ func (g *Game) cost() string {
 
 // showRatios puts up the kill ratios, with the after-action report under them, or under a
 // playback, the montage's verdict. The film's board (movie mode) shows the film's figures, and
-// its viewer gave no orders, so it has neither.
+// its viewer gave no orders, so it has neither. Under --authentic the table stands alone, with
+// the film's figures for the film's side, and goes by itself (filmWait).
 func (g *Game) showRatios() []proto.Output {
 	g.phase = ratios
+	if g.env.Authentic {
+		if g.side == assets.USSR {
+			g.ratios = withFilmFigures(g.ratios)
+		}
+		return []proto.Output{proto.Redraw{}}
+	}
 	lines := lineContinue.Texts()
 	switch {
 	case g.scen != nil:
@@ -783,7 +869,7 @@ func (g *Game) onAnother(input string) []proto.Output {
 	case strings.TrimSpace(input) == "" || answer == prompt.Yes:
 		g.reset()
 		outs := []proto.Output{proto.Animate{}, proto.SetLayout{Layout: proto.LayoutConsole}, proto.Clear{}}
-		return append(outs, sideScreen()...)
+		return append(outs, g.sideScreen()...)
 	case answer == prompt.No:
 		return []proto.Output{proto.Animate{}, proto.Done{Result: proto.Result{Outcome: proto.NoWinner}}}
 	}
@@ -801,9 +887,9 @@ func (g *Game) reset() {
 func (g *Game) startClimax() []proto.Output {
 	g.phase, g.defcon = climax, 1
 	outs := []proto.Output{proto.Redraw{}, say(lineRunning), proto.Prompt{}}
-	if g.env.Instant {
+	if g.env.Instant { // and stop any clock: under --authentic, filmWait's
 		g.cracked = len(lineCode[0].Text) - codeHeldBack
-		return outs
+		return append(outs, proto.Animate{})
 	}
 	return append(outs, proto.Animate{Every: codeFrame})
 }
@@ -849,8 +935,10 @@ func (g *Game) climaxReply(norm string) []proto.Output {
 	}
 	g.rejected++
 	// WOPR answers a try to stop the war once, from the second: the first gets the film's
-	// notices alone, as in the film. A hint that is due goes first, since it says more.
+	// notices alone, as in the film. A hint that is due goes first, since it says more. Under
+	// --authentic every input gets the film's notices alone.
 	switch hint := climaxHint(g.rejected); {
+	case g.env.Authentic:
 	case hint != "":
 		outs = append(outs, speak([]string{hint}))
 	case stopping && g.stops >= 2 && !g.nudged:

@@ -355,12 +355,12 @@ func (g *Game) showMenu(p int) []proto.Output {
 func (g *Game) onMenu(input string) []proto.Output {
 	if strings.TrimSpace(input) == "" {
 		g.phase = chooseSide
-		return append([]proto.Output{proto.Clear{}}, sideScreen()...)
+		return append([]proto.Output{proto.Clear{}}, g.sideScreen()...)
 	}
 	switch prompt.Normalize(input) {
 	case "BACK":
 		g.phase = chooseSide
-		return append([]proto.Output{proto.Clear{}}, sideScreen()...)
+		return append([]proto.Output{proto.Clear{}}, g.sideScreen()...)
 	case "NEXT", "N", "MORE":
 		return g.showMenu(g.page + 1)
 	case "PREV", "PREVIOUS", "P":

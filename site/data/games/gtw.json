@@ -29,6 +29,7 @@
     {"input": "wopr gtw --launch-window", "does": "on the command line, give each strike order 30 seconds (-w=60 gives 60). At zero, WOPR orders every remaining strike"},
     {"input": "HELP or ?", "does": "at a strike prompt, explain how orders work"},
     {"input": "wopr gtw --no-climax", "does": "on the command line, skip the launch code. After the kill ratios, WOPR offers another war: YES or Enter starts it, and NO stops"},
+    {"input": "wopr gtw --authentic", "does": "on the command line, play the war as the film shows it: a side and targets, then the war, the kill ratios and the climax by themselves, with only the film's text"},
     {"input": "TIC-TAC-TOE", "does": "at the climax, the one request WOPR accepts"},
     {"input": "0", "does": "at PLEASE LIST NUMBER OF PLAYERS:, zero players: WOPR plays itself"},
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
@@ -43,6 +44,8 @@
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint. Each hint tells you more than the one before. From the ninth refusal on, WOPR tells you what to type.",
     "The scenarios cannot be won either. The name of a scenario sets its war. Its first words set the theatre and your side. Its last word sets the side that strikes first, your side's orders and the enemy's doctrine. A scenario always plays the same way, whatever the seed.",
     "To compare orders, start with --no-climax. After each war, press Enter twice for a new war, with all forces back. The same side, targets and orders give the same warhead counts.",
+    "With --authentic, WOPR shows only the film's own text. The side prompt has only choices 1 and 2, and WOPR says nothing back at the targets prompt. A name that is not on file, or that is on your side, hits nothing. If no name is on file, WOPR picks eight enemy cities. Nobody gives orders: WOPR fires its war plan at every strike. Three seconds after DEFCON 1, the kill ratios show for eight seconds, and then the climax starts. At the climax WOPR gives no hints.",
+    "To replay the film's war, start with --authentic, choose 2 for the Soviet Union, and type LAS VEGAS and SEATTLE. On the Soviet side, the kill ratios show the film's own numbers.",
     "With --launch-window, wait too long and WOPR fires its war plan at every strike that is left. To hold fire, type HOLD before the window shuts."
   ],
   "screenshots": [

@@ -51,6 +51,7 @@ type Config struct {
 	ReduceMotion bool
 	LaunchWindow time.Duration // GTW's strike prompts wait this long for an order; 0 for ever
 	NoClimax     bool          // GTW offers another war after the kill ratios, not the climax
+	Authentic    bool          // GTW shows only what the film shows
 }
 
 // UsageError is a command-line mistake; main prints it with the usage hint and exits 2.
@@ -82,7 +83,25 @@ var flagPairs = []flagPair{
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
 	{"no-climax", "n", "", "after GTW's kill ratios, offer another war", ""},
+	{"authentic", "a", "", "play GTW as the film shows it, with nothing added", ""},
 	{"scenario", "c", "", "list GTW's scenarios, or watch [scenario]", ""},
+}
+
+// authentic refuses what --authentic cannot be combined with: GTW then shows only what the
+// film shows, and the film gives no strike orders, ends its war in the climax, and is not
+// movie mode's own war.
+func authentic(cfg Config, mov bool) error {
+	switch {
+	case !cfg.Authentic:
+		return nil
+	case mov:
+		return usagef("--movie and --authentic cannot be combined: movie mode plays the film's war its own way")
+	case cfg.LaunchWindow > 0:
+		return usagef("--authentic and --launch-window cannot be combined: the film gives no strike orders")
+	case cfg.NoClimax:
+		return usagef("--authentic and --no-climax cannot be combined: the film's war ends in its climax")
+	}
+	return nil
 }
 
 // The launch window's length: --launch-window alone gives defaultWindow, and a value must be
@@ -223,6 +242,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	strVar(&seed, byName["seed"])
 	boolVar(&cfg.ReduceMotion, byName["reduce-motion"])
 	boolVar(&cfg.NoClimax, byName["no-climax"])
+	boolVar(&cfg.Authentic, byName["authentic"])
 	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
 		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
 	}
@@ -265,6 +285,8 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	}
 	if scenario != "" {
 		switch {
+		case cfg.Authentic:
+			return cfg, RunTUI, usagef("--authentic and --scenario cannot be combined: the film plays no scenario")
 		case mov:
 			return cfg, RunTUI, usagef("--movie and --scenario cannot be combined")
 		case play != "":
@@ -296,6 +318,9 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	}
 	if mov && cfg.NoClimax {
 		return cfg, RunTUI, usagef("--movie and --no-climax cannot be combined: the film's war ends in its climax")
+	}
+	if err := authentic(cfg, mov); err != nil {
+		return cfg, RunTUI, err
 	}
 	cfg.Movie, cfg.Only = mov, only
 	if mov {

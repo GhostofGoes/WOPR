@@ -334,6 +334,55 @@ func TestParseNoClimax(t *testing.T) {
 	}
 }
 
+// --authentic is a switch for GTW, with the game or without, before or after it. The film
+// plays no scenario, gives no strike orders, ends its war in the climax and is not movie
+// mode's war, so --scenario, --launch-window, --no-climax and --movie refuse it.
+func TestParseAuthentic(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args      string
+		authentic bool
+		play      string
+		usage     string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "-a", authentic: true},
+		{args: "--authentic gtw", authentic: true, play: "global-thermonuclear-war"},
+		{args: "gtw -a -i -s 7", authentic: true, play: "global-thermonuclear-war"},
+		{args: "-a --authentic=false gtw", play: "global-thermonuclear-war"},
+		{args: "-a -w=0 gtw", authentic: true, play: "global-thermonuclear-war"},
+		{args: "-a -n=false", authentic: true},
+		{args: "-a -c 2", usage: "--authentic and --scenario cannot be combined"},
+		{args: "-c -a", usage: "--authentic and --scenario cannot be combined"},
+		{args: "gtw -a -w", usage: "--authentic and --launch-window cannot be combined"},
+		{args: "-w=20 --authentic", usage: "--authentic and --launch-window cannot be combined"},
+		{args: "-a -n gtw", usage: "--authentic and --no-climax cannot be combined"},
+		{args: "-m -a", usage: "--movie and --authentic cannot be combined"},
+		{args: "--movie 3 --authentic", usage: "--movie and --authentic cannot be combined"},
+		{args: "-m -a=false"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.Authentic != tt.authentic || cfg.Play != tt.play {
+				t.Errorf("got authentic %v play %q, want %v %q", cfg.Authentic, cfg.Play, tt.authentic, tt.play)
+			}
+		})
+	}
+}
+
 // R9: every long flag has a one-letter shorthand, and no letter is used twice.
 func TestEveryLongFlagHasAShorthand(t *testing.T) {
 	t.Parallel()

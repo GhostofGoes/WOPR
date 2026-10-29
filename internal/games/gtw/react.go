@@ -7,8 +7,8 @@ import "github.com/GhostofGoes/WOPR/internal/script"
 
 // WOPR remarks on each stage as it flies (docs/PLAN.md §6.2): a line on the board's last row,
 // in place of the legend, typed at speech pace and then gone, so the strip keeps its three
-// report lines a strike. The film's board (movie mode) and a scenario's playback have no
-// remarks: nobody gives orders.
+// report lines a strike. The film's board (movie mode), a scenario's playback and --authentic
+// have no remarks: nobody gives orders.
 const (
 	remarkStream = 1  // the remarks' random stream; stream 0's draws stay fixed whatever the orders
 	remarkChars  = 3  // characters typed a frame: 30 a second, WOPR's speech pace
@@ -67,7 +67,7 @@ func reactionTo(alloc, plan [3]int, planned bool, icbms int) reaction {
 // target.
 func (g *Game) remark(r reaction) {
 	g.remarked = ""
-	if g.film || g.scen != nil {
+	if g.film || g.scen != nil || g.env.Authentic {
 		return
 	}
 	n, last := len(reactLines[r]), g.lastRemark[r]-1 // -1: none yet

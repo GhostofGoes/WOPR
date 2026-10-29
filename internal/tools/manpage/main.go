@@ -247,6 +247,10 @@ var optionDetails = map[string]string{
 		"After the kill ratios, Enter asks ANOTHER WAR, PROFESSOR? " +
 		"Yes or Enter starts a new war at the side choice. No ends the game, and WOPR says WINNER: NONE. " +
 		"The film's war ends with the launch code, so `--movie` refuses this option.",
+	"authentic": "Play Global Thermonuclear War as the film shows it, with only the film's own text. " +
+		"The side prompt has two choices, and the targets prompt says nothing back. Nobody gives orders: WOPR fires its war plan at every strike. " +
+		"Then the kill ratios show, and the climax starts, with no Enter between them. The climax gives no hints. " +
+		"`--instant` does not skip these pauses. `--movie`, `--scenario`, `--launch-window` and `--no-climax` refuse this option.",
 	"scenario": "Watch a scenario of the film's closing montage play itself in Global Thermonuclear War. After the kill ratios, Enter opens the menu of scenarios. " +
 		"Name the <scenario> by its number or its name, after a space or an equals sign: `wopr -c 2`, `wopr -c far east strategy`. " +
 		"Alone, `--scenario` lists the scenarios, then exits. It takes no game, and `--movie` refuses it.",

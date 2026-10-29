@@ -443,6 +443,26 @@ func TestNoClimax(t *testing.T) {
 	}
 }
 
+// wopr gtw -a plays the film's war: a side and a target, then the board, the kill ratios and
+// the climax by themselves, with no PRESS ENTER, even under --instant. TIC-TAC-TOE gets
+// through, as in the film.
+func TestAuthentic(t *testing.T) {
+	s := start(t, 80, 24, "gtw", "-a", "--instant")
+	s.waitFor("PLEASE CHOOSE ONE:", 15*time.Second)
+	s.send("2\r")
+	s.waitFor("PLEASE LIST PRIMARY TARGETS BY", 15*time.Second)
+	s.send("Las Vegas\r")
+	s.send("\r")
+	s.waitFor("POPULATION DEATHS", 30*time.Second)
+	s.waitFor("** GAME ROUTINE RUNNING **", 30*time.Second)
+	s.send("TIC-TAC-TOE\r")
+	s.waitFor("OF PLAYERS:", 15*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
 // wopr -m opens the scene menu; q leaves with exit 0.
 func TestMovieMenuQuits(t *testing.T) {
 	s := start(t, 80, 24, "-m", "--instant")

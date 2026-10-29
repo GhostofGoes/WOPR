@@ -45,6 +45,7 @@ type Options struct {
 	// waits for ever.
 	LaunchWindow time.Duration
 	NoClimax     bool   // GTW offers another war after the kill ratios, not the climax (--no-climax)
+	Authentic    bool   // GTW shows only what the film shows (--authentic)
 	Play         string // game slug to start directly
 	Mode         string // with Play: the mode it starts in (--scenario)
 	Movie        bool   // movie mode: the director replays the film's scenes instead of the persona
@@ -249,10 +250,11 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // mode the director, which pins its own seed and plays deterministically (docs/PLAN.md §7).
 func (m *model) start() tea.Cmd {
 	m.started = true
-	seed, deterministic, window, noClimax := m.opts.Seed, m.opts.SeedSet, m.opts.LaunchWindow, m.opts.NoClimax
+	seed, deterministic, window, noClimax, authentic := m.opts.Seed, m.opts.SeedSet, m.opts.LaunchWindow, m.opts.NoClimax, m.opts.Authentic
 	var root proto.Program = wopr.New(m.opts.Registry, nil, wopr.Options{Play: m.opts.Play, Mode: m.opts.Mode})
 	if m.opts.Movie {
-		seed, deterministic, window, noClimax = movie.Seed, true, 0, false // nobody gives the film's orders, and its war ends in the climax
+		// Nobody gives the film's orders, its war ends in the climax, and it plays its own war.
+		seed, deterministic, window, noClimax, authentic = movie.Seed, true, 0, false, false
 		root = movie.New(movie.Options{Scene: m.opts.Scene, Only: m.opts.Only})
 		m.opts.Log.Printf("movie mode from scene %q (only %v), seed %d", m.opts.Scene, m.opts.Only, seed)
 	}
@@ -261,7 +263,7 @@ func (m *model) start() tea.Cmd {
 	}
 	m.runner = host.New(host.Config{
 		Seed: seed, Instant: m.opts.Instant, Deterministic: deterministic, ReduceMotion: m.opts.ReduceMotion,
-		LaunchWindow: window, NoClimax: noClimax, Resolve: m.resolve, Area: m.area,
+		LaunchWindow: window, NoClimax: noClimax, Authentic: authentic, Resolve: m.resolve, Area: m.area,
 	})
 	return m.applyAll(m.runner.Start(root, host.Placement{}))
 }
