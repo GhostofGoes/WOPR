@@ -1,3 +1,3 @@
 kind: Security
-body: WOPR no longer runs `tmux` or writes trace files set by its libraries.
+body: WOPR no longer runs `tmux info` on startup or writes library trace files.
 time: 2026-10-29T03:14:37.72486963Z
