@@ -185,9 +185,38 @@ screen, underlines the first line and leaves blank lines between them; the strip
 
 - **Console**: full-bleed text with no chrome. The console double-spaces WOPR lines and reveals them at modem
   speed, with a solid block cursor.
-- **NORAD big board**: a near-black blue field, cyan/blue outlines, red incoming and yellow outgoing tracks,
-  and white labels. It also has a DEFCON column of boxed numerals 5…1, and `** … **` notices. This is the
-  `norad` theme.
+- **NORAD big board**: in the film the big board is in colour, and WOPR's terminal is not. The board draws
+  each country as an outline with no fill, on a near-black blue field. The United States (Alaska with it)
+  is blue, the Soviet Union is red, and every other country is green. Both sides' missile tracks are pale:
+  white, with an ice-blue tint. Impacts are white discs. Titles are white and data lines cyan. The board
+  also has a DEFCON column of boxed numerals 5…1, and `** … **` notices. This is the `norad` theme. The
+  big board (every `LayoutFull` view: GTW's board, the ending, movie mode's board) always uses its
+  colours, whatever theme the player chooses (owner decision, 2026-10-29). The console and every game in
+  a panel keep the chosen theme. Only no colour at all (`NO_COLOR`, or a terminal without colour) takes
+  the board's colours away: it then draws in the console's theme, with that theme's attributes.
+  - **Evidence** (frame review, 2026-10-29). No production source names a colour. The colours come from
+    film frames: the 35 frames of hp9845.net's "Screen Art: WARGAMES"
+    (<https://www.hp9845.net/9845/software/screenart/wargames/>), the 4K grabs on highdefwatch.com
+    (<https://highdefwatch.com/post/1980-s-hackers-take-on-the-world-wargames>), and DVD stills
+    (<https://reflectionsonfilmandtelevision.blogspot.com/2023/04/40-years-ago-wargames.html>). Three
+    separate looks at two independent sets of frames agree on the three land colours. The owner remembered
+    a green United States. The frames show it blue, and green for the countries round it (Canada, Mexico).
+    Colin Cantwell drew each image as single-colour vector lines, and the film shot each colour through its
+    own filter. So each element has one flat colour.
+  - **The colours in `norad`.** United States land `#5B8BE6` / 12, Soviet land `#D9503F` / 9, other land
+    `#5DBB5A` / 2, all faint without colour. Outgoing tracks `#A8C8FF` / 14 (ice blue), incoming tracks
+    `#FFFFFF` / 15, bold without colour. The film draws both sides' tracks alike. The game keeps them apart
+    by glyph (`+`, `*`), by 16-colour index and by attribute. An impact is its track's style, reversed: a
+    white block for an incoming strike, as the film's white bloom.
+  - **The nations' land.** `assets.Nation` gives each land cell of the map its nation, in 1983's borders.
+    The mask is data from Natural Earth's 50m country polygons (public domain), in the map's own
+    projection. A cell takes the nation at its centre. A cell that holds one of the board's places takes
+    the place's side. `internal/assets/gtwmap.go` lists the few cells fixed by hand, each with its reason.
+    The art and Matthew Thomas's credit line do not change.
+  - **DEFCON.** The office's DEFCON sign lights 5 blue, 4 green, 3 yellow and 2 red. The ladder keeps that
+    order. No frame shows DEFCON 1 lit, so its white on red is `original`.
+  - **Not known.** The colour of the scenario names in the closing montage, and a clean frame of the world
+    map with tracks that land on United States targets.
 - **WOPR cabinet**: rows of lights and a `W.O.P.R.` nameplate. The optional one-row front panel draws them, and
   also shows "thinking" (§4.3).
 - **Verbiage**: ALL CAPS, terse, declarative. WOPR never asks clarifying questions. It numbers its lists
@@ -693,10 +722,13 @@ Rules:
 `proto.Canvas` is a `W×H` grid of `Cell{R rune; S Style; A Attr}` (A-2).
 
 - **Style is semantic**: `Text`, `Bright`, `Dim`, `Accent`, `Land`, `Label`, `Incoming`, `Outgoing`, `Target`,
-  `Defcon1`…`Defcon5`, `Alert`, `SuitRed`, `SuitBlack`, `Selected`.
+  `Defcon1`…`Defcon5`, `Alert`, `SuitRed`, `SuitBlack`, `Selected`, `LandUS`, `LandUSSR`. `Land` is every
+  other country's land.
 - **Attr**: `Blink`, `Reverse`, `Underline`, `Bold`.
 - `ui/render.go` maps each Style to the active theme. `Canvas.String()` and `Canvas.StyleMap()` make
   goldens readable and independent of the theme.
+- A `LayoutFull` view is the big board. In colour it draws in `theme.Board`, `norad`'s styles on the
+  console theme's background, whatever the theme (§2.4). Without colour it draws in the console's theme.
 
 Each theme defines every Style three ways: a truecolor hex, an explicit **ANSI-16 index**, and an **ASCII
 attribute**. Automatic downsampling is not trusted, because it collapsed meaningful pairs in testing (U-7):
@@ -709,10 +741,12 @@ attribute**. Automatic downsampling is not trusted, because it collapsed meaning
 | `norad` | `#5AC8FA` / 14 | `#FFFFFF` / 15 / Bold | `#4A86D6` / 6 / Faint | `#FFD60A` / 11 / Bold | `#02060F` / 0 |
 
 DEFCON: 5 blue (12), 4 green (10), 3 yellow (11), 2 red (9), and 1 is white on red (15 on 1). Incoming tracks
-are red (9) and outgoing yellow (11).
+are white (15) and outgoing ice blue (14). The United States' land is blue (12), the Soviet Union's red (9)
+and the rest green (2) (§2.4). The monochrome themes draw all land as `Dim`.
 
 **Contrast** (RF-10). `TestTextContrast` checks every Style against its background. In truecolor, the
-ratio must meet WCAG AA (4.5:1), or 3:1 for the deliberately faint `Dim` and `Land`. Under the default
+ratio must meet WCAG AA (4.5:1), or 3:1 for the deliberately faint `Dim` and the land styles
+(`theme.isFaint`). The test also checks the big board's theme on the default background. Under the default
 xterm and VGA 16-colour palettes, it must be at least 3:1. The theme tests range over `proto.Styles()`,
 so they cover a Style added later as soon as it is declared. norad's Dim is cyan (6), because ANSI blue
 (4) is under 2.3:1 on black in both palettes. Two exceptions are accepted and documented. imsai's Dim is
@@ -1095,6 +1129,9 @@ no verdict of their own.
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
+        - The map draws the United States' land in `LandUS`, the Soviet Union's in `LandUSSR` and every
+          other country's in `Land`: blue, red and green on the war room's screens (§2.4). The names under
+          the map say whose land is whose, so the colours only repeat it.
         - Earlier strikes leave only their impacts. ICBMs fly polar arcs that rise with distance. WOPR's
           arcs are lower than yours, so both show between the silo fields. SLBMs hop low from real patrol
           areas placed by latitude and longitude, from whichever is nearer the target. The Soviet boats are
@@ -2680,6 +2717,8 @@ strip, the input row and the panel (AR-11). As built at the strike 2 prompt (USS
 the first strike): `big board: strike 2 orders` in the same golden. That golden shows the rest of the exchange
 too. Outgoing tracks draw `+` and incoming tracks draw `*`. An impact is a reversed `X`, drawn over every
 track. Earlier strikes keep only their impacts. The current DEFCON level is pointed at (`>`) and reversed.
+Each nation's land is in its own style (`LandUS`, `LandUSSR`, `Land` for the rest), as `board.golden`'s
+style maps show.
 
 **Chess** (`imsai`, `LayoutPanel`, `PanelRows` 12, no front panel): 12 rows of board, then the 12-row console
 strip. The board is framed, its dark squares shaded and each square two columns wide, beside an original title

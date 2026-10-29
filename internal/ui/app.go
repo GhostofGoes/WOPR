@@ -134,6 +134,7 @@ type thinkDoneMsg struct {
 type model struct {
 	opts    Options
 	th      *theme.Theme
+	board   *theme.Theme // the big board's, in colour: a LayoutFull program's view
 	profile colorprofile.Profile
 	method  ansi.Method
 	w, h    int
@@ -176,7 +177,7 @@ func newModel(opts Options, sched Scheduler) *model {
 		th, _ = theme.Get(theme.Default)
 	}
 	m := &model{
-		opts: opts, th: th, profile: colorprofile.TrueColor, method: ansi.WcWidth,
+		opts: opts, th: th, board: theme.Board(th.Background), profile: colorprofile.TrueColor, method: ansi.WcWidth,
 		thinks: map[uint64]context.CancelFunc{}, clk: clock{schedule: sched}, now: time.Now,
 	}
 	m.tw.SetInstant(opts.Instant)

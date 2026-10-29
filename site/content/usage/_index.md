@@ -111,7 +111,12 @@ The theme sets the colours. Choose one with `--theme` or `WOPR_THEME`:
 - `imsai`, the default: white phosphor, as on David's IMSAI terminal in the film.
 - `green`: green phosphor.
 - `amber`: amber phosphor.
-- `norad`: the blue of NORAD's big board, with the front panel along the bottom.
+- `norad`: the colours of NORAD's big board, with the front panel along the bottom.
+
+The big board in Global Thermonuclear War always has the colours of NORAD's screens in the film, in every
+theme. The United States is blue, the Soviet Union is red, and the other countries are green. Missile
+tracks are white and ice blue. The rest of the screen uses the theme. With `NO_COLOR`, the big board has no
+colour too.
 
 ```sh
 wopr --theme amber

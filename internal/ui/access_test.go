@@ -272,14 +272,15 @@ func inspectScreen(t *testing.T, label string, d *driver) {
 	}
 
 	// Without colour (NO_COLOR, a monochrome terminal) nothing is lost. In every theme the
-	// screen carries no colour at all, and where the program's view draws both styles of a
-	// pair whose difference carries meaning (theme.Distinct), they still look different, each
-	// cell with its own attributes. The text is the same as in colour: a guard, since nothing
-	// yet chooses characters by profile.
-	th, profile := m.th, m.profile
-	defer func() { m.th, m.profile = th, profile }()
+	// screen carries no colour at all, the big board included, and where the program's view
+	// draws both styles of a pair whose difference carries meaning (theme.Distinct), they still
+	// look different, each cell with its own attributes. The text is the same as in colour: a
+	// guard, since nothing yet chooses characters by profile.
+	th, board, profile := m.th, m.board, m.profile
+	defer func() { m.th, m.board, m.profile = th, board, profile }()
 	for _, name := range theme.Names() {
 		m.th, _ = theme.Get(name)
+		m.board = theme.Board(m.th.Background)
 		m.profile = colorprofile.TrueColor
 		coloured := ansi.Strip(m.View().Content)
 		m.profile = colorprofile.ASCII

@@ -78,7 +78,7 @@ plays to the end, and any other key only says so.
 
 Every replay is the same: movie mode ignores `--seed` and `WOPR_SEED`. These options still apply:
 
-- `--theme` picks the colours, as in play. `--theme norad` suits the NORAD scenes.
+- `--theme` picks the colours, as in play. The big board always has the colours of NORAD's screens.
 - `--instant` shows each line at once instead of typing it, but the scenes still pause, so that you can
   read every page.
 - `--reduce-motion` stops the blinking and keeps the ending at a steady pace.

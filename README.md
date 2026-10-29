@@ -56,6 +56,7 @@ the list. Type `LOGOFF` to leave. Ctrl+C always quits.
 ## Screenshots
 
 All screenshots come from the program itself, in an 80×24 terminal with the default white-phosphor theme.
+They were recorded before the big board had the film's colours, so they show it in white.
 
 | Logon and the film's conversation | Global Thermonuclear War's big board |
 |---|---|
@@ -168,7 +169,8 @@ film's lines are its own screen text, checked against frame-by-frame transcripti
 | `-s`, `--seed <n>` | a repeatable run. Also `WOPR_SEED` |
 | `-r`, `--reduce-motion` | no blinking, still front-panel lights, and no speed-ups in the ending (`-i` also skips the animations). Also `WOPR_REDUCE_MOTION=1` |
 
-`NO_COLOR` (any value but an empty one) turns colour off.
+`NO_COLOR` (any value but an empty one) turns colour off. In every theme, the big board in Global
+Thermonuclear War shows the film's colours: the United States in blue, the Soviet Union in red.
 
 ## Accessibility
 
