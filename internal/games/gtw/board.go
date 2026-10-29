@@ -88,12 +88,15 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 }
 
 // drawFoot fills the row under the tables with one thing, by state: the orders hint at a
-// strike prompt (the last-orders warning at the last one), the launch code at the climax, and
-// otherwise the legend: + and * in their tracks' colours, and X reversed in the neutral text
-// colour, since both sides' impacts show. The film's board (movie mode) has nobody to give
-// orders, so it shows the legend at the strike prompts too.
+// strike prompt (the last-orders warning at the last one), the launch code at the climax,
+// WOPR's remark for the first seconds of a stage (react.go), and otherwise the legend: + and
+// * in their tracks' colours, and X reversed in the neutral text colour, since both sides'
+// impacts show. The film's board (movie mode) has nobody to give orders, so it shows the
+// legend at the strike prompts too, and makes no remarks.
 func (g *Game) drawFoot(c *proto.Canvas) {
-	switch {
+	switch remark := g.remarkShown(); {
+	case remark != "":
+		c.Put(0, footRow, remark, proto.StyleBright, 0)
 	case g.phase == climax:
 		code := lineCode[0].Text
 		shown := code[:g.cracked] + strings.Repeat("_", len(code)-g.cracked)

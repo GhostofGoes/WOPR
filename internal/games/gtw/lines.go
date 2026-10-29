@@ -76,6 +76,31 @@ var (
 	lineLastOrders = script.Orig("LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.")
 	lineLegend     = script.Orig("OUTGOING +   INCOMING *   IMPACT X")
 
+	// WOPR's remarks on the board's last row as a stage flies (react.go): the variants of
+	// each kind, one drawn from the seed. # in the first strike's is your first target.
+	lineReactFirst = script.Orig("TARGETS CONFIRMED, PROFESSOR. # IS FIRST.", "# FIRST, AS YOU LISTED, PROFESSOR.",
+		"IT BEGINS, PROFESSOR.", "FIRST STRIKE AWAY. THE ENEMY WILL ANSWER IT.")
+	lineReactPlan = script.Orig("THE WAR PLAN, PROFESSOR. I WROTE IT.", "AS PLANNED, PROFESSOR. NO DEVIATIONS.",
+		"THE PLAN IS SOUND. THE ENEMY HAS ONE TOO.", "PROCEEDING AS PLANNED, PROFESSOR.")
+	lineReactPlanAgain = script.Orig("THE PLAN AGAIN, PROFESSOR. YOU DO NOT IMPROVISE.",
+		"THE PLAN TWICE. I EXPECTED NOTHING ELSE, PROFESSOR.", "AGAIN THE PLAN. PREDICTABLE, PROFESSOR.")
+	lineReactAll = script.Orig("EVERYTHING, PROFESSOR? EMPTY SILOS LEAVE THE ENEMY YOUR CITIES.",
+		"ALL OF IT. THE ENEMY WILL ANSWER IN KIND, PROFESSOR.", "MAXIMUM COMMITMENT. NOTED, PROFESSOR.")
+	lineReactHold = script.Orig("HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.",
+		"NO LAUNCH ORDERED. THE ENEMY ORDERED ONE.", "A PAUSE, PROFESSOR? THE ENEMY DOES NOT PAUSE.",
+		"RESTRAINT. INTERESTING, PROFESSOR.")
+	lineReactSilosFull = script.Orig("ICBMS HELD. ENEMY WARHEADS WILL FIND THEM, PROFESSOR.",
+		"YOUR SILOS STAY FULL, PROFESSOR. THE ENEMY NOTICES.", "THE ICBMS WAIT IN THEIR SILOS. A TARGET IS A TARGET.")
+	lineReactPartial = script.Orig("A MEASURED RESPONSE. THE ENEMY IS NOT MEASURING.",
+		"IMPROVISING, PROFESSOR? THE PLAN WAS SIMPLER.", "AN UNUSUAL ORDER, PROFESSOR. EXECUTING.",
+		"ORDER CONFIRMED. THE REST WAITS, PROFESSOR.")
+	lineReactAuto       = script.Orig("THANK YOU, PROFESSOR.", "AN EFFICIENT CHOICE, PROFESSOR.", "HUMAN HESITATION REMOVED.")
+	lineReactAutoStrike = script.Orig("MY ORDERS NOW, PROFESSOR. THE PLAN.", "NO HESITATION THIS TIME, PROFESSOR.")
+	lineReactEmpty      = script.Orig("NOTHING LEFT TO ORDER, PROFESSOR. THE ENEMY HAS MORE.",
+		"NOTHING LEFT TO ORDER. THE WAR GOES ON WITHOUT YOU.")
+	lineReactFinal = script.Orig("THE LAST RUNG IS MINE, PROFESSOR.", "DEFCON 1. NO FURTHER ORDERS ARE NEEDED.",
+		"EVERYTHING, PROFESSOR. AS PROMISED.", "MY TURN, PROFESSOR.")
+
 	// filmList is LIST GAMES as the film shows it, for the climax. The catalog's tests check
 	// it against the registry's listed names, so the two cannot drift.
 	filmList = script.FromFilm(
@@ -93,7 +118,8 @@ var Lines = []script.Ls{
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
-	lineLegend, filmList,
+	lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll, lineReactHold, lineReactSilosFull,
+	lineReactPartial, lineReactAuto, lineReactAutoStrike, lineReactEmpty, lineReactFinal, filmList,
 }
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.

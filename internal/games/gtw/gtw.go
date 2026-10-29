@@ -104,6 +104,11 @@ type Game struct {
 	rejected int        // climax inputs refused, for the hint
 	listing  bool       // LIST GAMES moved the climax to the console
 	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
+
+	voice      *rand.Rand           // WOPR's remarks (react.go)
+	remarked   string               // the current stage's remark, or ""
+	lastRemark [len(reactLines)]int // each reaction's last variant, plus one; 0 before its first
+	planned    bool                 // a strike prompt took the war plan
 }
 
 // New returns a game.
@@ -139,6 +144,7 @@ func fill(l script.L, args ...any) string {
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	g.rng = proto.NewRand(env.Seed, 0)
+	g.voice = proto.NewRand(env.Seed, remarkStream)
 	return []proto.Output{
 		proto.SetLayout{Layout: proto.LayoutConsole},
 		table(append(sideChoice(), "")),
@@ -304,7 +310,7 @@ func (g *Game) openBoard() []proto.Output {
 	}
 	g.war = newWar()
 	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
-	outs = append(outs, g.begin(warPlan[0])...)
+	outs = append(outs, g.begin(warPlan[0], reactFirst)...)
 	return append(outs, g.play()...)
 }
 
@@ -327,10 +333,13 @@ func (g *Game) onOrder(input string) []proto.Output {
 		return []proto.Output{say(refusal), again}
 	case orderAuto:
 		g.auto = true
-		outs := append([]proto.Output{say(lineAuto)}, g.begin(alloc)...)
+		outs := append([]proto.Output{say(lineAuto)}, g.begin(alloc, reactAuto)...)
 		return append(outs, g.play()...)
 	}
-	return append(g.begin(alloc), g.play()...)
+	plan := warPlan[g.stage]
+	r := reactionTo(alloc, plan, g.planned, g.war.f[you].ICBM)
+	g.planned = g.planned || alloc == plan
+	return append(g.begin(alloc, r), g.play()...)
 }
 
 func (g *Game) strikePrompt() string {
@@ -339,8 +348,9 @@ func (g *Game) strikePrompt() string {
 }
 
 // begin starts the next stage: it resolves it, lays its tracks and says what you launched
-// (or, at DEFCON 1, what WOPR did).
-func (g *Game) begin(order [3]int) []proto.Output {
+// (or, at DEFCON 1, what WOPR did). WOPR remarks on r, the order, unless the stage is its
+// own: DEFCON 1, or a strike with nothing left to order.
+func (g *Game) begin(order [3]int, r reaction) []proto.Output {
 	g.impacts = append(g.impacts, g.missiles...)
 	g.missiles = nil
 	g.stage++
@@ -349,11 +359,16 @@ func (g *Game) begin(order [3]int) []proto.Output {
 		g.rep = g.war.final()
 		g.defcon = 1
 		g.lay()
+		g.remark(reactFinal)
 		return []proto.Output{strip(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
 	}
 	launchable := g.war.launchable()
 	g.rep = g.war.strike(g.stage, order)
 	g.lay()
+	if !launchable {
+		r = reactEmpty
+	}
+	g.remark(r)
 	var line string
 	switch f := g.rep.fire[you]; {
 	case !launchable:
@@ -538,8 +553,8 @@ func (g *Game) step() []proto.Output {
 			return append(outs, proto.Animate{}, proto.Prompt{Text: g.strikePrompt()})
 		}
 		return outs
-	case strikeEnd + holdFrames: // the next stage needs no order
-		return g.begin(warPlan[min(g.stage, strikes-1)])
+	case strikeEnd + holdFrames: // the next stage needs no order: AUTO's, unless begin finds it is WOPR's own
+		return g.begin(warPlan[min(g.stage, strikes-1)], reactAutoStrike)
 	}
 	return nil
 }
