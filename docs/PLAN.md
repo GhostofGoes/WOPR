@@ -1102,7 +1102,9 @@ no verdict of their own.
           of your warheads lands on it. Then its name shows beside its `X`: to the right or the left, or
           else on the row above or below. The city of yours that WOPR hit last in the stage is named the
           same way, in the incoming style. A name stays inside the map box, over the map's art and tracks
-          only. It never covers or touches an impact, a mark or another name, except its own `X`. Every
+          only. It never covers an impact, a mark or another name. It keeps two cells clear of them at
+          each end, except its own `X`, so that no name reads as another `X`'s and no two names run
+          together. Every
           impact the stage will make is kept clear from its start, so a name does not move when a warhead
           lands. A name with no room is left out, and its `X` still shows. The film's board (movie mode)
           has no marks, no names and the film's legend.

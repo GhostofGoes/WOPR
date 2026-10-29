@@ -138,10 +138,11 @@ func (g *Game) drawLegend(c *proto.Canvas) {
 
 // drawNames names struck cities beside their impacts: each of your targets once one of your
 // warheads has landed on it, in your list's order, then the city of yours that WOPR hit last
-// in this stage. A name goes beside its X, to the right or the left, or else on the row above
-// or below. It stays inside the map box, over the map's art and tracks only: it never covers
-// an impact, a target mark or another name, nor touches one at either end, so that no name
-// seems to belong to another X. A name with no room is left out; its X still shows. Every
+// in this stage. A name goes beside its X, to the right or the left with a blank between, or
+// else on the row above or below. It stays inside the map box, over the map's art and tracks
+// only: it never covers an impact, a target mark or another name, and it keeps two cells
+// clear of them at either end, but for its own X, so that no name seems to belong to another
+// X and no two names read as one. A name with no room is left out; its X still shows. Every
 // impact this stage will make is kept clear from its start, so a name does not move when a
 // warhead lands beside it.
 func (g *Game) drawNames(c *proto.Canvas) {
@@ -192,38 +193,43 @@ type names struct{ taken, marks map[[2]int]bool }
 func (n names) draw(c *proto.Canvas, p assets.Place, style proto.Style) {
 	x, y, name := mapLeft+p.X, mapTop+p.Y, p.Name
 	w := len(name)
-	for _, s := range []struct {
-		x, y int
-		text string
-	}{ // right and left of the X, a gap between; then above and below, from its column or to it
-		{x + 1, y, " " + name},
-		{x - w - 1, y, name + " "},
-		{x, y - 1, name},
-		{x - w + 1, y - 1, name},
-		{x, y + 1, name},
-		{x - w + 1, y + 1, name},
+	// Where the name starts: right and left of the X, a blank between; then above and below,
+	// from its column or to it.
+	for _, at := range [][2]int{
+		{x + 2, y},
+		{x - w - 1, y},
+		{x, y - 1},
+		{x - w + 1, y - 1},
+		{x, y + 1},
+		{x - w + 1, y + 1},
 	} {
-		if !n.room(s.x, s.y, len(s.text), [2]int{x, y}) {
+		if !n.room(at[0], at[1], w, [2]int{x, y}) {
 			continue
 		}
-		c.Put(s.x, s.y, s.text, proto.StyleLand, 0) // the gap beside the X is the map's blank
-		c.Put(s.x+strings.Index(s.text, name), s.y, name, style, 0)
-		for i := range len(s.text) {
-			n.taken[[2]int{s.x + i, s.y}] = true
+		if at[1] == y { // the blank between the X and its name is the map's
+			gap := x + 1
+			if at[0] < x {
+				gap = x - 1
+			}
+			c.Put(gap, y, " ", proto.StyleLand, 0)
+			n.taken[[2]int{gap, y}] = true
+		}
+		c.Put(at[0], at[1], name, style, 0)
+		for i := range w {
+			n.taken[[2]int{at[0] + i, at[1]}] = true
 		}
 		return
 	}
 }
 
-// room reports whether w cells from x, y are inside the map box, free, and with nothing but
-// the map's art, a track or own (the name's own X) on either side.
+// room reports whether a name w cells long from x, y is inside the map box, with nothing but
+// the map's art, a track or own (the name's own X) in its cells and in the two on either side.
 func (n names) room(x, y, w int, own [2]int) bool {
 	if y < mapTop || y >= boxBottom || x < mapLeft || x+w > boxRight {
 		return false
 	}
-	for i := -1; i <= w; i++ {
-		cell := [2]int{x + i, y}
-		if n.taken[cell] || (n.marks[cell] && (cell != own || i >= 0 && i < w)) {
+	for i := -2; i < w+2; i++ {
+		if cell := [2]int{x + i, y}; cell != own && (n.taken[cell] || n.marks[cell]) {
 			return false
 		}
 	}

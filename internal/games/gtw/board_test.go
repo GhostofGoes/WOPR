@@ -298,8 +298,9 @@ func screenNames(c *proto.Canvas) map[string][2]int {
 
 // Your targets are findable on the board: each is marked @ until one of your warheads lands
 // on it, and then named beside its X, as the city of yours WOPR hit last is. A name never
-// covers an impact or a mark, nor touches one at either end unless it is its own X, and it
-// stays inside the map box; whatever the side, the targets and the orders.
+// covers an impact or a mark, and keeps two cells clear of them and of other names at either
+// end, but for its own X, and it stays inside the map box; whatever the side, the targets and
+// the orders.
 func TestTargetsAreNamedOnTheBoard(t *testing.T) {
 	t.Parallel()
 	lists := map[assets.Side]string{
@@ -341,7 +342,14 @@ func TestTargetsAreNamedOnTheBoard(t *testing.T) {
 					t.Fatalf("seed %d: %s is not marked: %q at %d,%d:\n%s", seed, p.Name, cell.R, x, y, c.String())
 				}
 			}
-			for name, at := range screenNames(c) {
+			shown := screenNames(c)
+			lettered := map[[2]int]string{} // each cell a name covers, and the name
+			for name, at := range shown {
+				for i := range len(name) {
+					lettered[[2]int{at[0] + i, at[1]}] = name
+				}
+			}
+			for name, at := range shown {
 				p, ok := assets.Find(name)
 				if !ok {
 					t.Fatalf("seed %d: %q is not a place:\n%s", seed, name, c.String())
@@ -351,10 +359,13 @@ func TestTargetsAreNamedOnTheBoard(t *testing.T) {
 				if d := at[1] - own[1]; d < -1 || d > 1 {
 					t.Errorf("seed %d: %s is named %d rows from its X:\n%s", seed, name, d, c.String())
 				}
-				for x := at[0] - 1; x <= at[0]+len(name); x++ {
+				for x := at[0] - 2; x <= at[0]+len(name)+1; x++ {
 					cell := [2]int{x, at[1]}
 					if marks[cell] && cell != own {
-						t.Fatalf("seed %d: %s at %v covers or touches another X:\n%s", seed, name, at, c.String())
+						t.Fatalf("seed %d: %s at %v covers or is beside another X:\n%s", seed, name, at, c.String())
+					}
+					if other, ok := lettered[cell]; ok && other != name {
+						t.Fatalf("seed %d: %s at %v runs into %s:\n%s", seed, name, at, other, c.String())
 					}
 				}
 				if want := g.struck(p) || p.Side == g.side; !want {
