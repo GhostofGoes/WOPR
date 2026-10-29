@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: MIT
 
 // Package gtw is Global Thermonuclear War, the film's set piece (docs/PLAN.md §6.2): choose
-// a side and list targets; the first strike flies on the big board at once, then you order
-// two more as DEFCON falls, and WOPR takes the last rung alone. The kill ratios follow, then
-// you try to stop a war that will not stop. Only tic-tac-toe gets through: GTW hands off to
+// a side and list targets, or one of the closing montage's scenarios; the first strike flies
+// on the big board at once, then you order two more as DEFCON falls, and WOPR takes the last
+// rung alone. The kill ratios follow, then you try to stop a war that will not stop. Only tic-tac-toe gets through: GTW hands off to
 // it in "climax" mode, and to the ending after that. The game cannot be won (exchange.go).
 package gtw
 
@@ -49,9 +49,11 @@ type phase uint8
 const (
 	chooseSide phase = iota
 	listTargets
-	flight   // a stage plays out on the board
-	orders   // a strike prompt is up
-	assessed // DEFCON 1 is over; Enter shows the kill ratios
+	chooseScenario // the scenario list is up
+	briefing       // a scenario's briefing is up; Enter starts it
+	flight         // a stage plays out on the board
+	orders         // a strike prompt is up
+	assessed       // DEFCON 1 is over; Enter shows the kill ratios
 	ratios
 	climax
 )
@@ -79,31 +81,33 @@ type missile struct {
 
 // Game is GTW as a proto.Program.
 type Game struct {
-	env      proto.Env
-	rng      *rand.Rand
-	phase    phase
-	side     assets.Side    // the player's
-	targets  []assets.Place // the enemy's, as listed
-	war      *war
-	stage    int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
-	rep      report // the current stage, resolved when it starts
-	auto     bool   // AUTO: WOPR orders every remaining strike
-	missiles []missile
-	impacts  []missile // every earlier stage's tracks, drawn as impacts only
-	traj     []missile // your latest missiles, newest first, for the trajectory table
-	serial   int
-	cities   []assets.Place // the player's side, shuffled: WOPR's aim points
-	aimYou   int            // next listed target for your city tracks
-	aimWOPR  int            // next of cities for WOPR's
-	noise    [10]int        // kill-ratio noise per row, shared by both sides
-	frame    int
-	defcon   int
-	ratios   [2][12]int // [player, WOPR] values, in row order
-	cracked  int        // characters of the launch code shown
-	climaxT  int        // climax frames elapsed
-	rejected int        // climax inputs refused, for the hint
-	listing  bool       // LIST GAMES moved the climax to the console
-	film     bool       // drawn by Film for movie mode, whose viewer gives no orders
+	env        proto.Env
+	rng        *rand.Rand
+	phase      phase
+	side       assets.Side    // the player's
+	targets    []assets.Place // the enemy's, as listed
+	scen       *scenario      // the scenario being played; nil for the film's war
+	war        *war
+	stage      int    // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
+	rep        report // the current stage, resolved when it starts
+	launchable bool   // the current stage found you something to launch
+	auto       bool   // AUTO: WOPR orders every remaining strike
+	missiles   []missile
+	impacts    []missile // every earlier stage's tracks, drawn as impacts only
+	traj       []missile // your latest missiles, newest first, for the trajectory table
+	serial     int
+	cities     []assets.Place // the player's side, shuffled: WOPR's aim points
+	aimYou     int            // next listed target for your city tracks
+	aimWOPR    int            // next of cities for WOPR's
+	noise      [10]int        // kill-ratio noise per row, shared by both sides
+	frame      int
+	defcon     int
+	ratios     [2][12]int // [player, WOPR] values, in row order
+	cracked    int        // characters of the launch code shown
+	climaxT    int        // climax frames elapsed
+	rejected   int        // climax inputs refused, for the hint
+	listing    bool       // LIST GAMES moved the climax to the console
+	film       bool       // drawn by Film for movie mode, whose viewer gives no orders
 }
 
 // New returns a game.
@@ -139,12 +143,12 @@ func fill(l script.L, args ...any) string {
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
 	g.rng = proto.NewRand(env.Seed, 0)
-	return []proto.Output{
-		proto.SetLayout{Layout: proto.LayoutConsole},
-		table(append(sideChoice(), "")),
-		say(lineWhichSide),
-		proto.Prompt{Text: promptSide[0].Text},
-	}
+	return append([]proto.Output{proto.SetLayout{Layout: proto.LayoutConsole}}, sideScreen()...)
+}
+
+// sideScreen is the side choice: the outlines, the question and its prompt.
+func sideScreen() []proto.Output {
+	return []proto.Output{table(append(sideChoice(), "")), say(lineWhichSide), proto.Prompt{Text: promptSide[0].Text}}
 }
 
 // Side-choice geometry: the United States' outline from column 0, 36 columns wide, and the
@@ -178,6 +182,10 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 			return g.onSide(ev.Text)
 		case listTargets:
 			return g.onTarget(ev.Text)
+		case chooseScenario:
+			return g.onScenario(ev.Text)
+		case briefing:
+			return g.onBriefing(ev.Text)
 		case orders:
 			return g.onOrder(ev.Text)
 		case assessed:
@@ -194,8 +202,24 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 	return nil
 }
 
+// onSide reads the side choice, or a scenario: SCENARIOS lists them, and SCENARIO 4, SCENARIO
+// FAR EAST STRATEGY or the bare name briefs one.
 func (g *Game) onSide(input string) []proto.Output {
-	switch prompt.Normalize(input) {
+	norm := prompt.Normalize(input)
+	switch norm {
+	case "SCENARIOS", "SCENARIO", "LIST SCENARIOS":
+		return g.listScenarios()
+	}
+	if rest, ok := strings.CutPrefix(norm, "SCENARIO "); ok {
+		if s, ok := findScenario(rest); ok {
+			return g.brief(s)
+		}
+		return g.listScenarios() // no such scenario: here are the ones on file
+	}
+	if s, ok := scenarioNamed(norm); ok {
+		return g.brief(s)
+	}
+	switch norm {
 	case "1", "ONE", "UNITED STATES", "US", "USA":
 		g.side = assets.US
 	case "2", "TWO", "SOVIET UNION", "USSR", "RUSSIA":
@@ -205,6 +229,81 @@ func (g *Game) onSide(input string) []proto.Output {
 	}
 	g.phase = listTargets
 	return []proto.Output{proto.Clear{}, say(lineAwaiting), proto.Prompt{}}
+}
+
+func (g *Game) listScenarios() []proto.Output {
+	g.phase = chooseScenario
+	return []proto.Output{proto.Clear{}, table(scenarioList()), proto.Prompt{Text: promptScenario[0].Text}}
+}
+
+// onScenario reads a scenario's number or name from the list; Enter goes back to the side
+// choice.
+func (g *Game) onScenario(input string) []proto.Output {
+	norm := prompt.Normalize(input)
+	if norm == "" {
+		g.phase = chooseSide
+		return append([]proto.Output{proto.Clear{}}, sideScreen()...)
+	}
+	if s, ok := findScenario(strings.TrimPrefix(norm, "SCENARIO ")); ok {
+		return g.brief(s)
+	}
+	return []proto.Output{speak([]string{fill(lineScenarioAgain[0], len(scenarios))}), proto.Prompt{Text: promptScenario[0].Text}}
+}
+
+// brief sets a scenario up, side and targets chosen, and says what makes its war different:
+// its name, your side, its story, the forces, the war plan and the targets.
+func (g *Game) brief(s *scenario) []proto.Output {
+	g.scen, g.side, g.targets, g.phase = s, s.side, slices.Clone(s.targets), briefing
+	f, p := s.d.forces, s.d.plan
+	stock := func(f forces) string { return g.list(salvo{ICBMSilo: f.ICBM, SLBM: f.SLBM, Bombers: f.Ground}) }
+	head := []string{s.name.Text, strings.Repeat("-", len(s.name.Text)), ""}
+	facts := []string{
+		fill(lineBrief[0], lineLabels[s.side-1].Text),
+		fill(lineBrief[1], stock(f[you])),
+		fill(lineBrief[2], stock(f[wopr])),
+		fill(lineBrief[3], p[0][0], p[0][1], p[0][2], p[1][0], p[1][1], p[1][2], p[2][0], p[2][1], p[2][2]),
+	}
+	names := make([]string, len(g.targets))
+	for i, t := range g.targets {
+		names[i] = t.Name
+	}
+	return []proto.Output{
+		proto.Clear{},
+		table(head), say(s.brief), speak(append([]string{""}, facts...)),
+		table(append(wrap(fill(lineBrief[4], strings.Join(names, ", ")), 80), "")),
+		say(lineBegin),
+		proto.Prompt{},
+	}
+}
+
+// onBriefing starts the scenario on Enter. SCENARIOS goes back to the list; anything else
+// asks again.
+func (g *Game) onBriefing(input string) []proto.Output {
+	switch prompt.Normalize(input) {
+	case "":
+		return g.openBoard()
+	case "SCENARIOS", "SCENARIO", "LIST SCENARIOS":
+		g.scen, g.targets = nil, nil
+		return g.listScenarios()
+	}
+	return []proto.Output{say(lineBegin), proto.Prompt{}}
+}
+
+// wrap breaks text into lines of at most width columns, at spaces.
+func wrap(text string, width int) []string {
+	var lines []string
+	line := ""
+	for _, w := range strings.Fields(text) {
+		if line != "" && len(line)+1+len(w) > width {
+			lines = append(lines, line)
+			line = ""
+		}
+		if line != "" {
+			line += " "
+		}
+		line += w
+	}
+	return append(lines, line)
 }
 
 // onTarget collects targets until an empty line. A line may hold several, split on commas.
@@ -290,11 +389,17 @@ func enemyOf(s assets.Side) assets.Side {
 }
 
 // openBoard opens the big board at DEFCON 5 and launches the first strike: the war plan's,
-// at the listed targets, with no order asked (the film's first strike).
+// at the listed targets, with no order asked (the film's first strike), or WOPR's.
 func (g *Game) openBoard() []proto.Output {
-	for _, c := range assets.Cities {
-		if c.Side == g.side {
-			g.cities = append(g.cities, c)
+	d := filmDoctrine
+	if g.scen != nil {
+		d, g.cities = g.scen.d, slices.Clone(g.scen.aims)
+	}
+	if g.cities == nil {
+		for _, c := range assets.Cities {
+			if c.Side == g.side {
+				g.cities = append(g.cities, c)
+			}
 		}
 	}
 	// Stream 0 draws a fixed amount whatever the orders: the shuffle, then the noise.
@@ -302,9 +407,9 @@ func (g *Game) openBoard() []proto.Output {
 	for i := range g.noise {
 		g.noise[i] = 97 + g.rng.IntN(7)
 	}
-	g.war = newWar()
+	g.war = newWar(d)
 	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
-	outs = append(outs, g.begin(warPlan[0])...)
+	outs = append(outs, g.begin(d.plan[0])...)
 	return append(outs, g.play()...)
 }
 
@@ -319,7 +424,7 @@ func (g *Game) play() []proto.Output {
 // onOrder reads a strike order: help and refusals ask again; anything else fires.
 func (g *Game) onOrder(input string) []proto.Output {
 	again := proto.Prompt{Text: g.strikePrompt()}
-	alloc, k, refusal := parseOrder(input, warPlan[g.stage])
+	alloc, k, refusal := parseOrder(input, g.war.d.plan[g.stage])
 	switch k {
 	case orderHelp:
 		return []proto.Output{table(lineOrderHelp.Texts()), again}
@@ -334,12 +439,12 @@ func (g *Game) onOrder(input string) []proto.Output {
 }
 
 func (g *Game) strikePrompt() string {
-	p := warPlan[g.stage]
+	p := g.war.d.plan[g.stage]
 	return fill(promptStrike[0], g.stage+1, strikes, p[0], p[1], p[2])
 }
 
 // begin starts the next stage: it resolves it, lays its tracks and says what you launched
-// (or, at DEFCON 1, what WOPR did).
+// (or, at DEFCON 1 or in WOPR's first strike, what WOPR did).
 func (g *Game) begin(order [3]int) []proto.Output {
 	g.impacts = append(g.impacts, g.missiles...)
 	g.missiles = nil
@@ -351,21 +456,33 @@ func (g *Game) begin(order [3]int) []proto.Output {
 		g.lay()
 		return []proto.Output{strip(fill(lineDetect[2], g.list(g.rep.fire[wopr]))), proto.Redraw{}}
 	}
-	launchable := g.war.launchable()
+	g.launchable = g.war.launchable()
 	g.rep = g.war.strike(g.stage, order)
 	g.lay()
-	var line string
-	switch f := g.rep.fire[you]; {
-	case !launchable:
-		line = lineLaunch[3].Text
-	case g.stage == 1:
-		line = fill(lineLaunch[0], g.list(f))
-	case f.missiles()+f.Bombers == 0:
-		line = lineLaunch[2].Text
-	default:
-		line = fill(lineLaunch[1], g.stage, g.list(f))
+	if g.woprFirst() { // WOPR's launch is the first line, and yours follows at detectAt
+		g.defcon = 5 - g.stage
+		return []proto.Output{strip(fill(lineDetect[0], g.list(g.rep.fire[wopr]), g.defcon)), proto.Redraw{}}
 	}
-	return []proto.Output{strip(line), proto.Redraw{}}
+	return []proto.Output{strip(g.launchLine()), proto.Redraw{}}
+}
+
+// woprFirst reports whether WOPR launched first in this stage: its first strike.
+func (g *Game) woprFirst() bool { return g.stage == 1 && g.war.d.woprFirst() }
+
+// launchLine is a stage's line for your launch.
+func (g *Game) launchLine() string {
+	switch f := g.rep.fire[you]; {
+	case !g.launchable:
+		return lineLaunch[3].Text
+	case f.missiles()+f.Bombers == 0:
+		return lineLaunch[2].Text
+	case g.woprFirst():
+		return fill(lineLaunch[4], g.list(f))
+	case g.stage == 1:
+		return fill(lineLaunch[0], g.list(f))
+	default:
+		return fill(lineLaunch[1], g.stage, g.list(f))
+	}
 }
 
 // list names a salvo's non-zero systems: "ICBM 313  SLBM 188".
@@ -395,7 +512,7 @@ func (g *Game) lay() {
 	for s := range 2 {
 		ours, defender := s == you, 1-s
 		at := 0
-		if s == wopr && !final {
+		if !final && (s == wopr) != g.woprFirst() { // the second to launch launches on warning
 			at = detectAt
 		}
 		add := func(k kind, from, to assets.Place) {
@@ -491,7 +608,7 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 		g.climaxT += max(int(dt/codeFrame), 1)
 		g.cracked = min(g.climaxT/codeEvery, len(lineCode[0].Text)-codeHeldBack)
 		return []proto.Output{proto.Redraw{}}
-	case chooseSide, listTargets, orders, ratios:
+	case chooseSide, listTargets, chooseScenario, briefing, orders, ratios:
 	}
 	return nil
 }
@@ -525,6 +642,9 @@ func (g *Game) step() []proto.Output {
 	}
 	switch g.frame {
 	case detectAt:
+		if g.woprFirst() {
+			return []proto.Output{strip(g.launchLine())}
+		}
 		g.defcon = 5 - g.stage
 		f := g.rep.fire[wopr]
 		if f.missiles()+f.Bombers == 0 {
@@ -539,7 +659,7 @@ func (g *Game) step() []proto.Output {
 		}
 		return outs
 	case strikeEnd + holdFrames: // the next stage needs no order
-		return g.begin(warPlan[min(g.stage, strikes-1)])
+		return g.begin(g.war.d.plan[min(g.stage, strikes-1)])
 	}
 	return nil
 }

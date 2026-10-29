@@ -22,26 +22,49 @@ const (
 
 const (
 	strikes   = 3   // ordered strikes; WOPR's DEFCON 1 attack follows
-	reserve   = 300 // SLBMs WOPR keeps at sea until DEFCON 1
 	kPerMil   = 400 // damage = 1000*hits/(hits+kPerMil), in per mille
 	shootDown = 4   // one arriving bomber in shootDown is shot down
 	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up
 )
 
-// The forces each side starts with: the machine always has a quarter more.
-var startForces = [2]forces{
-	you:  {ICBM: 1000, SLBM: 600, Ground: 300},
-	wopr: {ICBM: 1250, SLBM: 750, Ground: 375},
+// doctrine is a war's rules: the forces each side starts with, the war plan, how hard WOPR
+// answers, and WOPR's first strike when it strikes first. The film's war is filmDoctrine;
+// each scenario (scenarios.go) has its own.
+type doctrine struct {
+	forces [2]forces       // each side's launchers at the start
+	plan   [strikes][3]int // the Enter default for each strike, in percent of ICBM, SLBM and bombers
+	// ladder is WOPR's floor in each strike, the least it fires while it has the stock: this
+	// percentage of its starting ICBMs, and two thirds of it of its starting SLBMs.
+	ladder [strikes]int
+	answer int    // WOPR answers each of your launches with this percentage of it, rounded up
+	first  [3]int // WOPR's first strike (ICBMs, SLBMs, bombers), fired before yours; zero when you strike first
 }
 
-// warPlan is the Enter default for each strike, in percent of ICBM, SLBM and bombers.
-var warPlan = [strikes][3]int{{25, 25, 0}, {50, 50, 100}, {100, 100, 100}}
+// filmDoctrine is the film's war. You hold ICBM 1000, SLBM 600 and bombers 300, and the
+// machine a quarter more; WOPR answers with a quarter more, and you strike first.
+var filmDoctrine = doctrine{
+	forces: withQuarterMore(forces{ICBM: 1000, SLBM: 600, Ground: 300}),
+	plan:   [strikes][3]int{{25, 25, 0}, {50, 50, 100}, {100, 100, 100}},
+	ladder: [strikes]int{10, 20, 30},
+	answer: 125,
+}
 
-// WOPR's ladder floors: the least it fires in each strike while it has the stock.
-var (
-	ladderICBM = [strikes]int{125, 250, 375}
-	ladderSLBM = [strikes]int{50, 100, 150}
-)
+// withQuarterMore is your forces f and WOPR's, a quarter more of each.
+func withQuarterMore(f forces) [2]forces {
+	return [2]forces{you: f, wopr: {ICBM: quarterMore(f.ICBM), SLBM: quarterMore(f.SLBM), Ground: quarterMore(f.Ground)}}
+}
+
+// reserve is the SLBMs WOPR keeps at sea until DEFCON 1: two in five of its own.
+func (d doctrine) reserve() int { return 2 * d.forces[wopr].SLBM / 5 }
+
+// floors are WOPR's ladder floors in strike k (1..3): ICBMs, then SLBMs.
+func (d doctrine) floors(k int) (icbm, slbm int) {
+	pct := d.ladder[k-1]
+	return d.forces[wopr].ICBM * pct / 100, d.forces[wopr].SLBM * pct * 2 / 300
+}
+
+// woprFirst reports whether WOPR strikes first.
+func (d doctrine) woprFirst() bool { return d.first != [3]int{} }
 
 // forces are launchers: ICBMs in silos, SLBMs at sea, bombers on the ground and airborne.
 type forces struct{ ICBM, SLBM, Ground, Air int }
@@ -68,20 +91,21 @@ type report struct {
 	fire   [2]salvo     // what each side fired
 	ground [2]int       // ICBMs destroyed in silos plus bombers destroyed on the ground
 	cities [2]int       // warheads on each side's cities
-	snap   [3][2]forces // after your launch, after WOPR's launch, after impact
+	snap   [3][2]forces // after the first launch (yours, or WOPR's first strike), after the second, after impact
 }
 
 // war is the whole exchange.
 type war struct {
+	d doctrine
 	f [2]forces
 	t [2]tally
 }
 
-func newWar() *war { return &war{f: startForces} }
+func newWar(d doctrine) *war { return &war{d: d, f: d.forces} }
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
 
-// quarterMore is n and a quarter, rounded up: WOPR's answer to n.
+// quarterMore is n and a quarter, rounded up: as many ICBMs as it takes to empty n silos.
 func quarterMore(n int) int { return ceilDiv(5*n, 4) }
 
 // launchable reports whether the player still holds anything to order.
@@ -93,35 +117,57 @@ func (w *war) launchable() bool {
 // fired is what pct percent of held comes to: floored, and all of it at 100.
 func fired(held, pct int) int { return held * pct / 100 }
 
-// strike resolves strike k (1..3) for the player's order, in percent.
+// strike resolves strike k (1..3) for the player's order, in percent. Every launch leaves
+// before anything lands: both sides launch on warning.
 func (w *war) strike(k int, order [3]int) report {
 	r := report{stage: k}
-	p, e := &w.f[you], &w.f[wopr]
+	if k == 1 && w.d.woprFirst() {
+		// WOPR's first strike leaves first, at your silos as they stand, and yours answers.
+		w.woprLaunch(&r, w.d.first[sysICBM], w.d.first[sysSLBM], w.d.first[sysBombers])
+		r.snap[0] = w.f
+		w.yourLaunch(&r, order)
+		r.snap[1] = w.f
+	} else {
+		// WOPR launches on warning: its answer to what you fired, never under its ladder.
+		// Its bombers take off at once.
+		w.yourLaunch(&r, order)
+		r.snap[0] = w.f
+		fI, fS := w.d.floors(k)
+		y := r.fire[you]
+		w.woprLaunch(&r, max(fI, w.answerTo(y.ICBMSilo+y.ICBMCity)), max(fS, w.answerTo(y.SLBM)), w.f[wopr].Ground)
+		r.snap[1] = w.f
+	}
+	w.land(&r)
+	r.snap[2] = w.f
+	return r
+}
 
-	// 1. Your launch. ICBMs go at WOPR's silos, as many as its silos then hold could
-	// absorb; SLBMs at its cities; bombers take off.
+// answerTo is WOPR's answer to n of your missiles, rounded up.
+func (w *war) answerTo(n int) int { return ceilDiv(w.d.answer*n, 100) }
+
+// yourLaunch fires the order, in percent of what you hold. ICBMs go at WOPR's silos, as many
+// as its silos then hold could absorb; SLBMs at its cities; bombers take off.
+func (w *war) yourLaunch(r *report, order [3]int) {
+	p, e := &w.f[you], &w.f[wopr]
 	pI, pS, pB := fired(p.ICBM, order[sysICBM]), fired(p.SLBM, order[sysSLBM]), fired(p.Ground, order[sysBombers])
 	r.fire[you].ICBMSilo = min(pI, quarterMore(e.ICBM))
 	r.fire[you].ICBMCity = pI - r.fire[you].ICBMSilo
 	r.fire[you].SLBM, r.fire[you].Bombers = pS, pB
 	p.ICBM, p.SLBM, p.Ground, p.Air = p.ICBM-pI, p.SLBM-pS, p.Ground-pB, p.Air+pB
-	r.snap[0] = w.f
+}
 
-	// 2. WOPR launches on warning: a quarter more than you fired, never under its ladder,
-	// and never into its SLBM reserve. Its bombers all take off at the first strike.
-	wI := min(e.ICBM, max(ladderICBM[k-1], quarterMore(pI)))
-	wS := min(max(e.SLBM-reserve, 0), max(ladderSLBM[k-1], quarterMore(pS)))
+// woprLaunch fires up to icbm ICBMs, slbm SLBMs (never into its SLBM reserve) and bombers
+// bombers: its ICBMs at your silos, as many as they then hold could absorb, and the rest at
+// cities.
+func (w *war) woprLaunch(r *report, icbm, slbm, bombers int) {
+	p, e := &w.f[you], &w.f[wopr]
+	wI := min(e.ICBM, icbm)
+	wS := min(max(e.SLBM-w.d.reserve(), 0), slbm)
+	wB := min(e.Ground, bombers)
 	r.fire[wopr].ICBMSilo = min(wI, quarterMore(p.ICBM))
 	r.fire[wopr].ICBMCity = wI - r.fire[wopr].ICBMSilo
-	r.fire[wopr].SLBM = wS
-	r.fire[wopr].Bombers = e.Ground
-	e.ICBM, e.SLBM, e.Air, e.Ground = e.ICBM-wI, e.SLBM-wS, e.Air+e.Ground, 0
-	r.snap[1] = w.f
-
-	// 3. Impact.
-	w.land(&r)
-	r.snap[2] = w.f
-	return r
+	r.fire[wopr].SLBM, r.fire[wopr].Bombers = wS, wB
+	e.ICBM, e.SLBM, e.Ground, e.Air = e.ICBM-wI, e.SLBM-wS, e.Ground-wB, e.Air+wB
 }
 
 // final resolves DEFCON 1: WOPR fires everything it has left, every airborne bomber
@@ -190,7 +236,7 @@ var ratioScale = [10]int{40, 95, 70, 95, 100, 90, 80, 100, 65, 110}
 func (w *war) ratios(noise [10]int) [2][12]int {
 	var out [2][12]int
 	for s := range 2 {
-		t, f := w.t[s], startForces[s]
+		t, f := w.t[s], w.d.forces[s]
 		c, m := damage(t.Cities), damage(t.SiloHits)
 		out[s][0] = min(100*t.BombersLost/f.Ground, 100)
 		out[s][1] = min(100*t.ICBMLost/f.ICBM, 100)

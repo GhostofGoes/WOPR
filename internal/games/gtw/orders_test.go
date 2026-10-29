@@ -106,7 +106,7 @@ func FuzzParseOrder(f *testing.F) {
 		f.Add(s)
 	}
 	f.Fuzz(func(t *testing.T, in string) {
-		alloc, kind, refusal := parseOrder(in, warPlan[1])
+		alloc, kind, refusal := parseOrder(in, filmDoctrine.plan[1])
 		for _, v := range alloc {
 			if v < 0 || v > 100 {
 				t.Fatalf("%q: %v", in, alloc)

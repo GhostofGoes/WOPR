@@ -54,6 +54,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	c.Put(mapLeft-1, mapTop-1, edge, proto.StyleDim, 0)
 	c.Put(mapLeft-1, boxBottom, edge, proto.StyleDim, 0)
 	title := " " + lineTitle[0].Text + " "
+	if g.scen != nil {
+		title = " " + lineTitle[0].Text + ": " + g.scen.name.Text + " "
+	}
 	c.Put(mapLeft+(assets.MapW-len(title))/2, mapTop-1, title, proto.StyleBright, 0)
 	for i, lon := range []float64{usLon, ussrLon} {
 		name := " " + lineLabels[i].Text + " "
@@ -128,9 +131,6 @@ func trackStyle(m missile) proto.Style {
 // shown is the forces the table shows: each launch counts when it leaves, losses when the
 // stage lands.
 func (g *Game) shown() [2]forces {
-	if g.war == nil {
-		return startForces
-	}
 	snap := g.rep.snap
 	switch {
 	case g.phase != flight:

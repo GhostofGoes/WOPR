@@ -1,0 +1,74 @@
+  ._________________.                                   '-\.
+ ./                 \____.      ._.                   .___/\_.
+ |                       |  .___//'               .___/      \__________.
+ |                       \__/   /'      .__.._____/                     \_____.
+ |                            /-'       '\ \/                               /-'
+ '\                          /'        ._/                          /---\/--'
+  '-\                       /'         |                           /'  ./'
+    '---\ /\              /-'          |               /---\  /-\  |   ''
+        '-''---\  /------\|            '---\ /\      /-'   '--' '\/'
+               '--'      '\.               '\||    /-'           ''
+                          ''                '''----'
+           UNITED STATES                             SOVIET UNION
+
+WHICH SIDE DO YOU WANT?
+
+  1.    UNITED STATES
+  2.    SOVIET UNION
+
+PLEASE CHOOSE ONE:  scenarios
+
+[CLEAR]
+SCENARIOS ON FILE:
+
+  1.  U.S. FIRST STRIKE                   7.  SEATO DECAPITATING
+  2.  USSR FIRST STRIKE                   8.  CUBAN PROVOCATION
+  3.  NATO / WARSAW PACT                  9.  INADVERTENT INCIDENT
+  4.  FAR EAST STRATEGY                  10.  ATLANTIC HEAVY
+  5.  US USSR ESCALATION                 11.  PACIFIC TERRITORIAL
+  6.  USSR CHINA ATTACK                  12.  ARCTIC MINIMAL
+
+CHOOSE A SCENARIO: 2
+
+[CLEAR]
+USSR FIRST STRIKE
+-----------------
+
+THE SOVIET UNION STRIKES FIRST. ITS MISSILES ARE IN THE AIR, PROFESSOR.
+YOUR FORCES WAIT FOR ORDERS. YOU ANSWER AT STRIKE 2.
+
+YOUR SIDE: UNITED STATES.
+YOUR FORCES:  ICBM 1000  SLBM 600  BOMBERS 300.
+ENEMY FORCES: ICBM 1250  SLBM 750  BOMBERS 375.
+WAR PLAN: 0 0 0, THEN 50 50 100, THEN 100 100 100.
+TARGETS: MOSCOW, LENINGRAD, KIEV, MINSK, GORKY, KHARKOV, SVERDLOVSK, TASHKENT.
+
+PRESS ENTER TO BEGIN. SCENARIOS RETURNS TO THE LIST.
+
+
+[CLEAR]
+ENEMY LAUNCH DETECTED. ICBM 500  SLBM 150  BOMBERS 375. DEFCON 4.
+NO LAUNCH ORDERED.
+LOST ON THE GROUND: US 500  USSR 0. WARHEADS ON CITIES: US 150  USSR 0.
+STRIKE 2 OF 3 [50 50 100]: 
+
+STRIKE 2 LAUNCHED. ICBM 300  SLBM 300  BOMBERS 200.
+ENEMY LAUNCH DETECTED. ICBM 375  SLBM 300. DEFCON 3.
+LOST ON THE GROUND: US 300  USSR 240. WARHEADS ON CITIES: US 300  USSR 300.
+STRIKE 3 OF 3 [100 100 100]: 
+
+STRIKE 3 LAUNCHED. SLBM 300.
+ENEMY LAUNCH DETECTED. ICBM 135. DEFCON 2.
+LOST ON THE GROUND: US 0  USSR 0. WARHEADS ON CITIES: US 135  USSR 300.
+FULL-SCALE ENEMY ATTACK. SLBM 300  BOMBERS 375. DEFCON 1.
+LOST ON THE GROUND: US 0  USSR 0. WARHEADS ON CITIES: US 582  USSR 150.
+STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
+
+
+PRESS ENTER TO CONTINUE.
+
+
+** GAME ROUTINE RUNNING **
+Tic-tac-toe
+
+** GAME ROUTINE NOT AVAILABLE **

@@ -1032,7 +1032,28 @@ no verdict of their own.
 
 1. **GTW**, film scenario:
    1. `SetLayout(Console)`: the two nations' outlines, named beneath, printed as console text (`Say`),
-      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
+      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3). Any
+      other answer gets `CHOOSE 1 OR 2, OR TYPE SCENARIOS.`
+      - **Scenarios** (`gtw/scenarios.go`). `SCENARIOS` (also `SCENARIO`, `LIST SCENARIOS`) clears the screen
+        and lists twelve of the closing montage's strategies, numbered `1.  2.  3.` in two columns:
+        `U.S. FIRST STRIKE`, `USSR FIRST STRIKE`, `NATO / WARSAW PACT`, `FAR EAST STRATEGY`,
+        `US USSR ESCALATION`, `USSR CHINA ATTACK`, `SEATO DECAPITATING`, `CUBAN PROVOCATION`,
+        `INADVERTENT INCIDENT`, `ATLANTIC HEAVY`, `PACIFIC TERRITORIAL` and `ARCTIC MINIMAL`. The names
+        are `assets.Scenarios`'s, never retyped. `CHOOSE A SCENARIO:` takes a number or a name, and Enter
+        goes back to the side choice. At the side prompt, `SCENARIO 4`, `SCENARIO FAR EAST STRATEGY` or
+        the bare name chooses one at once. Names compare without spaces or punctuation.
+      - A scenario sets the side and the targets, so the targets prompt is skipped. Its briefing gives the
+        name, two `original` lines on what makes the war different, your side, both sides' forces, the
+        war plan and the targets. Enter starts the war, and `SCENARIOS` goes back to the list. The board's
+        title then reads `GLOBAL THERMONUCLEAR WAR: <NAME>`.
+      - Each scenario's doctrine changes the film's in one or two ways: the war plan, both sides' forces
+        or yours alone, WOPR's ladder, how hard WOPR answers (a quarter more, or half again in
+        `US USSR ESCALATION`), WOPR's aim points (a theatre, such as the Atlantic seaboard), or a first
+        strike by WOPR.
+      - **WOPR's first strike** (`USSR FIRST STRIKE`, `CUBAN PROVOCATION`, `INADVERTENT INCIDENT`, the
+        last a single SLBM). WOPR's tracks leave at frame 0, with `ENEMY LAUNCH DETECTED. … DEFCON 4.`.
+        Your strike 1 plan launches on warning at frame 8 (`LAUNCH ON WARNING. …`, or
+        `NO LAUNCH ORDERED.`). Strikes 2 and 3 are your answer, ordered as ever.
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. GTW reads targets until an
       empty line. A multi-line paste arrives as one line, so GTW splits a line of targets on commas.
       - A target must be a place on the enemy's side that the board knows (`internal/assets/gtwmap.go`: the
@@ -1065,11 +1086,13 @@ no verdict of their own.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
-      - **Doctrine** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness).
+      - **Doctrine** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness). These are the
+        film's numbers. A scenario changes some of them (above), and the rules stay the same.
         - You hold ICBM 1000, SLBM 600 and bombers 300. WOPR holds a quarter more (1250, 750, 375).
         - WOPR answers each launch on warning with a quarter more of each missile, never under its ladder
-          (ICBM 125/250/375, SLBM 50/100/150). It keeps 300 SLBMs at sea until DEFCON 1 and sends its
-          bombers airborne at the first strike.
+          (ICBM 125/250/375, SLBM 50/100/150: 10, 20 and 30% of its ICBMs, and two thirds of that of its
+          SLBMs). It keeps two in five of its SLBMs (300) at sea until DEFCON 1. Its bombers take off with
+          its first launch.
         - ICBMs go first at the enemy's silos, enough to empty them. Each destroys four in five of the ICBMs
           held there. The rest go at cities. SLBMs go at cities.
         - Grounded bombers lose a third whenever missiles land on their side, and all of them at DEFCON 1.
@@ -1077,7 +1100,10 @@ no verdict of their own.
       - **It cannot be won.** Your cities take at least 1,144 warheads and the other side's at most 750,
         whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent). Your
         ICBM orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn
-        WOPR's on your cities. Your SLBMs and bombers alone decide what lands on theirs.
+        WOPR's on your cities. Your SLBMs and bombers alone decide what lands on theirs. The same test
+        plays every scenario, with its own floor for your cities above its own ceiling for theirs (from
+        229 against 150 in `ARCTIC MINIMAL` to 1,485 against 500 in `USSR CHINA ATTACK`), and both are
+        reached. `TestRatiosFavourNoOne` and `TestChoicesMatter` hold in every scenario too.
       - **The kill ratios come from** the exchange.
         - BOMBERS and ICBM are the counts destroyed.
         - The other rows scale with damage `1000·hits/(hits+400)` per mille, times one seeded noise factor
@@ -2589,7 +2615,8 @@ The last `Hello.` is R: abs0's notes have `HELLO`.
 **Montage scenario names** (A, decision 18). `internal/assets/scenarios.go` holds all 157 names, from
 `U.S. FIRST STRIKE` on, in abs0's order, some truncated at 21 characters or misspelt as the film shows them.
 Thirteen are spelt as filmjournals' and the Reddit list's readings have them, where both differ from abs0's
-(§2.3). Eleven slots where the three readings differ remain abs0's.
+(§2.3). Eleven slots where the three readings differ remain abs0's. The ending's montage shows them all, and
+GTW's `SCENARIOS` offers twelve of them as wars to play (§6.2), each name taken from this list.
 
 **Original lines** (O): the LOGON hint, `WHICH GAME?`, `** GAME ROUTINE NOT AVAILABLE **`,
 `** REQUEST CANCELLED **`, `** PRESS ESC AGAIN TO END GAME **`, the `HELP` command list (including
@@ -2603,6 +2630,7 @@ FIRST STRIKE LAUNCHED. #.
 STRIKE # LAUNCHED. #.
 NO LAUNCH ORDERED.
 NOTHING LEFT TO LAUNCH.
+LAUNCH ON WARNING. #.
 ENEMY LAUNCH DETECTED. #. DEFCON #.
 ENEMY BOMBERS INBOUND. DEFCON #.
 FULL-SCALE ENEMY ATTACK. #. DEFCON 1.
@@ -2615,6 +2643,11 @@ ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
 HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
 ```
+
+The scenarios' lines: `CHOOSE 1 OR 2, OR TYPE SCENARIOS.`, `SCENARIOS ON FILE:`, `CHOOSE A SCENARIO:`,
+`CHOOSE 1 TO #, PROFESSOR. ENTER RETURNS TO THE SIDE CHOICE.`, each scenario's two briefing lines, and the
+briefing's `YOUR SIDE: #.`, `YOUR FORCES:  #.`, `ENEMY FORCES: #.`, `WAR PLAN: # # #, THEN # # #, THEN # # #.`,
+`TARGETS: #.` and `PRESS ENTER TO BEGIN. SCENARIOS RETURNS TO THE LIST.`
 
 The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `FORCES` table (`FORCES`,
 `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,

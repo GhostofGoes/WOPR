@@ -12,7 +12,7 @@ var (
 	lineLabels    = script.FromFilm("UNITED STATES", "SOVIET UNION") // under the outlines, and on the board
 	lineWhichSide = script.FromFilm("WHICH SIDE DO YOU WANT?", "", "  1.    UNITED STATES", "  2.    SOVIET UNION", "")
 	promptSide    = script.FromFilm("PLEASE CHOOSE ONE:  ")
-	lineSideAgain = script.Orig("CHOOSE 1 OR 2.")
+	lineSideAgain = script.Orig("CHOOSE 1 OR 2, OR TYPE SCENARIOS.")
 	lineAwaiting  = script.FromFilm(
 		"AWAITING FIRST STRIKE COMMAND",
 		"-----------------------------",
@@ -27,8 +27,15 @@ var (
 	lineOwnSide   = script.Orig("# IS NOT AN ENEMY TARGET.")
 	lineListHint  = script.Orig("TYPE LIST FOR THE ENEMY TARGETS ON FILE.")
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
-	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
-	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
+	// The scenarios: the list, its prompt, and a briefing's lines. # is filled in order.
+	lineScenarios     = script.Orig("SCENARIOS ON FILE:")
+	promptScenario    = script.Orig("CHOOSE A SCENARIO: ")
+	lineScenarioAgain = script.Orig("CHOOSE 1 TO #, PROFESSOR. ENTER RETURNS TO THE SIDE CHOICE.")
+	lineBrief         = script.Orig("YOUR SIDE: #.", "YOUR FORCES:  #.", "ENEMY FORCES: #.",
+		"WAR PLAN: # # #, THEN # # #, THEN # # #.", "TARGETS: #.")
+	lineBegin    = script.Orig("PRESS ENTER TO BEGIN. SCENARIOS RETURNS TO THE LIST.")
+	lineAssessed = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
+	lineContinue = script.Orig("PRESS ENTER TO CONTINUE.")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
 	// underlines the first line; the board's three-row strip has no room for that.
 	lineRunning  = script.FromFilm("** GAME ROUTINE RUNNING **")
@@ -41,7 +48,8 @@ var (
 
 	// The exchange (original): a stage's three report lines, the strike prompt and its
 	// replies. # is filled in order.
-	lineLaunch = script.Orig("FIRST STRIKE LAUNCHED. #.", "STRIKE # LAUNCHED. #.", "NO LAUNCH ORDERED.", "NOTHING LEFT TO LAUNCH.")
+	lineLaunch = script.Orig("FIRST STRIKE LAUNCHED. #.", "STRIKE # LAUNCHED. #.", "NO LAUNCH ORDERED.", "NOTHING LEFT TO LAUNCH.",
+		"LAUNCH ON WARNING. #.")
 	lineDetect = script.Orig("ENEMY LAUNCH DETECTED. #. DEFCON #.", "ENEMY BOMBERS INBOUND. DEFCON #.",
 		"FULL-SCALE ENEMY ATTACK. #. DEFCON 1.")
 	lineCost      = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
@@ -85,16 +93,16 @@ var (
 	)
 )
 
-// Lines is every script block, for the provenance test.
-var Lines = []script.Ls{
+// Lines is every script block, the scenarios' briefings included, for the provenance test.
+var Lines = append([]script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineAssessed,
+	lineOwnSide, lineListHint, lineOnFile, lineScenarios, promptScenario, lineScenarioAgain, lineBrief, lineBegin, lineAssessed,
 	lineContinue, lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHint, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineBadOrder, lineBadPct, lineOrderHelp,
 	lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, filmList,
-}
+}, scenarioBriefs()...)
 
 // FilmList returns the names LIST GAMES shows at the climax, without the blank line.
 func FilmList() []string {

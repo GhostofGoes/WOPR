@@ -4,9 +4,9 @@
   "name": "Global Thermonuclear War",
   "launch": "wopr gtw",
   "aliases": ["15", "global-thermonuclear-war", "thermonuclear"],
-  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
+  "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Or play one of twelve wars from the film's closing scenes. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
   "howToPlay": [
-    "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION.",
+    "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION. Or type SCENARIOS to see twelve wars from the film's closing scenes, such as USSR FIRST STRIKE. Type a number or a name to choose one. WOPR then gives your side, the forces, the war plan and the targets. Press Enter to start that war on the big board.",
     "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
     "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]. Give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100). Or answer ALL, HOLD or AUTO. Enter uses the plan in brackets.",
     "After each of your launches, WOPR launches on warning and DEFCON falls. The > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it still holds.",
@@ -15,6 +15,8 @@
   ],
   "controls": [
     {"input": "1 or 2", "does": "choose the United States or the Soviet Union (US, USA, USSR and RUSSIA work too)"},
+    {"input": "SCENARIOS", "does": "at PLEASE CHOOSE ONE:, list the scenarios. Enter at CHOOSE A SCENARIO: goes back to the side choice"},
+    {"input": "SCENARIO 2 or USSR FIRST STRIKE", "does": "choose a scenario by its number or its name, then press Enter to start it"},
     {"input": "LAS VEGAS, SEATTLE", "does": "add targets. A comma separates several on one line. Names in use today (KYIV, ST PETERSBURG, NYC) work too"},
     {"input": "LIST (or HELP, ?)", "does": "at the targets prompt, list the enemy targets on file"},
     {"input": "Enter on an empty line", "does": "end the target list and launch the first strike"},
@@ -29,9 +31,11 @@
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
   ],
   "tips": [
-    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
+    "The war cannot be won. In the film's war, whatever you order, your cities take at least 1,144 warheads. The enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
     "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
+    "Each scenario changes the rules, and none can be won. In USSR FIRST STRIKE, CUBAN PROVOCATION and INADVERTENT INCIDENT, WOPR fires first. ATLANTIC HEAVY puts most warheads on submarines. ARCTIC MINIMAL gives each side a fifth of its forces.",
+    "The rules of the orders do not change in a scenario. Your ICBM orders alone decide what lands on your cities. Your SLBMs and bombers alone decide what lands on the enemy's.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
   ],
   "screenshots": [
