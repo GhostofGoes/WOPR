@@ -187,11 +187,17 @@ func start(t *testing.T, w, h int, args ...string) *session {
 // startEnv starts wopr with extra environment variables.
 func startEnv(t *testing.T, w, h int, env []string, args ...string) *session {
 	t.Helper()
+	return startProgram(t, w, h, env, binary, args...)
+}
+
+// startProgram starts any program, such as a tmux client, as startEnv starts wopr.
+func startProgram(t *testing.T, w, h int, env []string, name string, args ...string) *session {
+	t.Helper()
 	p, err := xpty.NewPty(w, h)
 	if err != nil {
 		t.Fatalf("pty: %v", err)
 	}
-	cmd := exec.Command(binary, args...)
+	cmd := exec.Command(name, args...)
 	cmd.Env = append(append(os.Environ(), "TERM=xterm-256color"), env...)
 	controllingTerminal(cmd)
 	modes := terminalModes(t, p)

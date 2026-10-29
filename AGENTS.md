@@ -25,7 +25,7 @@ system. There is no Makefile.
 | Test | `go test ./...` |
 | Test with the race detector | `go test -race ./...` (Linux and macOS. Windows amd64 needs a C compiler. It does not run on windows/arm64) |
 | Branch coverage of the code that ships ([gobco](https://github.com/rillig/gobco)) | `go run ./internal/tools/branchcov` (`-v` also lists each branch that no test takes). CI runs it with `-min 80` |
-| End-to-end tests (real binary in a pty) | `go test -tags e2e ./internal/e2e` |
+| End-to-end tests (real binary in a pty) | `go test -tags e2e ./internal/e2e` (the tmux tests skip without `tmux`. `WOPR_E2E_TMUX=1` makes them fail instead, as CI's Linux smoke jobs do) |
 | Lint rules self-test | `WOPR_LINT_SELFTEST=1 go test -run TestLintRulesFire ./internal/archtest` |
 | Regenerate golden files | `WOPR_UPDATE_GOLDEN=1 go test ./...`, then review the diff |
 | All hooks | `prek run --all-files` (install once with `prek install`) |
