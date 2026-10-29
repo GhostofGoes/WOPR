@@ -24,10 +24,9 @@ const (
 	// file's attestation.
 	installURL = "https://ghostofgoes.github.io/WOPR/install/"
 
-	// maxNote keeps a note to one short line (owner decision 2026-10-29). A Debian changelog
-	// shows it as "  * <note>", so its lines can reach 84 columns, past Debian's 80.
-	// .changie.yaml's body.maxLength says the same to `changie new`.
-	maxNote = 80
+	// maxNote keeps a note on one line of a Debian changelog, which shows it as "  * <note>" and
+	// keeps to 80 columns. .changie.yaml's body.maxLength says the same to `changie new`.
+	maxNote = 76
 
 	// noChanges stands in for an empty version: a Debian changelog entry needs a line.
 	noChanges = "This release has no changes you will notice."
