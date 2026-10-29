@@ -1,8 +1,8 @@
 # WOPR — Architecture & Scope Plan (v2.1)
 
-_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.5.0 are
+_Status: v2.1 (2026-10-06), kept in step with the code since. M0–M4 and M6 are built, and v0.1.0 to v0.6.1 are
 released. M5's film text pass is done (2026-10-11, §2.3). QA on all OSes and some owner settings (M0b)
-remain. The installers (R14) ship in the next release. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
+remain. The installers (R14) ship in every release since v0.5.0. v2.1 supersedes v1 (commit `ada63a0`, which never reached `main`).
 [`docs/reviews/PLAN-v1-review.md`](reviews/PLAN-v1-review.md) is the adversarial review of v1, and
 [`docs/reviews/PLAN-v2-review.md`](reviews/PLAN-v2-review.md) reviews v2. Where the plan answers a finding, it
 cites the finding's id inline: v1 ids look like A-3, v2 ids look like AR-1. Implementation follows the
@@ -2153,9 +2153,8 @@ wopr itself.
 - **README.md**:
   - What this is, and a link to the docs site (below).
   - Install, in a few lines. A link to the docs site's download buttons and one-line installs. The latest
-    release, `go install …@latest`, and the Linux packages (since v0.4.0, and they install the manual
-    page). The Windows installer, the Mac app and the packages' menu entry (from the release after v0.4.0).
-    They put WOPR in the Start menu, Applications or the app menu. The installer and the app warn at first
+    release, `go install …@latest`, the Linux packages (they install the manual page), the Windows
+    installer and the Mac app. They put WOPR in the Start menu, Applications or the app menu. The installer and the app warn at first
     because they are unsigned. A link to the section on checking attestations (§12).
   - Quick start (`LOGON:`, `LIST GAMES`, `LOGOFF`). The shell's commands and keys ("what you type is kept")
     are on the docs site's Usage page.

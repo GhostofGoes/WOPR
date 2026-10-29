@@ -43,7 +43,7 @@ body:
       description: >-
         What `wopr --version` prints. If wopr will not install or run, write "not installed". Then put the
         command you ran under "How can we make it happen?".
-      placeholder: wopr v0.3.0 (commit 3eb36c3, built 2026-10-07, go1.27.1)
+      placeholder: wopr v0.6.1 (commit e349a37, built 2026-10-12, go1.27.2)
     validations:
       required: true
   - type: dropdown
