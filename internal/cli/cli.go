@@ -50,6 +50,7 @@ type Config struct {
 	SeedSet      bool
 	ReduceMotion bool
 	LaunchWindow time.Duration // GTW's strike prompts wait this long for an order; 0 for ever
+	NoClimax     bool          // GTW offers another war after the kill ratios, not the climax
 }
 
 // UsageError is a command-line mistake; main prints it with the usage hint and exits 2.
@@ -80,6 +81,7 @@ var flagPairs = []flagPair{
 	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
 	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
+	{"no-climax", "n", "", "after GTW's kill ratios, offer another war", ""},
 	{"scenario", "c", "", "list GTW's scenarios, or watch [scenario]", ""},
 }
 
@@ -220,6 +222,7 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&cfg.Instant, byName["instant"])
 	strVar(&seed, byName["seed"])
 	boolVar(&cfg.ReduceMotion, byName["reduce-motion"])
+	boolVar(&cfg.NoClimax, byName["no-climax"])
 	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
 		fs.Var(optionalValue{&window}, name, byName["launch-window"].help)
 	}
@@ -290,6 +293,9 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	}
 	if mov && cfg.LaunchWindow > 0 {
 		return cfg, RunTUI, usagef("--movie and --launch-window cannot be combined: nobody gives the film's orders")
+	}
+	if mov && cfg.NoClimax {
+		return cfg, RunTUI, usagef("--movie and --no-climax cannot be combined: the film's war ends in its climax")
 	}
 	cfg.Movie, cfg.Only = mov, only
 	if mov {

@@ -579,6 +579,9 @@ type Env struct {
 	// --launch-window: how long GTW's strike prompts wait for an order (§6.2). 0 (the default,
 	// and always in movie mode) waits for ever.
 	LaunchWindow time.Duration
+	// --no-climax: GTW offers another war after the kill ratios instead of the climax (§6.2).
+	// Always false in movie mode.
+	NoClimax bool
 }
 
 type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
@@ -976,6 +979,8 @@ wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WO
 wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
                               a switch, so a value needs "=" ("-w 45" is refused). No variable. --movie
                               refuses it
+wopr -n | --no-climax         GTW offers another war after the kill ratios, not the climax (§6.2). No
+                              variable. --movie refuses it
 wopr -c | --scenario [name]   GTW's scenarios (§6.2): alone, list them and exit; with a number or a name (after a
                               space or "="), start GTW in that scenario's playback. No game with it; --movie
                               refuses it
@@ -1072,7 +1077,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). With `--no-climax`: the question after the kill ratios, a new war that starts afresh with the egg kept, and no ending with no winner. The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1184,7 +1189,8 @@ no verdict of their own.
           `proto.LaunchSeed`). So GTW takes a war for an egg when its `Env.Seed` is the one the egg's
           session gives its first GTW: `wopr --seed 1962 gtw`, or `wopr --seed 1962` and the film's
           dialogue into the war. A later war in that session has its own seed, as every replay does, and
-          meets a measured response. So does a game started directly with `Env.Seed` 1962. The film's
+          meets a measured response. A new war that `--no-climax` starts (below) is the same launch's,
+          so it keeps the egg, and WOPR names the doctrine again as its board opens. So does a game started directly with `Env.Seed` 1962. The film's
           war (movie mode, `gtw.Film`) is always a measured response.
         - **WOPR names an egg's doctrine** as the board opens, as the strip's first line, at table pace:
           `WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)`. A measured response names nothing, and the kill
@@ -1250,6 +1256,17 @@ no verdict of their own.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
         everything up to the next prompt. Nothing waits for a tick, unless a launch window runs.
+      - **Another war instead of the climax** (`-n/--no-climax`, `Env.NoClimax`; off by default). The
+        Enter after the kill ratios does not start the climax. It asks `ANOTHER WAR, PROFESSOR?` in the
+        strip, with the table still on the board. Yes (`prompt.YesNo`), or Enter alone, clears the war
+        away and asks for a side again. The new war has all its forces, a new target list and new
+        orders. The game keeps its environment, its easter egg and its two seed streams, which draw on
+        from where they are. So a seeded session plays the same wars in turn. The exchange has no
+        randomness, so the same side, targets and orders give the same strip lines in every war. No
+        gives `Done{NoWinner}` with no hand-off, so the persona says `WINNER: NONE` and offers another
+        game. Anything else gets `YES FOR ANOTHER WAR. NO ENDS THE GAME.` and the question again. A
+        scenario's playback returns to its menu as before. Movie mode has none: `--movie` refuses the
+        flag, the UI passes false there, and `Film` never sets it.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
@@ -2842,6 +2859,8 @@ WOPR HAS LAUNCH AUTHORITY.
 WOPR IS USING DOCTRINE S-# (#)
 LAUNCH WINDOW CLOSED, PROFESSOR.
 NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.
+ANOTHER WAR, PROFESSOR?
+YES FOR ANOTHER WAR. NO ENDS THE GAME.
 ORDER NOT RECOGNISED. TYPE HELP.
 PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
 ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.

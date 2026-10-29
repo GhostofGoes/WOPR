@@ -210,18 +210,22 @@ type GameSession struct {
 // GameOver.
 func Game(t testing.TB, game proto.Program, info games.Info, mode string, seed uint64) *GameSession {
 	t.Helper()
+	return GameWith(t, game, info, mode, host.Config{Seed: seed})
+}
+
+// GameWith is Game under a host configured by cfg, such as one that passes a command-line
+// option on in the game's Env. Game's resolver replaces cfg.Resolve.
+func GameWith(t testing.TB, game proto.Program, info games.Info, mode string, cfg host.Config) *GameSession {
+	t.Helper()
 	gs := &GameSession{root: &standIn{slug: info.Slug, mode: mode}}
 	built := false
-	cfg := host.Config{
-		Seed: seed,
-		Resolve: func(l proto.Launch) (proto.Program, host.Placement, error) {
-			gs.launches = append(gs.launches, l.Slug)
-			if l.Slug != info.Slug || built {
-				return nil, host.Placement{}, games.ErrNotFound
-			}
-			built = true
-			return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows, NoAbort: info.Internal}, nil
-		},
+	cfg.Resolve = func(l proto.Launch) (proto.Program, host.Placement, error) {
+		gs.launches = append(gs.launches, l.Slug)
+		if l.Slug != info.Slug || built {
+			return nil, host.Placement{}, games.ErrNotFound
+		}
+		built = true
+		return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows, NoAbort: info.Internal}, nil
 	}
 	gs.Session = Start(t, gs.root, host.Placement{}, cfg)
 	return gs

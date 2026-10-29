@@ -111,6 +111,12 @@ func sweepCases() []sweepCase {
 		{"movie menu", func(o Options) Options { o.Movie = true; return o }, playbook{inputs: []string{"nowhere", "c", "q"}}, false},
 		// The whole film, from the first scene to the end of the list.
 		{"movie", func(o Options) Options { o.Movie, o.Scene = true, "first-contact"; return o }, playbook{}, true},
+		// --no-climax: a war to the kill ratios, the ANOTHER WAR prompt and its refusal, a second
+		// war, and no.
+		{"gtw --no-climax", func(o Options) Options { o.Play, o.NoClimax = "global-thermonuclear-war", true; return o }, playbook{
+			inputs: []string{"2", "Las Vegas", "", "", "", "", "", "maybe", "yes", "1", "Moscow", "", "", "", "", "", "no"},
+			want:   []string{"HUMAN RESOURCES"},
+		}, false},
 	}
 	for _, e := range catalog.Registry().All() {
 		if e.Info.Status != games.Playable {

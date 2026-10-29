@@ -6,6 +6,7 @@
 // two more as DEFCON falls, and WOPR takes the last rung alone. The kill ratios follow, then
 // you try to stop a war that will not stop. Only tic-tac-toe gets through: GTW hands off to
 // it in "climax" mode, and to the ending after that. The game cannot be won (exchange.go).
+// With --no-climax (Env.NoClimax), the kill ratios offer another war instead of the climax.
 // The third choice at the side prompt plays the closing montage's scenarios, each a war that
 // plays itself to WINNER: NONE (scenarios.go).
 package gtw
@@ -59,6 +60,7 @@ const (
 	orders         // a strike prompt is up
 	assessed       // DEFCON 1 is over; Enter shows the kill ratios
 	ratios
+	another // --no-climax's ANOTHER WAR prompt is up, over the kill ratios
 	climax
 )
 
@@ -217,10 +219,16 @@ func (g *Game) Handle(ev proto.Event) []proto.Output {
 		case assessed:
 			return g.showRatios()
 		case ratios:
-			if g.scen != nil { // a playback ends at the kill ratios, not the climax
+			switch {
+			case g.scen != nil: // a playback ends at the kill ratios, not the climax
 				return g.endPlayback()
+			case g.env.NoClimax:
+				g.phase = another
+				return []proto.Output{proto.Prompt{Text: promptAnother[0].Text}}
 			}
 			return g.startClimax()
+		case another:
+			return g.onAnother(ev.Text)
 		case climax:
 			return g.onClimax(ev.Text)
 		case flight, briefing: // no prompt is up; the host never sends one
@@ -623,7 +631,7 @@ func (g *Game) onTick(dt time.Duration) []proto.Output {
 		g.climaxT += max(int(dt/codeFrame), 1)
 		g.cracked = min(g.climaxT/codeEvery, len(lineCode[0].Text)-codeHeldBack)
 		return []proto.Output{proto.Redraw{}}
-	case chooseSide, listTargets, chooseScenario, briefing, ratios:
+	case chooseSide, listTargets, chooseScenario, briefing, ratios, another:
 	}
 	return nil
 }
@@ -765,6 +773,28 @@ func change(l script.Ls, d int) string {
 		return fill(l[1], -d)
 	}
 	return l[2].Text
+}
+
+// onAnother answers --no-climax's ANOTHER WAR prompt. Yes, or Enter, clears the war away and
+// asks for a side again: the next war is a new one, with new targets and new orders. No ends
+// the game with no winner, as the persona then says.
+func (g *Game) onAnother(input string) []proto.Output {
+	switch answer := prompt.YesNo(input); {
+	case strings.TrimSpace(input) == "" || answer == prompt.Yes:
+		g.reset()
+		outs := []proto.Output{proto.Animate{}, proto.SetLayout{Layout: proto.LayoutConsole}, proto.Clear{}}
+		return append(outs, sideScreen()...)
+	case answer == prompt.No:
+		return []proto.Output{proto.Animate{}, proto.Done{Result: proto.Result{Outcome: proto.NoWinner}}}
+	}
+	return []proto.Output{say(lineAnother), proto.Prompt{Text: promptAnother[0].Text}}
+}
+
+// reset clears the war away for the next one. What the launch gave the game stays: its
+// environment, its easter egg, and its seed's streams, which draw on from where they are, so
+// a seeded session plays the same wars in turn.
+func (g *Game) reset() {
+	*g = Game{env: g.env, egg: g.egg, rng: g.rng, voice: g.voice, defcon: 5}
 }
 
 // startClimax returns to the board at DEFCON 1, with WOPR searching for the launch code.

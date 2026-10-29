@@ -30,6 +30,9 @@ var (
 	lineOnFile    = script.Orig("# TARGETS ON FILE:")
 	lineAssessed  = script.Orig("STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.")
 	lineContinue  = script.Orig("PRESS ENTER TO CONTINUE.")
+	// --no-climax's question after the kill ratios, and its answer to anything but yes or no.
+	promptAnother = script.Orig("ANOTHER WAR, PROFESSOR? ")
+	lineAnother   = script.Orig("YES FOR ANOTHER WAR. NO ENDS THE GAME.")
 	// A line's targets, named back: one, or several with commas between them; then where they
 	// stand in the list, and its limit.
 	lineAccepted = script.Orig("#. TARGET # OF #.", "#. TARGETS #-# OF #.")
@@ -156,7 +159,7 @@ var (
 // Lines is every script block, for the provenance test.
 var Lines = []script.Ls{
 	lineLabels, lineWhichSide, lineScenarios, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
-	lineOwnSide, lineListHint, lineOnFile, lineMenu, promptMenu, lineMenuAgain, lineBrief, lineHold, lineMeasured, lineAssessed, lineAccepted, lineListed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
+	lineOwnSide, lineListHint, lineOnFile, lineMenu, promptMenu, lineMenuAgain, lineBrief, lineHold, lineMeasured, lineAssessed, lineAccepted, lineListed, lineContinue, promptAnother, lineAnother, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
 	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineEggs, lineShut, lineNoOrders, lineBadOrder,
 	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,

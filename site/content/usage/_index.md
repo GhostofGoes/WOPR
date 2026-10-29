@@ -42,6 +42,7 @@ Options can come before or after the game.
 | `-s`, `--seed <n>` | Play a repeatable session. See [Seeds](#seeds). |
 | `-r`, `--reduce-motion` | Nothing blinks, the front panel's lights stand still, and the ending keeps a steady pace. |
 | `-w`, `--launch-window[=secs]` | Give each strike order in [Global Thermonuclear War](/games/gtw) a time limit, 30 seconds unless you give a number from 5 to 999 (`-w=60`). The board shows the seconds that are left. At zero, WOPR takes launch authority, as `AUTO` gives it. Movie mode cannot use it. |
+| `-n`, `--no-climax` | In [Global Thermonuclear War](/games/gtw), skip the launch code at the end of the war. After the kill ratios, Enter asks `ANOTHER WAR, PROFESSOR?`. Type `YES` or press Enter for a new war, or type `NO` to stop. Movie mode cannot use it. |
 | `-c`, `--scenario [scenario]` | Watch a scenario of the film's closing montage play itself in [Global Thermonuclear War](/games/gtw). Name it by its number or its name (`wopr -c 2`, `wopr -c far east strategy`). After the kill ratios, Enter opens the scenario menu. Alone, `--scenario` lists the scenarios and exits. |
 
 ## Environment variables

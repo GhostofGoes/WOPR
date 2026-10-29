@@ -422,7 +422,7 @@ func (g *Game) verdict() []string {
 func (g *Game) endPlayback() []proto.Output {
 	_, per := menuPages()
 	page := (g.scen.number - 1) / per
-	*g = Game{env: g.env, egg: g.egg, rng: g.rng, voice: g.voice, defcon: 5}
+	g.reset()
 	outs := []proto.Output{proto.Animate{}, proto.SetLayout{Layout: proto.LayoutConsole}}
 	return append(outs, g.showMenu(page)...)
 }

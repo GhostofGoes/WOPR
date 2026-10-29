@@ -291,6 +291,49 @@ func TestParseLaunchWindow(t *testing.T) {
 	}
 }
 
+// --no-climax is a switch for GTW, with the game or without, before or after it, and with a
+// scenario. Movie mode's war ends in the film's climax, so it refuses the switch.
+func TestParseNoClimax(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args     string
+		noClimax bool
+		play     string
+		usage    string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "gtw", play: "global-thermonuclear-war"},
+		{args: "-n", noClimax: true},
+		{args: "--no-climax gtw", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "gtw -n -w", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "-n -c 2", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "-n --no-climax=false"},
+		{args: "-m -n", usage: "--movie and --no-climax cannot be combined"},
+		{args: "--movie 2 --no-climax", usage: "--movie and --no-climax cannot be combined"},
+		{args: "-m -n=false"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.NoClimax != tt.noClimax || cfg.Play != tt.play {
+				t.Errorf("got no-climax %v play %q, want %v %q", cfg.NoClimax, cfg.Play, tt.noClimax, tt.play)
+			}
+		})
+	}
+}
+
 // R9: every long flag has a one-letter shorthand, and no letter is used twice.
 func TestEveryLongFlagHasAShorthand(t *testing.T) {
 	t.Parallel()

@@ -243,6 +243,10 @@ var optionDetails = map[string]string{
 		"At zero, WOPR takes launch authority, as `AUTO` gives it. Alone, `--launch-window` gives 30 seconds. " +
 		"`--launch-window=`<secs> gives 5 to 999 seconds, and 0 turns the limit off. " +
 		"`--instant` does not stop the clock. Movie mode gives no orders, so `--movie` refuses this option.",
+	"no-climax": "In Global Thermonuclear War, skip the launch code at the end of the war. " +
+		"After the kill ratios, Enter asks ANOTHER WAR, PROFESSOR? " +
+		"Yes or Enter starts a new war at the side choice. No ends the game, and WOPR says WINNER: NONE. " +
+		"The film's war ends with the launch code, so `--movie` refuses this option.",
 	"scenario": "Watch a scenario of the film's closing montage play itself in Global Thermonuclear War. After the kill ratios, Enter opens the menu of scenarios. " +
 		"Name the <scenario> by its number or its name, after a space or an equals sign: `wopr -c 2`, `wopr -c far east strategy`. " +
 		"Alone, `--scenario` lists the scenarios, then exits. It takes no game, and `--movie` refuses it.",

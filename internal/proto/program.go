@@ -34,6 +34,9 @@ type Env struct {
 	// LaunchWindow is --launch-window: how long GTW's strike prompts wait for an order before
 	// WOPR takes launch authority. 0 waits for ever (the default, and always in movie mode).
 	LaunchWindow time.Duration
+	// NoClimax is --no-climax: after the kill ratios, GTW offers another war instead of the
+	// climax. Always false in movie mode.
+	NoClimax bool
 }
 
 // Layout says where a program's View goes.

@@ -41,7 +41,7 @@ const (
 // View implements proto.Program.
 func (g *Game) View(c *proto.Canvas) {
 	switch g.phase {
-	case ratios:
+	case ratios, another:
 		g.drawRatios(c)
 	case flight, orders, assessed, climax:
 		g.drawBoard(c)

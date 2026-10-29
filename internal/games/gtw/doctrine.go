@@ -16,7 +16,8 @@ import (
 // which the host derives from the session seed, the slug and the play (proto.LaunchSeed).
 // So the egg comes with the session's first war, whether `wopr --seed 1962 gtw` launches it
 // or the player reaches it through WOPR. A later war in that session gets a seed of its own,
-// as every replay does, and meets a measured response.
+// as every replay does, and meets a measured response. Another war that --no-climax starts is
+// the same launch's, so it keeps the egg (Game.reset).
 type egg struct {
 	seed uint64 // the session's
 	d    doctrineID

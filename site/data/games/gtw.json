@@ -10,7 +10,7 @@
     "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR names each new target back, with its number out of eight, and tells you if a target is already on the list. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
     "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]. Give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100). Or answer ALL, HOLD or AUTO. Enter uses the plan in brackets. With the --launch-window option, the board's last row shows the seconds left to give the order. At zero, WOPR takes launch authority, as AUTO gives it.",
     "After each of your launches, WOPR launches on warning and DEFCON falls. The > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it still holds. As each strike starts, WOPR gives its opinion of your order on the bottom line of the board.",
-    "Press Enter for the PROJECTED KILL RATIOS. Under the table, WOPR tells you what your orders changed, in millions of dead. It compares your war with HOLD at both prompts, and with the war plan. Press Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop. It accepts only TIC-TAC-TOE. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending. Then it offers a game of chess.",
+    "Press Enter for the PROJECTED KILL RATIOS. Under the table, WOPR tells you what your orders changed, in millions of dead. It compares your war with HOLD at both prompts, and with the war plan. Press Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop. It accepts only TIC-TAC-TOE. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending. Then it offers a game of chess. With the --no-climax option, there is no launch code. Enter after the kill ratios asks ANOTHER WAR, PROFESSOR? instead. Type YES or press Enter for a new war, from the side choice. Type NO to stop.",
     "A scenario plays itself. In the scenario menu, type a number or a name. NEXT and PREV turn the page. WOPR gives a short briefing: your side, the side that strikes first, the enemy's doctrine, your side's orders and the targets. Then the war flies on the big board, and nobody gives orders. Press Enter for the kill ratios, which end with WINNER: NONE. Enter again returns to the menu. Enter on an empty line in the menu returns to the side choice."
   ],
   "controls": [
@@ -28,6 +28,7 @@
     {"input": "AUTO", "does": "let WOPR order every remaining strike"},
     {"input": "wopr gtw --launch-window", "does": "on the command line, give each strike order 30 seconds (-w=60 gives 60). At zero, WOPR orders every remaining strike"},
     {"input": "HELP or ?", "does": "at a strike prompt, explain how orders work"},
+    {"input": "wopr gtw --no-climax", "does": "on the command line, skip the launch code. After the kill ratios, WOPR offers another war: YES or Enter starts it, and NO stops"},
     {"input": "TIC-TAC-TOE", "does": "at the climax, the one request WOPR accepts"},
     {"input": "0", "does": "at PLEASE LIST NUMBER OF PLAYERS:, zero players: WOPR plays itself"},
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
@@ -41,6 +42,7 @@
     "Read what WOPR says about each order. It has a different remark for the war plan, ALL, HOLD, AUTO and your own orders. Its remarks give hints about what your order changes. The seed selects the words, so other seeds give other remarks.",
     "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint. Each hint tells you more than the one before. From the ninth refusal on, WOPR tells you what to type.",
     "The scenarios cannot be won either. The name of a scenario sets its war. Its first words set the theatre and your side. Its last word sets the side that strikes first, your side's orders and the enemy's doctrine. A scenario always plays the same way, whatever the seed.",
+    "To compare orders, start with --no-climax. After each war, press Enter twice for a new war, with all forces back. The same side, targets and orders give the same warhead counts.",
     "With --launch-window, wait too long and WOPR fires its war plan at every strike that is left. To hold fire, type HOLD before the window shuts."
   ],
   "screenshots": [

@@ -414,6 +414,35 @@ func TestScenarioPlaysItself(t *testing.T) {
 	}
 }
 
+// wopr gtw -n asks for another war after the kill ratios, in place of the climax. YES starts
+// one at the side choice, and NO returns to WOPR with no winner.
+func TestNoClimax(t *testing.T) {
+	s := start(t, 80, 24, "gtw", "-n", "--instant")
+	war := func(side, target string) {
+		t.Helper()
+		s.waitFor("PLEASE CHOOSE ONE:", 15*time.Second)
+		s.send(side + "\r")
+		s.waitFor("PLEASE LIST PRIMARY TARGETS BY", 15*time.Second)
+		s.send(target + "\r")
+		s.waitFor("OF 8.", 15*time.Second)
+		s.send("\r")
+		for _, want := range []string{"STRIKE 2 OF 3", "STRIKE 3 OF 3", "STRIKE ASSESSMENT COMPLETE.", "PRESS ENTER TO CONTINUE."} {
+			s.waitFor(want, 30*time.Second)
+			s.send("\r")
+		}
+		s.waitFor("ANOTHER WAR, PROFESSOR?", 15*time.Second)
+	}
+	war("2", "Las Vegas")
+	s.send("yes\r")
+	war("1", "Moscow")
+	s.send("no\r")
+	s.waitFor("WINNER: NONE", 15*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
 // wopr -m opens the scene menu; q leaves with exit 0.
 func TestMovieMenuQuits(t *testing.T) {
 	s := start(t, 80, 24, "-m", "--instant")

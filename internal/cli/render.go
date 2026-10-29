@@ -135,6 +135,7 @@ Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
   wopr gtw -w=20       play GTW with 20 seconds to give each strike order
+  wopr gtw -n          play GTW war after war, with no launch code at the end
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene
