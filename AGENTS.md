@@ -25,7 +25,7 @@ system. There is no Makefile.
 | Test | `go test ./...` |
 | Test with the race detector | `go test -race ./...` (Linux and macOS. Windows amd64 needs a C compiler. It does not run on windows/arm64) |
 | Branch coverage of the code that ships ([gobco](https://github.com/rillig/gobco)) | `go run ./internal/tools/branchcov` (`-v` also lists each branch that no test takes). CI runs it with `-min 80` |
-| End-to-end tests (real binary in a pty) | `go test -tags e2e ./internal/e2e` |
+| End-to-end tests (real binary in a pty) | `go test -tags e2e ./internal/e2e` (the tmux tests skip without `tmux`. `WOPR_E2E_TMUX=1` makes them fail instead, as CI's Linux smoke jobs do) |
 | Lint rules self-test | `WOPR_LINT_SELFTEST=1 go test -run TestLintRulesFire ./internal/archtest` |
 | Regenerate golden files | `WOPR_UPDATE_GOLDEN=1 go test ./...`, then review the diff |
 | All hooks | `prek run --all-files` (install once with `prek install`) |
@@ -66,8 +66,8 @@ fine (CI checks the exact version). Four modules pin the tools: `tools/go.mod` (
 separate because their dependency graphs conflict. The docs site's theme, Hextra, is a Hugo module that
 `site/go.mod` pins. No tool module's `go` line, nor `site/go.mod`'s, may be newer than the root `toolchain`
 line (a test checks). Bump the toolchain first, then the tool. Inno Setup is not a Go tool.
-`build-installer.ps1` pins it by URL, SHA-256 and Authenticode signer. `snap.yml` installs snapcraft from
-its `9.x/stable` channel, and review-tools from `latest/stable`.
+`build-installer.ps1` pins it by URL, SHA-256 and Authenticode signer. `release.yml` installs snapcraft from
+its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stable`.
 
 ## Rules that tests enforce
 
@@ -158,8 +158,10 @@ its `9.x/stable` channel, and review-tools from `latest/stable`.
 - **Snap.** `snap.yml` prepares each architecture's snap with `internal/tools/snapdir`. The tool checks
   the program and notices against `checksums.txt`, and the metadata against snapd's limits. It converts
   the Linux menu entry to the snap's. `snap pack` packs the snap. The Store's `review-tools` must pass
-  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. Publishing is
-  off until the owner enables it (Repository settings).
+  it. `packaging/snap/test-snap.sh` installs, runs and removes it on both architectures. `snap.yml`
+  never publishes. `release.yml`'s `snap-attest` job attests both snaps, so a snap from the Store can be
+  checked with `gh attestation verify`. Then its `snap-publish` job uploads them. Publishing is off until
+  the owner enables it (Repository settings).
 - **Game pages and the manual page.** Every game in the catalog has `site/data/games/<slug>.json` (the slug
   `wopr --games` shows): summary, how to play, controls, and at least three tips. It also has screenshots
   in `site/static/img/games/`. The docs site and the manual page are built from these files, so nothing
@@ -379,24 +381,15 @@ screenshot fails the build.
   `sudo`, over HTTPS only. They add that folder to the shell's `PATH` when it is missing. Only the package
   lines need root. In these files, `@VERSION@` becomes the latest release's version (shortcodes do not run
   there). `@DOWNLOAD-INSTALLER@`, `@DOWNLOAD-APP@`, `@DOWNLOAD-DEB@` or `@DOWNLOAD-RPM@`, alone in a
-  paragraph, becomes two download buttons, side by side, drawn by the shortcode (styled in
-  `site/assets/css/custom.css`). The buttons are "Intel/AMD" and "ARM" on Windows and Linux, and "Apple
-  Silicon" and "Intel" on macOS. Each is a plain link to its release file, with no file name under it. The
-  Windows installer and the Mac app are one file for both kinds of computer, so both of their buttons link
-  to it. Until the latest release has the installers (the `has-installers` partial: every release after
-  v0.4.0), the Windows and macOS download tabs show `download-later.md` instead. The packages' menu entry
-  first ships in the same release (v0.4.0's packages have none). So `@APP-MENU@` in `linux-packages.md`,
-  `linux-apt.md` and both RPM files becomes the sentence in `app-menu.md` only when `has-installers` is
-  true, and nothing before. The `has-signatures` partial says whether the latest release is signed:
-  `docs.yml` passes whether the release has `checksums.txt.asc`, and other builds look for
-  `packaging/wopr-signing-key.fingerprint`. Once the latest release is signed, `@SIGNATURES@` in
-  `linux-packages.md` becomes `packages-signed.md` (before, nothing). The Linux (RPM) command line is then
-  `linux-rpm-signed.md` in place of `linux-rpm.md`. In it, `@KEYURL@` becomes the signing key's address on
-  the site, and `@FINGERPRINT@` becomes its fingerprint. Put text about the signatures in pages inside
-  `{{% if-signed %}}`, which works as `if-installers` does. The fingerprint comes from the
-  `signing-fingerprint` shortcode. Every build reads each file of a set, both RPM files and
-  `packages-signed.md` included, whichever it shows. It fails if one lacks its placeholder, or if a tab
-  still has any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
+  paragraph, becomes download buttons, side by side, drawn by the shortcode (styled in
+  `site/assets/css/custom.css`). Linux has two buttons, "Intel/AMD" and "ARM". Windows has one,
+  "Download Windows installer", because the installer is one file for both kinds of computer. macOS has
+  "Download macOS app (Apple Silicon)" and "Download macOS app (Intel)", which both link to the one app.
+  Each is a plain link to its release file, with no file name under it. `@APP-MENU@` in
+  `linux-packages.md`, `linux-apt.md` and `linux-rpm.md` becomes the sentence in `app-menu.md`. In
+  `linux-rpm.md`, `@KEYURL@` becomes the signing key's address on the site, and `@FINGERPRINT@` becomes
+  its fingerprint. Pages show the fingerprint with the `signing-fingerprint` shortcode. The build fails if
+  a file lacks its placeholder, or if a tab still has any `@NAME@` placeholder. On those two pages, `site/assets/js/install-platform.js` (loaded by
   `layouts/_partials/custom/head-end.html`) picks the reader's system in each set they have not picked
   before, and saves nothing. It hides the download button that does not fit the reader's processor when
   the browser says it for certain (client hints, or Firefox's user agent on Linux). Otherwise both buttons
@@ -420,15 +413,7 @@ screenshot fails the build.
   build needs no network beyond the Go module proxy.
 - Download commands in pages use the `version` shortcode, and those in `site/assets/install/` use
   `@VERSION@`. Both are the latest published release in `docs.yml`'s builds, and the latest in
-  `CHANGELOG.md` in others. Put text about the Windows installer, the Mac app, or WOPR in the Linux app
-  menu (the packages' menu entry) inside `{{% if-installers %}}`. It shows the text only once the latest
-  release has them (every release after v0.4.0, the `has-installers` partial), so no build of the site
-  names a file that does not exist yet. Put text for the releases before them inside
-  `{{% if-installers "not" %}}`. Its content is Markdown only: a shortcode inside it that writes HTML, such
-  as `tabs`, is dropped. Inside a Hextra `tab`, write it as `{{< if-installers >}}`: the tab renders the
-  Markdown, and the `%` form fails the build there. Text about the `.deb`, the `.rpm` or the archives'
-  `wopr.6` needs no gate: every release since v0.4.0 has them. So `if-packages`, which still wraps some of
-  it, always shows it. Nothing names the snap until it is published.
+  `CHANGELOG.md` in others. Nothing names the snap until it is published.
 - Tests in `internal/cli` check that the Usage page lists every option and environment variable, and the
   Movie scenes page every scene.
 
@@ -553,8 +538,8 @@ These live in GitHub settings, not in files. Check them at each milestone:
     file that
     `snapcraft export-login --snaps=wopr --channels=stable --acls=package_access,package_push,package_update,package_release --expires=<date under a year away> creds.txt`
     writes (`gh secret set SNAPCRAFT_STORE_CREDENTIALS --env snap-store < creds.txt`, then remove the
-    file). Then set the repository variable `SNAP_PUBLISH` to `true`. Any other value keeps `snap.yml`'s
-    publish job skipped. The next `v*` tag uploads both snaps to the stable channel once the owner
+    file). Then set the repository variable `SNAP_PUBLISH` to `true`. Any other value keeps `release.yml`'s
+    `snap-attest` and `snap-publish` jobs skipped. The next `v*` tag uploads both snaps to the stable channel once the owner
     approves the deployment. Export a new login before the old one expires.
   - **Microsoft Store**, when the name is reserved as a game in Partner Center: set the repository
     variables `MSIX_IDENTITY_NAME`, `MSIX_PUBLISHER` (`CN=…`) and `MSIX_PUBLISHER_DISPLAY_NAME`, copied
@@ -594,7 +579,7 @@ At every milestone boundary:
    - **The Windows SDK**: check that the `windows-2025` and `windows-11-arm` images still have one
      (`WindowsSdk.psm1` takes the newest). Set `MaxVersionTested` in
      `packaging/windows/AppxManifest.xml` to the newest Windows build.
-   - **snapcraft**: if `snap info snapcraft` shows a newer major track than `snap.yml`'s `9.x/stable`, move
+   - **snapcraft**: if `snap info snapcraft` shows a newer major track than `release.yml`'s `9.x/stable`, move
      to it. Check that core24 is still a supported base.
    - If `LICENSE`'s year changed, change the copyright in `packaging/windows/wopr.iss`,
      `packaging/windows/winres.json`, `internal/tools/macapp` and the docs site's footer

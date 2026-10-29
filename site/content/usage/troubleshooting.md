@@ -20,28 +20,26 @@ carries on where it was.
 program yet. The [install lines](/install#command-line-install-methods) put the program in
 `%LOCALAPPDATA%\Programs\wopr` on Windows, and in `~/.local/bin` on macOS and Linux. When that folder is
 not on your `PATH`, the lines add it: in `~/.zprofile` or `~/.bash_profile` on macOS, and in `~/.bashrc`
-or `~/.zshrc` on Linux. `go install` puts the program in Go's `bin` folder.{{% if-packages %}} The `.deb`
+or `~/.zshrc` on Linux. `go install` puts the program in Go's `bin` folder. The `.deb`
 puts it in `/usr/games`, which is not on root's `PATH`. As root, or in a small container, run
-`/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`.{{% /if-packages %}}
-{{% if-installers %}} The Windows installer uses the same folder as the install line. It puts that folder
-on your `PATH` only if its **Add WOPR to PATH** box was ticked. Run the installer again to tick it. The
+`/usr/games/wopr`. The `.rpm` puts it in `/usr/bin`. The Windows installer uses the same folder as the
+install line. It puts that folder on your `PATH` only if its **Add WOPR to PATH** box was ticked. Run the installer again to tick it. The
 Mac app adds no `wopr` command. Open WOPR from Applications, or install the command with the Terminal
-line in [Command line install methods](/install#command-line-install-methods).{{% /if-installers %}}
+line in [Command line install methods](/install#command-line-install-methods).
 
 **Windows protected your PC.** Microsoft Defender SmartScreen says this about a program from the
-internet that it does not recognise, such as `wopr.exe`{{% if-installers %}} or its installer{{% /if-installers %}}
+internet that it does not recognise, such as `wopr.exe` or its installer
 downloaded with a web browser. Click **More info**. It names the file, and it names the publisher as
 **Unknown publisher**, because `wopr` is not signed yet. Then click **Run anyway**.
 
-**Windows says Smart App Control blocked `wopr`{{% if-installers %}} or its installer{{% /if-installers %}}.**
+**Windows says Smart App Control blocked `wopr` or its installer.**
 When Smart App Control is on, it blocks every program that is not signed. `wopr` is not signed
-yet{{% if-installers %}}, and neither is its installer{{% /if-installers %}}. Smart App Control has no
+yet, and neither is its installer. Smart App Control has no
 exception for one program. The only way to run `wopr` is to turn Smart App Control off: open Windows
 Security, then **App & browser control**, then **Smart App Control settings**. Recent Windows updates let
 you turn it on again later. Before them, only reinstalling Windows could. Most PCs have it off, or in
 evaluation mode, which blocks nothing.
 
-{{% if-installers %}}
 **macOS says "WOPR" Not Opened, or that Apple could not verify WOPR.** macOS says this about an app that
 Apple did not check, and Apple has not signed WOPR yet. Click **Done**. Then open **System Settings**,
 then **Privacy & Security**. Scroll down to **Security**, and click **Open Anyway** beside the line about
@@ -66,11 +64,9 @@ copy, which can disappear while WOPR hands itself to Terminal.
 To play in another terminal, such as iTerm2, run `/Applications/WOPR.app/Contents/MacOS/wopr` in it. Or
 install the `wopr` command with the Terminal line in
 [Command line install methods](/install#command-line-install-methods).
-{{% /if-installers %}}
-{{% if-installers %}}
+
 **WOPR is not in the app menu after installing the `.deb` or the `.rpm`.** Log out and back in. Some
 desktops notice a new app only then. The **Linux (any)** line adds no menu entry. Only the packages do.
-{{% /if-installers %}}
 
 **`sudo` says you are not in the sudoers file.** On Debian, when a root password was set during
 installation, your account cannot use `sudo` until it is in the `sudo` group. Add it with the root
@@ -104,10 +100,8 @@ WOPR_DEBUG=1 wopr                                          # Linux and macOS
 $env:WOPR_DEBUG = 1; wopr; Remove-Item Env:WOPR_DEBUG     # Windows PowerShell
 ```
 
-{{% if-installers %}}
 With the Mac app, which adds no `wopr` command, run this in Terminal:
 `WOPR_DEBUG=1 /Applications/WOPR.app/Contents/MacOS/wopr`.
-{{% /if-installers %}}
 
 `wopr` then writes a debug log, and it prints the log's path when it exits. The log records the session's
 seed, the terminal's size and the slow work. It never records what you type. `wopr` keeps the log in your
@@ -120,8 +114,9 @@ user cache folder:
 | Windows | `%LOCALAPPDATA%\wopr\debug.log` |
 
 Each session adds to the end of the log, starting with a line that names the version and the seed. So the
-newest session is at the end. If `wopr` stops with a message before its screen appears, it writes no log.
-The message is what to report.
+newest session is at the end. When the log is larger than 5 MB, `wopr` empties it first, so old
+sessions cannot fill your disk. If `wopr` stops with a message before its screen appears, it writes no
+log. The message is what to report.
 
 ## Getting help
 

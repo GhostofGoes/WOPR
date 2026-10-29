@@ -34,12 +34,20 @@ jobs:
         with:
           name: ${{ inputs.artifact }}
           path: stage
+      # tmux for the tests that run wopr inside it (internal/e2e/tmux_test.go). WOPR_E2E_TMUX makes
+      # them fail, not skip, if tmux is missing. The validators are below.
+      - name: Install tmux and the desktop file validators
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends tmux desktop-file-utils appstream appstream-util
       # -test.timeout: a test binary run directly has no timeout, so a hang would hold the runner
       # until the job's timeout and print nothing; this fails it with every goroutine's stack.
       - name: End-to-end tests (Unix)
         if: runner.os != 'Windows'
         env:
           TARGET: ${{ matrix.target }}
+          WOPR_E2E_TMUX: ${{ runner.os == 'Linux' && '1' || '' }}
         run: |
           chmod +x "stage/${TARGET}/wopr" "stage/${TARGET}/e2e.test"
           "stage/${TARGET}/e2e.test" -test.v -test.timeout=5m -binary "stage/${TARGET}/wopr"
@@ -52,13 +60,9 @@ jobs:
           # Quoted: pwsh splits -test.v at the dot.
           & "stage/$env:TARGET/e2e.test.exe" '-test.v' '-test.timeout=5m' -binary "stage/$env:TARGET/wopr.exe"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      # The validators for the menu entry and the AppStream metadata: desktop-file-validate,
-      # appstreamcli, and appstream-util, whose validate-relax Fedora's guidelines ask for.
-      - name: Install the desktop file validators
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y -q --no-install-recommends desktop-file-utils appstream appstream-util
+      # The validators for the menu entry and the AppStream metadata, installed above:
+      # desktop-file-validate, appstreamcli, and appstream-util, whose validate-relax Fedora's
+      # guidelines ask for.
       # The .deb, installed with apt as a user would. The program must be on the PATH every login
       # gets (/etc/environment has /usr/games), the manual page must be found, the changelog must
       # start with this version, the menu entry (which starts /usr/games/wopr), the icon in every

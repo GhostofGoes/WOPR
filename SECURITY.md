@@ -24,13 +24,21 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
 
 - It has no network code. It does not send or receive data, and it collects no data.
 - It reads only its command-line options and these environment variables: `WOPR_THEME`, `WOPR_SEED`,
-  `WOPR_INSTANT`, `WOPR_REDUCE_MOTION`, `WOPR_PANEL`, `WOPR_DEBUG`, `NO_COLOR` and `TERM`. It rejects
-  values that are not valid.
+  `WOPR_INSTANT`, `WOPR_REDUCE_MOTION`, `WOPR_PANEL`, `WOPR_DEBUG`, `NO_COLOR`, `TERM` and `TMUX`. It rejects
+  values that are not valid. Its terminal libraries also read variables that describe the terminal and the
+  language, such as `COLORTERM`, `TERM_PROGRAM`, `TERMINFO` and `LANG`. They use them to choose colours,
+  screen features and character widths.
+- It removes `TMUX`, `TEA_TRACE`, `TEA_DEBUG` and `UV_DEBUG` from its environment when it starts, before
+  its libraries can read them. With them, the libraries would run `tmux info`, or write a trace of what
+  you type or a log file. Inside tmux, `wopr` does not ask tmux which colours it can show. It uses 24-bit
+  colour, and tmux changes the colours for a terminal that cannot show them. It also removes `TERM` when it
+  is not a terminal's name, such as a file path, which would make a library read any file.
 - It writes only one file: the debug log, and only when `WOPR_DEBUG` is set. The log is
   `wopr/debug.log` in your user cache folder. The folder is readable only by you (0700) and the file too
   (0600). `wopr` does not follow a symbolic link at that path, and it does not use a folder that belongs
   to a different user. The log holds the version, the seed, the terminal size, the theme and timings. It
-  does not hold your environment or what you type.
+  does not hold your environment or what you type. When the log is larger than 5 MB, `wopr` empties it
+  before it writes, so old sessions cannot fill your disk.
 - It removes escape sequences and control characters from what you type or paste, so the text cannot
   control your terminal.
 - It starts no other program, with one exception. On macOS, when you open the app from Finder, `wopr`
