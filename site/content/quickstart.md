@@ -6,15 +6,8 @@ description: Install wopr, log on, and play your first game in two minutes.
 
 ## 1. Get it
 
-{{% if-installers %}}
 Pick your system. Click the download button, and follow the steps under it. To install from a terminal
 instead, see [Command line install methods](/install#command-line-install-methods).
-{{% /if-installers %}}
-{{% if-installers "not" %}}
-Pick your system. On Linux, click a download button and follow the steps under it. The downloads for
-Windows and macOS come with the next release. Until then, see
-[Command line install methods](/install#command-line-install-methods).
-{{% /if-installers %}}
 
 {{< install-tabs >}}
 
@@ -22,17 +15,10 @@ Windows and macOS come with the next release. Until then, see
 
 ## 2. Dial in
 
-{{% if-installers %}}
 WOPR may be dialing already: the Windows installer starts it when you click **Finish**, and the Mac app
 starts it when you open the app. The lines in
 [Command line install methods](/install#command-line-install-methods) start it too, except Go's. The
 Linux packages do not start it.
-{{% /if-installers %}}
-{{% if-installers "not" %}}
-WOPR may be dialing already: the lines in
-[Command line install methods](/install#command-line-install-methods) start it, except Go's. The Linux
-packages do not start it.
-{{% /if-installers %}}
 
 To start it yourself, or to play again later, open a terminal at least 80 columns wide and 24 rows tall.
 Then type:
@@ -41,11 +27,9 @@ Then type:
 wopr
 ```
 
-{{% if-installers %}}
 Or open **WOPR** from the Start menu on Windows, from Applications on a Mac, or from your app menu on
 Linux, if you installed a package. With the Mac app, that is the only way to start it: the app adds no
 `wopr` command.
-{{% /if-installers %}}
 
 WOPR dials in, connects, and asks `LOGON:`.
 
