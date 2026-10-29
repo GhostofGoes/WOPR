@@ -576,10 +576,84 @@ func war(t *testing.T, seed uint64, orders ...string) (*testkit.GameSession, []s
 	return g, prompts
 }
 
-// DEFCON walks every rung once, in order, whatever is ordered; a prompt comes only when
-// there is something to order; then the kill ratios, the climax and tic-tac-toe.
+// eggs are the easter-egg session seeds, with the line that names each doctrine and WOPR's
+// answer to the first strike, which shows the doctrine: a hair trigger fires its ladder's
+// 500 ICBMs and twice your SLBMs, counterforce its 500 ICBMs and every SLBM above the 600 it
+// keeps, and a second strike half of what you fired.
+var eggs = []struct {
+	seed           uint64
+	line, detected string
+}{
+	{1962, "WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)", "ICBM 500  SLBM 300  BOMBERS 375"},
+	{1965, "WOPR IS USING DOCTRINE S-1965 (SECOND STRIKE)", "ICBM 125  SLBM 75  BOMBERS 375"},
+	{1974, "WOPR IS USING DOCTRINE S-1974 (COUNTERFORCE)", "ICBM 500  SLBM 150  BOMBERS 375"},
+}
+
+// `wopr --seed 1962 gtw` meets a hair trigger, and WOPR says so once, as the board opens and
+// before the first strike's lines. Any other seed, the film's and the eggs' neighbours among
+// them, meets the measured response and hears no doctrine named.
+func TestEasterEggDoctrines(t *testing.T) {
+	t.Parallel()
+	for _, egg := range eggs {
+		g, _ := war(t, egg.seed)
+		if !inOrder(g.Transcript(), "TARGETS 1-2 OF 8.", egg.line+"\nFIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.\nENEMY LAUNCH DETECTED. "+egg.detected+". DEFCON 4.") ||
+			strings.Count(g.Transcript(), "DOCTRINE") != 1 {
+			t.Errorf("seed %d: want %q once, then strike 1 met with %s:\n%s", egg.seed, egg.line, egg.detected, g.Transcript())
+		}
+		if wide := g.Wide(80); len(wide) > 0 {
+			t.Errorf("seed %d: lines wider than 80: %q", egg.seed, wide)
+		}
+	}
+	for _, seed := range []uint64{1983, 0, 1, 7, 1961, 1963, 1964, 1966, 1973, 1975} {
+		g, _ := war(t, seed)
+		if g.Contains("DOCTRINE") || !g.Contains("FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.\nENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.") {
+			t.Errorf("seed %d: want a measured response, unnamed:\n%s", seed, g.Transcript())
+		}
+	}
+}
+
+// The egg is the session's seed, which GTW sees only through the Env.Seed the host derives
+// for the session's first war: a later war in the session, a game started with Env.Seed
+// 1962 itself, and the film's war in movie mode all meet a measured response.
+func TestEggsComeWithTheSessionsFirstWar(t *testing.T) {
+	t.Parallel()
+	named := func(envSeed uint64) bool {
+		g := gtw.New()
+		g.Start(proto.Env{Seed: envSeed, Instant: true})
+		g.Handle(proto.LineEvent{Text: "1"})
+		g.Handle(proto.LineEvent{Text: "Moscow"})
+		for _, o := range g.Handle(proto.LineEvent{Text: ""}) {
+			if say, ok := o.(proto.Say); ok && strings.Contains(strings.Join(say.Lines, "\n"), "DOCTRINE") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, egg := range eggs {
+		if !named(proto.LaunchSeed(egg.seed, gtw.Slug, 0)) || named(proto.LaunchSeed(egg.seed, gtw.Slug, 1)) || named(egg.seed) {
+			t.Errorf("seed %d: the egg must come with the session's first war alone", egg.seed)
+		}
+		film := gtw.NewFilm(proto.LaunchSeed(egg.seed, gtw.Slug, 0), false)
+		if lines := strings.Join(film.Run(gtw.FilmRatios), "\n"); strings.Contains(lines, "DOCTRINE") ||
+			!strings.Contains(lines, "ICBM 313  SLBM 188  BOMBERS 375") {
+			t.Errorf("seed %d: the film's war is a measured response, unnamed:\n%s", egg.seed, lines)
+		}
+	}
+}
+
+// DEFCON walks every rung once, in order, whatever is ordered and whatever WOPR's doctrine;
+// a prompt comes only when there is something to order; then the kill ratios, the climax and
+// tic-tac-toe.
 func TestLadderFallsWhateverYouOrder(t *testing.T) {
 	t.Parallel()
+	ladderFalls(t, 7)
+	for _, egg := range eggs {
+		ladderFalls(t, egg.seed)
+	}
+}
+
+func ladderFalls(t *testing.T, seed uint64) {
+	t.Helper()
 	for _, tc := range []struct {
 		orders  []string
 		prompts int
@@ -592,8 +666,8 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 		{[]string{"0 0 100", "icbm 50"}, 2},
 		{[]string{"help", "chess", "150", "cease fire", "subs"}, 2},
 	} {
-		g, prompts := war(t, 7, tc.orders...)
-		label := strings.Join(tc.orders, "|")
+		g, prompts := war(t, seed, tc.orders...)
+		label := fmt.Sprintf("seed %d: %s", seed, strings.Join(tc.orders, "|"))
 		if len(prompts) != tc.prompts {
 			t.Errorf("%s: %d strike prompts %q, want %d", label, len(prompts), prompts, tc.prompts)
 		}
@@ -714,8 +788,14 @@ func TestInstantNeedsNoTicks(t *testing.T) {
 // after it behind a line typed at speech pace.
 func TestStripKeepsUpWithTheLadder(t *testing.T) {
 	t.Parallel()
+	stripKeepsUp(t, 1, 3*3+2)                                     // three lines a strike, two for DEFCON 1
+	stripKeepsUp(t, proto.LaunchSeed(1962, gtw.Slug, 0), 3*3+2+1) // and an egg's doctrine as the board opens
+}
+
+func stripKeepsUp(t *testing.T, seed uint64, want int) {
+	t.Helper()
 	g := gtw.New()
-	g.Start(proto.Env{Seed: 1, Width: 80, Height: 19})
+	g.Start(proto.Env{Seed: seed, Width: 80, Height: 19})
 	g.Handle(proto.LineEvent{Text: "2"})
 	g.Handle(proto.LineEvent{Text: "Las Vegas"})
 	outs := g.Handle(proto.LineEvent{Text: ""})
@@ -741,8 +821,8 @@ func TestStripKeepsUpWithTheLadder(t *testing.T) {
 			}
 		}
 	}
-	if reports != 3*3+2 { // three lines a strike, two for DEFCON 1
-		t.Errorf("%d lines at table pace, want 11", reports)
+	if reports != want {
+		t.Errorf("seed %d: %d lines at table pace, want %d", seed, reports, want)
 	}
 }
 

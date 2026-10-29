@@ -87,6 +87,7 @@ type Game struct {
 	side     assets.Side    // the player's
 	targets  []assets.Place // the enemy's, as listed
 	war      *war
+	egg      *egg          // the easter egg the seed meets, which sets WOPR's doctrine; nil: none
 	stage    int           // 1..3 strikes, 4 the DEFCON 1 attack; 0 before the board opens
 	rep      report        // the current stage, resolved when it starts
 	auto     bool          // AUTO, or the launch window shut: WOPR orders every remaining strike
@@ -146,8 +147,13 @@ func fill(l script.L, args ...any) string {
 }
 
 // Start implements proto.Program: the two outlines and the side choice, as console text.
+// The seed decides whether WOPR fights to an easter egg's doctrine. The film's war (movie
+// mode) is always a measured response.
 func (g *Game) Start(env proto.Env) []proto.Output {
 	g.env = env
+	if !g.film {
+		g.egg = eggFor(env.Seed)
+	}
 	g.rng = proto.NewRand(env.Seed, 0)
 	g.voice = proto.NewRand(env.Seed, remarkStream)
 	return []proto.Output{
@@ -341,7 +347,8 @@ func enemyOf(s assets.Side) assets.Side {
 }
 
 // openBoard opens the big board at DEFCON 5 and launches the first strike: the war plan's,
-// at the listed targets, with no order asked (the film's first strike).
+// at the listed targets, with no order asked (the film's first strike). An easter egg's
+// doctrine is named first.
 func (g *Game) openBoard() []proto.Output {
 	for _, c := range assets.Cities {
 		if c.Side == g.side {
@@ -353,8 +360,8 @@ func (g *Game) openBoard() []proto.Output {
 	for i := range g.noise {
 		g.noise[i] = 97 + g.rng.IntN(7)
 	}
-	g.war = newWar()
-	outs := []proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}
+	g.war = newWar(g.doctrine())
+	outs := append([]proto.Output{proto.SetLayout{Layout: proto.LayoutFull}, proto.Clear{}}, g.announce()...)
 	outs = append(outs, g.begin(warPlan[0], reactFirst)...)
 	return append(outs, g.play()...)
 }
@@ -382,7 +389,11 @@ func (g *Game) onOrder(input string) []proto.Output {
 		return append(outs, g.play()...)
 	}
 	plan := warPlan[g.stage]
-	r := reactionTo(alloc, plan, g.planned, g.war.f[you].ICBM)
+	icbms := g.war.f[you].ICBM
+	if g.war.d.siloAim[0] == 0 { // a second strike aims at no silo, so full ones draw nothing
+		icbms = 0
+	}
+	r := reactionTo(alloc, plan, g.planned, icbms)
 	g.planned = g.planned || alloc == plan
 	return append(g.begin(alloc, r), g.play()...)
 }
@@ -659,12 +670,14 @@ func (g *Game) showRatios() []proto.Output {
 }
 
 // afterAction is what your orders changed, in the POPULATION DEATHS row: two lines, against
-// the same war fought again with HOLD at both prompts and with the war plan at both. The
-// replays take the table's noise, so their figures agree with it. Holding fire leaves the
-// fewest dead on both sides, whatever else is ordered (TestHoldingFireKillsFewest).
+// the same war fought again, to the same doctrine, with HOLD at both prompts and with the war
+// plan at both. The replays take the table's noise, so their figures agree with it. Against
+// a measured response or a hair trigger, holding fire leaves the fewest dead on both sides,
+// whatever else is ordered (TestHoldingFireKillsFewest); against the other doctrines it may
+// not, and the line for it says only that you held.
 func (g *Game) afterAction() []string {
-	hold, _ := fight([3]int{}, [3]int{})
-	plan, _ := fight(warPlan[1], warPlan[2])
+	hold, _ := fight(g.war.id, [3]int{}, [3]int{})
+	plan, _ := fight(g.war.id, warPlan[1], warPlan[2])
 	dead := g.war.dead(g.noise)
 	against := func(l script.L, w *war) string {
 		base := w.dead(g.noise)
@@ -673,9 +686,12 @@ func (g *Game) afterAction() []string {
 	lines := []string{against(lineAfter[0], hold), against(lineAfter[1], plan)}
 	switch g.war.t { // the same tallies are the same war, whatever was typed
 	case hold.t:
-		lines[0] = lineAfter[2].Text
+		lines[0] = lineAfter[3].Text
+		if g.war.d.heldFewest {
+			lines[0] = lineAfter[2].Text
+		}
 	case plan.t:
-		lines[1] = lineAfter[3].Text
+		lines[1] = lineAfter[4].Text
 	}
 	return lines
 }

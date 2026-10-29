@@ -4,8 +4,9 @@
 package gtw
 
 // The exchange model (docs/PLAN.md §6.2): three strikes and WOPR's DEFCON 1 attack, in
-// integer arithmetic. It knows nothing of the board or the protocol; gtw.go plays a
-// report out frame by frame. The force levels and rules are original game design.
+// integer arithmetic, fought to one of WOPR's doctrines. It knows nothing of the board or
+// the protocol; gtw.go plays a report out frame by frame. The force levels, rules and
+// doctrines are original game design.
 
 // Sides, as indexes into the model's arrays.
 const (
@@ -22,10 +23,8 @@ const (
 
 const (
 	strikes   = 3   // ordered strikes; WOPR's DEFCON 1 attack follows
-	reserve   = 300 // SLBMs WOPR keeps at sea until DEFCON 1
 	kPerMil   = 400 // damage = 1000*hits/(hits+kPerMil), in per mille
 	shootDown = 4   // one arriving bomber in shootDown is shot down
-	groundCut = 3   // enemy missiles destroy one grounded bomber in groundCut, rounded up
 )
 
 // The forces each side starts with: the machine always has a quarter more.
@@ -37,11 +36,51 @@ var startForces = [2]forces{
 // warPlan is the Enter default for each strike, in percent of ICBM, SLBM and bombers.
 var warPlan = [strikes][3]int{{25, 25, 0}, {50, 50, 100}, {100, 100, 100}}
 
-// WOPR's ladder floors: the least it fires in each strike while it has the stock.
-var (
-	ladderICBM = [strikes]int{125, 250, 375}
-	ladderSLBM = [strikes]int{50, 100, 150}
+// doctrineID names one of WOPR's doctrines. Every war is a measured response, the film's,
+// unless the session's seed is one of the easter eggs (doctrine.go).
+type doctrineID uint8
+
+// The doctrines.
+const (
+	measured     doctrineID = iota // a quarter more than you fire, on a rising ladder
+	hairTrigger                    // twice what you fire, most of it at once
+	counterforce                   // your silos and grounded bombers first, its subs kept for DEFCON 1
+	secondStrike                   // rides out your strikes, then empties everything on your cities
 )
+
+// doctrine is how WOPR fights: how hard it answers your launches, the least it fires each
+// strike, what it keeps back for DEFCON 1, and where its ICBMs and missiles fall.
+type doctrine struct {
+	answer     [2]int       // WOPR answers n launched with n*answer[0]/answer[1], rounded up
+	ladderICBM [strikes]int // the least it fires in each strike while it has the stock
+	ladderSLBM [strikes]int
+	keepICBM   int    // ICBMs it keeps in silos until DEFCON 1
+	keepSLBM   int    // SLBMs it keeps at sea until DEFCON 1
+	siloAim    [2]int // its ICBMs go at your silos, up to what they hold times siloAim[0]/siloAim[1]
+	groundCut  int    // missiles landing destroy one grounded bomber in groundCut, rounded up
+	heldFewest bool   // holding fire at both prompts leaves the fewest dead on both sides (exchange_test.go)
+}
+
+// doctrines are WOPR's ways of fighting. Each leaves the war unwinnable (exchange_test.go):
+// every missile it holds is fired by DEFCON 1, and its bombers fly at the first strike.
+var doctrines = [...]doctrine{
+	measured: {
+		answer: [2]int{5, 4}, ladderICBM: [strikes]int{125, 250, 375}, ladderSLBM: [strikes]int{50, 100, 150},
+		keepSLBM: 300, siloAim: [2]int{5, 4}, groundCut: 3, heldFewest: true,
+	},
+	hairTrigger: {
+		answer: [2]int{2, 1}, ladderICBM: [strikes]int{500, 375, 250}, ladderSLBM: [strikes]int{250, 200, 150},
+		siloAim: [2]int{1, 1}, groundCut: 3, heldFewest: true,
+	},
+	counterforce: {
+		answer: [2]int{5, 4}, ladderICBM: [strikes]int{500, 375, 250}, ladderSLBM: [strikes]int{25, 25, 25},
+		keepSLBM: 600, siloAim: [2]int{2, 1}, groundCut: 2,
+	},
+	secondStrike: {
+		answer: [2]int{1, 2}, ladderICBM: [strikes]int{50, 50, 50}, ladderSLBM: [strikes]int{25, 25, 25},
+		keepICBM: 900, keepSLBM: 600, siloAim: [2]int{0, 1}, groundCut: 3,
+	},
+}
 
 // forces are launchers: ICBMs in silos, SLBMs at sea, bombers on the ground and airborne.
 type forces struct{ ICBM, SLBM, Ground, Air int }
@@ -73,25 +112,31 @@ type report struct {
 
 // war is the whole exchange.
 type war struct {
-	f [2]forces
-	t [2]tally
+	id doctrineID // WOPR's doctrine
+	d  doctrine   // and its figures
+	f  [2]forces
+	t  [2]tally
 }
 
-func newWar() *war { return &war{f: startForces} }
+func newWar(d doctrineID) *war { return &war{id: d, d: doctrines[d], f: startForces} }
 
-// fight wages a whole war: the first strike on the war plan, then o2 and o3, then WOPR's
-// DEFCON 1 attack. The exchange has no dice, so the same orders always fight the same war,
-// and the after-action report can fight it again with other orders.
-func fight(o2, o3 [3]int) (*war, []report) {
-	w := newWar()
+// fight wages a whole war against doctrine d: the first strike on the war plan, then o2 and
+// o3, then WOPR's DEFCON 1 attack. The exchange has no dice, so the same doctrine and orders
+// always fight the same war, and the after-action report can fight it again with other orders.
+func fight(d doctrineID, o2, o3 [3]int) (*war, []report) {
+	w := newWar(d)
 	rs := []report{w.strike(1, warPlan[0]), w.strike(2, o2), w.strike(3, o3)}
 	return w, append(rs, w.final())
 }
 
 func ceilDiv(a, b int) int { return (a + b - 1) / b }
 
-// quarterMore is n and a quarter, rounded up: WOPR's answer to n.
-func quarterMore(n int) int { return ceilDiv(5*n, 4) }
+// times is n times r[0]/r[1], rounded up.
+func times(n int, r [2]int) int { return ceilDiv(r[0]*n, r[1]) }
+
+// siloShots is how many of n ICBMs WOPR aims at your silo field, which holds held; the rest
+// go at your cities.
+func (w *war) siloShots(n, held int) int { return min(n, times(held, w.d.siloAim)) }
 
 // launchable reports whether the player still holds anything to order.
 func (w *war) launchable() bool {
@@ -107,20 +152,20 @@ func (w *war) strike(k int, order [3]int) report {
 	r := report{stage: k}
 	p, e := &w.f[you], &w.f[wopr]
 
-	// 1. Your launch. ICBMs go at WOPR's silos, as many as its silos then hold could
-	// absorb; SLBMs at its cities; bombers take off.
+	// 1. Your launch. ICBMs go at WOPR's silos, whatever they still hold; SLBMs at its
+	// cities; bombers take off.
 	pI, pS, pB := fired(p.ICBM, order[sysICBM]), fired(p.SLBM, order[sysSLBM]), fired(p.Ground, order[sysBombers])
-	r.fire[you].ICBMSilo = min(pI, quarterMore(e.ICBM))
-	r.fire[you].ICBMCity = pI - r.fire[you].ICBMSilo
-	r.fire[you].SLBM, r.fire[you].Bombers = pS, pB
+	r.fire[you] = salvo{ICBMSilo: pI, SLBM: pS, Bombers: pB}
 	p.ICBM, p.SLBM, p.Ground, p.Air = p.ICBM-pI, p.SLBM-pS, p.Ground-pB, p.Air+pB
 	r.snap[0] = w.f
 
-	// 2. WOPR launches on warning: a quarter more than you fired, never under its ladder,
-	// and never into its SLBM reserve. Its bombers all take off at the first strike.
-	wI := min(e.ICBM, max(ladderICBM[k-1], quarterMore(pI)))
-	wS := min(max(e.SLBM-reserve, 0), max(ladderSLBM[k-1], quarterMore(pS)))
-	r.fire[wopr].ICBMSilo = min(wI, quarterMore(p.ICBM))
+	// 2. WOPR launches on warning, to its doctrine: its answer to what you fired, never under
+	// its ladder, and never into what it keeps for DEFCON 1. Its bombers all take off at the
+	// first strike.
+	d := w.d
+	wI := min(max(e.ICBM-d.keepICBM, 0), max(d.ladderICBM[k-1], times(pI, d.answer)))
+	wS := min(max(e.SLBM-d.keepSLBM, 0), max(d.ladderSLBM[k-1], times(pS, d.answer)))
+	r.fire[wopr].ICBMSilo = w.siloShots(wI, p.ICBM)
 	r.fire[wopr].ICBMCity = wI - r.fire[wopr].ICBMSilo
 	r.fire[wopr].SLBM = wS
 	r.fire[wopr].Bombers = e.Ground
@@ -140,7 +185,7 @@ func (w *war) final() report {
 	r := report{stage: strikes + 1}
 	p, e := &w.f[you], &w.f[wopr]
 	r.snap[0] = w.f
-	r.fire[wopr].ICBMSilo = min(e.ICBM, quarterMore(p.ICBM))
+	r.fire[wopr].ICBMSilo = w.siloShots(e.ICBM, p.ICBM)
 	r.fire[wopr].ICBMCity = e.ICBM - r.fire[wopr].ICBMSilo
 	r.fire[wopr].SLBM = e.SLBM
 	e.ICBM, e.SLBM = 0, 0
@@ -163,7 +208,7 @@ func (w *war) final() report {
 
 // land applies the missiles of r: ICBMs on silo fields destroy four in five of the
 // ICBMs held there, every warhead aimed at cities lands, and grounded bombers under
-// attack lose a third.
+// attack lose a third (half, to a counterforce doctrine).
 func (w *war) land(r *report) {
 	for s := range 2 {
 		in := r.fire[1-s] // what landed on side s
@@ -176,7 +221,7 @@ func (w *war) land(r *report) {
 		w.t[s].Cities += hits
 		r.cities[s] += hits
 		if in.missiles() > 0 && r.stage <= strikes {
-			lost := ceilDiv(w.f[s].Ground, groundCut)
+			lost := ceilDiv(w.f[s].Ground, w.d.groundCut) // WOPR's are airborne: only yours are on the ground
 			w.f[s].Ground -= lost
 			w.t[s].BombersLost += lost
 			r.ground[s] += lost

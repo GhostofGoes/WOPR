@@ -149,6 +149,20 @@ func TestRemarksFollowOrders(t *testing.T) {
 	}
 }
 
+// A second strike aims at no silo, so an order that keeps your ICBMs in theirs draws nothing
+// to them, and WOPR does not say it will: it remarks as on any other order.
+func TestSecondStrikeFindsNoFullSilos(t *testing.T) {
+	t.Parallel()
+	said, _, _ := remarks(t, proto.LaunchSeed(1965, Slug, 0), "subs")
+	var texts []string
+	for _, l := range reactLines[reactPartial] {
+		texts = append(texts, l.Text)
+	}
+	if !slices.Contains(texts, said[1]) {
+		t.Errorf("SUBS against a second strike: %q, want one of %q", said[1], texts)
+	}
+}
+
 // The remarks come from the seed: the same seed and orders say the same, and seeds vary them.
 func TestRemarksAreSeeded(t *testing.T) {
 	t.Parallel()

@@ -42,7 +42,8 @@ var reactLines = [...]script.Ls{
 }
 
 // reactionTo is WOPR's reaction to an order fired at a strike prompt. plan is the strike's
-// war plan, planned whether an earlier prompt took the plan too, and icbms the ICBMs you hold.
+// war plan, planned whether an earlier prompt took the plan too, and icbms the ICBMs you hold
+// where WOPR's own can find them.
 // The plan wins over ALL: strike 3's plan is everything.
 func reactionTo(alloc, plan [3]int, planned bool, icbms int) reaction {
 	switch {

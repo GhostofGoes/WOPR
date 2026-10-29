@@ -34,9 +34,12 @@ var (
 	lineAccepted = script.Orig("#. TARGET # OF #.", "#. TARGETS #-# OF #.")
 	lineListed   = script.Orig("# IS ALREADY LISTED.")
 	// The after-action report under the kill ratios (original): the POPULATION DEATHS row
-	// against the same war fought with HOLD at both prompts, and with the war plan.
+	// against the same war fought with HOLD at both prompts, and with the war plan; then the
+	// lines for a war that held fire, where that left the fewest dead and where it did not, and
+	// for one that took the war plan.
 	lineAfter = script.Orig("AGAINST HOLDING FIRE: #, #.", "AGAINST THE WAR PLAN: #, #.",
-		"YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.", "YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.")
+		"YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.", "YOU HELD FIRE, PROFESSOR.",
+		"YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.")
 	lineEnemyDead = script.Orig("# MILLION MORE ENEMY DEAD", "# MILLION FEWER ENEMY DEAD", "AS MANY ENEMY DEAD")
 	lineOwnDead   = script.Orig("# MILLION MORE OF YOURS", "# MILLION FEWER OF YOURS", "AS MANY OF YOURS")
 	// The NORAD notices, in the film's words. The film centres each on an empty screen and
@@ -62,10 +65,14 @@ var (
 	lineLaunch = script.Orig("FIRST STRIKE LAUNCHED. #.", "STRIKE # LAUNCHED. #.", "NO LAUNCH ORDERED.", "NOTHING LEFT TO LAUNCH.")
 	lineDetect = script.Orig("ENEMY LAUNCH DETECTED. #. DEFCON #.", "ENEMY BOMBERS INBOUND. DEFCON #.",
 		"FULL-SCALE ENEMY ATTACK. #. DEFCON 1.")
-	lineCost      = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
-	lineSystems   = script.Orig("ICBM", "SLBM", "BOMBERS")
-	promptStrike  = script.Orig("STRIKE # OF # [# # #]: ")
-	lineAuto      = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	lineCost     = script.Orig("LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.")
+	lineSystems  = script.Orig("ICBM", "SLBM", "BOMBERS")
+	promptStrike = script.Orig("STRIKE # OF # [# # #]: ")
+	lineAuto     = script.Orig("WOPR HAS LAUNCH AUTHORITY.")
+	// An easter egg's doctrine (doctrine.go), named as the board opens: the session's seed and
+	// the doctrine's name, in the order of eggs.
+	lineDoctrine  = script.Orig("WOPR IS USING DOCTRINE S-# (#)")
+	lineEggs      = script.Orig("HAIR TRIGGER", "SECOND STRIKE", "COUNTERFORCE")
 	lineShut      = script.Orig("LAUNCH WINDOW CLOSED, PROFESSOR.")
 	lineNoOrders  = script.Orig("NO ORDERS ACCEPTED. WOPR HAS LAUNCH AUTHORITY.") // the key hint once the window shuts
 	lineBadOrder  = script.Orig("ORDER NOT RECOGNISED. TYPE HELP.")
@@ -140,7 +147,7 @@ var Lines = []script.Ls{
 	lineLabels, lineWhichSide, promptSide, lineSideAgain, lineAwaiting, lineNoTargets, lineTooMany, lineUnknown,
 	lineOwnSide, lineListHint, lineOnFile, lineAssessed, lineAccepted, lineListed, lineContinue, lineAfter, lineEnemyDead, lineOwnDead,
 	lineRunning, lineNotRecog, lineDenied, lineImproper, lineMustRun, lineHints, lineNudge, lineCode,
-	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineShut, lineNoOrders, lineBadOrder,
+	lineLaunch, lineDetect, lineCost, lineSystems, promptStrike, lineAuto, lineDoctrine, lineEggs, lineShut, lineNoOrders, lineBadOrder,
 	lineBadPct, lineOrderHelp, lineTitle, lineDefcon, lineTrajectory, lineRatioHead, lineMilitary, lineCivilian,
 	lineHuman, lineMillion, lineCodeLabel, lineForces, lineNations, lineDesignator, lineOrdersHint, lineLastOrders,
 	lineLegend, lineReactFirst, lineReactPlan, lineReactPlanAgain, lineReactAll, lineReactHold, lineReactSilosFull,
