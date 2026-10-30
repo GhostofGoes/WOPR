@@ -22,7 +22,7 @@ Edit those notes, not this file.
 
 ### Security
 
-- On Linux, WOPR now runs with fewer permissions (Landlock and seccomp).
+- (Linux) Lock down permissions using Landlock and seccomp
 - WOPR no longer runs `tmux info` on startup or writes library trace files.
 - Fixed a hang when `TERM` holds a file path.
 
