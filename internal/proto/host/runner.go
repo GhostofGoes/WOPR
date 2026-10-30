@@ -145,20 +145,19 @@ const (
 )
 
 type frame struct {
-	prog      proto.Program
-	place     Placement
-	mode      inputMode
-	every     time.Duration // Animate cadence; 0 = none
-	acc       time.Duration
-	thinkGen  uint64 // pending Think, 0 = none
-	areaW     int
-	areaH     int
-	isRoot    bool
-	launchKey proto.Launch
-	seed      uint64 // Env.Seed for this program
-	capture   bool   // the root captures every key (AwaitKeys.Capture)
-	drain     uint64 // the pending Drain's marker, 0 = none
-	reached   uint64 // drain's marker, reached while a Think was pending: answered after ThinkDone
+	prog     proto.Program
+	place    Placement
+	mode     inputMode
+	every    time.Duration // Animate cadence; 0 = none
+	acc      time.Duration
+	thinkGen uint64 // pending Think, 0 = none
+	areaW    int
+	areaH    int
+	isRoot   bool
+	seed     uint64 // Env.Seed for this program
+	capture  bool   // the root captures every key (AwaitKeys.Capture)
+	drain    uint64 // the pending Drain's marker, 0 = none
+	reached  uint64 // drain's marker, reached while a Think was pending: answered after ThinkDone
 }
 
 // Runner interprets the protocol for a stack of programs.
@@ -554,7 +553,7 @@ func (r *Runner) launch(l proto.Launch) []Effect {
 	if err != nil {
 		return []Effect{Print{Lines: []string{"** GAME ROUTINE NOT AVAILABLE **"}, Pace: proto.PaceSpeech}}
 	}
-	f := &frame{prog: prog, place: place, launchKey: l, seed: r.launchSeed(l.Slug)}
+	f := &frame{prog: prog, place: place, seed: r.launchSeed(l.Slug)}
 	f.areaW, f.areaH = r.area(place)
 	r.stack = append(r.stack, f)
 	effects := []Effect{Relayout{Placement: place, NewProgram: true}}

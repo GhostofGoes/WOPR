@@ -8,7 +8,6 @@ package prompt
 import (
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 // Normalize upper-cases s, turns typographic apostrophes into ASCII ones, and collapses
@@ -188,7 +187,3 @@ func NegatedBefore(words []string, i int) bool {
 	}
 	return false
 }
-
-// Valid reports whether s is valid UTF-8; callers sanitise before parsing, so this is a
-// cheap guard for fuzzing.
-func Valid(s string) bool { return utf8.ValidString(s) }

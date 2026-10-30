@@ -7,6 +7,7 @@ toolchain go1.27.2
 tool (
 	github.com/rillig/gobco
 	github.com/zricethezav/gitleaks/v8
+	golang.org/x/tools/cmd/deadcode
 	golang.org/x/vuln/cmd/govulncheck
 )
 

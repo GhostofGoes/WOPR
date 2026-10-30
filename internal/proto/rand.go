@@ -12,7 +12,6 @@ const (
 	DomainGame  uint64 = 2 << 56 // id: hash32(slug)<<16 | play index
 	DomainAI    uint64 = 3 << 56 // id: think sequence number
 	DomainMovie uint64 = 4 << 56 // id: scene number
-	DomainUI    uint64 = 5 << 56 // id: 0
 )
 
 // NewRand is the only sanctioned way to make a random source (forbidigo bans the

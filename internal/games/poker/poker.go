@@ -56,7 +56,6 @@ type Game struct {
 	chips  [2]int
 	pot    int
 	dealer int
-	played int // hands started
 
 	round int    // 0 before the draw, 1 after
 	in    [2]int // chips each side put in this betting round
@@ -108,7 +107,6 @@ func (g *Game) Chips() (you, w, pot int) { return g.chips[player], g.chips[wopr]
 
 func (g *Game) newHand(outs []proto.Output) []proto.Output {
 	g.dealer = 1 - g.dealer
-	g.played++
 	g.deck = cards.Shuffled(g.deal)
 	g.hands = [2][]cards.Card{}
 	for range 5 {

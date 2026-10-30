@@ -41,6 +41,21 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
   before it writes, so old sessions cannot fill your disk.
 - It removes escape sequences and control characters from what you type or paste, so the text cannot
   control your terminal.
+- On Linux, once the game screen opens, `wopr` gives up these rights for the rest of the session:
+  - It cannot open, make, change or truncate a file. It cannot change the permissions, owner, extended
+    attributes or times of a file.
+  - It cannot run a program or start a process.
+  - It cannot make a network connection or open any other socket.
+  - It cannot trace other programs, read their memory or change their priority. It sends signals only
+    to itself, and Ctrl+Z pauses only its own process group.
+  - It cannot type into your terminal.
+  - It cannot get more privileges, and it drops any administrator capabilities that it has.
+
+  The file limits need Linux 5.13 or later with Landlock on. So does the limit on reading the memory of
+  other programs through `/proc`. The other limits need Linux 4.14 or later. The release files and
+  packages have all of these protections. A copy built with cgo has no file limits, and it keeps any
+  administrator capabilities. `go install` makes such a copy when a C compiler is installed. To prevent
+  this, use `CGO_ENABLED=0 go install github.com/GhostofGoes/WOPR/cmd/wopr@latest`.
 - It starts no other program, with one exception. On macOS, when you open the app from Finder, `wopr`
   opens itself again in Terminal.
 - Each release file is attested and checksummed, and the Linux packages and `checksums.txt` are signed.
@@ -53,7 +68,8 @@ We keep you informed at each step. If we do not agree that a report is a vulnera
   `go install`, or that you did not verify.
 - Problems in your terminal program itself.
 
-`wopr` is not a sandbox. It has the same permissions as your user account. The
+`wopr` is not a sandbox for other programs. Until its game screen opens, and on other systems, it has the
+same permissions as your user account. The
 [assurance case](docs/ASSURANCE.md) explains why these properties hold.
 
 ## Supported versions

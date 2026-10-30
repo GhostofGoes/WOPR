@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -162,28 +162,31 @@ func selfPlay(t *testing.T, seed uint64) {
 	}
 }
 
-// How long the deterministic search takes over a game's opening and middlegame; the plan
-// quotes a median of 27 ms and a p99 of 150 ms. Logged, not asserted: machines differ.
-func TestDeterministicSearchTime(t *testing.T) {
-	t.Parallel()
-	if testing.Short() || raceDetector {
-		t.Skip("timing means nothing under -short or -race")
-	}
-	g := cg.NewGame()
+// BenchmarkDeterministicSearch times the deterministic search over a game's opening and
+// middlegame: the first 30 plies of a game it plays against itself. It reports the median and
+// the slowest search, which docs/PLAN.md §6.1 quotes (median 26 ms, max 204 ms). It is a
+// benchmark, not a test, because machines differ:
+// go test -run '^$' -bench DeterministicSearch ./internal/games/chess
+func BenchmarkDeterministicSearch(b *testing.B) {
 	var times []time.Duration
-	for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
-		start := time.Now()
-		m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
-		times = append(times, time.Since(start))
-		for _, l := range g.Position().ValidMoves() {
-			if moveOf(l) == m {
-				_ = g.Move(&l, nil)
-				break
+	for b.Loop() {
+		g := cg.NewGame()
+		for ply := 0; ply < 30 && g.Outcome() == cg.NoOutcome; ply++ {
+			start := time.Now()
+			m, _ := best(context.Background(), g.FEN(), nil, ai.Limits{MaxDepth: deterministicDepth}, proto.NewRand(3, uint64(ply)))
+			times = append(times, time.Since(start))
+			for _, l := range g.Position().ValidMoves() {
+				if moveOf(l) == m {
+					_ = g.Move(&l, nil)
+					break
+				}
 			}
 		}
 	}
-	sort.Slice(times, func(i, j int) bool { return times[i] < times[j] })
-	t.Logf("depth %d: median %v, max %v over %d searches", deterministicDepth, times[len(times)/2], times[len(times)-1], len(times))
+	slices.Sort(times)
+	ms := func(d time.Duration) float64 { return float64(d) / float64(time.Millisecond) }
+	b.ReportMetric(ms(times[len(times)/2]), "median-ms/search")
+	b.ReportMetric(ms(times[len(times)-1]), "max-ms/search")
 }
 
 // A deterministic transcript that follows WOPR's replies: the test replays them on its own

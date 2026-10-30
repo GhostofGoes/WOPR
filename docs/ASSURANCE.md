@@ -42,7 +42,7 @@ defects, and a copy of `wopr` that the user did not get from this project.
 
 | # | Boundary | What crosses it | Control |
 |---|---|---|---|
-| B1 | Keyboard and paste to `wopr` | Keys and pasted text | `console.SanitizeInput` and `console.SanitizeText` (`internal/ui/console/sanitize.go`) remove escape sequences and control characters. Each game parses only its own commands and caps numbers. |
+| B1 | Keyboard and paste to `wopr` | Keys and pasted text | `console.SanitizeInput` (`internal/ui/console/sanitize.go`) removes escape sequences and control characters. Each game parses only its own commands and caps numbers. |
 | B2 | Environment and command line to `wopr` | Options and nine environment variables, and the terminal variables its libraries read | `internal/cli` and `cmd/wopr` parse them strictly: a fixed list of themes, a number for the seed, a fixed set of boolean values. Their tests cover each one. `internal/scrubenv` removes `TMUX`, `TEA_TRACE`, `TEA_DEBUG` and `UV_DEBUG` before any library reads them, so no library runs `tmux` or writes a trace or log file (the e2e test `TestLibrarySwitchesStayOff`). Inside tmux, `wopr` draws in 24-bit colour without asking tmux, and tmux converts it for the outer terminal. It also removes a `TERM` that is not a terminfo name, because the terminfo loader joins `TERM` to a folder and reads the whole file (`TERM=../../../dev/zero` read without end, `TestTermPathIgnored`). |
 | B3 | `wopr` to the file system | The debug log only, when `WOPR_DEBUG` is set | `internal/debuglog`: a 0700 folder that the user owns, a 0600 file, `O_NOFOLLOW`, and `Lstat` checks. |
 | B4 | `wopr` to the terminal | Screen output | All output is printable ASCII drawn by the renderer. Text from the user goes through B1 before it is shown. |
@@ -60,7 +60,13 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 - **Fail-safe defaults.** An environment variable with a value that is not valid is rejected, not
   guessed. The debug log is off unless `WOPR_DEBUG` is set. If the debug log cannot be opened safely,
   `wopr` runs without it.
-- **Least privilege.** `wopr` needs no administrator rights. The command-line installers for macOS and
+- **Least privilege.** `wopr` needs no administrator rights. On Linux, once the terminal is set up, it
+  drops any capabilities, sets `no_new_privs`, enters a Landlock domain with no rules, and installs a
+  seccomp filter (`internal/sandbox`, `docs/PLAN.md` §8). Landlock stops it from opening or changing files
+  and from TCP connections. The filter stops it from running programs, starting processes, opening any
+  socket, changing a file's permissions, owner, attributes or times, signalling or changing other
+  processes, and using kernel interfaces that it never needs. This limits what a defect found later in
+  `wopr` or a dependency could do. The command-line installers for macOS and
   Linux install to `~/.local/bin` without `sudo`, and the Windows installer is per user. CI workflows
   have `permissions: {}` by default and give each job only what it needs. Only the release workflow's
   `sign` job can use the signing key, in an environment limited to release tags.
@@ -85,11 +91,12 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 | Infinite loop that blocks the UI (CWE-835) | A bug in a game | The watchdog (`internal/ui/watchdog.go`) restores the terminal and exits | Watchdog tests |
 | Symbolic link following, insecure permissions (CWE-59, CWE-732) | The debug log | `O_NOFOLLOW`, `Lstat`, owner check, 0700 and 0600 | `internal/debuglog` tests |
 | OS command injection (CWE-78) | The macOS relaunch | Fixed arguments, no shell | Table tests in `cmd/wopr` |
+| A defect that reaches the file system, the network or other programs (CWE-250, CWE-269) | Any code that runs after the terminal is set up, on Linux | `no_new_privs`, dropped capabilities, a Landlock domain with no rules, and a seccomp filter | `internal/sandbox` tests: each refusal on one thread, the filter in an interpreter for amd64 and arm64, and the real `Restrict` on every thread of a child process. The `TestLinuxSandbox`, `TestDebugLog`, `TestSuspendResume`, `TestTmuxColours` and `TestColours` e2e tests. CI's `sandbox` job runs them on amd64 and arm64, as a user and as root |
 | Use of a weak random generator for security (CWE-338) | None: the seeded generator is for games and replays only | No security decision uses randomness | `proto.NewRand`; gosec's finding is annotated |
 | Download of code without an integrity check (CWE-494) | Installs | HTTPS only (`--proto '=https'`, `--https-only`), attestations, signatures | `SECURITY.md`; the install pages |
 | Vulnerable or malicious dependency (CWE-1395) | Go modules, CI actions | `govulncheck` on every push and weekly; a 14-day dependency cooldown for regular updates (security fixes skip it); actions pinned by commit SHA; zizmor | `ci.yml`, `scheduled.yml`, `internal/tools/cooldown` |
 | Leaked credentials (CWE-798) | The repository | gitleaks on the full history in CI; secrets only in GitHub environments | The `secrets` job |
-| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs |
+| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; the Windows installer is built again on two other runners and must match too; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs; `windows.yml`'s smoke jobs |
 
 `golangci-lint` with gosec, staticcheck and go vet runs on every push, and CI fails on any finding. A false
 positive from gosec carries a `//nolint:gosec` comment with its reason.

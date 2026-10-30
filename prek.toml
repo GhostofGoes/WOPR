@@ -101,6 +101,8 @@ hooks = [
   { id = "desktop-files", name = "menu entries and AppStream metadata", language = "system", entry = "go test -count=1 ./internal/tools/pkgdocs ./internal/tools/snapdir", files = '^(packaging/linux/|packaging/description\.txt$|internal/tools/(pkgdocs|snapdir)/)', pass_filenames = false, priority = "lint" },
   # No module in any build list newer than 14 days (AGENTS.md, "Dependency cooldown"); asks the module proxy.
   { id = "dependency-cooldown", name = "dependency cooldown (14 days)", language = "system", entry = "go run ./internal/tools/cooldown -now", files = '(^|/)go\.(mod|sum)$|^tools/cooldown-exceptions\.txt$|^internal/tools/cooldown/', pass_filenames = false, priority = "lint" },
+  # No function that nothing calls, and none in shipped code that only tests call (AGENTS.md, deadcheck).
+  { id = "dead-code", name = "dead code (deadcheck)", language = "system", entry = "go run ./internal/tools/deadcheck", files = '\.go$|^tools/deadcheck-allow\.txt$|^tools/go\.(mod|sum)$', pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "go-test", name = "go test (short)", language = "system", entry = "go test -short ./...", types = ["go"], pass_filenames = false, stages = ["pre-push"], priority = "lint" },
   { id = "govulncheck", name = "govulncheck", language = "system", entry = "go tool -modfile=tools/go.mod govulncheck ./...", pass_filenames = false, stages = ["pre-push"], priority = "lint" },
 ]
