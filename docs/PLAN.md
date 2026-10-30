@@ -1515,7 +1515,8 @@ classified address it leads to.
     work, so NOTICE.md needs no entry.
 - **Windows installer**, `wopr_X.Y.Z_windows_setup.exe`, a release file. Inno Setup 7.1.0 packs both Windows
   programs and the notices (`packaging/windows/wopr.iss`, `windows.yml`). It is pinned by URL, SHA-256 and
-  its publisher's Authenticode signer, and installed in portable mode on the runner.
+  its publisher's Authenticode signer, and installed in portable mode into a new folder on the runner.
+  Each of its programs and DLLs must then carry the same signer's valid signature.
   - Per user, with no administrator prompt (`PrivilegesRequired=lowest`, and an administrator may pass
     `/ALLUSERS`). It installs into `%LOCALAPPDATA%\Programs\WOPR`, the folder the PowerShell line uses, so
     installing over that copy replaces it. One file for every PC: Setup installs the arm64 program on
@@ -1524,21 +1525,38 @@ classified address it leads to.
     and add WOPR to the user's `PATH`, on), a summary, the progress bar, and Finish with "Launch WOPR". One
     top-level Start menu shortcut runs `wopr.exe`, and Windows opens its default terminal: Windows Terminal
     on Windows 11 22H2 and later, the console host on 10. Settings → Apps lists and uninstalls it.
-    Uninstalling also removes the `PATH` entry, the PowerShell line's included, and the debug log
-    (`%LOCALAPPDATA%\wopr\debug.log`, then its folder if empty). An upgrade is the newer installer run over
-    it. Setup closes a running wopr first.
+    Uninstalling also removes the debug log (`%LOCALAPPDATA%\wopr\debug.log`, then its folder if empty).
+    It removes a `PATH` entry only if Setup added it, or if it names the default folder, which is WOPR's
+    alone (the PowerShell line's entry included). A folder that was on `PATH` before, such as one that
+    `/DIR=` named and other programs share, stays on it. Setup records the folder it added in the
+    uninstall entry, and an upgrade keeps the record. Setup never writes a `Path` that is not text, and
+    never adds a folder whose name has a semicolon or a percent sign. A silent Setup logs why, and asks
+    nothing. An upgrade is the newer installer run over it. Setup closes a running wopr first. Uninstall
+    cannot (Inno Setup's uninstaller has no Restart Manager), so it asks the user to close WOPR, with
+    Inno Setup's own message. A silent Uninstall logs it and goes on, and leaves `wopr.exe`. One Setup runs at a time in each Windows session. The mutex that
+    enforces this has no `Global\` name, so another account on the PC cannot hold it to stop Setup.
   - `AppId` `{A7D86110-58E9-404E-9164-FBDDBDC6AC22}` never changes: upgrades and the uninstall entry
     depend on it.
   - Unsigned: SmartScreen asks (More info, then Run anyway). Smart App Control, when it is on, blocks the
     installer with no way to allow one app. The install tab and the troubleshooting page say both.
-  - Attested, not checked for reproducibility: it is built once (every file `notimestamp`), from files that
-    `repro` covers.
+  - Attested and reproducible. Inno Setup writes no time or path into it (every file `notimestamp`), so
+    the same release files, `wopr.iss` and Inno Setup give the same bytes. `repro` covers those release
+    files. Each smoke job builds the installer again and fails unless the bytes match the build job's.
+    That catches a change made by the build job's runner, not one in the commit itself. The MSIX
+    packages are built once and not compared; they are never release files.
   - The smoke jobs on `windows-2025` and `windows-11-arm`:
-    1. install it silently.
-    2. check the files, the shortcut, the uninstall entry, `PATH` and the program's CPU type.
-    3. run `wopr --version`.
-    4. uninstall it and check that nothing is left, a debug log included.
-    5. repeat the steps over a copy from the PowerShell line.
+    1. check the release files against `checksums.txt`, and build the installer again (above).
+    2. install it silently.
+    3. check the files, the shortcut, the uninstall entry, `PATH` and the program's CPU type. Each
+       installed file must be its release file, by SHA-256, and the folder holds nothing else.
+    4. run `wopr --version`.
+    5. uninstall it and check that nothing is left, a debug log included.
+    6. repeat the steps over a copy from the PowerShell line.
+    7. check whose `PATH` entry Uninstall removes: a folder that `/DIR=` named and `PATH` already had
+       stays, and one that Setup added goes, also after an upgrade with the task off. Setup leaves a
+       `REG_MULTI_SZ` `Path` alone, and adds no folder whose name has a semicolon or a percent sign.
+    8. check that a silent Uninstall notices a `wopr.exe` in use.
+    9. install for all users (`/ALLUSERS`): Program Files, the system `PATH`, then uninstall.
   - Inno Setup's licence lets anyone use it (jrsoftware asks only commercial users to buy one). The docs
     site's credits page names it.
 - **`wopr.exe`'s resources.** go-winres v0.3.3 (0BSD, in `tools/release/go.mod`) writes an icon, a manifest

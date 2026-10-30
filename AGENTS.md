@@ -46,8 +46,8 @@ system. There is no Makefile.
 | Stage binaries and e2e tests | `go run ./internal/tools/stage`. With `-archives -assets dist/release`, it also checks the archives and the Linux packages, and it collects every release file into `dist/release`. With `-merge -assets dist/release <file>...`, it adds the installers to them and to `checksums.txt`, sorted as GoReleaser sorts it |
 | Lint the Linux packages (Linux, after a release build. The tools are not pinned) | `lintian --pedantic dist/*.deb` and, with Fedora's rpmlint configuration, `rpmlint -r packaging/rpmlintrc dist/*.rpm`. See `docs/PLAN.md` §8 for what they report. List an `.rpm`'s files with `rpm -qlvp`, or unpack it with `bsdtar -xf X.rpm -C dir`. Never pipe `rpm2cpio` into a plain `cpio -idm`, which writes into `/` (the payload's paths are absolute) |
 | Check the menu entries and the AppStream metadata (Linux, after a release build. The tools are not pinned) | `desktop-file-validate build/pkg/deb/*.desktop build/pkg/rpm/*.desktop` (prints nothing when they pass), `appstreamcli validate --no-net --pedantic build/pkg/*.metainfo.xml` and `appstream-util validate-relax --nonet build/pkg/*.metainfo.xml`. The `desktop-files` hook runs them on what `pkgdocs` writes (its `TestValidators`, which skips a validator that is not installed unless `WOPR_DESKTOP_VALIDATORS=1`). The smoke jobs run them on the installed `.deb` |
-| Windows installer and MSIX packages (Windows, PowerShell 7, after a release build and `stage -archives -assets dist/release`) | `pwsh -File packaging/windows/check-release-files.ps1 -Version <V> -BinDir dist/release`, then `pwsh -File packaging/windows/build-installer.ps1 -Version <V> -BinDir dist/release -OutputDir build/installer` (downloads the pinned Inno Setup) and `pwsh -File packaging/windows/build-msix.ps1 -Version <V> -BinDir dist/release -OutputDir build/msix` (needs the Windows SDK) |
-| Test them (Windows, only on a machine without WOPR, such as a CI runner) | `pwsh -File packaging/windows/test-installer.ps1 -Installer build/installer/wopr_<V>_windows_setup.exe -Version <V>` (changes the user's `PATH` while it runs) and, as an administrator, `pwsh -File packaging/windows/test-msix.ps1 -PackageDir build/msix -Version <V>` (trusts a throwaway certificate while it runs) |
+| Windows installer and MSIX packages (Windows, PowerShell 7, after a release build and `stage -archives -assets dist/release`) | `pwsh -File packaging/windows/check-release-files.ps1 -Version <V> -BinDir dist/release`, then `pwsh -File packaging/windows/build-installer.ps1 -Version <V> -BinDir dist/release -OutputDir build/installer` (downloads the pinned Inno Setup. `-ExpectSame <setup.exe>` checks that this build gives the same bytes) and `pwsh -File packaging/windows/build-msix.ps1 -Version <V> -BinDir dist/release -OutputDir build/msix` (needs the Windows SDK) |
+| Test them (Windows, only on a machine without WOPR, such as a CI runner) | `pwsh -File packaging/windows/test-installer.ps1 -Installer build/installer/wopr_<V>_windows_setup.exe -Version <V> -BinDir dist/release` (changes the user's `PATH` while it runs. As an administrator, `-AllUsers` also tests `/ALLUSERS`, which changes the system's) and, as an administrator, `pwsh -File packaging/windows/test-msix.ps1 -PackageDir build/msix -Version <V>` (trusts a throwaway certificate while it runs) |
 | `wopr.exe`'s icon, manifest and version details by hand | `go tool -modfile=tools/release/go.mod go-winres make --in packaging/windows/winres.json --out cmd/wopr/rsrc --arch amd64,arm64` (GoReleaser's before hook runs it. Git ignores the `.syso` files go-winres writes) |
 | macOS app bundle (any OS) | `go run ./internal/tools/macapp -binary <darwin program> -version <V> -out build/WOPR.app` (`-notices dist/release` takes the notices from the release files) |
 | macOS disk image (macOS, after a release build and `stage -archives -assets dist/release`) | `packaging/macos/build-dmg.sh dist/release <V> build/dmg`, then `packaging/macos/test-dmg.sh build/dmg/wopr_<V>_macos.dmg <V> [stage/darwin_<arch>/e2e.test]`. `packaging/macos/test-launch.sh build/dmg/wopr_<V>_macos.dmg` opens the app as Finder does, and it stops Terminal afterwards. Run it on a CI runner, or on a Mac where that does not matter |
@@ -147,7 +147,11 @@ its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stab
   builds `wopr_<V>_windows_setup.exe` with Inno Setup (`packaging/windows/wopr.iss`: per user, no
   administrator prompt, both architectures in one file). It builds the MSIX packages for the Microsoft
   Store. Then it installs, runs and removes both on x64 and Arm64 Windows (`test-installer.ps1`,
-  `test-msix.ps1`). Never change the installer's `AppId`: upgrades and uninstalling find WOPR by it.
+  `test-msix.ps1`). Each installed file must match `checksums.txt`. Each of those two runners also builds
+  the installer again (`build-installer.ps1 -ExpectSame`) and fails unless the bytes are the build
+  job's: the installer is reproducible, so keep `notimestamp` on every `[Files]` entry. Never change the
+  installer's `AppId`: upgrades and uninstalling find WOPR by it. Uninstall removes only a `PATH` entry
+  that Setup added (recorded in the uninstall entry) or the default folder's.
   go-winres puts the icon, a manifest and version details into `wopr.exe` (`packaging/windows/winres.json`).
   The `.syso` files it writes are the same on every run, so `repro` still covers the program.
 - **macOS app.** `macos.yml` checks the darwin programs against `checksums.txt` and joins them with
@@ -577,8 +581,7 @@ At every milestone boundary:
 4. Bump the installers' tools:
    - **Inno Setup**, if <https://jrsoftware.org/isdl.php> lists a newer one: in
      `packaging/windows/build-installer.ps1`, change `$InnoUrl`, `$InnoSha256` (the `file-hash` in the
-     release's `.issig` file) and `$InnoSigner` together, with the version in `-InnoDir`'s default and the
-     download's name. Read the release notes for changes to scripts.
+     release's `.issig` file) and `$InnoSigner` together. Read the release notes for changes to scripts.
    - **The Windows SDK**: check that the `windows-2025` and `windows-11-arm` images still have one
      (`WindowsSdk.psm1` takes the newest). Set `MaxVersionTested` in
      `packaging/windows/AppxManifest.xml` to the newest Windows build.

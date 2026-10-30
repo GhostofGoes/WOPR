@@ -89,7 +89,7 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 | Download of code without an integrity check (CWE-494) | Installs | HTTPS only (`--proto '=https'`, `--https-only`), attestations, signatures | `SECURITY.md`; the install pages |
 | Vulnerable or malicious dependency (CWE-1395) | Go modules, CI actions | `govulncheck` on every push and weekly; a 14-day dependency cooldown for regular updates (security fixes skip it); actions pinned by commit SHA; zizmor | `ci.yml`, `scheduled.yml`, `internal/tools/cooldown` |
 | Leaked credentials (CWE-798) | The repository | gitleaks on the full history in CI; secrets only in GitHub environments | The `secrets` job |
-| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs |
+| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; the Windows installer is built again on two other runners and must match too; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs; `windows.yml`'s smoke jobs |
 
 `golangci-lint` with gosec, staticcheck and go vet runs on every push, and CI fails on any finding. A false
 positive from gosec carries a `//nolint:gosec` comment with its reason.
