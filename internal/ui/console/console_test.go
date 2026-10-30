@@ -35,14 +35,6 @@ func TestSanitizeInput(t *testing.T) {
 	}
 }
 
-func TestSanitizeText(t *testing.T) {
-	t.Parallel()
-	got := SanitizeText("A\tB\r\nC\x1b[2JD\x00")
-	if len(got) != 2 || got[0] != "A       B" || got[1] != "CD" {
-		t.Errorf("SanitizeText = %q", got)
-	}
-}
-
 func TestWrap(t *testing.T) {
 	t.Parallel()
 	m := ansi.WcWidth

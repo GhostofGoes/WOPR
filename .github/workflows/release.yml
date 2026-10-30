@@ -9,7 +9,8 @@
 # The installers (windows.yml's setup.exe, macos.yml's .dmg) and the snaps (snap.yml) are built on
 # their own runners from build's release files, never compiled again. collect adds the installers
 # to the release files and checksums.txt, which sign signs and publish attests; repro compares
-# GoReleaser's own files only, so the installers are signed and attested but not checked for
+# GoReleaser's own files only. windows.yml builds the Windows installer again on each of its two test
+# runners and requires the same bytes; the .dmg is signed and attested but not checked for
 # reproducibility. The snaps and the MSIX packages are workflow artifacts for the stores and never
 # release files.
 name: Release
@@ -282,8 +283,8 @@ jobs:
           if-no-files-found: error
 
   # GoReleaser's own checksums.txt from both builds, before collect adds the installers and sign
-  # signs the .rpm packages: the installers are built once, from these files, and signed and
-  # attested only.
+  # signs the .rpm packages. The installers are built from these files: the Windows installer is
+  # rebuilt and compared in windows.yml, and the .dmg is signed and attested only.
   repro:
     name: reproducible
     needs: [build, rebuild]

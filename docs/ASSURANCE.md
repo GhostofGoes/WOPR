@@ -42,7 +42,7 @@ defects, and a copy of `wopr` that the user did not get from this project.
 
 | # | Boundary | What crosses it | Control |
 |---|---|---|---|
-| B1 | Keyboard and paste to `wopr` | Keys and pasted text | `console.SanitizeInput` and `console.SanitizeText` (`internal/ui/console/sanitize.go`) remove escape sequences and control characters. Each game parses only its own commands and caps numbers. |
+| B1 | Keyboard and paste to `wopr` | Keys and pasted text | `console.SanitizeInput` (`internal/ui/console/sanitize.go`) removes escape sequences and control characters. Each game parses only its own commands and caps numbers. |
 | B2 | Environment and command line to `wopr` | Options and nine environment variables, and the terminal variables its libraries read | `internal/cli` and `cmd/wopr` parse them strictly: a fixed list of themes, a number for the seed, a fixed set of boolean values. Their tests cover each one. `internal/scrubenv` removes `TMUX`, `TEA_TRACE`, `TEA_DEBUG` and `UV_DEBUG` before any library reads them, so no library runs `tmux` or writes a trace or log file (the e2e test `TestLibrarySwitchesStayOff`). Inside tmux, `wopr` draws in 24-bit colour without asking tmux, and tmux converts it for the outer terminal. It also removes a `TERM` that is not a terminfo name, because the terminfo loader joins `TERM` to a folder and reads the whole file (`TERM=../../../dev/zero` read without end, `TestTermPathIgnored`). |
 | B3 | `wopr` to the file system | The debug log only, when `WOPR_DEBUG` is set | `internal/debuglog`: a 0700 folder that the user owns, a 0600 file, `O_NOFOLLOW`, and `Lstat` checks. |
 | B4 | `wopr` to the terminal | Screen output | All output is printable ASCII drawn by the renderer. Text from the user goes through B1 before it is shown. |
@@ -96,7 +96,7 @@ The principles of Saltzer and Schroeder, as `wopr` applies them:
 | Download of code without an integrity check (CWE-494) | Installs | HTTPS only (`--proto '=https'`, `--https-only`), attestations, signatures | `SECURITY.md`; the install pages |
 | Vulnerable or malicious dependency (CWE-1395) | Go modules, CI actions | `govulncheck` on every push and weekly; a 14-day dependency cooldown for regular updates (security fixes skip it); actions pinned by commit SHA; zizmor | `ci.yml`, `scheduled.yml`, `internal/tools/cooldown` |
 | Leaked credentials (CWE-798) | The repository | gitleaks on the full history in CI; secrets only in GitHub environments | The `secrets` job |
-| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs |
+| Tampered build (CWE-506) | CI | Builds are done twice on two architectures and must match; the Windows installer is built again on two other runners and must match too; every file is attested; checksums are signed | `release.yml`'s `repro`, `attest` and `sign` jobs; `windows.yml`'s smoke jobs |
 
 `golangci-lint` with gosec, staticcheck and go vet runs on every push, and CI fails on any finding. A false
 positive from gosec carries a `//nolint:gosec` comment with its reason.

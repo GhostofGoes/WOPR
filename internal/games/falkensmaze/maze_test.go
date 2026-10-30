@@ -9,6 +9,20 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/proto"
 )
 
+// passages counts the open passages; a perfect maze has cells-1.
+func (m *maze) passages() int {
+	n := 0
+	for c := range m.cells() {
+		if m.east[c] {
+			n++
+		}
+		if m.south[c] {
+			n++
+		}
+	}
+	return n
+}
+
 func perfect(t *testing.T, m *maze, why string) {
 	t.Helper()
 	if m.passages() != m.cells()-1 {

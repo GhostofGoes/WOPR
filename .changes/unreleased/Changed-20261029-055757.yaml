@@ -1,0 +1,3 @@
+kind: Changed
+body: The Windows uninstaller now asks you to close WOPR if it is running.
+time: 2026-10-29T05:57:57.640253222Z

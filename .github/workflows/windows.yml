@@ -1,6 +1,11 @@
 # Builds the Windows installer (Inno Setup) and the MSIX packages for the Microsoft Store from the
 # release files that GoReleaser made, then installs, runs and removes both on x64 and Arm64 Windows.
-# It never compiles wopr: every file it packs is one that checksums.txt lists. Called by ci.yml and
+# It never compiles wopr: every file it packs is one that checksums.txt lists. Each smoke runner also
+# builds the installer again from the same files and fails unless it gets the same bytes, so the
+# build job's runner cannot alter the installer unseen (repro does the same for GoReleaser's
+# files), and it checks each installed file against checksums.txt. This does not cover a change
+# in the commit itself, or one that both runner images share. The MSIX packages, which are never
+# release files, are built once and not compared. Called by ci.yml and
 # release.yml after their build job. The installer, installer-windows, becomes a release file; the
 # MSIX packages, msix, stay a workflow artifact for a Store submission (packaging/windows/build-msix.ps1).
 name: Windows
@@ -83,7 +88,7 @@ jobs:
       matrix:
         runner: [windows-2025, windows-11-arm]
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 15
+    timeout-minutes: 25
     permissions:
       contents: read
     env:
@@ -100,12 +105,37 @@ jobs:
         with:
           name: msix
           path: build/msix
-      # Twice over: a fresh install, and one over the PowerShell install line's copy, then again
-      # over itself; each uninstalled and checked for what it leaves.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: ${{ inputs.artifact }}
+          path: dist/release
+      - name: Check the release files against checksums.txt
+        run: ./packaging/windows/check-release-files.ps1 -Version $env:VERSION -BinDir dist/release
+      # A second build of the installer, on another runner (and on windows-11-arm, another image),
+      # from the same release files, wopr.iss and pinned Inno Setup: it must be build's, byte for byte.
+      - name: Rebuild the installer and compare it with build's
+        id: rebuild
+        run: >-
+          ./packaging/windows/build-installer.ps1 -Version $env:VERSION -BinDir dist/release
+          -OutputDir build/rebuild -ExpectSame "build/installer/wopr_$($env:VERSION)_windows_setup.exe"
+      # A fresh install; one over the PowerShell install line's copy, then again over itself; and
+      # installs that check whose PATH entry Uninstall removes, and one for all users (the runner is
+      # an administrator). Each uninstalled and checked for what it leaves, and each installed file
+      # checked against checksums.txt.
       - name: Install, check and uninstall the installer
         run: >-
           ./packaging/windows/test-installer.ps1 -Installer "build/installer/wopr_$($env:VERSION)_windows_setup.exe"
-          -Version $env:VERSION -LogDir "$env:RUNNER_TEMP\installer-logs"
+          -Version $env:VERSION -BinDir dist/release -LogDir "$env:RUNNER_TEMP\installer-logs" -AllUsers
+      # When the two builds differ, both, to find out why.
+      - name: Keep both installers
+        if: ${{ failure() && steps.rebuild.outcome == 'failure' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: installer-mismatch-${{ matrix.runner }}
+          path: |
+            build/installer/
+            build/rebuild/
+          retention-days: 7
       # Signed with a throwaway certificate that this machine trusts until the step ends.
       - name: Install, run and remove the MSIX package
         if: ${{ !cancelled() }}
