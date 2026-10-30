@@ -157,6 +157,49 @@ var sea = func() [][MapW]bool {
 // Sea reports whether a map cell is open water.
 func Sea(x, y int) bool { return x >= 0 && x < MapW && y >= 0 && y < MapH && sea[y][x] }
 
+// nations is the nation that holds each of the map's land cells, in 1983's borders: U the
+// United States (Alaska and Hawaii with it), R the Soviet Union (its fifteen republics), O any
+// other country, and a space the sea, every cell Sea reports. It is data, not art: worked out
+// from Natural Earth's 50m country polygons (public domain, as for the side-choice outlines) in
+// the map's own projection. A cell takes the nation at its centre; one whose centre is water,
+// the nation that holds most of it; one the art draws over open water, the nearest nation. A
+// cell that holds one of the board's places takes the place's side: Tbilisi's (Turkey holds its
+// centre), Irkutsk's and Chita's (Mongolia's) and Miami's (the Bahamas'). Three glyphs are
+// fixed by hand: the ")" between Irkutsk and Chita is Lake Baikal, and Soviet; the "\\" of
+// Mexico's Pacific coast takes its first "\" from Mexico, not from California, the nearest
+// land to that cell's centre; and the ")" east of Miami is Florida's Atlantic coast (as at
+// Miami), not the Bahamas.
+var nations = [MapH]string{
+	"           O OOOOOOOO  OOOOOOO        OO       R     RRRRR             ",
+	"   UUUUU O OOOOOOOOOOOOOOOOOOO         OOO     RR RRRRRRRRRRRRRRRRRRRRR",
+	"RRUUUUUUOOOOOOOOOOOOOOOOOOOOO OO      OOOORRRRRRRRRRRRRRRRRRRRRRRRRRRRR",
+	"  UUUUUUUUOOOOOOOOOOOOOOOOOO       O OOORRRRRRRRRRRRRRRRRRRRRRRRRRRRRR ",
+	" UUU     OOUUUUUUOOOOOOOOO        OOOOOORRRRRRRRRRRRROOORRROOORRR RR   ",
+	"          UUUUUUUUUUUUUO          OOOOOOOOOORRRRRRRROOOOOOOOOOR O  R   ",
+	"          UUUUUUUUUUUU           OOOOOOOOOOOOOOOOOOOOOOOOOOOOO  O      ",
+	"           OOOOOUUUUUU           OOOOOOOOOOOOOOOOOOOOOOOOOOOO  O       ",
+	"    U        OOOOOOOO           OOOOOOOOOOOOOOOO OOOOOOOOOOOOO         ",
+	"              OOOOOOOOO         OOOOOOOOOOOOOOO   OO   OOOOOOO         ",
+	"                 OOOOOOO        OOOOOOOOOOOOOO     OO  OOOOOOOO        ",
+	"                   OOOOOOOOO         OOOOOOO          OOOOOOOOOOO      ",
+	"                   OOOOOOOOOO        OOOOOOO O          OOOOOOOOOO     ",
+}
+
+// Nation returns the side whose land a map cell is, with ok false for any other country's
+// land, for the sea, and off the map. The big board draws each nation's land in its colour.
+func Nation(x, y int) (side Side, ok bool) {
+	if x < 0 || x >= MapW || y < 0 || y >= MapH {
+		return 0, false
+	}
+	switch nations[y][x] {
+	case 'U':
+		return US, true
+	case 'R':
+		return USSR, true
+	}
+	return 0, false
+}
+
 // place puts a named point at its latitude and longitude: in the cell that holds it, or, where
 // the art draws that coast a little differently and the cell is open water, on the land cell
 // whose centre is nearest the true point. Murmansk lies just off the art's Kola coast, '">'
@@ -457,4 +500,4 @@ var placeNames = func() script.Ls {
 }()
 
 // Lines is every script block here, for the provenance test. Map is part of World.
-var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Scenarios, placeNames}
+var Lines = []script.Ls{World, MapCredit, OutlineUS, OutlineUSSR, Strategy, Scenarios, placeNames}

@@ -37,6 +37,18 @@ underline and reverse instead.
 The typing and the animations still play. Add `--instant` to skip them. With or without either option,
 nothing ever flashes more than three times a second.
 
+## Time limits
+
+No prompt has a time limit unless you ask for one. Two options in Global Thermonuclear War add one:
+
+- `--launch-window` (`-w`) gives the strike orders a time limit. You choose its length, from 5 to 999
+  seconds (`-w=120`). The board shows the seconds that are left, as a number. `--instant` does not stop
+  this clock.
+- `--authentic` (`-a`) plays the end of the war by itself, as the film does. DEFCON 1 stays on the board
+  for three seconds. Then the kill ratios show for eight seconds, and the climax starts. No key holds
+  these screens, and `--instant` does not skip them. To read the kill ratios for as long as you want,
+  play without `--authentic`.
+
 ## Instant text
 
 `--instant` (`-i`, or `WOPR_INSTANT=1`) shows each line at once, instead of one character at a time. It
@@ -64,4 +76,4 @@ standard palette.
 
 Nobody has tried the full-screen interface with a screen reader yet.
 [Reports are welcome](/usage/troubleshooting#getting-help). The printing options (`--help`,
-`--games`, `--scenes`, `--licenses`) write plain text, and they work anywhere.
+`--games`, `--scenes`, `--licenses`, and `--scenario` alone) write plain text, and they work anywhere.

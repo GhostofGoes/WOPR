@@ -29,11 +29,13 @@ const (
 	StyleSuitRed
 	StyleSuitBlack
 	StyleSelected
+	StyleLandUS   // the United States' land; Land is every other country's
+	StyleLandUSSR // the Soviet Union's land
 	numStyles
 )
 
 // styleLetters render a StyleMap: one letter per style, in Style order.
-const styleLetters = "tbdalLiox12345Arks"
+const styleLetters = "tbdalLiox12345ArksUR"
 
 // Styles lists every Style in order. Tests that must hold for each style (every theme
 // defines it, its contrast) range over it, so a new Style is covered once it is declared.

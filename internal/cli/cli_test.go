@@ -7,6 +7,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
 	"github.com/GhostofGoes/WOPR/internal/games/catalog"
@@ -177,6 +178,221 @@ func TestParseSeed(t *testing.T) {
 	}
 }
 
+// --launch-window is a switch that may take seconds after an equals sign: alone it gives 30
+// seconds, 0 or false turn it off, and anything else outside 5 to 999 is a usage error, an
+// equals sign with nothing after it too. A number after a space is refused, not read as the
+// game. Movie mode gives no orders, so it refuses a window.
+// --scenario alone lists GTW's scenarios; with a number or a name, after a space or an equals
+// sign, it starts GTW in that scenario's playback. The words after it are the scenario. GTW
+// may come before it, as every GTW option may, but no other game. False, as for a switch, is
+// no scenario, and an equals sign with nothing after it is refused.
+func TestParseScenario(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args   string
+		action Action
+		mode   string
+		window time.Duration
+		usage  string // non-empty: expect a UsageError containing this
+	}{
+		{args: "-c", action: PrintScenarios},
+		{args: "--scenario -i", action: PrintScenarios},
+		{args: "-c 2", mode: "scenario:2"},
+		{args: "--scenario=2", mode: "scenario:2"},
+		{args: "-c=USSR-FIRST-STRIKE", mode: "scenario:2"},
+		{args: "-c far east strategy -i", mode: "scenario:4"},
+		{args: "-i --scenario us first strike", mode: "scenario:1"},
+		{args: "-c 156", mode: "scenario:156"},
+		{args: "-c 2 -w", mode: "scenario:2", window: 30 * time.Second},
+		{args: "-c 157", usage: `no scenario matches "157" (wopr --scenario lists them)`},
+		{args: "-c gtw", action: PrintScenarios},
+		{args: "gtw -c 2", mode: "scenario:2"},
+		{args: "15 -c far east strategy", mode: "scenario:4"},
+		{args: "-p gtw -c 2", mode: "scenario:2"},
+		{args: "-c nowhere", usage: `no scenario matches "nowhere"`},
+		{args: "-c chad alertxyz", usage: `no scenario matches "chad alertxyz"`},
+		{args: "-c=2 3", usage: "too many arguments: 3"},
+		{args: "-p chess -c 2", usage: "--scenario starts GTW itself: give it no game"},
+		{args: "chess -c 2", usage: "--scenario starts GTW itself: give it no game"},
+		{args: "-c= gtw", usage: "--scenario=: give a value after the equals sign"},
+		{args: "-c=false", action: RunTUI},
+		{args: "-m -c", usage: "--movie and --scenario cannot be combined"},
+		{args: "-o -c 2", usage: "--only needs --movie"},
+		{args: "-c -t pink", usage: "unknown theme"},
+		{args: "-c --scenes", action: PrintScenes},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, act, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			play := ""
+			if tt.mode != "" {
+				play = "global-thermonuclear-war"
+			}
+			if act != tt.action || cfg.Mode != tt.mode || cfg.Play != play || cfg.LaunchWindow != tt.window {
+				t.Errorf("got action %v mode %q play %q window %v", act, cfg.Mode, cfg.Play, cfg.LaunchWindow)
+			}
+		})
+	}
+}
+
+func TestParseLaunchWindow(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args   string
+		window time.Duration
+		play   string
+		usage  string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "gtw", play: "global-thermonuclear-war"},
+		{args: "-w", window: 30 * time.Second},
+		{args: "--launch-window gtw", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "gtw -w", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "-w=45 gtw", window: 45 * time.Second, play: "global-thermonuclear-war"},
+		{args: "--launch-window=5", window: 5 * time.Second},
+		{args: "--launch-window=999", window: 999 * time.Second},
+		{args: "-w=0"},
+		{args: "-w -w=false"},
+		{args: "-w=false gtw", play: "global-thermonuclear-war"},
+		{args: "-w= gtw", usage: "--launch-window=: give a value after the equals sign"},
+		{args: "-w=4", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=1000", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=-5", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "-w=soon", usage: "--launch-window takes 0 or 5 to 999 seconds, got"},
+		{args: "gtw -w 45", usage: "-w 45: give the seconds after an equals sign (-w=45), or the game before -w"},
+		{args: "-w 10", usage: "-w 10: give the seconds after"},
+		{args: "--launch-window 30 gtw", usage: "--launch-window 30: give the seconds after"},
+		{args: "-w gtw", window: 30 * time.Second, play: "global-thermonuclear-war"},
+		{args: "7 -w", window: 30 * time.Second, play: "chess"},
+		{args: "-m -w", usage: "--movie and --launch-window cannot be combined"},
+		{args: "-m -w=0"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.LaunchWindow != tt.window || cfg.Play != tt.play {
+				t.Errorf("got window %v play %q, want %v %q", cfg.LaunchWindow, cfg.Play, tt.window, tt.play)
+			}
+		})
+	}
+}
+
+// --no-climax is a switch for GTW, with the game or without, before or after it, and with a
+// scenario. Movie mode's war ends in the film's climax, so it refuses the switch.
+func TestParseNoClimax(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args     string
+		noClimax bool
+		play     string
+		usage    string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "gtw", play: "global-thermonuclear-war"},
+		{args: "-n", noClimax: true},
+		{args: "--no-climax gtw", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "gtw -n -w", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "-n -c 2", noClimax: true, play: "global-thermonuclear-war"},
+		{args: "-n --no-climax=false"},
+		{args: "-m -n", usage: "--movie and --no-climax cannot be combined"},
+		{args: "--movie 2 --no-climax", usage: "--movie and --no-climax cannot be combined"},
+		{args: "-m -n=false"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.NoClimax != tt.noClimax || cfg.Play != tt.play {
+				t.Errorf("got no-climax %v play %q, want %v %q", cfg.NoClimax, cfg.Play, tt.noClimax, tt.play)
+			}
+		})
+	}
+}
+
+// --authentic is a switch for GTW, with the game or without, before or after it. The film
+// plays no scenario, gives no strike orders, ends its war in the climax and is not movie
+// mode's war, so --scenario, --launch-window, --no-climax and --movie refuse it.
+func TestParseAuthentic(t *testing.T) {
+	t.Parallel()
+	reg := catalog.Registry()
+	tests := []struct {
+		args      string
+		authentic bool
+		play      string
+		usage     string // non-empty: expect a UsageError containing this
+	}{
+		{args: ""},
+		{args: "-a", authentic: true},
+		{args: "--authentic gtw", authentic: true, play: "global-thermonuclear-war"},
+		{args: "gtw -a -i -s 7", authentic: true, play: "global-thermonuclear-war"},
+		{args: "-a --authentic=false gtw", play: "global-thermonuclear-war"},
+		{args: "-a -w=0 gtw", authentic: true, play: "global-thermonuclear-war"},
+		{args: "-a -n=false", authentic: true},
+		{args: "-a -c 2", usage: "--authentic and --scenario cannot be combined"},
+		{args: "-c -a", usage: "--authentic and --scenario cannot be combined"},
+		{args: "gtw -a -w", usage: "--authentic and --launch-window cannot be combined"},
+		{args: "-w=20 --authentic", usage: "--authentic and --launch-window cannot be combined"},
+		{args: "-a -n gtw", usage: "--authentic and --no-climax cannot be combined"},
+		{args: "-m -a", usage: "--movie and --authentic cannot be combined"},
+		{args: "--movie 3 --authentic", usage: "--movie and --authentic cannot be combined"},
+		{args: "-m -a=false"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.args, func(t *testing.T) {
+			t.Parallel()
+			cfg, _, err := Parse(strings.Fields(tt.args), reg, noEnv)
+			if tt.usage != "" {
+				var usageErr *UsageError
+				if !errors.As(err, &usageErr) || !strings.Contains(err.Error(), tt.usage) {
+					t.Fatalf("err = %v, want a usage error containing %q", err, tt.usage)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cfg.Authentic != tt.authentic || cfg.Play != tt.play {
+				t.Errorf("got authentic %v play %q, want %v %q", cfg.Authentic, cfg.Play, tt.authentic, tt.play)
+			}
+		})
+	}
+}
+
 // R9: every long flag has a one-letter shorthand, and no letter is used twice.
 func TestEveryLongFlagHasAShorthand(t *testing.T) {
 	t.Parallel()
@@ -197,7 +413,7 @@ func TestEveryLongFlagHasAShorthand(t *testing.T) {
 
 func TestRenderGolden(t *testing.T) {
 	t.Parallel()
-	var games, help, scenes strings.Builder
+	var games, help, scenes, scenarios strings.Builder
 	if err := RenderGames(&games, catalog.Registry()); err != nil {
 		t.Fatal(err)
 	}
@@ -206,11 +422,15 @@ func TestRenderGolden(t *testing.T) {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "scenes", scenes.String())
+	if err := RenderScenarios(&scenarios); err != nil {
+		t.Fatal(err)
+	}
+	golden.AssertString(t, "scenarios", scenarios.String())
 	if err := RenderHelp(&help); err != nil {
 		t.Fatal(err)
 	}
 	golden.AssertString(t, "help", help.String())
-	for _, line := range strings.Split(games.String()+help.String()+scenes.String(), "\n") {
+	for _, line := range strings.Split(games.String()+help.String()+scenes.String()+scenarios.String(), "\n") {
 		if len(line) > 80 {
 			t.Errorf("line wider than 80 columns: %q", line)
 		}

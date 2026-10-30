@@ -48,6 +48,7 @@ type Session struct {
 // Options configure the persona.
 type Options struct {
 	Play string // start this game directly, skipping LOGON and the greeting (--play)
+	Mode string // with Play: the mode it starts in, such as a GTW scenario's playback (--scenario)
 }
 
 // Persona is WOPR.
@@ -75,7 +76,7 @@ func (p *Persona) Start(env proto.Env) []proto.Output {
 	if p.opts.Play != "" {
 		p.s.phase = PhaseShell
 		p.s.greetStep = 3
-		return p.launch(p.opts.Play)
+		return p.launch(p.opts.Play, p.opts.Mode)
 	}
 	return p.dial(dialPause)
 }
@@ -275,9 +276,9 @@ func (p *Persona) request(e games.Entry) []proto.Output {
 		return respond(say(linePreferChess))
 	}
 	if e.Info.Slug == gtwSlug {
-		return append([]proto.Output{say(lineFine), blank}, p.launch(e.Info.Slug)...)
+		return append([]proto.Output{say(lineFine), blank}, p.launch(e.Info.Slug, "")...)
 	}
-	return p.launch(e.Info.Slug)
+	return p.launch(e.Info.Slug, "")
 }
 
 // unknownPlay answers the PLAY command when its name matches no game, or several. Other
@@ -306,7 +307,8 @@ func (p *Persona) unknownPlay(input string) ([]proto.Output, bool) {
 	return nil, false
 }
 
-func (p *Persona) launch(slug string) []proto.Output {
+// launch starts the game slug in mode ("" for its own start), or says why it cannot.
+func (p *Persona) launch(slug, mode string) []proto.Output {
 	e, ok := p.reg.Get(slug)
 	switch {
 	case !ok || e.Info.Internal: // the ending is reached by a hand-off, never by name
@@ -315,7 +317,7 @@ func (p *Persona) launch(slug string) []proto.Output {
 		return respond(say(lineNotAvail, lineNotYet))
 	}
 	p.s.playing = slug
-	return []proto.Output{proto.Launch{Slug: slug}}
+	return []proto.Output{proto.Launch{Slug: slug, Mode: mode}}
 }
 
 // listGames is the film's LIST GAMES screen: the names, with a blank line before the last.

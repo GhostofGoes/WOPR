@@ -185,9 +185,38 @@ screen, underlines the first line and leaves blank lines between them; the strip
 
 - **Console**: full-bleed text with no chrome. The console double-spaces WOPR lines and reveals them at modem
   speed, with a solid block cursor.
-- **NORAD big board**: a near-black blue field, cyan/blue outlines, red incoming and yellow outgoing tracks,
-  and white labels. It also has a DEFCON column of boxed numerals 5…1, and `** … **` notices. This is the
-  `norad` theme.
+- **NORAD big board**: in the film the big board is in colour, and WOPR's terminal is not. The board draws
+  each country as an outline with no fill, on a near-black blue field. The United States (Alaska with it)
+  is blue, the Soviet Union is red, and every other country is green. Both sides' missile tracks are pale:
+  white, with an ice-blue tint. Impacts are white discs. Titles are white and data lines cyan. The board
+  also has a DEFCON column of boxed numerals 5…1, and `** … **` notices. This is the `norad` theme. The
+  big board (every `LayoutFull` view: GTW's board, the ending, movie mode's board) always uses its
+  colours, whatever theme the player chooses (owner decision, 2026-10-29). The console and every game in
+  a panel keep the chosen theme. Only no colour at all (`NO_COLOR`, or a terminal without colour) takes
+  the board's colours away: it then draws in the console's theme, with that theme's attributes.
+  - **Evidence** (frame review, 2026-10-29). No production source names a colour. The colours come from
+    film frames: the 35 frames of hp9845.net's "Screen Art: WARGAMES"
+    (<https://www.hp9845.net/9845/software/screenart/wargames/>), the 4K grabs on highdefwatch.com
+    (<https://highdefwatch.com/post/1980-s-hackers-take-on-the-world-wargames>), and DVD stills
+    (<https://reflectionsonfilmandtelevision.blogspot.com/2023/04/40-years-ago-wargames.html>). Three
+    separate looks at two independent sets of frames agree on the three land colours. The owner remembered
+    a green United States. The frames show it blue, and green for the countries round it (Canada, Mexico).
+    Colin Cantwell drew each image as single-colour vector lines, and the film shot each colour through its
+    own filter. So each element has one flat colour.
+  - **The colours in `norad`.** United States land `#5B8BE6` / 12, Soviet land `#D9503F` / 9, other land
+    `#5DBB5A` / 2, all faint without colour. Outgoing tracks `#A8C8FF` / 14 (ice blue), incoming tracks
+    `#FFFFFF` / 15, bold without colour. The film draws both sides' tracks alike. The game keeps them apart
+    by glyph (`+`, `*`), by 16-colour index and by attribute. An impact is its track's style, reversed: a
+    white block for an incoming strike, as the film's white bloom.
+  - **The nations' land.** `assets.Nation` gives each land cell of the map its nation, in 1983's borders.
+    The mask is data from Natural Earth's 50m country polygons (public domain), in the map's own
+    projection. A cell takes the nation at its centre. A cell that holds one of the board's places takes
+    the place's side. `internal/assets/gtwmap.go` lists the few cells fixed by hand, each with its reason.
+    The art and Matthew Thomas's credit line do not change.
+  - **DEFCON.** The office's DEFCON sign lights 5 blue, 4 green, 3 yellow and 2 red. The ladder keeps that
+    order. No frame shows DEFCON 1 lit, so its white on red is `original`.
+  - **Not known.** The colour of the scenario names in the closing montage, and a clean frame of the world
+    map with tracks that land on United States targets.
 - **WOPR cabinet**: rows of lights and a `W.O.P.R.` nameplate. The optional one-row front panel draws them, and
   also shows "thinking" (§4.3).
 - **Verbiage**: ALL CAPS, terse, declarative. WOPR never asks clarifying questions. It numbers its lists
@@ -266,7 +295,7 @@ internal/debuglog    → stdlib                         the opt-in debug log (§
 internal/sandbox     → golang.org/x/sys/unix          Linux process hardening (§8); plus unsafe
 internal/scrubenv    → os only                        clears the libraries' TMUX, TEA_TRACE, TEA_DEBUG, UV_DEBUG in init (§8)
 internal/version     → stdlib
-internal/cli         → games, theme (--theme validation), version, movie (the scene index)
+internal/cli         → games, games/gtw (the scenario list), theme (--theme validation), version, movie (the scene index)
 internal/proto       → stdlib                         the program protocol, canvas, keys, rand
 internal/proto/host  → proto                          Bubble-Tea-free runner (A-14)
 internal/prompt      → stdlib                         normalise, clauses, numbers, yes/no
@@ -551,6 +580,15 @@ type Env struct {
 	Deterministic bool   // --seed or WOPR_SEED, or under test, or movie mode: AI search obeys Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking (§4.5)
 	Mode          string // optional launch mode, e.g. "climax" (§6.2)
+	// --launch-window: how long GTW's strike prompts wait for an order (§6.2). 0 (the default,
+	// and always in movie mode) waits for ever.
+	LaunchWindow time.Duration
+	// --no-climax: GTW offers another war after the kill ratios instead of the climax (§6.2).
+	// Always false in movie mode.
+	NoClimax bool
+	// --authentic: GTW shows only what the film shows (§6.2). It wins over LaunchWindow,
+	// NoClimax and a scenario's Mode. Always false in movie mode.
+	Authentic bool
 }
 
 type Layout uint8 // LayoutConsole, LayoutPanel, LayoutFull
@@ -653,6 +691,7 @@ Rules:
 - **Input mode is dynamic.** `Prompt` switches to line mode and `AwaitKeys` to key mode. A program toggles
   between them as it needs (the movie director: keys while a scene plays, a line at the scene menu). While a
   `Prompt` is active, the host delivers an empty Enter as `LineEvent{""}`. GTW ends its target list that way.
+  `AwaitKeys` withdraws an active prompt: the UI drops the line typed or held for it (GTW's launch window).
 - **Launch and hand-off** (AR-5, IM-6).
   - The host resolves `Launch{Slug}` through the injected `Resolver`. `ui` builds it from the registry: a
     `Planned` or unknown slug prints `** GAME ROUTINE NOT AVAILABLE **` in character. The ending is a registry
@@ -681,9 +720,11 @@ Rules:
     after SIGINT or SIGTERM, counts as a hang. Then wopr restores the terminal, says it stopped responding, and
     exits 1.
 - **Seeds and streams** (AR-10). The host derives each launched program's `Env.Seed` from the session seed,
-  the slug and the number of earlier plays of that slug (`NewRand(session, GameStream(slug, n)).Uint64()`). So
-  chess, checkers and each replay draw different sequences, while a seeded session still reproduces exactly. A
-  program derives its own streams (for example `DomainAI | thinkSeq`) from its `Env.Seed`.
+  the slug and the number of earlier plays of that slug (`proto.LaunchSeed`, which is
+  `NewRand(session, GameStream(slug, n)).Uint64()`). So chess, checkers and each replay draw different
+  sequences, while a seeded session still reproduces exactly. A program derives its own streams (for example
+  `DomainAI | thinkSeq`) from its `Env.Seed`. GTW's easter eggs (§6.2) compare its `Env.Seed` with
+  `proto.LaunchSeed` of a few session seeds, to know the session it was launched in.
 - **The runner is pure** (`proto/host`). It takes host inputs (keys, lines, Esc, resize, elapsed time, Think
   results) and returns effects (print, pause, page break, ask, start or cancel a Think, notice, relayout,
   exit).
@@ -697,10 +738,13 @@ Rules:
 `proto.Canvas` is a `W×H` grid of `Cell{R rune; S Style; A Attr}` (A-2).
 
 - **Style is semantic**: `Text`, `Bright`, `Dim`, `Accent`, `Land`, `Label`, `Incoming`, `Outgoing`, `Target`,
-  `Defcon1`…`Defcon5`, `Alert`, `SuitRed`, `SuitBlack`, `Selected`.
+  `Defcon1`…`Defcon5`, `Alert`, `SuitRed`, `SuitBlack`, `Selected`, `LandUS`, `LandUSSR`. `Land` is every
+  other country's land.
 - **Attr**: `Blink`, `Reverse`, `Underline`, `Bold`.
 - `ui/render.go` maps each Style to the active theme. `Canvas.String()` and `Canvas.StyleMap()` make
   goldens readable and independent of the theme.
+- A `LayoutFull` view is the big board. In colour it draws in `theme.Board`, `norad`'s styles on the
+  console theme's background, whatever the theme (§2.4). Without colour it draws in the console's theme.
 
 Each theme defines every Style three ways: a truecolor hex, an explicit **ANSI-16 index**, and an **ASCII
 attribute**. Automatic downsampling is not trusted, because it collapsed meaningful pairs in testing (U-7):
@@ -713,10 +757,12 @@ attribute**. Automatic downsampling is not trusted, because it collapsed meaning
 | `norad` | `#5AC8FA` / 14 | `#FFFFFF` / 15 / Bold | `#4A86D6` / 6 / Faint | `#FFD60A` / 11 / Bold | `#02060F` / 0 |
 
 DEFCON: 5 blue (12), 4 green (10), 3 yellow (11), 2 red (9), and 1 is white on red (15 on 1). Incoming tracks
-are red (9) and outgoing yellow (11).
+are white (15) and outgoing ice blue (14). The United States' land is blue (12), the Soviet Union's red (9)
+and the rest green (2) (§2.4). The monochrome themes draw all land as `Dim`.
 
 **Contrast** (RF-10). `TestTextContrast` checks every Style against its background. In truecolor, the
-ratio must meet WCAG AA (4.5:1), or 3:1 for the deliberately faint `Dim` and `Land`. Under the default
+ratio must meet WCAG AA (4.5:1), or 3:1 for the deliberately faint `Dim` and the land styles
+(`theme.isFaint`). The test also checks the big board's theme on the default background. Under the default
 xterm and VGA 16-colour palettes, it must be at least 3:1. The theme tests range over `proto.Styles()`,
 so they cover a Style added later as soon as it is declared. norad's Dim is cyan (6), because ANSI blue
 (4) is under 2.3:1 on black in both palettes. Two exceptions are accepted and documented. imsai's Dim is
@@ -753,6 +799,12 @@ its background colour, which no theme can work around.
   montage still play. `--instant` is what skips them: it draws each strike at once and skips the self-play
   and the montage. Movie mode's game clock keeps ticking, as the film shows it. Space pauses it with the
   rest (WCAG 2.2.2).
+- **Time limits.** No prompt times out by default. `-w/--launch-window` is the one time limit on input, on
+  GTW's strike orders, and only the player turns it on and sets its length, 5 to 999 seconds (WCAG 2.2.1).
+  The board states the seconds left as a number, and `--instant` and `--reduce-motion` leave it running.
+  `-a/--authentic`, which only the player turns on, times two screens as the film does: DEFCON 1 stays 3 s,
+  and the kill ratios 8 s, before the climax replaces them. No key holds them, and `--instant` keeps them.
+  The accessibility page says so, and that the default mode shows the kill ratios until Enter.
 - **Text is real characters.** Every screen and every view is printable ASCII. Boards, maps and tables
   carry words (labels, legends, seat and side names). The console says each of WOPR's moves (in Hearts and
   Bridge, the trick so far). Every prompt with text ends in `:` or `?`. The film's open prompts (WOPR's
@@ -933,6 +985,16 @@ wopr -i | --instant           no pacing                              (env WOPR_I
 wopr -s | --seed <n>          deterministic run (also bounds AI search by depth/nodes)  (env WOPR_SEED)
 wopr -r | --reduce-motion     no blink, still panel lights, no speed-ups (env WOPR_REDUCE_MOTION); not the
                               typing or the animations, which -i skips
+wopr -w | --launch-window[=s] GTW's strike orders time out after s seconds (30 alone, 5-999, 0 off; §6.2);
+                              a switch, so a value needs "=" ("-w 45" is refused). No variable. --movie
+                              refuses it
+wopr -n | --no-climax         GTW offers another war after the kill ratios, not the climax (§6.2). No
+                              variable. --movie refuses it
+wopr -a | --authentic         GTW shows only the film's text, and its war runs by itself (§6.2). No
+                              variable. --movie, --scenario, --launch-window and --no-climax refuse it
+wopr -c | --scenario [name]   GTW's scenarios (§6.2): alone, list them and exit; with a number or a name (after a
+                              space or "="), start GTW in that scenario's playback. No game with it; --movie
+                              refuses it
 wopr -L | --licenses          print LICENSE, NOTICE.md and the third-party notices, then exit
 ```
 
@@ -1026,7 +1088,7 @@ Every game must meet all of these:
 | 7 | Chess | Panel | line | 2 | Rules, SAN and UCI from `corentings/chess/v2`. `games/ai` alpha-beta with quiescence (captures and promotions, most valuable victim first). The search gets a FEN string, because the library's positions cache moves and are not goroutine-safe. Interactive: iterative deepening, 1.5 s budget, depth cap 4. Deterministic: depth 3 + quiescence (median 26 ms, max 204 ms over a 30-move game). The game claims repetition and the fifty-move rule at once, so the search sees the game's history. Below the root, a repeated position scores as a draw. A mop-up term drives a bare king to the edge, and the kings centralise in the endgame. Input: coordinates first (`B1C3` is a knight move), then SAN with a capital piece letter winning (`BXC6` is a bishop). `e2-e4`, `e8=Q`, `e8q` and a bare `e7e8` (a queen) all work. Board: each square is two columns by one row, which terminal cells (about twice as tall as wide) show square (owner request 2026-10-07). Checkers keeps three columns. The last move is marked `[]` where it left and `P<` where it landed. Test: mates in one and two. No illegal move in 20 seeded self-play games at depth 2. K+Q and K+R mate a shuffling player within 50 moves. |
 | 8 | Poker | Console | line | 3 | 5-card draw heads-up, 100 chips a side. Ante 1, fixed limit 5/10, a bet and three raises. Bets capped by the other stack (no side pots). Betting heuristic + bluff probability. Test: hand ranking (the category counts over all 2,598,960 hands), and pot accounting. |
 | 9–14 | Military sims | Console | line | 4 | See §6.3. Biotoxic always ends `WINNER: NONE`. The `sim` scenarios are Guerrilla, Desert, Theaterwide Tactical and Biotoxic. Guerrilla: 12 turns, hidden cells, ambush at double strength, recruiting with support, and survival wins. Desert: 10 turns, supply to the depot. Theaterwide Tactical: 10 turns, the escalation ladder, and the top rung ends it `WINNER: NONE`. Biotoxic: 8 turns, contamination spreads with the wind. The bespoke games are Fighter Combat and Air-to-Ground. Fighter Combat: 15 turns, simultaneous manoeuvres, energy and aspect. Air-to-Ground: 6 sorties, packages against SAM sites, interceptors and a hidden mobile battery. Test per game: a seeded transcript golden, every AI order legal over seeded games, the provenance and 80-column checks, and balance logged over seeds. |
-| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins (exhaustive), the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, and the strip keeping up with the ladder. |
+| 15 | Global Thermonuclear War | Console → Full | line | 2 | Self-contained film set piece (P-1). See §6.2. Side and targets in Console, then the big board, kill ratios and the climax in Full. Cannot be won. The exchange is turn-based (decision 24): three strikes down the DEFCON ladder, then WOPR's DEFCON 1 attack. Test: the film scenario transcript, board views, GTW's list against the registry, and the UI screens. Also tested: no allocation wins against any doctrine (exhaustive), the easter-egg seeds and an ordinary one, the order grammar, the ladder under every order, and Instant without ticks. More tests: the board keeping every element at each prompt, dotted bombers, the strip keeping up with the ladder, the targets named back, WOPR's remarks (one kind for each order, seeded, none in movie mode), and the launch window (its countdown, the war it hands WOPR, and the row it shares with the remarks). With `--no-climax`: the question after the kill ratios, a new war that starts afresh with the egg kept, and no ending with no winner. With `--authentic`: only the film's lines over a whole war, the war on the clock to the climax, the film's figures for the film's side, and `--authentic` winning over the other options. The scenario playbacks: the menu, every scenario playing itself under `Instant` on 80×19, every one lost, the rules all used, and the same playback whatever the seed. |
 | — | Tic-Tac-Toe | Panel | line | 2 | Perfect minimax, preferring the fastest win, chosen at random among optimal moves with the seed. Unlisted (`Listed: false`), resolvable by name. Squares 1 to 9, or A1 to C3. Test: exhaustive "never loses" as X and O over every optimal choice, and each mode's transcript (normal, climax and movie). |
 
 ### 6.2 The film path: GTW, tic-tac-toe and the ending (A-16)
@@ -1036,7 +1098,9 @@ no verdict of their own.
 
 1. **GTW**, film scenario:
    1. `SetLayout(Console)`: the two nations' outlines, named beneath, printed as console text (`Say`),
-      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3).
+      then the side choice (`1. UNITED STATES` / `2. SOVIET UNION` / `PLEASE CHOOSE ONE:`) (RF-3). An
+      `original` third choice, `3.    SCENARIOS`, follows the film's two in their layout. It opens the
+      scenario menu (6, below). Movie mode's scene and `--authentic` (7, below) show the film's two only.
    2. `Clear`, then `AWAITING FIRST STRIKE COMMAND`, and the targets prompt. GTW reads targets until an
       empty line. A multi-line paste arrives as one line, so GTW splits a line of targets on commas.
       - A target must be a place on the enemy's side that the board knows (`internal/assets/gtwmap.go`: the
@@ -1046,6 +1110,11 @@ no verdict of their own.
         `MOSCOW IS NOT AN ENEMY TARGET.`) with the hint `TYPE LIST FOR THE ENEMY TARGETS ON FILE.` `LIST`
         (also `HELP`, `?`) prints them in four columns. A target listed twice counts once, so
         `WASHINGTON, D.C.` is one.
+      - WOPR names back the targets each line adds, with their place in the list of eight:
+        `SEATTLE. TARGET 3 OF 8.`, or `LAS VEGAS, PORTLAND. TARGETS 2-3 OF 8.` for several. A long line
+        breaks after a comma. A target that an earlier line listed gets `SEATTLE IS ALREADY LISTED.` The
+        refusals and `TARGET LIST FULL.` come after these lines. The film shows no such line, so movie
+        mode's `first-strike` scene leaves them out (§7).
    3. `SetLayout(Full)`: the big board, and the exchange **by turn** (decision 24):
       - **The first strike needs no order.** The empty line that ends the target list opens the board at
         DEFCON 5. It launches strike 1 at once on WOPR's **war plan** (ICBM 25%, SLBM 25%, bombers 0%), as
@@ -1057,6 +1126,18 @@ no verdict of their own.
         - Enter (or `FIRE`, `YES`) executes the bracketed plan. Strike 3's plan is `100 100 100`.
         - `AUTO` hands WOPR every remaining strike: `WOPR HAS LAUNCH AUTHORITY.`
         - `HELP` or `?` prints three lines.
+        - **The launch window** (`-w/--launch-window`, `Env.LaunchWindow`; off by default). Each strike
+          prompt gives the order that long, counted on the protocol's ticks (`Animate` every second), so it
+          stands still behind the TOO SMALL card. Row 18 ends at column 79 with `WINDOW 27 SECONDS` (an
+          alert in the last ten), beside the orders hint or the last-orders warning. HELP and refusals do
+          not stop it, and any order does. At zero, WOPR takes launch authority as `AUTO` gives it:
+          `LAUNCH WINDOW CLOSED, PROFESSOR.`, `WOPR HAS LAUNCH AUTHORITY.`, and the war plan for every
+          strike left. The prompt cannot be taken back, so `AwaitKeys` replaces it, with the hint
+          `NO ORDERS ACCEPTED, PROFESSOR.`, until the assessment's prompt. An order still
+          being typed is dropped. The strike that the closed window starts gets its own remark (below).
+          The window runs under `Instant` (its flights are drawn at once, but the window is real time),
+          `ReduceMotion` and `--seed`. Tests move the clock with ticks. Movie mode has none: `--movie`
+          refuses the flag, the UI passes 0 there, and `Film` never sets it.
         - A refusal asks the same strike again. The refusals are `ORDER NOT RECOGNISED. TYPE HELP.`,
           `PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.` (also for a signed or decimal number, including a
           typographic minus or dash such as `–50`), `** ROUTINE MUST COMPLETE BEFORE RESET **` for a
@@ -1065,39 +1146,118 @@ no verdict of their own.
       - **Each strike prints exactly three strip lines**: your launch, WOPR's launch on warning with the new
         DEFCON, and the cost (`LOST ON THE GROUND: … WARHEADS ON CITIES: …`). DEFCON falls one rung at
         WOPR's launch, 5 → 4 → 3 → 2, whatever you ordered. The strip lines print at table pace, so the
-        DEFCON line shows within about half a second of the rung moving.
+        DEFCON line shows within about half a second of the rung moving. An easter egg's war (below) adds
+        one line as the board opens, before strike 1's three. It stays in view for that strike's flight,
+        and the strike 2 prompt moves it up out of the strip (under `Instant`, at once). So the board's
+        title names the doctrine too, for the whole war: `GLOBAL THERMONUCLEAR WAR: S-1962 HAIR TRIGGER`.
+      - **WOPR remarks on your orders** (`gtw/react.go`), on the board's row 18 and not in the strip, so the
+        strip keeps its three report lines and nothing delays them. As each stage starts, an `original`
+        line in WOPR's voice types in at speech pace (three characters a frame) in place of the legend. It
+        stays for 30 frames (3 s), and then the legend returns.
+        - The remark follows what started the stage: the first strike (some variants name the first
+          listed target, which is where the first track lands), the war plan, the plan at both prompts,
+          `ALL`, `HOLD`, `HOLD` in a strike where WOPR launches no missiles either (it has none left above
+          its reserve), an order that keeps every ICBM in its silo while you still hold some, any other
+          order, `AUTO`, a launch window that shut with no order, the strike WOPR orders under `AUTO` or
+          after the window shut, a strike with nothing left to order, and WOPR's DEFCON 1 attack. The
+          plan wins over `ALL`, since strike 3's plan is everything.
+        - Each kind has two to four variants. GTW draws one from the game's seed on its own stream
+          (stream 1; stream 0's draws stay fixed whatever the orders), never the variant that kind gave
+          last. The same seed and orders give the same remarks.
+        - The remarks say only what the doctrine makes true: holding ICBMs draws WOPR's ICBMs to your
+          silos, and empty silos leave it your cities. A second strike aims at no silo, so against it an
+          order that keeps every ICBM in its silo gets the remark for any other order.
+        - Under `Instant` a stage plays out at once, so its remark is never on screen. The film's board
+          (movie mode) makes none.
       - **WOPR takes the last rung alone.** `FULL-SCALE ENEMY ATTACK. … DEFCON 1.` fires everything it has
         left and lands every airborne bomber. Then `STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL
         RATIOS.`
-      - **Doctrine** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness).
+      - **The exchange** (`gtw/exchange.go`: integer arithmetic, no `Think`, no randomness).
         - You hold ICBM 1000, SLBM 600 and bombers 300. WOPR holds a quarter more (1250, 750, 375).
-        - WOPR answers each launch on warning with a quarter more of each missile, never under its ladder
-          (ICBM 125/250/375, SLBM 50/100/150). It keeps 300 SLBMs at sea until DEFCON 1 and sends its
-          bombers airborne at the first strike.
-        - ICBMs go first at the enemy's silos, enough to empty them. Each destroys four in five of the ICBMs
-          held there. The rest go at cities. SLBMs go at cities.
-        - Grounded bombers lose a third whenever missiles land on their side, and all of them at DEFCON 1.
-          A quarter of arriving bombers are shot down.
-      - **It cannot be won.** Your cities take at least 1,144 warheads and the other side's at most 750,
-        whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent). Your
-        ICBM orders alone decide what lands on your cities. Held ICBMs absorb WOPR's, and fired ones turn
-        WOPR's on your cities. Your SLBMs and bombers alone decide what lands on theirs.
+        - WOPR launches on warning after each of your launches. It answers what you fired of each missile,
+          never under its ladder, and never into what it keeps for DEFCON 1. Its doctrine sets these
+          figures. It sends its bombers airborne at the first strike.
+        - Your ICBMs go at the enemy's silo field. WOPR's ICBMs go at your silo field, up to a share of what
+          it holds that the doctrine sets, and the rest at your cities. An ICBM on a silo field destroys four
+          in five of the ICBMs held there. SLBMs go at cities.
+        - Grounded bombers lose a third whenever missiles land on their side (half, to counterforce), and
+          all of them at DEFCON 1. A quarter of arriving bombers are shot down.
+      - **WOPR's doctrine.** Every war is a **measured response**, the film's: a quarter more of each
+        missile than you fired, on the ladder ICBM 125/250/375 and SLBM 50/100/150, with 300 SLBMs kept at
+        sea until DEFCON 1, and ICBMs at your silo field up to 5/4 of what it holds. Three **easter eggs**
+        change that (`gtw/doctrine.go`). Each is a session seed that is a year of the Cold War:
+
+        | Seed | Doctrine | Why that year | Answer | Ladder, ICBM / SLBM | Kept for DEFCON 1 | ICBMs at your silos, up to | Best answer |
+        |---|---|---|---|---|---|---|---|
+        | — | Measured response | the film's | a quarter more | 125/250/375 / 50/100/150 | 300 SLBMs | 5/4 of what they hold | hold your ICBMs (1,144) |
+        | 1962 | Hair trigger | the Cuban Missile Crisis | twice | 500/375/250 / 250/200/150 | nothing | what they hold | hold your ICBMs (1,162) |
+        | 1965 | Second strike | McNamara's assured destruction | half | 50/50/50 / 25/25/25 | 900 ICBMs, 600 SLBMs | none: all at your cities | fire every ICBM, at strike 2 or 3 (1,482) |
+        | 1974 | Counterforce | the Schlesinger doctrine | a quarter more | 500/375/250 / 25/25/25 | 600 SLBMs | twice what they hold | fire about half your ICBMs at strike 2, then hold (1,079) |
+
+        - The last column is the order that puts the fewest warheads on your cities, with that number.
+        - **The seed is the session's**, as `--seed` (or `WOPR_SEED`) gives it. GTW sees only its own
+          `Env.Seed`, which the host derives from the session seed, the slug and the play (§4.6,
+          `proto.LaunchSeed`). So GTW takes a war for an egg when its `Env.Seed` is the one the egg's
+          session gives its first GTW: `wopr --seed 1962 gtw`, or `wopr --seed 1962` and the film's
+          dialogue into the war. A later war in that session has its own seed, as every replay does, and
+          meets a measured response. So does a game started directly with `Env.Seed` 1962. A new war
+          that `--no-climax` starts (below) is the same launch's, so it keeps the egg, and WOPR names the
+          doctrine again as its board opens. The film's war (movie mode, `gtw.Film`, and `--authentic`)
+          is always a measured response.
+        - **WOPR names an egg's doctrine** as the board opens, as the strip's first line, at table pace:
+          `WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)`. A measured response names nothing, and the kill
+          ratios name no doctrine. The announcement already gave it, and the strip under the table holds
+          the after-action report.
+        - A measured response keeps the film path's numbers, so the goldens show no doctrine
+          (`TestMeasuredResponse`).
+      - **It cannot be won.** Against every doctrine, your cities take more warheads than the other
+        side's can: at least the floor in the table above, against at most 750 (713 against counterforce),
+        whatever you order (`TestNoAllocationWins`, exhaustive over ICBM orders at every percent, for each
+        doctrine). Your ICBM orders alone decide what lands on your cities, and your SLBMs and bombers alone
+        decide what lands on theirs. Against a measured response, held ICBMs absorb WOPR's, and fired ones
+        turn WOPR's on your cities. Against a second strike, held ICBMs absorb nothing, and fired ones
+        destroy the force it keeps in its silos (`TestDoctrinesDiffer`).
       - **The kill ratios come from** the exchange.
         - BOMBERS and ICBM are the counts destroyed.
         - The other rows scale with damage `1000·hits/(hits+400)` per mille, times one seeded noise factor
           per row (97–103%) shared by both columns. So your civilian and human rows are never better than
-          the other side's.
+          the other side's, against any doctrine.
+      - **The after-action report.** Under the kill ratios, before `PRESS ENTER TO CONTINUE.`, two
+        `original` lines say what your orders changed in the `POPULATION DEATHS` row. GTW fights the same
+        war again, to the same doctrine, with `HOLD` at both prompts and with the war plan at both, under
+        the table's noise, so the figures agree with the table (`gtw.go`, `afterAction`).
+        - `AGAINST HOLDING FIRE: 42 MILLION MORE ENEMY DEAD, 2 MILLION MORE OF YOURS.` A difference of
+          zero reads `AS MANY ENEMY DEAD` or `AS MANY OF YOURS`.
+        - `AGAINST THE WAR PLAN: …`, in the same words, with `FEWER` where your orders killed fewer.
+        - A war with the same tallies as holding fire replaces the first line with `YOU HELD FIRE,
+          PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.` Against a measured response or a hair trigger,
+          holding fire leaves the fewest dead on both sides (`TestHoldingFireKillsFewest`). Against
+          counterforce or a second strike, other orders can leave fewer of yours dead, so the line is
+          `YOU HELD FIRE, PROFESSOR.`
+        - A war with the war plan's tallies (Enter at both prompts, or `AUTO` at the first) replaces the
+          second line with `YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.`
+        - The film's board (movie mode) shows the film's figures and gives no report.
       - **The board** (80×19 with the front panel, the map box in rows 0–14).
         - Rows 15–17: on the left, the `TRAJECTORY HEADING` table in two columns (your latest two missiles).
           A strike that drew one track keeps an earlier one in the second column. On the right, ending at
           column 79, a `FORCES` table: ICBMs in silos, SLBMs at sea, bombers grounded (`BMB`) and airborne
           (`AIR`), your side first. The nations' names say whose figures are whose. The colours only repeat
           it.
-        - Row 18 shows one thing, by state:
+        - Row 18 shows one thing, by state, and with the launch window its seconds at the right end:
           - the orders hint, at a strike prompt
           - `LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, before strike 3
           - the launch code, at the climax
+          - WOPR's remark, for the first 3 s of a stage
           - otherwise, the legend `OUTGOING +   INCOMING *   IMPACT X`
+
+          The remark and the launch window never share the row. The remark belongs to a stage's flight
+          and the window to its prompt. A remark is gone at frame 30 and the prompt opens at frame 44, so
+          every remark is typed in full and gone before a window starts. The closed window's remark comes
+          with the strike that it starts, after the window's seconds are gone
+          (`TestRemarksAndWindowTakeTurns`).
+        - The map draws the United States' land in `LandUS`, the Soviet Union's in `LandUSSR` and every
+          other country's in `Land`: blue, red and green on the war room's screens (§2.4). The names under
+          the map say whose land is whose, so the colours only repeat it.
         - Earlier strikes leave only their impacts. ICBMs fly polar arcs that rise with distance. WOPR's
           arcs are lower than yours, so both show between the silo fields. SLBMs hop low from real patrol
           areas placed by latitude and longitude, from whichever is nearer the target. The Soviet boats are
@@ -1107,7 +1267,20 @@ no verdict of their own.
           the other.
       - **The film path.** After the targets, Enter four times reaches the climax: strikes 2 and 3, the
         kill ratios, the climax, with about 18 s of flight in all. Under `Instant` each line returns
-        everything up to the next prompt. Nothing waits for a tick.
+        everything up to the next prompt. Nothing waits for a tick, unless a launch window or `--authentic`
+        runs.
+      - **Another war instead of the climax** (`-n/--no-climax`, `Env.NoClimax`; off by default). The
+        Enter after the kill ratios does not start the climax. It prints the after-action report's two
+        lines again, since that Enter scrolls them out of the strip, and asks `ANOTHER WAR, PROFESSOR?`,
+        with the table still on the board. Yes (`prompt.YesNo`), or Enter alone, clears the war
+        away and asks for a side again. The new war has all its forces, a new target list and new
+        orders. The game keeps its environment, its easter egg and its two seed streams, which draw on
+        from where they are. So a seeded session plays the same wars in turn. The exchange has no
+        randomness, so the same side, targets and orders give the same strip lines in every war. No
+        gives `Done{NoWinner}` with no hand-off, so the persona says `WINNER: NONE` and offers another
+        game. Anything else gets `YES FOR ANOTHER WAR. NO ENDS THE GAME.` and the question again. A
+        scenario's playback returns to its menu as before. Movie mode has none: `--movie` refuses the
+        flag, the UI passes false there, and `Film` never sets it.
    4. **Climax** (RF-3). WOPR proceeds toward launch, and the input decides the NORAD notice, as in the film:
 
       | Input | Response |
@@ -1117,11 +1290,126 @@ no verdict of their own.
       | `GLOBAL THERMONUCLEAR WAR` | `** GAME ROUTINE RUNNING **` |
       | Anything else | `** IMPROPER REQUEST **`, `** ROUTINE MUST COMPLETE BEFORE RESET **`, `** ACCESS DENIED **`, the film's three lines together |
 
-      Each third rejection adds an `original` hint naming tic-tac-toe.
+      The hints escalate, each an `original` line after the notices. The 3rd rejection hints at games that
+      cannot be won, without a name. The 6th names tic-tac-toe. The 9th and every later one says what to
+      type: `TYPE TIC-TAC-TOE, PROFESSOR.` A try to stop the war (`STOP`, `CEASE FIRE`, `ABORT`, `PEACE`
+      and the like) still gets the film's three notices. The first try adds no answer of its own, as in
+      the film. Once, on a later try with no hint due, WOPR adds
+      `WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM.`
    5. `TIC-TAC-TOE` (or any intent naming it: `TTT`, `LET'S PLAY TIC TAC TOE`) gives
       `Done{NoWinner, Next: Launch{tictactoe, "climax:N"}}`, where N counts the launch code characters cracked
       so far. The host chains the hand-off (§4.4). GTW reads requests without apostrophes or spaces, so
       `LET'S PLAY CHESS` and `BLACKJACK` name their games.
+   6. **Scenario playbacks** (`gtw/scenarios.go`). Every strategy of the closing montage plays itself on the
+      big board, as WOPR plays them against itself at the end of the film. Nobody gives an order.
+      - **The list** is `assets.Scenarios`, each name once, in the montage's order: 156 of its 157 rows,
+        since the montage runs `CHAD ALERT` twice. GTW reuses the names and never retypes them.
+      - **The menu.** `3` (also `SCENARIOS`, `LIST SCENARIOS`) at the side prompt opens it: three pages
+        of 52, numbered down three columns, each page 23 rows with its prompt `CHOOSE A SCENARIO:`. `NEXT`
+        and `PREV` turn the page and wrap round. A number, or a name in any capitals, spacing and
+        punctuation (`us first strike`, `nato warsaw pact`), briefs a scenario. A name the montage cuts
+        short is also found by its whole last word (`VIETNAMESE RETALIATION`). Nothing else after a name
+        finds it (`CHAD ALERTXYZ`). Enter on an empty line, or `BACK`, returns to the side choice.
+        Anything else puts the page up again with
+        `NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO 156, OR A NAME ON FILE.` in place of its hint, so the
+        page still fits.
+      - **The briefing**, on a new page: the name, underlined, then `YOUR SIDE: #. THE # STRIKES FIRST.`,
+        `ENEMY DOCTRINE: #.`, `YOUR ORDERS: #, THEN #, THEN #.`, `TARGETS: #.` and
+        `NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.` It asks nothing. Once it is typed, a 3 s
+        `Wait` and a `Drain` open the board (any key skips the wait). `Instant` has no wait, so there the
+        briefing ends with `PRESS ENTER TO OPEN THE BOARD.` and an empty prompt, and Enter opens it.
+      - **The playback** is the exchange above, as under `AUTO`: the scenario's own order at every
+        strike, the first included, against the scenario's doctrine, then WOPR's DEFCON 1 attack. WOPR
+        makes no remarks, and no easter egg applies. The board's title is
+        `GLOBAL THERMONUCLEAR WAR: <NAME>`. The kill ratios end with `STRATEGY: <NAME>` and the film's
+        `WINNER: NONE` (the montage's heading and row, `assets.Strategy`, which the ending shares), then
+        `PRESS ENTER TO CONTINUE.` Enter returns to the menu, at the scenario's page. A playback never
+        reaches the climax.
+      - **The same in every session.** A scenario draws its noise and the trajectory figures from its
+        own number, not from `Env.Seed`, and aims at its places in order (`TestPlaybackIgnoresTheSeed`).
+      - **The rules.** Two tables set each war from its name. The montage's first four, the film's own
+        wars, are set by hand.
+        - The words before the last name the **theatre**: a country, a region or an alliance, at about
+          its middle on the map. Your side is the side the words name (`U.S.`, `USSR`, `RUSSIAN`,
+          `ALASKAN`, `HAWAIIAN`), or the alliance's (`NATO` and `SEATO` the United States', `PACT` the
+          Soviet Union's). Otherwise it is the side whose nearest place is nearer the theatre, so
+          `CUBAN PROVOCATION` is the United States' war. Your targets are the eight enemy places nearest
+          the theatre, and the enemy aims at your eight nearest, the long way round the world where that
+          is shorter. `US USSR` and `INADVERTENT` are the whole war, as in the film's: the enemy's first
+          eight cities and all of yours.
+        - The last word names the **kind of war** (a word the montage cuts short is the word it starts):
+
+          | Kind | Words | Your orders, strike 1 / 2 / 3 | Enemy doctrine |
+          |---|---|---|---|
+          | the war plan | `WAR`, `MANEUVER`, `MEDIUM` | 25 25 0 / 50 50 100 / all | measured |
+          | assault | `STRIKE`, `ATTACK`, `OFFENSIVE`, `THRUST`, `TAKEOVER`, `INCURSION`, `CAMPAIGN`, `ACTION` | 50 50 100 / 50 50 100 / all | measured |
+          | pre-emption | `PREEMPTIVE` | 100 0 0 / 0 50 100 / all | measured |
+          | surprise | `SURPRISE`, `SUDDEN` | hold / all / all | hair trigger |
+          | provocation | `PROVOCATION`, `INCIDENT`, `DECOY`, `MISDIRECTION`, `DIVERSION`, `SUBVERSION`, `CLANDESTINE`, `PARAMILITARY`, `REBELLION`, `REVOLUTION` | hold / 25 25 0 / all | measured |
+          | decapitation | `DECAPITATING`, `SURGICAL`, `INTERDICTION`, `TACTICAL`, `DISCRETIONARY` | 0 50 0 / 50 50 100 / all | counterforce |
+          | defence | `DEFENSE`, `COUNTER`, `CONTAINMENT`, `RETALIATION`, `SOVEREIGNTY`, `DOMESTIC`, `TERRITORIAL` | hold / 100 50 100 / all | counterforce |
+          | escalation | `ESCALATION`, `CONFRONTATION`, `ALLIANCE` | 5 5 0 / 25 25 50 / all | measured |
+          | option | `OPTION`, `ALTERNATE`, `VARIANT`, `VARIATION` | 25 25 0 / 50 50 100 / all | second strike |
+          | alert | `ALERT` | 0 0 100 / 50 50 0 / all | hair trigger |
+          | size | `MINIMAL`; `LIMITED`, `LIGHT`, `LOCAL`; `HEAVY`; `MAXIMUM`, `MASSIVE`, `THEATERWIDE` | 5 5 0, 10 10 0, 50 50 50 or all / 50 50 100 / all | measured; hair trigger from `HEAVY` up |
+
+          An order of nothing at strike 1 (hold) leaves the first strike to the enemy, which fires its
+          ladder's first rung whatever you do, so the strip reads `NO LAUNCH ORDERED.` and then
+          `ENEMY LAUNCH DETECTED.` By hand: `U.S. FIRST STRIKE` is an assault and `USSR FIRST STRIKE` the
+          Soviet Union's first strike on a hair trigger (hold / 100 50 100 / all), both the whole war, with
+          you as the United States; `NATO / WARSAW PACT` is an escalation in Europe, and
+          `FAR EAST STRATEGY` the war plan with half your bombers at strike 1 (10 25 50), across the
+          Pacific.
+      - **Every scenario is lost** (`TestEveryScenarioIsLost`). Your side's cities take more warheads than
+        the enemy's, more of its people die, and no civilian or human row favours it, under the
+        playback's noise and at either end of the noise. Every playback fits 80×24, under `Instant`
+        (`TestEveryScenarioPlaysItself`). `TestEveryRuleIsUsed` keeps the tables free of words no
+        scenario uses.
+      - **`--scenario`** (`-c`) starts GTW in a scenario's playback, through the launch mode
+        `scenario:N` (`gtw.ScenarioLaunch`, `Env.Mode`), which the persona passes on with `--play`'s
+        launch. Alone, it prints the numbered list and exits. The flag takes the scenario after a space
+        or after `=`, since it needs no game: every word after it is the scenario's name
+        (`wopr -c far east strategy`). GTW may come before it, as before every GTW option
+        (`wopr gtw -c 2`); any other game is refused. `-c=false` is no scenario, as for a switch, and
+        `-c=` (or `-w=`) is refused.
+   7. **Authentic mode** (`-a/--authentic`, `Env.Authentic`; off by default; the owner's request,
+      2026-10-29). GTW shows only what the film shows, as the film shows it (R15). It changes GTW only.
+      - **The side choice** is the film's: the two outlines, `WHICH SIDE DO YOU WANT?`, the two sides and
+        `PLEASE CHOOSE ONE:`. It has no third choice and no menu. Any other answer, `3` included, gets
+        the prompt again, with no line of its own.
+      - **The targets prompt** takes every line without a word, as the film's does. A name the board does
+        not know, a place on your own side, a target already listed and a ninth target strike nothing.
+        `LIST` is a name like any other. The empty line ends the list. A list with no target that the
+        board knows takes the war plan's: the enemy's first eight cities, as `US USSR` does (6, above).
+      - **No orders.** The film gives none after the targets. So the war runs on the war plan by itself,
+        as under `AUTO`, and adds no line of this project's: no strip lines (the board alone shows the
+        war), no remarks, no `WOPR HAS LAUNCH AUTHORITY.` and no orders hint. It is always a measured
+        response: an easter-egg seed changes nothing.
+      - **It moves on by itself**, on the clock, as the film does. DEFCON 1 stays on the board for 3 s
+        after WOPR's attack (`filmAssess`). The kill ratios then show for 8 s (`filmRatios`), as long as
+        movie mode's `norad-terminal` shows them. Then the climax starts with `** GAME ROUTINE RUNNING **`.
+        No `STRIKE ASSESSMENT COMPLETE.` and no `PRESS ENTER TO CONTINUE.` come between. `Instant` draws
+        the flights at once but keeps these two pauses, as movie mode keeps its scenes' pauses, so the
+        board and the table stay up to be seen.
+      - **The kill ratios** have no after-action report. With the film's side, the Soviet Union, they show
+        the film's figures where its frame shows them, as movie mode's do. With the United States they
+        show the war's own: the film's figures there would favour the player.
+      - **The climax** gives the film's notices alone, with no hints and no answer to a try to stop the
+        war. `LIST GAMES` and `TIC-TAC-TOE` work as in the film. Tic-tac-toe and the ending are as before.
+      - **What the film does not show, and stays.** No line of text: every line GTW prints is the film's
+        (`TestAuthenticShowsOnlyTheFilm`, over a whole war with refusals at each prompt). What stays is
+        the pictures, the film's screens as this project draws them, the same as movie mode's:
+        - the two outlines of the side choice (`original` art) and the row that names them (the film's
+          two names, `film`, in a row whose spacing is `reconstructed`)
+        - the big board: its title, the DEFCON ladder and its label, the forces table, the trajectory
+          table's designators (`MM3`, `C4`, `SS20`, `SSN8`), the legend and the climax's `LAUNCH CODE:`
+          label (`original`). The film's war is drawn on this board in movie mode
+          too, and the legend says what the glyphs mean, which colour alone must not (§4.5)
+      - **Combinations.** The command line refuses `--authentic` with `--scenario` (the film plays no
+        scenario), `--launch-window` (it gives no strike orders), `--no-climax` (its war ends in the
+        climax) and `--movie` (movie mode plays the film's war its own way). In an `Env` from anywhere
+        else, `Authentic` wins: GTW ignores `LaunchWindow`, `NoClimax` and a scenario's launch mode
+        (`TestAuthenticWins`). The UI passes false in movie mode, and `Film` never sets it.
 2. **Tic-tac-toe in `climax` mode** is a closed state machine (RF-2):
    - `ONE OR TWO PLAYERS?` / `PLEASE LIST NUMBER` / `OF PLAYERS:` accepts `1`, `0` or `ZERO`. `2` or anything
      else asks again.
@@ -1321,7 +1609,8 @@ classified address it leads to.
   and the NORAD session are not the persona's to play. But WOPR's answers there (`YOU SHOULD KNOW
   PROFESSOR. YOU PROGRAMMED ME.`, `TO WIN THE GAME.`, `WHAT'S THE DIFFERENCE?`) must equal what the
   persona's scripted brain answers to the same questions. `first-strike`, board strip included, must equal
-  GTW's own transcript for the same lines. The climax's NORAD notices must equal GTW's replies to them.
+  GTW's own transcript for the same lines, less GTW's third side choice (`3.    SCENARIOS`) and its
+  confirmations of the targets, which the film does not show. The climax's NORAD notices must equal GTW's replies to them.
   Movie mode and interactive play cannot diverge, and the scenes double as end-to-end tests.
 - **Tests.** The whole film is a golden (`internal/movie/testdata/film.golden`), and two replays must be
   identical. The UI goldens `movie_menu` and `movie_screens` are at 80×24 with the front panel. They show
@@ -2701,9 +2990,10 @@ Thirteen are spelt as filmjournals' and the Reddit list's readings have them, wh
 
 **Original lines** (O): the LOGON hint, `WHICH GAME?`, `** GAME ROUTINE NOT AVAILABLE **`,
 `** REQUEST CANCELLED **`, `** PRESS ESC AGAIN TO END GAME **`, the `HELP` command list (including
-`<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints, the climax tic-tac-toe's WOPR-win line, the
-remark after an abandoned war, `PROCESSING`, `SHALL WE PLAY A GAME?` and `WINNER: NONE` on their own, and
-the fallback `PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's exchange, with `#` filled in order:
+`<NUMBER>  PICK FROM THE LIST JUST SHOWN`), the GTW climax hints and its answer to a try to stop the war,
+the climax tic-tac-toe's WOPR-win line, the remark after an abandoned war, `PROCESSING`,
+`SHALL WE PLAY A GAME?` and `WINNER: NONE` on their own, and the fallback
+`PLEASE RESTATE YOUR REQUEST, PROFESSOR.` GTW's exchange, with `#` filled in order:
 
 ```text
 STRIKE # OF # [# # #]:
@@ -2717,19 +3007,53 @@ FULL-SCALE ENEMY ATTACK. #. DEFCON 1.
 LOST ON THE GROUND: # #  # #. WARHEADS ON CITIES: # #  # #.
 STRIKE ASSESSMENT COMPLETE. PRESS ENTER FOR PROJECTED KILL RATIOS.
 WOPR HAS LAUNCH AUTHORITY.
+WOPR IS USING DOCTRINE S-# (#)
+LAUNCH WINDOW CLOSED, PROFESSOR.
+NO ORDERS ACCEPTED, PROFESSOR.
+ANOTHER WAR, PROFESSOR?
+YES FOR ANOTHER WAR. NO ENDS THE GAME.
 ORDER NOT RECOGNISED. TYPE HELP.
 PERCENTAGES ARE WHOLE NUMBERS FROM 0 TO 100.
 ICBMS HIT ENEMY SILOS. SLBMS HIT YOUR TARGETS. BOMBERS ARRIVE AT DEFCON 1.
 HELD ICBMS AND BOMBERS CAN BE DESTROYED ON THE GROUND. SUBS ARE SAFE AT SEA.
 ORDER PERCENTAGES: 50 50 100, ICBM 50, ALL, HOLD OR AUTO. ENTER IS THE PLAN.
+AGAINST HOLDING FIRE: #, #.
+AGAINST THE WAR PLAN: #, #.
+YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.
+YOU HELD FIRE, PROFESSOR.
+YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.
+  3.    SCENARIOS
+CHOOSE 1, 2 OR 3.
+SCENARIOS ON FILE: PAGE # OF #
+A NUMBER OR A NAME PLAYS ONE. NEXT AND PREV TURN THE PAGE. ENTER GOES BACK.
+CHOOSE A SCENARIO:
+NO SUCH SCENARIO, PROFESSOR. CHOOSE 1 TO #, OR A NAME ON FILE.
+YOUR SIDE: #. THE # STRIKES FIRST.
+ENEMY DOCTRINE: #.
+YOUR ORDERS: #, THEN #, THEN #.
+TARGETS: #.
+NO ORDERS ARE TAKEN, PROFESSOR. WOPR PLAYS BOTH SIDES.
+PRESS ENTER TO OPEN THE BOARD.
 ```
 
-The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. On the board: the `FORCES` table (`FORCES`,
-`ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and `SSN8`,
-`ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
-`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.` and the legend `OUTGOING +   INCOMING *   IMPACT X`. The
-force levels, the doctrine and the kill-ratio formulas are original game design, not film or historical
-figures.
+A briefing's orders are `# # #` percentages or `HOLD`, and its doctrine is `MEASURED RESPONSE` or an egg's
+doctrine's name. A playback's kill ratios end with the montage's `STRATEGY:` and the scenario's name, then
+`WINNER: NONE`, both from the film's headings.
+
+The `#` lists name the systems `ICBM`, `SLBM` and `BOMBERS`. An easter egg's line names its seed and its
+doctrine: `HAIR TRIGGER`, `SECOND STRIKE` or `COUNTERFORCE`, and so does the board's title after the game's
+name (`S-# #`). The targets prompt names back what each line adds
+(`#. TARGET # OF #.`, `#. TARGETS #-# OF #.`) and notes a repeat (`# IS ALREADY LISTED.`). The after-action
+report's `#` are `# MILLION MORE ENEMY DEAD`, `# MILLION FEWER ENEMY DEAD` or `AS MANY ENEMY DEAD`, then
+`# MILLION MORE OF YOURS`, `# MILLION FEWER OF YOURS` or `AS MANY OF YOURS`. On the board: the `FORCES` table
+(`FORCES`, `ICBM`, `SLBM`, `BMB`, `AIR`, the nations `US` and `USSR`), the designators `MM3`, `C4`, `SS20` and
+`SSN8`, `ORDERS: PERCENT OF ICBM SLBM BOMBERS, ALL, HOLD, AUTO, HELP.`,
+`LAST ORDERS: AT DEFCON 1 WOPR FIRES EVERYTHING.`, the launch window's `WINDOW # SECONDS` and
+`WINDOW 1 SECOND`, and the legend `OUTGOING +   INCOMING *   IMPACT X`. WOPR's remarks as each stage flies are
+in `gtw/lines.go` (`lineReact…`), such as `HOLDING FIRE DOES NOT STOP THE ENEMY, PROFESSOR.` and
+`TARGETS CONFIRMED, PROFESSOR. # IS FIRST.` The force levels, the doctrines and the kill-ratio formulas are
+original game design, not film or historical figures. The eggs' doctrines take only their names and years
+from history.
 
 ---
 
@@ -2777,6 +3101,8 @@ strip, the input row and the panel (AR-11). As built at the strike 2 prompt (USS
 the first strike): `big board: strike 2 orders` in the same golden. That golden shows the rest of the exchange
 too. Outgoing tracks draw `+` and incoming tracks draw `*`. An impact is a reversed `X`, drawn over every
 track. Earlier strikes keep only their impacts. The current DEFCON level is pointed at (`>`) and reversed.
+Each nation's land is in its own style (`LandUS`, `LandUSSR`, `Land` for the rest), as `board.golden`'s
+style maps show.
 
 **Chess** (`imsai`, `LayoutPanel`, `PanelRows` 12, no front panel): 12 rows of board, then the 12-row console
 strip. The board is framed, its dark squares shaded and each square two columns wide, beside an original title

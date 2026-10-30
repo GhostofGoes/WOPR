@@ -50,7 +50,7 @@ cascade:
   >}}
   {{< hextra/feature-card
     title="Themes and options"
-    subtitle="White, green or amber phosphor, or NORAD blue. Seeds, instant text and every flag."
+    subtitle="White, green or amber phosphor, or the NORAD war room's colours. Seeds, instant text and every flag."
     link="usage/"
     icon="adjustments"
   >}}

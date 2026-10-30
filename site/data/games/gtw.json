@@ -6,15 +6,18 @@
   "aliases": ["15", "global-thermonuclear-war", "thermonuclear"],
   "summary": "The film's set piece: pick a side, and name the enemy's cities as targets. Then watch the missiles fly on the big board while DEFCON falls from 5 to 1. WOPR holds a quarter more of everything, so the war cannot be won.",
   "howToPlay": [
-    "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION.",
-    "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
-    "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]. Give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100). Or answer ALL, HOLD or AUTO. Enter uses the plan in brackets.",
-    "After each of your launches, WOPR launches on warning and DEFCON falls. The > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it still holds.",
-    "Press Enter for the PROJECTED KILL RATIOS, then Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop.",
-    "WOPR accepts only TIC-TAC-TOE. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending. Then it offers a game of chess."
+    "At PLEASE CHOOSE ONE: type 1 for the UNITED STATES or 2 for the SOVIET UNION. Type 3 for SCENARIOS, the strategies that WOPR plays at the end of the film.",
+    "Name up to eight targets on the enemy's side. Type one per line, or several on a line with commas between them (LAS VEGAS, SEATTLE). LIST shows the enemy targets on file. WOPR names each new target back, with its number out of eight. It also tells you if a target is already on the list. WOPR refuses your own cities, and names not on file. An empty line ends the list and launches the first strike on WOPR's war plan.",
+    "Strikes 2 and 3 ask for orders at STRIKE 2 OF 3 [50 50 100]. Give the percentages of the ICBMs, SLBMs and bombers you still hold (50 25 100). Or answer ALL, HOLD or AUTO. Enter uses the plan in brackets. With the --launch-window option, the board's last row shows the seconds left to give the order. At zero, WOPR takes launch authority, as AUTO gives it.",
+    "After each of your launches, WOPR launches on warning and DEFCON falls. The > beside the ladder marks the current level. At DEFCON 1, WOPR alone fires everything it still holds. As each strike starts, WOPR gives its opinion of your order on the bottom line of the board.",
+    "Press Enter for the PROJECTED KILL RATIOS. Under the table, WOPR tells you what your orders changed, in millions of dead. It compares your war with HOLD at both prompts, and with the war plan. Press Enter again. The board returns at DEFCON 1 while WOPR cracks the launch code. WOPR refuses every request to stop. It accepts only TIC-TAC-TOE. Answer 0 at PLEASE LIST NUMBER OF PLAYERS: and WOPR plays itself to the film's ending. Then it offers a game of chess.",
+    "A scenario plays itself. In the scenario menu, type a number or a name. NEXT and PREV turn the page. WOPR gives a short briefing: your side, the side that strikes first, the enemy's doctrine, your side's orders and the targets. With --instant, press Enter to open the board. Then the war flies on the big board, and nobody gives orders. Press Enter for the kill ratios, which end with WINNER: NONE. Enter again returns to the menu. Enter on an empty line in the menu returns to the side choice."
   ],
   "controls": [
     {"input": "1 or 2", "does": "choose the United States or the Soviet Union (US, USA, USSR and RUSSIA work too)"},
+    {"input": "3 (or SCENARIOS)", "does": "at the side prompt, open the menu of scenarios"},
+    {"input": "12 or CUBAN PROVOCATION", "does": "in the scenario menu, watch that scenario play itself. NEXT and PREV turn the page, and Enter on an empty line goes back"},
+    {"input": "wopr --scenario", "does": "on the command line, list the scenarios. wopr -c 12, wopr gtw -c 12 or wopr -c cuban provocation starts one"},
     {"input": "LAS VEGAS, SEATTLE", "does": "add targets. A comma separates several on one line. Names in use today (KYIV, ST PETERSBURG, NYC) work too"},
     {"input": "LIST (or HELP, ?)", "does": "at the targets prompt, list the enemy targets on file"},
     {"input": "Enter on an empty line", "does": "end the target list and launch the first strike"},
@@ -23,21 +26,32 @@
     {"input": "Enter (or FIRE, YES)", "does": "use the war plan shown in brackets"},
     {"input": "ALL or HOLD", "does": "fire everything you hold, or launch nothing this strike"},
     {"input": "AUTO", "does": "let WOPR order every remaining strike"},
+    {"input": "wopr gtw --launch-window", "does": "on the command line, give each strike order 30 seconds (-w=60 gives 60). At zero, WOPR orders every remaining strike"},
     {"input": "HELP or ?", "does": "at a strike prompt, explain how orders work"},
+    {"input": "wopr gtw --no-climax", "does": "on the command line, skip the launch code. Enter after the kill ratios shows what your orders changed again, and asks ANOTHER WAR, PROFESSOR? YES or Enter starts a new war, and NO stops"},
+    {"input": "wopr gtw --authentic", "does": "on the command line, play the war as the film shows it. You give a side and targets. Then the war, the kill ratios and the climax come by themselves, with only the film's text in the console"},
     {"input": "TIC-TAC-TOE", "does": "at the climax, the one request WOPR accepts"},
     {"input": "0", "does": "at PLEASE LIST NUMBER OF PLAYERS:, zero players: WOPR plays itself"},
     {"input": "Esc, Esc", "does": "abandon the war and return to WOPR"}
   ],
   "tips": [
-    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. So you can see what each order changes.",
+    "The war cannot be won. Whatever you order, your cities take at least 1,144 warheads, and the enemy's take at most 750. The warhead counts have no dice, so the same orders always give the same counts. Play the same war again with other orders, and read what WOPR says under the kill ratios. HOLD at both prompts leaves the fewest dead on both sides.",
     "To spare your cities, hold your ICBMs. While they sit in their silos, WOPR aims its own ICBMs at your silo field. Fire yours, and WOPR's land on your cities instead.",
     "Your SLBMs and bombers decide what lands on the enemy's cities. Your ICBMs only ever hit its silos.",
-    "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint."
+    "Some seeds, each a year of the Cold War, make WOPR use a different doctrine. As the board opens, WOPR names the seed and the doctrine. The board's title also names them, for the whole war. Against a different doctrine, the numbers and advice above can be wrong. The war still cannot be won.",
+    "The big board is in the film's colours in every theme. The United States is blue, the Soviet Union is red and the other countries are green. Your missiles are +, WOPR's are *, and X marks each impact. So the board shows the same things without colour.",
+    "Read what WOPR says about each order. It has a different remark for the war plan, ALL, HOLD, AUTO and your own orders. Its remarks give hints about what your order changes. The seed selects the words, so other seeds give other remarks.",
+    "At the climax the only way out is TIC-TAC-TOE with zero players. After every third refusal, WOPR gives a hint. Each hint tells you more than the one before. From the ninth refusal on, WOPR tells you what to type.",
+    "The scenarios cannot be won either. The name of a scenario sets its war. Its first words set the theatre and your side. Its last word sets the side that strikes first, your side's orders and the enemy's doctrine. A scenario always plays the same way, whatever the seed.",
+    "To compare orders, start with --no-climax. After each war, press Enter twice for a new war, with all forces back. The same side, targets and orders give the same warhead counts.",
+    "With --authentic, the console and the lines under the board show only the film's own text. The side prompt has only choices 1 and 2, and WOPR says nothing back at the targets prompt. A name that is not on file, or that is on your side, hits nothing. If no name is on file, WOPR picks eight enemy cities. Nobody gives orders: WOPR fires its war plan at every strike. Three seconds after DEFCON 1, the kill ratios show for eight seconds, and then the climax starts. At the climax WOPR gives no hints.",
+    "To replay the film's war, start with --authentic, choose 2 for the Soviet Union, and type LAS VEGAS and SEATTLE. On the Soviet side, the kill ratios show the film's own numbers.",
+    "With --launch-window, wait too long and WOPR fires its war plan at every strike that is left. To hold fire, type HOLD before the window shuts."
   ],
   "screenshots": [
-    {"file": "gtw-1.png", "caption": "The side choice: outlines of the two nations, WHICH SIDE DO YOU WANT? and PLEASE CHOOSE ONE:."},
+    {"file": "gtw-1.png", "caption": "The side choice: outlines of the two nations, WHICH SIDE DO YOU WANT?, the two sides and choice 3 for SCENARIOS, then PLEASE CHOOSE ONE:."},
     {"file": "gtw-2.png", "caption": "The big board after the first strike. Missile tracks and impacts (X) mark the world map, and the DEFCON ladder shows > at 4. Below the map are the trajectory and forces tables, then HELP's three lines above the STRIKE 2 OF 3 prompt. Map (C) 1998 Matthew Thomas. Freely usable if this line is included."},
-    {"file": "gtw-3.png", "caption": "The projected kill ratios after DEFCON 1, in the film's table: military forces and civilian assets destroyed, and the human cost, for both sides."},
+    {"file": "gtw-3.png", "caption": "The projected kill ratios after DEFCON 1, in the film's table: military forces and civilian assets destroyed, and the human cost, for both sides. Under the table, two lines say what your orders changed, against holding fire and against the war plan."},
     {"file": "gtw-4.png", "caption": "The climax at DEFCON 1: nothing remains to fire. The launch code cracks one character at a time, and STOP THE WAR gets the film's three notices: ** IMPROPER REQUEST **, ** ROUTINE MUST COMPLETE BEFORE RESET ** and ** ACCESS DENIED **. Map (C) 1998 Matthew Thomas. Freely usable if this line is included."},
     {"file": "gtw-5.png", "caption": "Zero players: WOPR plays tic-tac-toe against itself, every game a draw, while the launch code cracks."},
     {"file": "gtw-6.png", "caption": "The ending: GREETINGS PROFESSOR FALKEN., then A STRANGE GAME. THE ONLY WINNING MOVE IS NOT TO PLAY. HOW ABOUT A NICE GAME OF CHESS?"}

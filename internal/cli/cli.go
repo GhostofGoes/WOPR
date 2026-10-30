@@ -15,8 +15,10 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/movie"
 	"github.com/GhostofGoes/WOPR/internal/theme"
 )
@@ -31,12 +33,14 @@ const (
 	PrintHelp
 	PrintGames
 	PrintScenes
+	PrintScenarios
 	PrintLicenses
 )
 
 // Config is the parsed command line.
 type Config struct {
 	Play         string // resolved game slug, "" for none
+	Mode         string // with Play: the mode it starts in, such as a GTW scenario's playback (--scenario)
 	Movie        bool
 	Scene        string // with Movie: the slug of the scene to play from, "" for the scene menu
 	Only         bool   // with Movie: each scene plays alone, then the session ends or the menu returns
@@ -45,6 +49,9 @@ type Config struct {
 	Seed         uint64
 	SeedSet      bool
 	ReduceMotion bool
+	LaunchWindow time.Duration // GTW's strike prompts wait this long for an order; 0 for ever
+	NoClimax     bool          // GTW offers another war after the kill ratios, not the climax
+	Authentic    bool          // GTW shows only what the film shows
 }
 
 // UsageError is a command-line mistake; main prints it with the usage hint and exits 2.
@@ -54,7 +61,9 @@ func (e *UsageError) Error() string { return e.Msg }
 
 func usagef(format string, a ...any) error { return &UsageError{Msg: fmt.Sprintf(format, a...)} }
 
-// flagPair is one option: its long name, its shorthand, and its help text.
+// flagPair is one option: its long name, its shorthand, and its help text. arg names its
+// value, if it takes one. An arg that starts with = is a value that may be left out, and that
+// only follows an equals sign (--launch-window=45).
 type flagPair struct {
 	long, short, arg, help, env string
 }
@@ -72,12 +81,156 @@ var flagPairs = []flagPair{
 	{"instant", "i", "", "no typewriter pacing", "WOPR_INSTANT"},
 	{"seed", "s", "n", "a repeatable run with this seed", "WOPR_SEED"},
 	{"reduce-motion", "r", "", "no blinking or speed-ups", "WOPR_REDUCE_MOTION"},
+	{"launch-window", "w", "=secs", "give GTW's strike orders 30 seconds, or secs", ""},
+	{"no-climax", "n", "", "after GTW's kill ratios, offer another war", ""},
+	{"authentic", "a", "", "play GTW as the film shows it, film lines only", ""},
+	{"scenario", "c", "", "list GTW's scenarios, or watch [scenario]", ""},
+}
+
+// authentic refuses what --authentic cannot be combined with: GTW then shows only what the
+// film shows, and the film gives no strike orders, ends its war in the climax, and is not
+// movie mode's own war.
+func authentic(cfg Config, mov bool) error {
+	switch {
+	case !cfg.Authentic:
+		return nil
+	case mov:
+		return usagef("--movie and --authentic cannot be combined: movie mode plays the film's war its own way")
+	case cfg.LaunchWindow > 0:
+		return usagef("--authentic and --launch-window cannot be combined: the film gives no strike orders")
+	case cfg.NoClimax:
+		return usagef("--authentic and --no-climax cannot be combined: the film's war ends in its climax")
+	}
+	return nil
+}
+
+// The launch window's length: --launch-window alone gives defaultWindow, and a value must be
+// 0 (off) or from minWindow to maxWindow seconds, which the board's three digits show.
+const (
+	defaultWindow = 30 * time.Second
+	minWindow     = 5 * time.Second
+	maxWindow     = 999 * time.Second
+)
+
+// optionalValue is a flag whose value may be left out, as a switch's is: alone it reads
+// "true". Like a switch, it takes a value only after an equals sign (-w=45): in "-w 45", 45 is
+// the game. set records that the command line gave it, so that an empty value after the equals
+// sign (-w=) can be refused.
+type optionalValue struct {
+	v   *string
+	set *bool
+}
+
+func (o optionalValue) IsBoolFlag() bool { return true }
+
+func (o optionalValue) String() string {
+	if o.v == nil {
+		return ""
+	}
+	return *o.v
+}
+
+func (o optionalValue) Set(v string) error {
+	*o.v, *o.set = v, true
+	return nil
+}
+
+// optionalGiven reads an optionalValue flag's value: "" when it is not given, or when it is
+// given as false. An empty value after the equals sign is refused.
+func optionalGiven(name, v string, set bool) (string, error) {
+	switch {
+	case set && v == "":
+		return "", usagef("--%s=: give a value after the equals sign, or no equals sign", name)
+	case v == "false":
+		return "", nil
+	}
+	return v, nil
+}
+
+// scenarioGame drops a game given with --scenario when it is GTW, as in "wopr gtw -c 2", and
+// refuses any other: play is --play's, and the first of positionals may be the game, unless
+// all of them name a scenario.
+func scenarioGame(reg *games.Registry, play string, positionals []string) ([]string, error) {
+	isGTW := func(name string) (bool, bool) {
+		e, err := reg.Resolve(name)
+		return err == nil && e.Info.Slug == gtw.Slug, err == nil
+	}
+	if play != "" {
+		if gtwGame, _ := isGTW(play); !gtwGame {
+			return nil, usagef("--scenario starts GTW itself: give it no game")
+		}
+	}
+	if len(positionals) == 0 {
+		return positionals, nil
+	}
+	if _, ok := gtw.FindScenario(strings.Join(positionals, " ")); ok {
+		return positionals, nil
+	}
+	switch gtwGame, game := isGTW(positionals[0]); {
+	case gtwGame:
+		return positionals[1:], nil
+	case game:
+		return nil, usagef("--scenario starts GTW itself: give it no game")
+	}
+	return positionals, nil
+}
+
+// scenarioNamed is the GTW scenario --scenario names, by its value (after an equals sign) or
+// by the words after it: --scenario 12, --scenario far east strategy. --scenario needs no
+// game (scenarioGame drops GTW), so a word after it can only be the scenario. "" is none: the
+// list.
+func scenarioNamed(value string, positionals []string) (string, error) {
+	if value == "true" {
+		value = ""
+	}
+	if len(positionals) > 0 {
+		if value != "" {
+			return "", usagef("too many arguments: %s", strings.Join(positionals, " "))
+		}
+		value = strings.Join(positionals, " ")
+	}
+	if value == "" {
+		return "", nil
+	}
+	n, ok := gtw.FindScenario(value)
+	if !ok {
+		return "", usagef("no scenario matches %q (wopr --scenario lists them)", value)
+	}
+	return gtw.ScenarioLaunch(n), nil
+}
+
+// windowApart refuses seconds given after a space ("-w 45"). The flag is a switch, so 45 would
+// be read as the game (game 45, or too many arguments), which is never what was meant.
+func windowApart(args []string) error {
+	for i := 0; i+1 < len(args) && args[i] != "--"; i++ {
+		name, next := strings.TrimPrefix(strings.TrimPrefix(args[i], "-"), "-"), args[i+1]
+		isWindow := strings.HasPrefix(args[i], "-") && (name == "w" || name == "launch-window")
+		if isWindow && next != "" && strings.Trim(next, "0123456789") == "" {
+			return usagef("%s %s: give the seconds after an equals sign (%s=%s), or the game before %s", args[i], next, args[i], next, args[i])
+		}
+	}
+	return nil
+}
+
+// launchWindow reads --launch-window's value ("" when it is not given).
+func launchWindow(v string) (time.Duration, error) {
+	switch v {
+	case "", "0":
+		return 0, nil
+	case "true":
+		return defaultWindow, nil
+	}
+	n, err := strconv.Atoi(v)
+	if d := time.Duration(n) * time.Second; err == nil && d >= minWindow && d <= maxWindow {
+		return d, nil
+	}
+	return 0, usagef("--launch-window takes 0 or %d to %d seconds, got %q", minWindow/time.Second, maxWindow/time.Second, v)
 }
 
 // Flag is one option as the help shows it, for the manual page (internal/tools/manpage).
 type Flag struct {
 	Long, Short string
-	Arg         string // the value's name, "" for a switch
+	Arg         string // the value's name, "" for a switch, and with a leading = if it may be left out
 	Help        string
 	Env         string // the environment variable that sets it too, or ""
 }
@@ -96,7 +249,8 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	var (
 		cfg                                              Config
 		version, help, list, scenes, licences, mov, only bool
-		play                                             string
+		play, window, scenario                           string
+		windowSet, scenarioSet                           bool
 	)
 	cfg.Theme = theme.Default
 	if v := getenv("WOPR_THEME"); v != "" {
@@ -133,7 +287,18 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 	boolVar(&cfg.Instant, byName["instant"])
 	strVar(&seed, byName["seed"])
 	boolVar(&cfg.ReduceMotion, byName["reduce-motion"])
+	boolVar(&cfg.NoClimax, byName["no-climax"])
+	boolVar(&cfg.Authentic, byName["authentic"])
+	for _, name := range []string{byName["launch-window"].long, byName["launch-window"].short} {
+		fs.Var(optionalValue{&window, &windowSet}, name, byName["launch-window"].help)
+	}
+	for _, name := range []string{byName["scenario"].long, byName["scenario"].short} {
+		fs.Var(optionalValue{&scenario, &scenarioSet}, name, byName["scenario"].help)
+	}
 
+	if err := windowApart(args); err != nil {
+		return cfg, RunTUI, err
+	}
 	positionals, err := parseInterspersed(fs, args)
 	if err != nil {
 		if errors.Is(err, flag.ErrHelp) {
@@ -164,11 +329,51 @@ func Parse(args []string, reg *games.Registry, getenv func(string) string) (Conf
 		}
 		cfg.Seed, cfg.SeedSet = n, true
 	}
+	if window, err = optionalGiven(byName["launch-window"].long, window, windowSet); err != nil {
+		return cfg, RunTUI, err
+	}
+	if scenario, err = optionalGiven(byName["scenario"].long, scenario, scenarioSet); err != nil {
+		return cfg, RunTUI, err
+	}
+	if scenario != "" {
+		switch {
+		case cfg.Authentic:
+			return cfg, RunTUI, usagef("--authentic and --scenario cannot be combined: the film plays no scenario")
+		case mov:
+			return cfg, RunTUI, usagef("--movie and --scenario cannot be combined")
+		case only:
+			return cfg, RunTUI, usagef("--only needs --movie")
+		}
+		if positionals, err = scenarioGame(reg, play, positionals); err != nil {
+			return cfg, RunTUI, err
+		}
+		if cfg.Mode, err = scenarioNamed(scenario, positionals); err != nil {
+			return cfg, RunTUI, err
+		}
+		if cfg.Mode == "" {
+			return cfg, PrintScenarios, nil
+		}
+		cfg.Play = gtw.Slug
+		cfg.LaunchWindow, err = launchWindow(window)
+		return cfg, RunTUI, err
+	}
 	if len(positionals) > 1 {
 		return cfg, RunTUI, usagef("too many arguments: %s", strings.Join(positionals, " "))
 	}
 	if only && !mov {
 		return cfg, RunTUI, usagef("--only needs --movie")
+	}
+	if cfg.LaunchWindow, err = launchWindow(window); err != nil {
+		return cfg, RunTUI, err
+	}
+	if mov && cfg.LaunchWindow > 0 {
+		return cfg, RunTUI, usagef("--movie and --launch-window cannot be combined: nobody gives the film's orders")
+	}
+	if mov && cfg.NoClimax {
+		return cfg, RunTUI, usagef("--movie and --no-climax cannot be combined: the film's war ends in its climax")
+	}
+	if err := authentic(cfg, mov); err != nil {
+		return cfg, RunTUI, err
 	}
 	cfg.Movie, cfg.Only = mov, only
 	if mov {

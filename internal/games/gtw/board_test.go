@@ -230,3 +230,39 @@ func TestBombersStayDotted(t *testing.T) {
 		}
 	}
 }
+
+// A line of many targets is named back on lines that fit the console, broken after a comma,
+// so every name stays whole and the lines read back as the one line.
+func TestLongConfirmationsWrap(t *testing.T) {
+	t.Parallel()
+	var added []assets.Place
+	for _, name := range []string{
+		"COLORADO SPRINGS", "SALT LAKE CITY", "SAN FRANCISCO", "OKLAHOMA CITY", "INDIANAPOLIS",
+		"PHILADELPHIA", "JACKSONVILLE", "MINNEAPOLIS",
+	} {
+		p, ok := assets.Find(name)
+		if !ok {
+			t.Fatalf("the board does not know %s", name)
+		}
+		added = append(added, p)
+	}
+	lines := confirmed(added, maxTargets)
+	if len(lines) < 2 {
+		t.Fatalf("%q: eight long names fit one line?", lines)
+	}
+	for _, l := range lines {
+		if len(l) > consoleW || strings.HasSuffix(l, " ") {
+			t.Errorf("%d columns, or a trailing space: %q", len(l), l)
+		}
+	}
+	for _, l := range lines[:len(lines)-1] {
+		if !strings.HasSuffix(l, ",") {
+			t.Errorf("a line breaks inside a name: %q", l)
+		}
+	}
+	want := "COLORADO SPRINGS, SALT LAKE CITY, SAN FRANCISCO, OKLAHOMA CITY, INDIANAPOLIS, PHILADELPHIA, " +
+		"JACKSONVILLE, MINNEAPOLIS. TARGETS 1-8 OF 8."
+	if got := strings.Join(lines, " "); got != want {
+		t.Errorf("reads %q, want %q", got, want)
+	}
+}

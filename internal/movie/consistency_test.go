@@ -5,6 +5,7 @@ package movie
 
 import (
 	"context"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -154,8 +155,17 @@ func gtwGame(t *testing.T) *testkit.GameSession {
 	return testkit.Game(t, e.New(), e.Info, "", Seed)
 }
 
-// The first-strike scene, board included, is what GTW prints for the film's choices; and the
-// choices it types are the ones the board plays.
+// confirmation is GTW's line naming back the targets a line added ("SEATTLE. TARGET 2 OF
+// 8."): feedback for a player, which the film's screen does not show.
+var confirmation = regexp.MustCompile(`^[A-Z][A-Z ,.'-]*\. TARGETS? [0-9]+(-[0-9]+)? OF 8\.$`)
+
+// scenariosChoice is GTW's third choice at the side prompt, the scenario menu, which the
+// film's screen does not have either.
+const scenariosChoice = "  3.    SCENARIOS"
+
+// The first-strike scene, board included, is what GTW prints for the film's choices, but for
+// GTW's third side choice and its confirmations of the targets; and the choices it types are
+// the ones the board plays.
 func TestFirstStrikeIsTheGames(t *testing.T) {
 	t.Parallel()
 	s := scene(t, "first-strike")
@@ -168,7 +178,21 @@ func TestFirstStrikeIsTheGames(t *testing.T) {
 		g.Type(line)
 	}
 	movie := transcriptLines(play(t, Options{Scene: s.Slug, Only: true}))[1:] // after the scene's own [CLEAR]
-	game := transcriptLines(g.Session)
+	var game []string
+	confirmed := 0
+	for _, l := range transcriptLines(g.Session) {
+		if confirmation.MatchString(l) {
+			confirmed++
+			continue
+		}
+		if l == scenariosChoice {
+			continue
+		}
+		game = append(game, l)
+	}
+	if confirmed != len(gtw.FilmTargets) {
+		t.Errorf("GTW confirms %d targets, want %d", confirmed, len(gtw.FilmTargets))
+	}
 	if len(game) < len(movie) || strings.Join(game[:len(movie)], "\n") != strings.Join(movie, "\n") {
 		t.Errorf("the scene:\n%s\nthe game:\n%s", strings.Join(movie, "\n"), strings.Join(game, "\n"))
 	}

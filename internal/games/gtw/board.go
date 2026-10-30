@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/GhostofGoes/WOPR/internal/assets"
 	"github.com/GhostofGoes/WOPR/internal/proto"
@@ -40,20 +41,27 @@ const (
 // View implements proto.Program.
 func (g *Game) View(c *proto.Canvas) {
 	switch g.phase {
-	case ratios:
+	case ratios, another:
 		g.drawRatios(c)
 	case flight, orders, assessed, climax:
 		g.drawBoard(c)
-	case chooseSide, listTargets:
+	case chooseSide, listTargets, chooseScenario, briefing:
 	}
 }
 
 func (g *Game) drawBoard(c *proto.Canvas) {
-	// The map box, titled, with each side named under its land.
+	// The map box, titled with the game's name (and a playback's scenario, or an easter egg's
+	// doctrine), with each side named under its land.
 	edge := "+" + strings.Repeat("-", assets.MapW) + "+"
 	c.Put(mapLeft-1, mapTop-1, edge, proto.StyleDim, 0)
 	c.Put(mapLeft-1, boxBottom, edge, proto.StyleDim, 0)
 	title := " " + lineTitle[0].Text + " "
+	switch {
+	case g.scen != nil:
+		title = " " + lineTitle[0].Text + ": " + g.scen.name.Text + " "
+	case g.egg != nil: // the doctrine stays named after its strip line scrolls away
+		title = " " + lineTitle[0].Text + ": " + fill(lineEggTitle[0], g.egg.seed, g.egg.name.Text) + " "
+	}
 	c.Put(mapLeft+(assets.MapW-len(title))/2, mapTop-1, title, proto.StyleBright, 0)
 	for i, lon := range []float64{usLon, ussrLon} {
 		name := " " + lineLabels[i].Text + " "
@@ -63,7 +71,9 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 	for y, row := range assets.Map {
 		c.Put(mapLeft-1, mapTop+y, "|", proto.StyleDim, 0)
 		c.Put(boxRight, mapTop+y, "|", proto.StyleDim, 0)
-		c.Put(mapLeft, mapTop+y, row.Text, proto.StyleLand, 0)
+		for x, r := range row.Text {
+			c.Set(mapLeft+x, mapTop+y, proto.Cell{R: r, S: landStyle(x, y)})
+		}
 	}
 	for _, m := range g.missiles {
 		g.drawTrack(c, m)
@@ -88,12 +98,18 @@ func (g *Game) drawBoard(c *proto.Canvas) {
 }
 
 // drawFoot fills the row under the tables with one thing, by state: the orders hint at a
-// strike prompt (the last-orders warning at the last one), the launch code at the climax, and
-// otherwise the legend: + and * in their tracks' colours, and X reversed in the neutral text
-// colour, since both sides' impacts show. The film's board (movie mode) has nobody to give
-// orders, so it shows the legend at the strike prompts too.
+// strike prompt (the last-orders warning at the last one), with any launch window's seconds
+// at the right end, the launch code at the climax, WOPR's remark for the first seconds of a
+// stage (react.go), and otherwise the legend: + and * in their tracks' colours, and X
+// reversed in the neutral text colour, since both sides' impacts show. A remark belongs to a
+// stage's flight and the window to its prompt, so the two never share the row: the remark is
+// gone before the prompt opens (remarkFrames is under strikeEnd), and the closed window's
+// remark comes with the strike it starts. The film's board (movie mode) has nobody to give
+// orders, so it shows the legend at the strike prompts too, and makes no remarks.
 func (g *Game) drawFoot(c *proto.Canvas) {
-	switch {
+	switch remark := g.remarkShown(); {
+	case remark != "":
+		c.Put(0, footRow, remark, proto.StyleBright, 0)
 	case g.phase == climax:
 		code := lineCode[0].Text
 		shown := code[:g.cracked] + strings.Repeat("_", len(code)-g.cracked)
@@ -103,11 +119,31 @@ func (g *Game) drawFoot(c *proto.Canvas) {
 		g.drawLegend(c)
 	case g.phase == orders && g.stage == strikes-1:
 		c.Put(0, footRow, lineLastOrders[0].Text, proto.StyleAlert, 0)
+		g.drawWindow(c)
 	case g.phase == orders:
 		c.Put(0, footRow, lineOrdersHint[0].Text, proto.StyleDim, 0)
+		g.drawWindow(c)
 	default:
 		g.drawLegend(c)
 	}
+}
+
+// drawWindow ends the foot row at column 79 with what is left of the launch window, if one
+// runs, in whole seconds rounded up: it reads 1 until the window shuts. The last ten seconds
+// are an alert. The figure says the same without colour.
+func (g *Game) drawWindow(c *proto.Canvas) {
+	if g.window <= 0 {
+		return
+	}
+	secs := int((g.window + time.Second - 1) / time.Second)
+	text, style := fill(lineWindow[0], secs), proto.StyleBright
+	if secs == 1 {
+		text = lineWindow[1].Text
+	}
+	if secs <= 10 {
+		style = proto.StyleAlert
+	}
+	c.Put(consoleW-len(text), footRow, text, style, 0)
 }
 
 func (g *Game) drawLegend(c *proto.Canvas) {
@@ -116,6 +152,19 @@ func (g *Game) drawLegend(c *proto.Canvas) {
 	c.Put(strings.Index(legend, "+"), footRow, "+", proto.StyleOutgoing, 0)
 	c.Put(strings.Index(legend, "*"), footRow, "*", proto.StyleIncoming, 0)
 	c.Put(strings.LastIndex(legend, "X"), footRow, "X", proto.StyleText, proto.AttrReverse)
+}
+
+// landStyle is the style of a map cell: each side's land in its own, as on the film's NORAD
+// screens, and every other country's in Land. The names under the map say whose land is
+// whose, so nothing rests on the colours.
+func landStyle(x, y int) proto.Style {
+	switch side, ok := assets.Nation(x, y); {
+	case !ok:
+		return proto.StyleLand
+	case side == assets.US:
+		return proto.StyleLandUS
+	}
+	return proto.StyleLandUSSR
 }
 
 func trackStyle(m missile) proto.Style {
@@ -263,7 +312,7 @@ func (g *Game) drawTrajectories(c *proto.Canvas) {
 		designator := lineDesignator[2*int(g.side-1)+int(m.kind)].Text
 		x := col * trajW
 		letter := string(rune('A' + 2*col))
-		h := heading(g.env.Seed, m.id)
+		h := heading(g.seed(), m.id)
 		c.Put(x, trajRow+1, fmt.Sprintf("%s-%s-A %03d %03d", letter, designator, h[0], h[1]), proto.StyleText, 0)
 		c.Put(x, trajRow+2, fmt.Sprintf("%*s %03d %03d", len(letter)+len(designator)+3, "B", h[2], h[3]), proto.StyleText, 0)
 	}

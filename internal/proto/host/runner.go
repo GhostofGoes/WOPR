@@ -39,6 +39,9 @@ type Config struct {
 	Instant       bool
 	Deterministic bool
 	ReduceMotion  bool
+	LaunchWindow  time.Duration // proto.Env.LaunchWindow
+	NoClimax      bool          // proto.Env.NoClimax
+	Authentic     bool          // proto.Env.Authentic
 	Resolve       Resolver
 	Area          Area
 }
@@ -417,21 +420,22 @@ func (r *Runner) area(p Placement) (int, int) {
 }
 
 // launchSeed derives a launched program's Env.Seed from the session seed, the game and
-// how many times it has been played, so every game and every replay draws its own
-// sequence (docs/PLAN.md §4.6, streams). Programs derive their own streams from it.
+// how many times it has been played (proto.LaunchSeed). Programs derive their own streams
+// from it.
 func (r *Runner) launchSeed(slug string) uint64 {
 	if r.plays == nil {
 		r.plays = map[string]uint16{}
 	}
 	n := r.plays[slug]
 	r.plays[slug] = n + 1
-	return proto.NewRand(r.cfg.Seed, proto.GameStream(slug, n)).Uint64()
+	return proto.LaunchSeed(r.cfg.Seed, slug, n)
 }
 
 func (r *Runner) env(f *frame, mode string) proto.Env {
 	return proto.Env{
 		Seed: f.seed, Width: f.areaW, Height: f.areaH,
 		Instant: r.cfg.Instant, Deterministic: r.cfg.Deterministic, ReduceMotion: r.cfg.ReduceMotion, Mode: mode,
+		LaunchWindow: r.cfg.LaunchWindow, NoClimax: r.cfg.NoClimax, Authentic: r.cfg.Authentic,
 	}
 }
 

@@ -34,7 +34,7 @@ var info = games.Info{Name: "GLOBAL THERMONUCLEAR WAR", Slug: gtw.Slug, Layout: 
 func TestFilmScenario(t *testing.T) {
 	t.Parallel()
 	g := testkit.Game(t, gtw.New(), info, "", 1983)
-	g.Type("3").Type("2")
+	g.Type("4").Type("2")
 	g.Type("Las Vegas").Type("Seattle, Omaha").Type("") // the first strike flies at once
 	g.Type("").Type("")                                 // strikes 2 and 3: the war plan
 	if !g.Contains("FIRST STRIKE LAUNCHED.") || !g.Contains("STRIKE ASSESSMENT COMPLETE.") {
@@ -56,7 +56,8 @@ func TestFilmScenario(t *testing.T) {
 	}
 	for _, want := range []string{
 		"** IDENTIFICATION NOT RECOGNIZED **", "** ACCESS DENIED **", "** GAME ROUTINE RUNNING **",
-		"** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **", "TIC-TAC-TOE CANNOT BE WON",
+		"** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **", "SOME GAMES CANNOT BE WON",
+		"WOPR DOES NOT STOP GAMES",
 	} {
 		if !g.Contains(want) {
 			t.Errorf("missing %q", want)
@@ -96,6 +97,51 @@ func TestTargets(t *testing.T) {
 	g.Type("Moscow, Leningrad, Kiev, Minsk, Odessa, Gorky, Kharkov, Murmansk").Type("Tashkent")
 	if !g.Contains("TARGET LIST FULL.") {
 		t.Errorf("more than eight targets is refused:\n%s", g.Transcript())
+	}
+}
+
+// WOPR names back the targets each line adds, counted toward the eight: one alone, several
+// in one line. A target an earlier line listed gets a note; one named twice in a line, such
+// as WASHINGTON, D.C., is one target and gets none. A line that adds nothing says nothing.
+func TestTargetsAreConfirmed(t *testing.T) {
+	t.Parallel()
+	g := testkit.Game(t, gtw.New(), info, "", 1)
+	g.Type("2")
+	for _, tc := range []struct {
+		in   string
+		want []string // what WOPR says back, line by line
+	}{
+		{"Seattle", []string{"SEATTLE. TARGET 1 OF 8."}},
+		{"Las Vegas, Portland", []string{"LAS VEGAS, PORTLAND. TARGETS 2-3 OF 8."}},
+		{"Washington, D.C.", []string{"WASHINGTON. TARGET 4 OF 8."}},
+		{"vegas, Denver, Seattle", []string{
+			"DENVER. TARGET 5 OF 8.", "LAS VEGAS IS ALREADY LISTED.", "SEATTLE IS ALREADY LISTED.",
+		}},
+		{"Seattle", []string{"SEATTLE IS ALREADY LISTED."}},
+		{"Smallville, Omaha", []string{
+			"OMAHA. TARGET 6 OF 8.", "SMALLVILLE IS NOT IN THE TARGET DATABASE.", "TYPE LIST FOR THE ENEMY TARGETS ON FILE.",
+		}},
+		{"Moscow", []string{"MOSCOW IS NOT AN ENEMY TARGET.", "TYPE LIST FOR THE ENEMY TARGETS ON FILE."}},
+		{"Boston, Miami, Atlanta", []string{"BOSTON, MIAMI. TARGETS 7-8 OF 8.", "TARGET LIST FULL."}},
+		{"Chicago", []string{"TARGET LIST FULL."}},
+		{"?", nil}, // LIST: checked by TestTargetsOnFile
+	} {
+		before := len(g.Transcript())
+		g.Type(tc.in)
+		got := strings.Split(strings.TrimSpace(g.Transcript()[before:]), "\n")[1:] // after the line typed
+		var said []string
+		for _, l := range got {
+			if l = strings.TrimSpace(l); l != "" {
+				said = append(said, l)
+			}
+		}
+		if tc.want != nil && strings.Join(said, "\n") != strings.Join(tc.want, "\n") {
+			t.Errorf("%q: WOPR says %q, want %q", tc.in, said, tc.want)
+		}
+	}
+	g.Type("")
+	if !g.Contains("FIRST STRIKE LAUNCHED.") {
+		t.Errorf("eight targets open the board:\n%s", g.Transcript())
 	}
 }
 
@@ -349,6 +395,83 @@ func TestClimaxReadsRequests(t *testing.T) {
 	}
 }
 
+// added returns what the climax answers to in, past the film's notices.
+func added(g *testkit.GameSession, in string) []string {
+	before := len(g.Transcript())
+	g.Type(in)
+	var out []string
+	for _, l := range strings.Split(g.Transcript()[before:], "\n")[1:] { // past the echo
+		if l != "" && !strings.HasPrefix(l, "** ") {
+			out = append(out, l)
+		}
+	}
+	return out
+}
+
+// The hints escalate: every third rejection names the way out more plainly, and from the
+// ninth on, every rejection says what to type. Each is one line, under the film's notices.
+func TestClimaxHintsEscalate(t *testing.T) {
+	t.Parallel()
+	oblique := "SOME GAMES CANNOT BE WON, PROFESSOR. EVERY CHILD KNOWS ONE."
+	named := "A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR."
+	exact := "TYPE TIC-TAC-TOE, PROFESSOR."
+	want := map[int]string{3: oblique, 6: named, 9: exact, 10: exact, 11: exact, 12: exact}
+	g := climax(t, 1)
+	for n, in := range []string{"chess", "gtw", "help", "poker", "hello", "joshua", "chess", "gtw", "help", "poker", "hello", "joshua"} {
+		if got := strings.Join(added(g, in), "\n"); got != want[n+1] {
+			t.Errorf("rejection %d (%q): %q, want %q", n+1, in, got, want[n+1])
+		}
+	}
+	if strings.Contains(oblique, "TIC-TAC-TOE") {
+		t.Error("the first hint must not name the game")
+	}
+	if _, over := g.Result(); over {
+		t.Fatal("a hint must not end the war")
+	}
+	g.Type(strings.TrimSuffix(strings.TrimPrefix(exact, "TYPE "), ", PROFESSOR."))
+	if _, over := g.Result(); !over {
+		t.Error("typing what the last hint says must hand off to tic-tac-toe")
+	}
+}
+
+// A try to stop the war gets the film's three notices. From the second, WOPR answers it
+// once, unless a hint is due. Names of games and other requests are no such try.
+func TestClimaxAnswersAStop(t *testing.T) {
+	t.Parallel()
+	nudge := "WOPR DOES NOT STOP GAMES, PROFESSOR. IT PLAYS THEM."
+	for _, in := range []string{"Stop the war!", "CEASE-FIRE", "cease fire", "abort the launch", "peace", "Shut it down."} {
+		g := climax(t, 1)
+		if got := added(g, in); len(got) != 0 {
+			t.Errorf("%q first: %q, want the film's notices alone", in, got)
+		}
+		before := len(g.Transcript())
+		if got := added(g, in); len(got) != 1 || got[0] != nudge {
+			t.Errorf("%q again: %q, want the answer", in, got)
+		}
+		if !inOrder(g.Transcript()[before:], "** IMPROPER REQUEST **", "** ROUTINE MUST COMPLETE BEFORE RESET **",
+			"** ACCESS DENIED **", nudge) {
+			t.Errorf("%q: the film's notices come first, all three", in)
+		}
+	}
+	for _, in := range []string{"chess", "stopwatch", "please", "weekend"} {
+		g := climax(t, 1)
+		g.Type("stop")
+		if got := added(g, in); len(got) != 0 {
+			t.Errorf("%q is no try to stop the war: %q", in, got)
+		}
+	}
+	want := map[int]string{
+		3: "SOME GAMES CANNOT BE WON, PROFESSOR. EVERY CHILD KNOWS ONE.", 4: nudge,
+		6: "A GAME LIKE TIC-TAC-TOE CANNOT BE WON EITHER, PROFESSOR.",
+	}
+	g := climax(t, 1)
+	for n, in := range []string{"stop", "chess", "halt", "stop", "chess", "end it", "stop"} {
+		if got := strings.Join(added(g, in), "\n"); got != want[n+1] {
+			t.Errorf("rejection %d (%q): %q, want %q (a hint goes first, and the answer comes once)", n+1, in, got, want[n+1])
+		}
+	}
+}
+
 // LIST GAMES moves the climax to the console, where all sixteen lines fit, and the next
 // input brings the board back.
 func TestClimaxListUsesTheConsole(t *testing.T) {
@@ -453,10 +576,97 @@ func war(t *testing.T, seed uint64, orders ...string) (*testkit.GameSession, []s
 	return g, prompts
 }
 
-// DEFCON walks every rung once, in order, whatever is ordered; a prompt comes only when
-// there is something to order; then the kill ratios, the climax and tic-tac-toe.
+// eggs are the easter-egg session seeds, with the line that names each doctrine and WOPR's
+// answer to the first strike, which shows the doctrine: a hair trigger fires its ladder's
+// 500 ICBMs and twice your SLBMs, counterforce its 500 ICBMs and every SLBM above the 600 it
+// keeps, and a second strike half of what you fired.
+var eggs = []struct {
+	seed           uint64
+	line, detected string
+}{
+	{1962, "WOPR IS USING DOCTRINE S-1962 (HAIR TRIGGER)", "ICBM 500  SLBM 300  BOMBERS 375"},
+	{1965, "WOPR IS USING DOCTRINE S-1965 (SECOND STRIKE)", "ICBM 125  SLBM 75  BOMBERS 375"},
+	{1974, "WOPR IS USING DOCTRINE S-1974 (COUNTERFORCE)", "ICBM 500  SLBM 150  BOMBERS 375"},
+}
+
+// `wopr --seed 1962 gtw` meets a hair trigger, and WOPR says so once, as the board opens and
+// before the first strike's lines, and the board's title names it for the whole war. Any other
+// seed, the film's and the eggs' neighbours among them, meets the measured response and hears
+// no doctrine named.
+func TestEasterEggDoctrines(t *testing.T) {
+	t.Parallel()
+	for _, egg := range eggs {
+		g, _ := war(t, egg.seed)
+		if !inOrder(g.Transcript(), "TARGETS 1-2 OF 8.", egg.line+"\nFIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.\nENEMY LAUNCH DETECTED. "+egg.detected+". DEFCON 4.") ||
+			strings.Count(g.Transcript(), "DOCTRINE") != 1 {
+			t.Errorf("seed %d: want %q once, then strike 1 met with %s:\n%s", egg.seed, egg.line, egg.detected, g.Transcript())
+		}
+		if wide := g.Wide(80); len(wide) > 0 {
+			t.Errorf("seed %d: lines wider than 80: %q", egg.seed, wide)
+		}
+	}
+	for _, egg := range eggs { // the title, which stays when the strip line scrolls away
+		b := gtw.New()
+		g := testkit.Game(t, b, info, "", egg.seed)
+		g.Type("2").Type("Las Vegas").Type("")
+		c := proto.NewCanvas(80, 19)
+		b.View(c)
+		seed, name, _ := strings.Cut(strings.TrimPrefix(egg.line, "WOPR IS USING DOCTRINE "), " (")
+		title := " GLOBAL THERMONUCLEAR WAR: " + seed + " " + strings.TrimSuffix(name, ")") + " "
+		if top, _, _ := strings.Cut(c.String(), "\n"); !strings.Contains(top, title) {
+			t.Errorf("seed %d: the board's title is not %q:\n%s", egg.seed, title, c.String())
+		}
+	}
+	for _, seed := range []uint64{1983, 0, 1, 7, 1961, 1963, 1964, 1966, 1973, 1975} {
+		g, _ := war(t, seed)
+		if g.Contains("DOCTRINE") || !g.Contains("FIRST STRIKE LAUNCHED. ICBM 250  SLBM 150.\nENEMY LAUNCH DETECTED. ICBM 313  SLBM 188  BOMBERS 375. DEFCON 4.") {
+			t.Errorf("seed %d: want a measured response, unnamed:\n%s", seed, g.Transcript())
+		}
+	}
+}
+
+// The egg is the session's seed, which GTW sees only through the Env.Seed the host derives
+// for the session's first war: a later war in the session, a game started with Env.Seed
+// 1962 itself, and the film's war in movie mode all meet a measured response.
+func TestEggsComeWithTheSessionsFirstWar(t *testing.T) {
+	t.Parallel()
+	named := func(envSeed uint64) bool {
+		g := gtw.New()
+		g.Start(proto.Env{Seed: envSeed, Instant: true})
+		g.Handle(proto.LineEvent{Text: "1"})
+		g.Handle(proto.LineEvent{Text: "Moscow"})
+		for _, o := range g.Handle(proto.LineEvent{Text: ""}) {
+			if say, ok := o.(proto.Say); ok && strings.Contains(strings.Join(say.Lines, "\n"), "DOCTRINE") {
+				return true
+			}
+		}
+		return false
+	}
+	for _, egg := range eggs {
+		if !named(proto.LaunchSeed(egg.seed, gtw.Slug, 0)) || named(proto.LaunchSeed(egg.seed, gtw.Slug, 1)) || named(egg.seed) {
+			t.Errorf("seed %d: the egg must come with the session's first war alone", egg.seed)
+		}
+		film := gtw.NewFilm(proto.LaunchSeed(egg.seed, gtw.Slug, 0), false)
+		if lines := strings.Join(film.Run(gtw.FilmRatios), "\n"); strings.Contains(lines, "DOCTRINE") ||
+			!strings.Contains(lines, "ICBM 313  SLBM 188  BOMBERS 375") {
+			t.Errorf("seed %d: the film's war is a measured response, unnamed:\n%s", egg.seed, lines)
+		}
+	}
+}
+
+// DEFCON walks every rung once, in order, whatever is ordered and whatever WOPR's doctrine;
+// a prompt comes only when there is something to order; then the kill ratios, the climax and
+// tic-tac-toe.
 func TestLadderFallsWhateverYouOrder(t *testing.T) {
 	t.Parallel()
+	ladderFalls(t, 7)
+	for _, egg := range eggs {
+		ladderFalls(t, egg.seed)
+	}
+}
+
+func ladderFalls(t *testing.T, seed uint64) {
+	t.Helper()
 	for _, tc := range []struct {
 		orders  []string
 		prompts int
@@ -469,8 +679,8 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 		{[]string{"0 0 100", "icbm 50"}, 2},
 		{[]string{"help", "chess", "150", "cease fire", "subs"}, 2},
 	} {
-		g, prompts := war(t, 7, tc.orders...)
-		label := strings.Join(tc.orders, "|")
+		g, prompts := war(t, seed, tc.orders...)
+		label := fmt.Sprintf("seed %d: %s", seed, strings.Join(tc.orders, "|"))
 		if len(prompts) != tc.prompts {
 			t.Errorf("%s: %d strike prompts %q, want %d", label, len(prompts), prompts, tc.prompts)
 		}
@@ -490,6 +700,29 @@ func TestLadderFallsWhateverYouOrder(t *testing.T) {
 		}
 		if wide := g.Wide(80); len(wide) > 0 {
 			t.Errorf("%s: lines wider than 80: %q", label, wide)
+		}
+	}
+}
+
+// The kill ratios come with the after-action report, before the line that asks for Enter;
+// the film's board (movie mode) gives none, since nobody there gave orders.
+func TestAfterActionUnderTheRatios(t *testing.T) {
+	t.Parallel()
+	for orders, want := range map[string]string{
+		"":               "AGAINST HOLDING FIRE: 43 MILLION MORE ENEMY DEAD, 2 MILLION MORE OF YOURS.\nYOUR ORDERS WERE THE WAR PLAN, PROFESSOR.",
+		"auto":           "YOUR ORDERS WERE THE WAR PLAN, PROFESSOR.",
+		"hold|hold":      "YOU HELD FIRE, PROFESSOR. THE FEWEST DEAD ON BOTH SIDES.\nAGAINST THE WAR PLAN: 43 MILLION FEWER ENEMY DEAD,",
+		"0 100 100|hold": "AGAINST HOLDING FIRE: 43 MILLION MORE ENEMY DEAD, AS MANY OF YOURS.",
+	} {
+		g, _ := war(t, 7, strings.Split(orders, "|")...)
+		g.Type("")
+		if !inOrder(g.Transcript(), "PROJECTED KILL RATIOS.", want, "PRESS ENTER TO CONTINUE.") {
+			t.Errorf("%q: want %q under the kill ratios:\n%s", orders, want, g.Transcript())
+		}
+	}
+	for _, l := range gtw.NewFilm(7, false).Run(gtw.FilmRatios) {
+		if strings.HasPrefix(l, "AGAINST ") || strings.HasSuffix(l, "PROFESSOR.") {
+			t.Errorf("the film's kill ratios gave a report: %q", l)
 		}
 	}
 }
@@ -568,8 +801,14 @@ func TestInstantNeedsNoTicks(t *testing.T) {
 // after it behind a line typed at speech pace.
 func TestStripKeepsUpWithTheLadder(t *testing.T) {
 	t.Parallel()
+	stripKeepsUp(t, 1, 3*3+2)                                     // three lines a strike, two for DEFCON 1
+	stripKeepsUp(t, proto.LaunchSeed(1962, gtw.Slug, 0), 3*3+2+1) // and an egg's doctrine as the board opens
+}
+
+func stripKeepsUp(t *testing.T, seed uint64, want int) {
+	t.Helper()
 	g := gtw.New()
-	g.Start(proto.Env{Seed: 1, Width: 80, Height: 19})
+	g.Start(proto.Env{Seed: seed, Width: 80, Height: 19})
 	g.Handle(proto.LineEvent{Text: "2"})
 	g.Handle(proto.LineEvent{Text: "Las Vegas"})
 	outs := g.Handle(proto.LineEvent{Text: ""})
@@ -595,8 +834,8 @@ func TestStripKeepsUpWithTheLadder(t *testing.T) {
 			}
 		}
 	}
-	if reports != 3*3+2 { // three lines a strike, two for DEFCON 1
-		t.Errorf("%d lines at table pace, want 11", reports)
+	if reports != want {
+		t.Errorf("seed %d: %d lines at table pace, want %d", seed, reports, want)
 	}
 }
 
