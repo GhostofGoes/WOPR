@@ -52,18 +52,15 @@ const appID = "io.github.ghostofgoes.wopr"
 
 // The sources: the master, with the platforms' usual transparent margin; simplified art for
 // small sizes (optional); a full-bleed, opaque square for macOS, which masks icons itself; and,
-// also optional, art drawn for one size, wopr-<N>.svg (srcSized).
+// also optional, art drawn for one size, wopr-<N>.svg for the N px transparent icon, so that its
+// edges can land on whole pixels at a size where the other sources' fall between them
+// (sizedSources).
 const (
 	srcDir    = "packaging/icons/src"
 	srcMaster = srcDir + "/wopr.svg"
 	srcSmall  = srcDir + "/wopr-small.svg"
 	srcFull   = srcDir + "/wopr-full.svg"
 )
-
-// srcSized is the source drawn for the transparent icon at exactly n×n pixels, in place of
-// wopr-small.svg or wopr.svg, so that its edges can land on whole pixels at a size where the
-// other sources' fall between them. Nothing else is drawn from it.
-func srcSized(n int) string { return fmt.Sprintf("%s/wopr-%d.svg", srcDir, n) }
 
 const (
 	smallMax    = 32        // the largest size drawn from wopr-small.svg

@@ -29,21 +29,6 @@ func SanitizeInput(s string) string {
 	return capGraphemes(s, MaxInput)
 }
 
-// SanitizeText cleans text that came from outside the binary (a brain or LLM reply)
-// before it is shown: escape sequences and control characters are removed, tabs are
-// expanded to 8-column stops, and the text is split into logical lines.
-func SanitizeText(s string) []string {
-	s = strings.ToValidUTF8(s, "�")
-	s = ansi.Strip(s)
-	s = strings.ReplaceAll(s, "\r\n", "\n")
-	s = strings.ReplaceAll(s, "\r", "\n")
-	lines := strings.Split(s, "\n")
-	for i, l := range lines {
-		lines[i] = dropControls(expandTabs(l))
-	}
-	return lines
-}
-
 func dropControls(s string) string {
 	return strings.Map(func(r rune) rune {
 		if r < 0x20 || r == 0x7f || (r >= 0x80 && r < 0xa0) {
@@ -51,25 +36,6 @@ func dropControls(s string) string {
 		}
 		return r
 	}, s)
-}
-
-func expandTabs(s string) string {
-	if !strings.Contains(s, "\t") {
-		return s
-	}
-	var b strings.Builder
-	col := 0
-	for _, r := range s {
-		if r == '\t' {
-			n := 8 - col%8
-			b.WriteString(strings.Repeat(" ", n))
-			col += n
-			continue
-		}
-		b.WriteRune(r)
-		col++
-	}
-	return b.String()
 }
 
 func capGraphemes(s string, n int) string {

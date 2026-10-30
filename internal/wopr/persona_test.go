@@ -267,43 +267,39 @@ func TestFilmPath(t *testing.T) {
 	golden.AssertString(t, "film_path", s.Transcript())
 }
 
-// Walking away from the climax's tic-tac-toe is walking away from the war too.
-func TestAbandonedClimax(t *testing.T) {
-	t.Parallel()
-	s := loggedOn(t, catalog.Registry())
-	s.Type("play global thermonuclear war").Type("play global thermonuclear war")
-	s.Type("2").Type("Las Vegas").Type("").Type("").Type("").Type("").Type("").Type("tic-tac-toe")
-	if !s.Contains("ONE OR TWO PLAYERS?") {
-		t.Fatalf("the climax tic-tac-toe should be running:\n%s", s.Transcript())
-	}
-	s.Esc().Esc()
-	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
-		t.Fatalf("Esc twice at the climax:\n%s", s.Transcript())
-	}
-}
-
-// Esc twice at a strike prompt walks away from the war mid-exchange.
-func TestAbandonedMidExchange(t *testing.T) {
-	t.Parallel()
-	s := loggedOn(t, catalog.Registry())
-	s.Type("play global thermonuclear war").Type("play global thermonuclear war")
-	s.Type("2").Type("Las Vegas").Type("")
-	if asking, p := s.Asking(); !asking || !strings.HasPrefix(p, "STRIKE 2 OF 3") {
-		t.Fatalf("the second strike should be asking, not %q:\n%s", p, s.Transcript())
-	}
-	s.Esc().Esc()
-	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
-		t.Fatalf("Esc twice at a strike prompt:\n%s", s.Transcript())
-	}
-}
-
-// Walking away from the war gets its own remark.
+// Walking away from the war gets its own remark, wherever the player leaves it: at its first
+// question, at a strike prompt mid-exchange, or at the climax's tic-tac-toe.
 func TestAbandonedWar(t *testing.T) {
 	t.Parallel()
-	s := loggedOn(t, catalog.Registry())
-	s.Type("play global thermonuclear war").Type("play global thermonuclear war").Esc().Esc()
-	if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
-		t.Errorf("transcript:\n%s", s.Transcript())
+	for _, tc := range []struct {
+		name  string
+		lines []string
+		at    func(*testkit.Session) bool // the war is where the case leaves it
+	}{
+		{"at once", nil, func(*testkit.Session) bool { return true }},
+		{"mid-exchange", []string{"2", "Las Vegas", ""}, func(s *testkit.Session) bool {
+			asking, p := s.Asking()
+			return asking && strings.HasPrefix(p, "STRIKE 2 OF 3")
+		}},
+		{"at the climax", []string{"2", "Las Vegas", "", "", "", "", "", "tic-tac-toe"}, func(s *testkit.Session) bool {
+			return s.Contains("ONE OR TWO PLAYERS?")
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			s := loggedOn(t, catalog.Registry())
+			s.Type("play global thermonuclear war").Type("play global thermonuclear war")
+			for _, l := range tc.lines {
+				s.Type(l)
+			}
+			if !tc.at(s) {
+				t.Fatalf("the war is not where the case leaves it:\n%s", s.Transcript())
+			}
+			s.Esc().Esc()
+			if !s.Contains("THE WAR WAS ABANDONED") || s.Runner().Depth() != 1 {
+				t.Fatalf("Esc twice:\n%s", s.Transcript())
+			}
+		})
 	}
 }
 

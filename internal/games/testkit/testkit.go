@@ -11,7 +11,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 	"unicode/utf8"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -26,7 +25,6 @@ type Session struct {
 	lines  []string
 	prompt string
 	asking bool
-	keys   bool
 	exited bool
 	open   bool // the last line printed was left open (Say.Open): the next print continues it
 	held   bool // a program holds output (Hold)
@@ -81,20 +79,11 @@ func (s *Session) Esc() *Session {
 	return s
 }
 
-// Advance moves the clock forward.
-func (s *Session) Advance(d time.Duration) *Session {
-	s.apply(s.r.Advance(d))
-	return s
-}
-
 // Asking reports whether a line is expected, and with which prompt.
 func (s *Session) Asking() (bool, string) { return s.asking, s.prompt }
 
 // Exited reports whether the session ended.
 func (s *Session) Exited() bool { return s.exited }
-
-// Keys reports whether the running program is in key mode.
-func (s *Session) Keys() bool { return s.keys }
 
 // Held reports whether a program holds output (Hold).
 func (s *Session) Held() bool { return s.held }
@@ -147,9 +136,9 @@ func (s *Session) apply(effects []host.Effect) {
 			s.lines = append(s.lines, "[CLEAR]")
 			s.open = false
 		case host.AskLine:
-			s.asking, s.prompt, s.keys = true, e.Prompt, false
+			s.asking, s.prompt = true, e.Prompt
 		case host.AskKeys:
-			s.asking, s.keys = false, true
+			s.asking = false
 		case host.Notice:
 			if e.Text != "" {
 				s.lines = append(s.lines, "[NOTICE] "+e.Text)

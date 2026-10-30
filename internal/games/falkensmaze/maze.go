@@ -151,20 +151,6 @@ func (m *maze) component(c int) []bool {
 	return in
 }
 
-// passages counts the open passages; a perfect maze has cells-1.
-func (m *maze) passages() int {
-	n := 0
-	for c := range m.cells() {
-		if m.east[c] {
-			n++
-		}
-		if m.south[c] {
-			n++
-		}
-	}
-	return n
-}
-
 // dirTo is the direction from cell a to its neighbour b.
 func (m *maze) dirTo(a, b int) int {
 	for d := range 4 {
