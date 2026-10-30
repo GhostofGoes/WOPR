@@ -50,6 +50,9 @@ type Options struct {
 	Panel        Panel  // the front-panel row
 	Registry     *games.Registry
 	Log          *debuglog.Log // nil: no debug log
+	// Lockdown, if set, runs once the terminal is open and set up, before the first frame:
+	// the point after which wopr opens no file and starts no program (internal/sandbox).
+	Lockdown func()
 }
 
 // Panel says whether the front-panel row is shown.
@@ -183,7 +186,14 @@ func newModel(opts Options, sched Scheduler) *model {
 	return m
 }
 
-func (m *model) Init() tea.Cmd { return nil }
+// Init runs after Bubble Tea has opened the terminal, read terminfo and started the input
+// reader, so it is where the process gives up what it no longer needs.
+func (m *model) Init() tea.Cmd {
+	if m.opts.Lockdown != nil {
+		m.opts.Lockdown()
+	}
+	return nil
+}
 
 // tooSmall reports whether the terminal is below the minimum size.
 func (m *model) tooSmall() bool { return m.w < MinWidth || m.h < MinHeight }

@@ -9,6 +9,9 @@
 //
 //	go run ./internal/tools/stage [-archives] [-assets dir] [-dist dist] [-out stage]
 //
+// It checks every Linux program (programs.go): it must be static, and Go must have built it
+// without cgo, which turns off most of the sandbox.
+//
 // With -archives it also checks that every release archive contains the files the
 // licences require (LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt) and README.md, and that
 // the Linux and macOS archives (tar.gz) carry the manual page, wopr.6, which the Windows
@@ -107,6 +110,12 @@ func run(dist, out string, checkArchives bool, assets string) error {
 		switch {
 		case a.bare(): // the same binary again; assemble copies it
 		case a.Type == "Binary":
+			if a.Goos == "linux" {
+				if err := checkLinuxProgram(a.Path, a.Goarch); err != nil {
+					return fmt.Errorf("%s/%s: %s: %w", a.Goos, a.Goarch, a.Path, err)
+				}
+				fmt.Println("program ok (static, no cgo):", a.Path)
+			}
 			if err := stageTarget(a, out); err != nil {
 				return fmt.Errorf("%s/%s: %w", a.Goos, a.Goarch, err)
 			}

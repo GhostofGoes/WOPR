@@ -254,15 +254,16 @@ PR (AR-1, IM-4).
   come before the subtrees that contain them.
 - Every package may import the standard library, except for three fenced packages. `net/http` is for `llm`
   only. `os/exec` is for `cmd/wopr` (whose macOS build reopens the app in Terminal), `tools/...`, `archtest`
-  and `e2e` only. No package may import `unsafe`.
+  and `e2e` only. Only `sandbox` may import `unsafe` (§8, "Process hardening").
 - **Test-only imports.** Any package's tests may also import `golden`, `games/catalog`, `games/gamestest`,
   `games/testkit` and `proto/host` (to configure testkit's runner). No non-test file may import `gamestest` or
   `testkit` (G-5).
 
 ```text
 . (legal.go)         → stdlib                         embeds LICENSE, NOTICE.md, THIRD_PARTY_NOTICES.txt (SL-3)
-cmd/wopr             → ., cli, ui, version, debuglog, scrubenv, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
+cmd/wopr             → ., cli, ui, version, debuglog, sandbox, scrubenv, games/catalog, (llm in M7); plus os/exec (macOS relaunch)
 internal/debuglog    → stdlib                         the opt-in debug log (§8)
+internal/sandbox     → golang.org/x/sys/unix          Linux process hardening (§8); plus unsafe
 internal/scrubenv    → os only                        clears the libraries' TMUX, TEA_TRACE, TEA_DEBUG, UV_DEBUG in init (§8)
 internal/version     → stdlib
 internal/cli         → games, theme (--theme validation), version, movie (the scene index)
@@ -1682,6 +1683,74 @@ classified address it leads to.
     The review found nothing else to remove: the other variables the libraries read (`COLORTERM`,
     `TERM_PROGRAM`, `TERMINFO`, `LANG` and the like) only choose colours, widths and keys, and the Go
     runtime's own (`GODEBUG`, `GOTRACEBACK`) are read before any package's `init`.
+- **Process hardening** (Linux, `internal/sandbox`): once Bubble Tea has opened the terminal, read terminfo and
+  started the input reader (the model's `Init`), `ui.Options.Lockdown` calls `sandbox.Restrict`. In order:
+  - It loads the local time zone, which Go reads from `/etc/localtime` on first use.
+  - It sets `no_new_privs`.
+  - It clears every capability set. The drop always runs, even when `capget` reports none: AppArmor's
+    profile for an unprivileged user namespace (Ubuntu 24.04) hides capabilities that `/proc` shows. The log
+    says "capabilities dropped" when `capget` showed some (wopr run as root, say).
+  - It enters a Landlock domain that handles every right the kernel's ABI knows and has no rules: no file
+    may be opened, created, removed or run, and (ABI 4) no TCP socket bound or connected. Abstract UNIX
+    sockets outside the domain are out of reach (ABI 6). Signal scoping is left off: each thread gets its own
+    domain, and kernels without the fix that allows signals inside a process would block the runtime's own.
+  - It installs a seccomp filter on every thread (`SECCOMP_FILTER_FLAG_TSYNC`). The filter is a denylist.
+    After the lockdown, wopr only reads the terminal, writes the screen and the log, waits, signals itself
+    and starts threads. The filter refuses, with `EPERM`:
+    - Running a program: `execve`, `execveat`, `memfd_create` and `memfd_secret`. Landlock alone does not
+      stop a program that runs from a memfd.
+    - Starting a process: `fork`, `vfork`, and a `clone` without `CLONE_THREAD` or with a `CLONE_NEW*` flag.
+      `clone3` gets `ENOSYS`, so that a caller falls back to `clone`, which the filter can read.
+    - Every socket: `socket` and `socketpair`. Landlock covers TCP only, and not MPTCP, UDP or UNIX sockets.
+    - File metadata, which Landlock does not cover: the `chmod`, `chown`, `*xattr`, `utime*` and
+      `file_setattr` calls, and `truncate` (Landlock covers it from ABI 3 only). Run as root, wopr owns every
+      root-owned file, and a mode needs only ownership.
+    - Other processes: `ptrace`, `process_vm_readv`, `process_vm_writev`, `pidfd_getfd`,
+      `pidfd_send_signal`, `kcmp`, `tkill`, `process_madvise` and `process_mrelease`. `kill`, `tgkill`,
+      `rt_sigqueueinfo` and `rt_tgsigqueueinfo` may only name wopr itself. `kill(0, …)`, its own process
+      group, may only send Ctrl+Z's `SIGTSTP` or signal 0. `prlimit64` may only name wopr itself.
+      Opening `/proc/<pid>/mem` is Landlock's to refuse, so a kernel without Landlock allows it to a
+      process of the same user that is not otherwise protected.
+    - Other processes' scheduling and memory placement, which the kernel allows for the same user:
+      `sched_setaffinity`, `sched_setscheduler`, `sched_setparam`, `sched_setattr`, `setpriority`,
+      `ioprio_set`, `migrate_pages` and `move_pages`.
+    - Naming a process, and a signal, for `SIGIO`: `fcntl`'s `F_SETOWN`, `F_SETOWN_EX` and `F_SETSIG`, and
+      the `FIOSETOWN` and `SIOCSPGRP` ioctls. The kernel would signal that process, of the same user, each
+      time a file became ready.
+    - The `TIOCSTI` and `TIOCLINUX` ioctls, which push input into the terminal.
+    - Kernel interfaces that exploits use and wopr never needs: io_uring, `bpf`, `perf_event_open`,
+      `userfaultfd`, the keyrings, `personality`, namespaces, mounts, file handles, modules, `kexec`,
+      `reboot`, the clocks and host names, and the Landlock and seccomp calls themselves.
+
+    A call from another ABI (i386 or x32) kills the process (`SECCOMP_RET_KILL_PROCESS`, so the filter
+    needs Linux 4.14 or later). Every other call is allowed. The tables of
+    numbers for amd64 and arm64 are data, so both filters are built and checked on any host.
+  - Files opened before (the terminal, the debug log, the runtime's cgroup files) keep working.
+
+  The capability drop and Landlock must reach every thread, so those calls go through
+  `syscall.AllThreadsSyscall6`, which works only without cgo. A cgo build still sets `no_new_privs` and
+  installs the filter on every thread, because TSYNC applies both. It has no capability drop and no
+  Landlock. A kernel without Landlock (before 5.13, or not enabled) runs with what it can get. The debug
+  log's `sandbox:` line says what that was. It never stops wopr. `internal/sandbox` is the only package
+  allowed `unsafe` (§4.1): Landlock, `capset` and `seccomp` take pointers that `golang.org/x/sys/unix`
+  does not wrap.
+
+  The tests check each layer three ways. On one locked thread, each refusal must come from the layer
+  that should give it: the filter refuses with an errno that the kernel never gives for those calls, and
+  each probe is a call that the kernel itself would allow or answer with another errno. An interpreter
+  runs the filter's program for both architectures. A child process runs the real `Restrict`, and the
+  test reads `/proc` for every one of its threads, those made after the lockdown too. Every thread runs
+  every filter probe, and the child sends Ctrl+Z's `SIGTSTP` to its own process group. The tests count the
+  filters that the test process already has (a container's, say), so a run inside one still checks that
+  wopr adds exactly one. The e2e tests check the real binary: every thread's status, a chess game, a resize, a
+  suspend, SIGTERM, the colours and the debug log's lines after the lockdown. CI's `sandbox` job runs them
+  on amd64 and arm64, as a user and as root, with `WOPR_SANDBOX_REQUIRE=1` so that a missing kernel
+  feature fails. The smoke jobs run the e2e tests again against the installed `.deb`'s program, and
+  `internal/tools/stage` checks that every Linux program is static and built without cgo, which would
+  turn off the capability drop and Landlock. A position-independent build for the packages was
+  considered and declined (owner's decision, 2026-10-29): Go makes a static PIE only with cgo, so a PIE
+  would need glibc's loader, and every Linux download stays one static program. Not done yet: the M7 LLM brain, which will need one Landlock rule for TCP port 443, a
+  socket that the filter allows, and its files loaded before the lockdown.
 
 ---
 

@@ -45,8 +45,9 @@ var testAllow = map[string][]string{
 // packages come before the subtrees that contain them.
 var rules = []rule{
 	{".", nil},
-	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/debuglog", "internal/games/catalog", "internal/llm", "internal/scrubenv"}},
+	{"cmd/wopr", []string{".", "internal/cli", "internal/ui", "internal/version", "internal/debuglog", "internal/games/catalog", "internal/sandbox", "internal/llm", "internal/scrubenv"}},
 	{"internal/debuglog", nil},
+	{"internal/sandbox", []string{"golang.org/x/sys/unix"}},
 	{"internal/scrubenv", nil},
 	{"internal/version", nil},
 	{"internal/cli", []string{"internal/games", "internal/theme", "internal/movie", "internal/version"}},
@@ -95,7 +96,7 @@ var rules = []rule{
 var stdBans = map[string][]string{ // std package -> packages allowed to import it
 	"net/http": {"internal/llm"},
 	"os/exec":  {"cmd/wopr", "internal/tools/...", "internal/archtest", "internal/e2e"}, // cmd/wopr: the macOS app reopens itself in Terminal
-	"unsafe":   {},
+	"unsafe":   {"internal/sandbox"},                                                    // Landlock and capset take pointers that golang.org/x/sys/unix does not wrap
 }
 
 type listed struct {

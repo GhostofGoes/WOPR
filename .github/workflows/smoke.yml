@@ -47,6 +47,7 @@ jobs:
         if: runner.os != 'Windows'
         env:
           TARGET: ${{ matrix.target }}
+          WOPR_SANDBOX_REQUIRE: "1" # the release's Linux program must sandbox itself fully
           WOPR_E2E_TMUX: ${{ runner.os == 'Linux' && '1' || '' }}
         run: |
           chmod +x "stage/${TARGET}/wopr" "stage/${TARGET}/e2e.test"
@@ -64,7 +65,8 @@ jobs:
       # desktop-file-validate, appstreamcli, and appstream-util, whose validate-relax Fedora's
       # guidelines ask for.
       # The .deb, installed with apt as a user would. The program must be on the PATH every login
-      # gets (/etc/environment has /usr/games), the manual page must be found, the changelog must
+      # gets (/etc/environment has /usr/games), must pass the e2e tests, the manual page must be
+      # found, the changelog must
       # start with this version, the menu entry (which starts /usr/games/wopr), the icon in every
       # size and the AppStream metadata must be in place and valid, and removing the package must
       # leave nothing behind.
@@ -92,6 +94,8 @@ jobs:
             exit 1
           fi
           env PATH="${login_path}" sh -c 'command -v wopr && wopr --version'
+          # The whole e2e suite again, against the installed program, which must sandbox itself fully.
+          WOPR_SANDBOX_REQUIRE=1 "stage/${TARGET}/e2e.test" -test.v -test.timeout=5m -binary /usr/games/wopr
           man -w wopr
           version="$(dpkg-query -W -f='${Version}' wopr)"
           zcat /usr/share/doc/wopr/changelog.Debian.gz | sed -n 1p | grep -F "wopr (${version}) "

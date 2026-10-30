@@ -541,3 +541,16 @@ func TestPanelGameStartsOnANewPage(t *testing.T) {
 	d.settle()
 	clean(d, "gin, paced", append(before, "gin rummy"), "STOCK OR DISCARD?")
 }
+
+// Init runs the lockdown once, and a model without one starts as before.
+func TestInitRunsLockdown(t *testing.T) {
+	calls := 0
+	opts := instant()
+	opts.Lockdown = func() { calls++ }
+	if cmd := newModel(opts, teaScheduler).Init(); cmd != nil || calls != 1 {
+		t.Errorf("Init: cmd %v, lockdown ran %d times; want nil and once", cmd, calls)
+	}
+	if cmd := newModel(instant(), teaScheduler).Init(); cmd != nil {
+		t.Errorf("Init without a lockdown: cmd %v, want nil", cmd)
+	}
+}

@@ -117,7 +117,8 @@ its `9.x/stable` channel, and `snap.yml` installs review-tools from `latest/stab
 - **Linux packages.** `.goreleaser.yaml`'s `nfpms` build a `.deb` and an `.rpm` for each Linux build
   (`docs/PLAN.md` §8). The `.deb` follows Debian Policy: the program in `/usr/games`, the manual page in
   section 6, the documents in `/usr/share/doc/wopr`. The `.rpm` follows Fedora: `/usr/bin`, `%license`,
-  `%doc`. `stage -archives` checks what each installs. `relnotes`'s tests check that the packages'
+  `%doc`. `stage` checks that every Linux program is static and built without cgo, which the sandbox
+  needs. `stage -archives` checks what each installs. `relnotes`'s tests check that the packages'
   maintainer and release match the changelogs it writes. Change both together. `pkgdocs` writes the
   packages' documents and their `changelog.yml` into `build/pkg`. Its tests check
   `packaging/description.txt`, both packages' description, against both formats' rules. Both packages
