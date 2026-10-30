@@ -1,3 +1,0 @@
-kind: Fixed
-body: Fixed uninstalling WOPR on Windows removing a shared folder from `PATH`.
-time: 2026-10-29T05:16:28.380233012Z

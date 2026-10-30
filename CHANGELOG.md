@@ -7,6 +7,25 @@ All notable changes to wopr, newest first. The format follows
 [changie](https://changie.dev) generates this file from the notes in the repository's `.changes/` folder.
 Edit those notes, not this file.
 
+## v0.6.2 - 2026-10-30
+
+### Changed
+
+- The debug log is emptied when it grows past 5 MB.
+- The Windows uninstaller now asks you to close WOPR if it is running.
+
+### Fixed
+
+- Fixed uninstalling WOPR on Windows removing a shared folder from `PATH`.
+- Fixed the Windows installer damaging some unusual `PATH` settings.
+- Fixed the Windows installer refusing to run while another user runs it.
+
+### Security
+
+- On Linux, WOPR now runs with fewer permissions (Landlock and seccomp).
+- WOPR no longer runs `tmux info` on startup or writes library trace files.
+- Fixed a hang when `TERM` holds a file path.
+
 ## v0.6.1 - 2026-10-12
 
 ### Added
