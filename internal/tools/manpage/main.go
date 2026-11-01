@@ -198,6 +198,11 @@ func writeIntro(p *page) {
 	p.macro("RB", "[", "--only", "]")
 	p.macro("RI", "[", "options", "]")
 	p.macro("RI", "[", "scene", "]")
+	p.line(".br")
+	p.macro("B", "wopr")
+	p.macro("B", "--scenario")
+	p.macro("RI", "[", "options", "]")
+	p.macro("RI", "[", "scenario", "]")
 
 	p.macro("SH", "DESCRIPTION")
 	p.macro("B", "wopr")
@@ -234,6 +239,23 @@ var optionDetails = map[string]string{
 		"The games' searches then stop at a fixed depth. Movie mode ignores the seed.",
 	"reduce-motion": "Stop the blinking, hold the front panel's lights still, and keep the ending at a steady pace. " +
 		"The typing and the animations still play. `--instant` skips them.",
+	"launch-window": "Give each strike order in Global Thermonuclear War a time limit. The board shows the seconds that are left. " +
+		"At zero, WOPR takes launch authority, as `AUTO` gives it. Alone, `--launch-window` gives 30 seconds. " +
+		"`--launch-window=`<secs> gives 5 to 999 seconds, and 0 turns the limit off. " +
+		"`--instant` does not stop the clock. Movie mode gives no orders, so `--movie` refuses this option.",
+	"no-climax": "In Global Thermonuclear War, skip the launch code at the end of the war. " +
+		"After the kill ratios, press Enter. WOPR shows what your orders changed again, and asks ANOTHER WAR, PROFESSOR? " +
+		"Yes or Enter starts a new war at the side choice. No ends the game, and WOPR says WINNER: NONE. " +
+		"The film's war ends with the launch code, so `--movie` refuses this option.",
+	"authentic": "Play Global Thermonuclear War as the film shows it. The console and the lines under the big board show only the film's own text. " +
+		"The big board is the same as in other wars. " +
+		"The side prompt has two choices, and the targets prompt says nothing back. Nobody gives orders: WOPR fires its war plan at every strike. " +
+		"Three seconds after DEFCON 1, the kill ratios show for eight seconds, and then the climax starts. No key holds them. The climax gives no hints. " +
+		"`--instant` does not skip these pauses. `--movie`, `--scenario`, `--launch-window` and `--no-climax` refuse this option.",
+	"scenario": "Watch a scenario of the film's closing montage play itself in Global Thermonuclear War. After the kill ratios, Enter opens the menu of scenarios. " +
+		"Name the <scenario> by its number or its name, after a space or an equals sign: `wopr -c 2`, `wopr -c far east strategy`. " +
+		"With `--instant`, press Enter after the briefing to open the board. " +
+		"Alone, `--scenario` lists the scenarios, then exits. It takes no game but Global Thermonuclear War (`wopr gtw -c 2`), and `--movie` refuses it.",
 }
 
 func writeOptions(p *page) error {
@@ -251,7 +273,10 @@ func writeOptions(p *page) error {
 		}
 		p.macro("TP")
 		short, long := "`-"+f.Short+"`", "`--"+f.Long+"`"
-		if f.Arg != "" {
+		switch {
+		case strings.HasPrefix(f.Arg, "="): // a value that may be left out, shown once as the help does
+			long += "[=<" + strings.TrimPrefix(f.Arg, "=") + ">]"
+		case f.Arg != "":
 			short, long = short+" <"+f.Arg+">", long+" <"+f.Arg+">"
 		}
 		p.line(p.phrase(short + ", " + long))
@@ -267,7 +292,8 @@ func writeOptions(p *page) error {
 }
 
 func themeDetail() string {
-	return fmt.Sprintf("Use the colour theme <name>: %s. The default is `%s`. The `norad` theme also shows the front panel.",
+	return fmt.Sprintf("Use the colour theme <name>: %s. The default is `%s`. In every theme, the big board "+
+		"of Global Thermonuclear War uses the colours of `norad`. The `norad` theme also shows the front panel.",
 		joinAnd(bold(theme.Names()), "or"), theme.Default)
 }
 

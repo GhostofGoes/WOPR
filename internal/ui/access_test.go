@@ -67,11 +67,13 @@ var playbooks = map[string]playbook{
 	"air-to-ground-actions":        {inputs: []string{"target 1 strike 2 sead 2 escort 2", "go"}, cycle: true, steps: 16},
 	"theaterwide-tactical-warfare": {inputs: []string{"attack 4", "escalate", "hold", "end"}, cycle: true, steps: 30},
 	"theaterwide-biotoxic-and-chemical-warfare": {inputs: []string{"release 4", "decon", "hold", "end"}, cycle: true, steps: 30},
-	// The film's path: the big board to DEFCON 1, the kill ratios, the climax, tic-tac-toe
+	// The scenario menu's pages, a refusal and one scenario playing itself back to the menu.
+	// Then the film's path: the big board to DEFCON 1, the kill ratios, the climax, tic-tac-toe
 	// with zero players, and the ending.
 	"global-thermonuclear-war": {inputs: []string{
+		"3", "next", "prev", "nowhere", "12", "", "", "",
 		"2", "Las Vegas", "Seattle", "", "", "", "", "", "List Games", "Chess", "Tic-Tac-Toe", "0", "Hello.",
-	}, want: []string{">|", "HUMAN RESOURCES"}}, // the pointer at the current DEFCON level; the ratios
+	}, want: []string{"CUBAN PROVOCATION", ">|", "HUMAN RESOURCES"}}, // the playback's board; the DEFCON pointer; the ratios
 	"tic-tac-toe": {inputs: []string{"1", "5", "1", "3", "7", "9", "2", "8", "4", "6"}},
 }
 
@@ -109,6 +111,19 @@ func sweepCases() []sweepCase {
 		{"movie menu", func(o Options) Options { o.Movie = true; return o }, playbook{inputs: []string{"nowhere", "c", "q"}}, false},
 		// The whole film, from the first scene to the end of the list.
 		{"movie", func(o Options) Options { o.Movie, o.Scene = true, "first-contact"; return o }, playbook{}, true},
+		// --no-climax: a war to the kill ratios, the ANOTHER WAR prompt and its refusal, a second
+		// war, and no.
+		{"gtw --no-climax", func(o Options) Options { o.Play, o.NoClimax = "global-thermonuclear-war", true; return o }, playbook{
+			inputs: []string{"2", "Las Vegas", "", "", "", "", "", "maybe", "yes", "1", "Moscow", "", "", "", "", "", "no"},
+			want:   []string{"HUMAN RESOURCES"},
+		}, false},
+		// --authentic: the film's side choice, refusing the third choice; targets, one of them
+		// unknown; the war, the kill ratios and the climax on the clock; then the film's climax
+		// to the ending.
+		{"gtw --authentic", func(o Options) Options { o.Play, o.Authentic = "global-thermonuclear-war", true; return o }, playbook{
+			inputs: []string{"3", "2", "Las Vegas", "Smallville", "", "List Games", "Chess", "stop", "Tic-Tac-Toe", "0", "Hello."},
+			want:   []string{">|", "LAUNCH CODE"},
+		}, false},
 	}
 	for _, e := range catalog.Registry().All() {
 		if e.Info.Status != games.Playable {
@@ -272,14 +287,15 @@ func inspectScreen(t *testing.T, label string, d *driver) {
 	}
 
 	// Without colour (NO_COLOR, a monochrome terminal) nothing is lost. In every theme the
-	// screen carries no colour at all, and where the program's view draws both styles of a
-	// pair whose difference carries meaning (theme.Distinct), they still look different, each
-	// cell with its own attributes. The text is the same as in colour: a guard, since nothing
-	// yet chooses characters by profile.
-	th, profile := m.th, m.profile
-	defer func() { m.th, m.profile = th, profile }()
+	// screen carries no colour at all, the big board included, and where the program's view
+	// draws both styles of a pair whose difference carries meaning (theme.Distinct), they still
+	// look different, each cell with its own attributes. The text is the same as in colour: a
+	// guard, since nothing yet chooses characters by profile.
+	th, board, profile := m.th, m.board, m.profile
+	defer func() { m.th, m.board, m.profile = th, board, profile }()
 	for _, name := range theme.Names() {
 		m.th, _ = theme.Get(name)
+		m.board = theme.Board(m.th.Background)
 		m.profile = colorprofile.TrueColor
 		coloured := ansi.Strip(m.View().Content)
 		m.profile = colorprofile.ASCII

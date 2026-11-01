@@ -31,6 +31,16 @@ type Env struct {
 	Deterministic bool   // --seed or WOPR_SEED, tests, movie mode: searches obey Limit, not the clock
 	ReduceMotion  bool   // --reduce-motion: no acceleration, no blinking
 	Mode          string // optional launch mode, e.g. "climax"
+	// LaunchWindow is --launch-window: how long GTW's strike prompts wait for an order before
+	// WOPR takes launch authority. 0 waits for ever (the default, and always in movie mode).
+	LaunchWindow time.Duration
+	// NoClimax is --no-climax: after the kill ratios, GTW offers another war instead of the
+	// climax. Always false in movie mode.
+	NoClimax bool
+	// Authentic is --authentic: GTW shows only what the film shows, and its war runs by itself
+	// on the war plan. It wins over LaunchWindow, NoClimax and a scenario's Mode. Always false
+	// in movie mode.
+	Authentic bool
 }
 
 // Layout says where a program's View goes.

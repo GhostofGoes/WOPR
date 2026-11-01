@@ -54,7 +54,7 @@ var (
 	lineGreetings = script.FromFilm("GREETINGS PROFESSOR FALKEN.")
 	lineStrange   = script.FromFilm("A STRANGE GAME.", "THE ONLY WINNING MOVE IS", "NOT TO PLAY.")
 	lineChess     = script.FromFilm("", "HOW ABOUT A NICE GAME OF CHESS?")
-	lineStrategy  = script.FromFilm("STRATEGY:", "WINNER:", "NONE") // the montage's headings and every row's result
+	lineStrategy  = assets.Strategy // the montage's headings and every row's result, which GTW shares
 	lineSelfPlay  = script.Orig("LEARNING...")
 	lineCodeLabel = script.Orig("LAUNCH CODE: ")
 	lineCode      = script.FromFilm("CPE1704TKS")

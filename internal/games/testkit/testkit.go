@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 	"unicode/utf8"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
@@ -25,6 +26,7 @@ type Session struct {
 	lines  []string
 	prompt string
 	asking bool
+	keys   bool
 	exited bool
 	open   bool // the last line printed was left open (Say.Open): the next print continues it
 	held   bool // a program holds output (Hold)
@@ -79,11 +81,20 @@ func (s *Session) Esc() *Session {
 	return s
 }
 
+// Advance moves the clock forward.
+func (s *Session) Advance(d time.Duration) *Session {
+	s.apply(s.r.Advance(d))
+	return s
+}
+
 // Asking reports whether a line is expected, and with which prompt.
 func (s *Session) Asking() (bool, string) { return s.asking, s.prompt }
 
 // Exited reports whether the session ended.
 func (s *Session) Exited() bool { return s.exited }
+
+// Keys reports whether the running program is in key mode.
+func (s *Session) Keys() bool { return s.keys }
 
 // Held reports whether a program holds output (Hold).
 func (s *Session) Held() bool { return s.held }
@@ -136,9 +147,9 @@ func (s *Session) apply(effects []host.Effect) {
 			s.lines = append(s.lines, "[CLEAR]")
 			s.open = false
 		case host.AskLine:
-			s.asking, s.prompt = true, e.Prompt
+			s.asking, s.prompt, s.keys = true, e.Prompt, false
 		case host.AskKeys:
-			s.asking = false
+			s.asking, s.keys = false, true
 		case host.Notice:
 			if e.Text != "" {
 				s.lines = append(s.lines, "[NOTICE] "+e.Text)
@@ -199,18 +210,22 @@ type GameSession struct {
 // GameOver.
 func Game(t testing.TB, game proto.Program, info games.Info, mode string, seed uint64) *GameSession {
 	t.Helper()
+	return GameWith(t, game, info, mode, host.Config{Seed: seed})
+}
+
+// GameWith is Game under a host configured by cfg, such as one that passes a command-line
+// option on in the game's Env. Game's resolver replaces cfg.Resolve.
+func GameWith(t testing.TB, game proto.Program, info games.Info, mode string, cfg host.Config) *GameSession {
+	t.Helper()
 	gs := &GameSession{root: &standIn{slug: info.Slug, mode: mode}}
 	built := false
-	cfg := host.Config{
-		Seed: seed,
-		Resolve: func(l proto.Launch) (proto.Program, host.Placement, error) {
-			gs.launches = append(gs.launches, l.Slug)
-			if l.Slug != info.Slug || built {
-				return nil, host.Placement{}, games.ErrNotFound
-			}
-			built = true
-			return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows, NoAbort: info.Internal}, nil
-		},
+	cfg.Resolve = func(l proto.Launch) (proto.Program, host.Placement, error) {
+		gs.launches = append(gs.launches, l.Slug)
+		if l.Slug != info.Slug || built {
+			return nil, host.Placement{}, games.ErrNotFound
+		}
+		built = true
+		return game, host.Placement{Layout: info.Layout, PanelRows: info.PanelRows, NoAbort: info.Internal}, nil
 	}
 	gs.Session = Start(t, gs.root, host.Placement{}, cfg)
 	return gs

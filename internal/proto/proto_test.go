@@ -61,6 +61,9 @@ func TestNewRandIsStable(t *testing.T) {
 	if GameStream("chess", 0)&(0xff<<56) != DomainGame {
 		t.Error("game stream must sit in the game domain")
 	}
+	if LaunchSeed(1, "chess", 1) != NewRand(1, GameStream("chess", 1)).Uint64() || LaunchSeed(1, "chess", 0) == LaunchSeed(1, "chess", 1) {
+		t.Error("a launch's seed is the first draw of its game stream")
+	}
 }
 
 func TestPaceSpeeds(t *testing.T) {

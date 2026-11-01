@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/GhostofGoes/WOPR/internal/games"
+	"github.com/GhostofGoes/WOPR/internal/games/gtw"
 	"github.com/GhostofGoes/WOPR/internal/movie"
 )
 
@@ -66,6 +67,19 @@ func sceneList() string {
 	return b.String()
 }
 
+// RenderScenarios writes the plain-text list of GTW's scenarios for --scenario alone: the
+// closing montage's strategies, numbered as GTW's scenario menu numbers them.
+func RenderScenarios(w io.Writer) error {
+	var b strings.Builder
+	for i, name := range gtw.Scenarios() {
+		fmt.Fprintf(&b, "%3d. %s\n", i+1, name)
+	}
+	b.WriteString("\nWatch one play itself with wopr --scenario <number or name>.\n" +
+		"In GTW, 3 at the side choice opens the same list.\n")
+	_, err := io.WriteString(w, b.String())
+	return err
+}
+
 // Handle is the shortest name a game answers to: its slug or its shortest alias.
 func Handle(in games.Info) string {
 	h := in.Slug
@@ -84,10 +98,13 @@ const DocsURL = "https://ghostofgoes.github.io/WOPR/"
 func RenderHelp(w io.Writer) error {
 	var b strings.Builder
 	b.WriteString("wopr: the WOPR computer from WarGames (1983), in your terminal.\n\n")
-	b.WriteString("Usage:\n  wopr [flags] [game]\n  wopr --movie [--only] [scene]\n\nFlags:\n")
+	b.WriteString("Usage:\n  wopr [flags] [game]\n  wopr --movie [--only] [scene]\n  wopr --scenario [scenario]\n\nFlags:\n")
 	for _, f := range flagPairs {
 		names := "-" + f.short + ", --" + f.long
-		if f.arg != "" {
+		switch {
+		case strings.HasPrefix(f.arg, "="):
+			names += "[" + f.arg + "]"
+		case f.arg != "":
 			names += " <" + f.arg + ">"
 		}
 		help := f.help
@@ -110,12 +127,23 @@ n or Right skips to the next scene, p or Left goes back one, and Esc opens
 the menu. The climax's games play to the end: those keys do nothing there.
 With -i the text appears at once, but the scenes still pause.
 
+With -c alone, wopr lists the scenarios of the film's closing montage. With a
+number or a name, GTW plays that scenario by itself, from a short briefing to
+the kill ratios. Enter then opens the scenario menu.
+
+With -a, GTW shows only the film's own text. You choose a side and name the
+targets. The war and the kill ratios then run by themselves, up to the climax.
+
 Examples:
   wopr                 dial in and log on
   wopr chess -i        play chess with no typewriter pacing
+  wopr gtw -w=20       play GTW with 20 seconds to give each strike order
+  wopr gtw -n          play GTW war after war, with no launch code at the end
+  wopr gtw -a          play GTW as the film shows it: a side and targets only
   wopr --games         list the games
   wopr -m 2            replay the film from scene 2 (wopr --scenes lists them)
   wopr -m joshua -o    replay just the joshua scene
+  wopr -c 2            watch GTW play USSR FIRST STRIKE
 
 Documentation, with how to play each game: ` + DocsURL + "\n")
 	_, err := io.WriteString(w, b.String())

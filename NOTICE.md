@@ -77,8 +77,9 @@ Map (C) 1998 Matthew Thomas. Freely usable if this line is included.
 
 The side-choice outlines of the United States and the Soviet Union in Global Thermonuclear War are
 original ASCII art. They were generated for this project from
-[Natural Earth](https://www.naturalearthdata.com/) country polygons (1:50m scale). Natural Earth is in
-the public domain. This credit is a courtesy.
+[Natural Earth](https://www.naturalearthdata.com/) country polygons (1:50m scale). The same polygons
+tell the big board which country holds each cell of its map, so that it can colour each nation's land.
+Natural Earth is in the public domain. This credit is a courtesy.
 
 ## Earlier drafts
 

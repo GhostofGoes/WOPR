@@ -4,6 +4,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/GhostofGoes/WOPR/internal/games/gamestest"
 	"github.com/GhostofGoes/WOPR/internal/golden"
 	"github.com/GhostofGoes/WOPR/internal/proto"
+	"github.com/GhostofGoes/WOPR/internal/theme"
 )
 
 func instant() Options {
@@ -280,6 +282,58 @@ func TestGTWScreens(t *testing.T) {
 	d.line("Chess")
 	s.add("climax: the board again", d)
 	golden.AssertString(t, "gtw_screens", s.String())
+}
+
+// The big board is in the war room's colours whatever the theme, while the console and the
+// games in a panel keep the theme: in the film the NORAD screens are in colour and WOPR's
+// terminal is not. Without colour (NO_COLOR, a monochrome terminal) the board draws in the
+// console's theme, as it always has.
+func TestBigBoardColours(t *testing.T) {
+	t.Parallel()
+	norad, _ := theme.Get("norad")
+	fg := func(th *theme.Theme, s proto.Style) string { // the truecolor SGR of a style's colour
+		var r, g, b int
+		if _, err := fmt.Sscanf(th.Styles[s].FG.Hex, "#%02x%02x%02x", &r, &g, &b); err != nil {
+			t.Fatal(err)
+		}
+		return fmt.Sprintf("38;2;%d;%d;%d", r, g, b)
+	}
+	sovietLand, noradText := fg(norad, proto.StyleLandUSSR), fg(norad, proto.StyleText)
+	board := func(opts Options) (d *driver, side, big string) {
+		opts.Play = "global-thermonuclear-war"
+		d = newDriver(t, opts, 80, 24).settle()
+		side = d.m.View().Content
+		d.line("2").line("Las Vegas").line("")
+		return d, side, d.m.View().Content
+	}
+	for _, name := range theme.Names() {
+		opts := instant()
+		opts.Theme = name
+		th, _ := theme.Get(name)
+		_, side, big := board(opts)
+		rows := strings.Split(big, "\n")
+		view, console := strings.Join(rows[:20], "\n"), strings.Join(rows[20:], "\n") // the view is 24 - 4 rows
+		switch {
+		case !strings.Contains(side, fg(th, proto.StyleText)) || name != "norad" && strings.Contains(side, sovietLand):
+			t.Errorf("theme %s: the side choice, in the console, is not in the theme's colours", name)
+		case !strings.Contains(view, sovietLand) || !strings.Contains(view, noradText):
+			t.Errorf("theme %s: the big board is not in norad's colours", name)
+		case !strings.Contains(console, fg(th, proto.StyleText)) || name != "norad" && strings.Contains(console, noradText):
+			t.Errorf("theme %s: the console under the big board is not in the theme's colours", name)
+		}
+	}
+	panel := instant()
+	panel.Play = "chess"
+	if chess := newDriver(t, panel, 80, 24).settle().m.View().Content; strings.Contains(chess, noradText) {
+		t.Error("the chess panel is in norad's colours: only the big board is")
+	}
+	d, _, _ := board(instant())
+	d.send(tea.ColorProfileMsg{Profile: colorprofile.ASCII})
+	plain := d.m.View().Content
+	d.m.board = d.m.th
+	if strings.Contains(plain, "38;") || plain != d.m.View().Content {
+		t.Error("without colour, the big board is not drawn in the console's theme")
+	}
 }
 
 // Every playable game starts and fits 80x24, with and without the front panel: 24 rows,

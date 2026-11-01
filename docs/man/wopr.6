@@ -15,6 +15,11 @@ wopr \- the WOPR computer from WarGames (1983), in your terminal
 .RB \%[ \-\-only ]
 .RI [ options ]
 .RI [ scene ]
+.br
+.B \%wopr
+.B \%\-\-scenario
+.RI [ options ]
+.RI [ scenario ]
 .SH DESCRIPTION
 .B \%wopr
 is a terminal recreation of the \%WOPR (War Operation Plan Response) computer
@@ -77,6 +82,8 @@ From the menu, each scene picked plays alone, then the menu returns.\&
 Use the colour theme \%\fIname\fR: \%\fBimsai\fR, \%\fBgreen\fR, \%\fBamber\fR
 or \%\fBnorad\fR.\&
 The default is \%\fBimsai\fR.\&
+In every theme, the big board of Global \%Thermonuclear War uses the colours of
+\%\fBnorad\fR.\&
 The \%\fBnorad\fR theme also shows the front panel.\&
 The environment variable \%\fBWOPR_THEME\fR sets it too.\&
 The option wins.\&
@@ -103,6 +110,50 @@ steady pace.\&
 The typing and the animations still play. \%\fB\-\-instant\fR skips them.\&
 The environment variable \%\fBWOPR_REDUCE_MOTION\fR sets it too.\&
 The option wins.\&
+.TP
+\%\fB\-w\fR, \%\fB\-\-launch\-window\fR[=\fIsecs\fR]
+Give each strike order in Global \%Thermonuclear War a time limit.\&
+The board shows the seconds that are left.\&
+At zero, \%WOPR takes launch authority, as \%\fBAUTO\fR gives it.\&
+Alone, \%\fB\-\-launch\-window\fR gives 30 seconds.\&
+\%\fB\-\-launch\-window=\fR\fIsecs\fR gives 5 to 999 seconds, and 0 turns the
+limit off. \%\fB\-\-instant\fR does not stop the clock.\&
+Movie mode gives no orders, so \%\fB\-\-movie\fR refuses this option.\&
+.TP
+\%\fB\-n\fR, \%\fB\-\-no\-climax\fR
+In Global \%Thermonuclear War, skip the launch code at the end of the war.\&
+After the kill ratios, press Enter.\&
+\%WOPR shows what your orders changed again, and asks \%ANOTHER \%WAR,
+\%PROFESSOR?\&
+Yes or Enter starts a new war at the side choice.\&
+No ends the game, and \%WOPR says \%WINNER: \%NONE.\&
+The film's war ends with the launch code, so \%\fB\-\-movie\fR refuses this
+option.\&
+.TP
+\%\fB\-a\fR, \%\fB\-\-authentic\fR
+Play Global \%Thermonuclear War as the film shows it.\&
+The console and the lines under the big board show only the film's own text.\&
+The big board is the same as in other wars.\&
+The side prompt has two choices, and the targets prompt says nothing back.\&
+Nobody gives orders: \%WOPR fires its war plan at every strike.\&
+Three seconds after \%DEFCON 1, the kill ratios show for eight seconds, and then
+the \%climax starts.\&
+No key holds them.\&
+The \%climax gives no hints. \%\fB\-\-instant\fR does not skip these pauses.\&
+\%\fB\-\-movie\fR, \%\fB\-\-scenario\fR, \%\fB\-\-launch\-window\fR and
+\%\fB\-\-no\-climax\fR refuse this option.\&
+.TP
+\%\fB\-c\fR, \%\fB\-\-scenario\fR
+Watch a scenario of the film's closing montage play itself in Global
+\%Thermonuclear War.\&
+After the kill ratios, Enter opens the menu of scenarios.\&
+Name the \%\fIscenario\fR by its number or its name, after a space or an equals
+sign: \%\fBwopr\fR \%\fB\-c\fR \fB2\fR, \%\fBwopr\fR \%\fB\-c\fR \%\fBfar\fR
+\%\fBeast\fR \%\fBstrategy\fR.\&
+With \%\fB\-\-instant\fR, press Enter after the briefing to open the board.\&
+Alone, \%\fB\-\-scenario\fR lists the scenarios, then exits.\&
+It takes no game but Global \%Thermonuclear War \%(\fBwopr\fR \%\fBgtw\fR
+\%\fB\-c\fR \fB2\fR), and \%\fB\-\-movie\fR refuses it.\&
 .SH GAMES
 .SS "1. Falken's Maze"
 Start it with
@@ -835,11 +886,15 @@ How to play:
 .IP \(bu 2
 At \%PLEASE \%CHOOSE \%ONE: type 1 for the \%UNITED \%STATES or 2 for the
 \%SOVIET \%UNION.\&
+Type 3 for \%SCENARIOS, the strategies that \%WOPR plays at the end of the
+film.\&
 .IP \(bu 2
 Name up to eight targets on the enemy's side.\&
 Type one per line, or several on a line with commas between them \%(LAS \%VEGAS,
 \%SEATTLE).\&
 \%LIST shows the enemy targets on file.\&
+\%WOPR names each new target back, with its number out of eight.\&
+It also tells you if a target is already on the list.\&
 \%WOPR refuses your own cities, and names not on file.\&
 An empty line ends the list and launches the first strike on \%WOPR's war
 plan.\&
@@ -849,19 +904,38 @@ Give the percentages of the \%ICBMs, \%SLBMs and bombers you still hold (50 25
 100).\&
 Or answer \%ALL, \%HOLD or \%AUTO.\&
 Enter uses the plan in brackets.\&
+With the \%\-\-launch\-window option, the board's last row shows the seconds
+left to give the order.\&
+At zero, \%WOPR takes launch authority, as \%AUTO gives it.\&
 .IP \(bu 2
 After each of your launches, \%WOPR launches on warning and \%DEFCON falls.\&
 The > beside the ladder marks the current level.\&
 At \%DEFCON 1, \%WOPR alone fires everything it still holds.\&
+As each strike starts, \%WOPR gives its opinion of your order on the bottom line
+of the board.\&
 .IP \(bu 2
-Press Enter for the \%PROJECTED \%KILL \%RATIOS, then Enter again.\&
+Press Enter for the \%PROJECTED \%KILL \%RATIOS.\&
+Under the table, \%WOPR tells you what your orders changed, in millions of
+dead.\&
+It compares your war with \%HOLD at both prompts, and with the war plan.\&
+Press Enter again.\&
 The board returns at \%DEFCON 1 while \%WOPR cracks the launch code.\&
 \%WOPR refuses every request to stop.\&
-.IP \(bu 2
-\%WOPR accepts only \%TIC\-TAC\-TOE.\&
+It accepts only \%TIC\-TAC\-TOE.\&
 Answer 0 at \%PLEASE \%LIST \%NUMBER \%OF \%PLAYERS: and \%WOPR plays itself to
 the film's ending.\&
 Then it offers a game of \%chess.\&
+.IP \(bu 2
+A scenario plays itself.\&
+In the scenario menu, type a number or a name.\&
+\%NEXT and \%PREV turn the page.\&
+\%WOPR gives a short briefing: your side, the side that strikes first, the
+enemy's doctrine, your side's orders and the targets.\&
+With \%\-\-instant, press Enter to open the board.\&
+Then the war flies on the big board, and nobody gives orders.\&
+Press Enter for the kill ratios, which end with \%WINNER: \%NONE.\&
+Enter again returns to the menu.\&
+Enter on an empty line in the menu returns to the side choice.\&
 .PP
 Tips:
 .IP \(bu 2
@@ -870,7 +944,9 @@ Whatever you order, your cities take at least 1,144 warheads, and the enemy's
 take at most 750.\&
 The warhead counts have no dice, so the same orders always give the same
 counts.\&
-So you can see what each order changes.\&
+Play the same war again with other orders, and read what \%WOPR says under the
+kill ratios.\&
+\%HOLD at both prompts leaves the fewest dead on both sides.\&
 .IP \(bu 2
 To spare your cities, hold your \%ICBMs.\&
 While they sit in their silos, \%WOPR aims its own \%ICBMs at your silo field.\&

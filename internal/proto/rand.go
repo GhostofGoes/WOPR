@@ -26,6 +26,12 @@ func GameStream(slug string, playIndex uint16) uint64 {
 	return DomainGame | uint64(fnv32(slug))<<16 | uint64(playIndex)
 }
 
+// LaunchSeed is the Env.Seed the host gives the playIndex-th launch of slug in a session
+// seeded with session (docs/PLAN.md §4.6): every game and every replay draws its own sequence.
+func LaunchSeed(session uint64, slug string, playIndex uint16) uint64 {
+	return NewRand(session, GameStream(slug, playIndex)).Uint64()
+}
+
 func fnv32(s string) uint32 {
 	h := uint32(2166136261)
 	for i := range len(s) {

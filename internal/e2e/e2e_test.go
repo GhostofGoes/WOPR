@@ -164,6 +164,20 @@ func TestScenes(t *testing.T) {
 	}
 }
 
+// --scenario lists GTW's scenarios; an unknown scenario is a usage error that names the list.
+func TestScenarios(t *testing.T) {
+	for _, flagName := range []string{"-c", "--scenario"} {
+		out, _, code := run(t, flagName)
+		if code != 0 || !strings.Contains(out, "  1. U.S. FIRST STRIKE") || !strings.Contains(out, "156. ") {
+			t.Errorf("%s: exit %d, output %q", flagName, code, out)
+		}
+	}
+	_, errOut, code := run(t, "-c", "nowhere")
+	if code != 2 || !strings.Contains(errOut, "no scenario matches") {
+		t.Errorf("an unknown scenario: exit %d, stderr %q; want 2", code, errOut)
+	}
+}
+
 // session is a running wopr in a pseudo-terminal. Its output feeds a terminal emulator, so
 // tests assert on the screen a user would see rather than on the byte stream: the typewriter
 // and Bubble Tea's diffing renderer split text across writes. The emulator's answers to
@@ -380,6 +394,74 @@ func TestMovieKeys(t *testing.T) {
 	}
 	s.send("\x1b") // Esc
 	s.waitFor("SCENE:", 10*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
+// wopr -c 2 plays USSR FIRST STRIKE on the big board with no orders asked, once Enter opens it
+// after the briefing (--instant has no pause). Enter shows the kill ratios and the verdict, and
+// Enter again opens the scenario menu.
+func TestScenarioPlaysItself(t *testing.T) {
+	s := start(t, 80, 24, "-c", "2", "--instant")
+	s.waitFor("PRESS ENTER TO OPEN THE BOARD.", 15*time.Second) // --instant has no pause to read the briefing in
+	s.send("\r")
+	s.waitFor("GLOBAL THERMONUCLEAR WAR: USSR FIRST STRIKE", 15*time.Second)
+	s.waitFor("STRIKE ASSESSMENT COMPLETE.", 30*time.Second)
+	s.send("\r")
+	s.waitFor("WINNER: NONE", 15*time.Second)
+	s.send("\r")
+	s.waitFor("SCENARIOS ON FILE: PAGE 1 OF 3", 15*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
+// wopr gtw -n asks for another war after the kill ratios, in place of the climax. YES starts
+// one at the side choice, and NO returns to WOPR with no winner.
+func TestNoClimax(t *testing.T) {
+	s := start(t, 80, 24, "gtw", "-n", "--instant")
+	war := func(side, target string) {
+		t.Helper()
+		s.waitFor("PLEASE CHOOSE ONE:", 15*time.Second)
+		s.send(side + "\r")
+		s.waitFor("PLEASE LIST PRIMARY TARGETS BY", 15*time.Second)
+		s.send(target + "\r")
+		s.waitFor("OF 8.", 15*time.Second)
+		s.send("\r")
+		for _, want := range []string{"STRIKE 2 OF 3", "STRIKE 3 OF 3", "STRIKE ASSESSMENT COMPLETE.", "PRESS ENTER TO CONTINUE."} {
+			s.waitFor(want, 30*time.Second)
+			s.send("\r")
+		}
+		s.waitFor("ANOTHER WAR, PROFESSOR?", 15*time.Second)
+	}
+	war("2", "Las Vegas")
+	s.send("yes\r")
+	war("1", "Moscow")
+	s.send("no\r")
+	s.waitFor("WINNER: NONE", 15*time.Second)
+	s.send("\x03")
+	if code := s.wait(10 * time.Second); code != 130 {
+		t.Errorf("exit %d after Ctrl+C, want 130", code)
+	}
+}
+
+// wopr gtw -a plays the film's war: a side and a target, then the board, the kill ratios and
+// the climax by themselves, with no PRESS ENTER, even under --instant. TIC-TAC-TOE gets
+// through, as in the film.
+func TestAuthentic(t *testing.T) {
+	s := start(t, 80, 24, "gtw", "-a", "--instant")
+	s.waitFor("PLEASE CHOOSE ONE:", 15*time.Second)
+	s.send("2\r")
+	s.waitFor("PLEASE LIST PRIMARY TARGETS BY", 15*time.Second)
+	s.send("Las Vegas\r")
+	s.send("\r")
+	s.waitFor("POPULATION DEATHS", 30*time.Second)
+	s.waitFor("** GAME ROUTINE RUNNING **", 30*time.Second)
+	s.send("TIC-TAC-TOE\r")
+	s.waitFor("OF PLAYERS:", 15*time.Second)
 	s.send("\x03")
 	if code := s.wait(10 * time.Second); code != 130 {
 		t.Errorf("exit %d after Ctrl+C, want 130", code)

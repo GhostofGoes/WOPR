@@ -10,9 +10,11 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 
 	"github.com/GhostofGoes/WOPR/internal/proto"
 	"github.com/GhostofGoes/WOPR/internal/proto/host"
+	"github.com/GhostofGoes/WOPR/internal/theme"
 	"github.com/GhostofGoes/WOPR/internal/ui/console"
 )
 
@@ -87,8 +89,9 @@ func (m *model) View() tea.View {
 		if prog != nil {
 			canvas := proto.NewCanvas(g.width, g.viewRows)
 			prog.View(canvas)
+			th := m.viewTheme()
 			for y := range g.viewRows {
-				lines = append(lines, m.pad(m.canvasRow(canvas, y), g, bg))
+				lines = append(lines, m.pad(m.canvasRow(th, canvas, y), g, bg))
 			}
 		}
 	}
@@ -170,8 +173,20 @@ func (m *model) cursor(g geometry, rows []console.Row, at int) *tea.Cursor {
 	return c
 }
 
-// canvasRow renders one canvas row as styled runs.
-func (m *model) canvasRow(c *proto.Canvas, y int) string {
+// viewTheme is the theme the running program's view draws in. A program that fills the screen
+// is the big board (GTW's board, the ending, movie mode's board): in the film the NORAD screens
+// are in colour and WOPR's terminal is not, so it draws in the war room's colours whatever the
+// console's theme. Without colour (NO_COLOR, a terminal with none) it keeps the console's
+// theme, as a program in a panel always does.
+func (m *model) viewTheme() *theme.Theme {
+	if m.place.Layout == proto.LayoutFull && m.profile > colorprofile.ASCII {
+		return m.board
+	}
+	return m.th
+}
+
+// canvasRow renders one canvas row as styled runs, in th.
+func (m *model) canvasRow(th *theme.Theme, c *proto.Canvas, y int) string {
 	var b strings.Builder
 	blinkOff := !m.opts.ReduceMotion && int(m.phase/blinkPeriod)%2 == 1
 	x := 0
@@ -190,7 +205,7 @@ func (m *model) canvasRow(c *proto.Canvas, y int) string {
 			run = append(run, r)
 			x++
 		}
-		b.WriteString(m.th.Lip(cell.S, cell.A&^proto.AttrBlink, m.profile).Render(string(run)))
+		b.WriteString(th.Lip(cell.S, cell.A&^proto.AttrBlink, m.profile).Render(string(run)))
 	}
 	return b.String()
 }
